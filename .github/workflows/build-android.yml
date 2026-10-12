@@ -1,3 +1,4 @@
+
 name: Build SRK Case Manager Android APK
 
 'on':
@@ -5,6 +6,9 @@ name: Build SRK Case Manager Android APK
   push:
     branches:
       - main
+
+permissions:
+  contents: read
 
 jobs:
   build-android:
@@ -31,6 +35,9 @@ jobs:
       - name: Install Capacitor
         run: npm install --no-save --legacy-peer-deps @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
 
+      - name: Build web application
+        run: npm run build
+
       - name: Create Capacitor configuration
         run: |
           cat > capacitor.config.json <<'EOF'
@@ -40,9 +47,6 @@ jobs:
             "webDir": "dist"
           }
           EOF
-
-      - name: Build web application
-        run: npm run build
 
       - name: Add Android platform
         run: npx cap add android
