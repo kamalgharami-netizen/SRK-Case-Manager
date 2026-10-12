@@ -1,4 +1,4 @@
-
+```yaml
 name: Build SRK Case Manager EXE
 
 on:
@@ -19,7 +19,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: npm
 
       - name: Install dependencies
         run: npm install --legacy-peer-deps
@@ -34,3 +33,4 @@ jobs:
           path: release/*.exe
           if-no-files-found: error
           retention-days: 14
+```
