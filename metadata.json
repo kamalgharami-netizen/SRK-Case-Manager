@@ -1,0 +1,6 @@
+{
+  "name": "SRK Case Manager",
+  "description": "Comprehensive legal chamber and West Bengal land case management platform for Mutation, Misc Cases, LR Appeals, WBLRTT, Conversion, daily cause lists, share calculations, and document drafting.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

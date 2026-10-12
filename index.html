@@ -1,0 +1,1910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="theme-color" content="#1E40AF">
+<title>SRK Case Manager</title>
+<meta name="description" content="Comprehensive legal chamber and West Bengal land case management platform for Mutation, Misc Cases, LR Appeals, WBLRTT, Conversion, daily cause lists, share calculations, and document drafting." />
+<meta property="og:title" content="SRK Case Manager" />
+<meta property="og:description" content="Comprehensive legal chamber and West Bengal land case management platform for Mutation, Misc Cases, LR Appeals, WBLRTT, Conversion, daily cause lists, share calculations, and document drafting." />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary_large_image" />
+<style>
+:root {
+  --primary: #1E40AF; --primary-dark: #1E3A8A; --primary-light: #EFF6FF; --primary-glow: rgba(30,64,175,.35);
+  --gold: #D97706; --gold-dark: #B45309; --gold-light: #FEF3C7; --gold-glow: rgba(217,119,6,.35);
+  --green: #16A34A; --green-light: #DCFCE7; --red: #DC2626; --red-light: #FEE2E2;
+  --purple: #7C3AED; --purple-light: #EDE9FE; --whatsapp: #25D366;
+  --bg: #F1F5F9; --card: #FFFFFF; --text: #0F172A; --muted: #64748B; --border: #E2E8F0;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.04); --shadow: 0 4px 12px rgba(15,23,42,.06);
+  --shadow-lg: 0 12px 28px rgba(15,23,42,.1); --shadow-hover: 0 16px 40px rgba(30,64,175,.18);
+  --transition: all .25s cubic-bezier(.4,0,.2,1);
+  --sidebar-bg: linear-gradient(180deg, #1E3A8A 0%, #1E40AF 60%, #1D4ED8 100%); --sidebar-text: #fff;
+}
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',Tahoma,sans-serif; -webkit-tap-highlight-color: transparent; }
+html { height:100%; overflow:hidden; font-size: 16px; }
+body { height:100%; overflow:hidden; background:var(--bg); color:var(--text); display:flex; position:relative; }
+body::before { content:''; position:fixed; inset:0; background: radial-gradient(circle at 15% 20%, rgba(30,64,175,.06) 0%, transparent 45%), radial-gradient(circle at 85% 80%, rgba(217,119,6,.05) 0%, transparent 45%); pointer-events:none; z-index:0; animation: bgFloat 20s ease-in-out infinite alternate; }
+@keyframes bgFloat { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(2%,-2%) scale(1.05); } }
+
+/* LAUNCH */
+#launchScreen { position:fixed; inset:0; z-index:5000; background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 45%, #4C1D95 100%); display:flex; align-items:center; justify-content:center; padding:16px; overflow-y:auto; }
+.launch-card { background: var(--card); border-radius: 20px; padding: 34px; width:100%; max-width: 660px; box-shadow: 0 30px 60px rgba(0,0,0,.4); max-height: 94vh; overflow-y:auto; animation: modalPop .5s cubic-bezier(.34,1.56,.64,1); }
+@keyframes modalPop { from { transform: scale(.9) translateY(20px); opacity:0; } to { transform: scale(1) translateY(0); opacity:1; } }
+.launch-logo { text-align: center; margin-bottom: 18px; }
+.launch-logo .logo-icon { font-size: 3.4rem; display: inline-block; animation: bounceIcon 3s ease-in-out infinite; }
+@keyframes bounceIcon { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-3px) scale(1.08); } }
+.launch-logo h1 { font-size: 1.55rem; color: var(--primary); margin-top: 8px; letter-spacing: -.5px; font-weight: 800; }
+.launch-logo p { font-size: .85rem; color: var(--muted); margin-top: 6px; }
+.launch-title { font-size: 1.12rem; font-weight: 800; color: var(--primary); margin-bottom: 6px; }
+.launch-subtitle { font-size: .85rem; color: var(--muted); margin-bottom: 20px; line-height: 1.6; }
+.launch-choice { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 18px; }
+.launch-choice-card { background: var(--bg); border: 2px solid var(--border); border-radius: 14px; padding: 20px 14px; text-align: center; cursor: pointer; transition: var(--transition); }
+.launch-choice-card:hover { border-color: var(--primary); transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+.launch-choice-card .icon { font-size: 2rem; display: block; margin-bottom: 8px; }
+.launch-choice-card .name { font-size: .88rem; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+.launch-choice-card .desc { font-size: .7rem; color: var(--muted); line-height: 1.4; }
+.launch-steps { display: flex; gap: 8px; margin-bottom: 20px; }
+.launch-steps .step { flex: 1; height: 4px; background: var(--border); border-radius: 4px; transition: var(--transition); }
+.launch-steps .step.active { background: linear-gradient(90deg, var(--primary), var(--gold)); }
+.launch-section-title { font-size: .78rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: .5px; margin: 18px 0 10px; padding-bottom: 6px; border-bottom: 2px dashed var(--border); display: flex; align-items: center; gap: 8px; }
+.launch-section-title::before { content: ''; width: 4px; height: 14px; background: linear-gradient(180deg, var(--gold), #F59E0B); border-radius: 2px; }
+.company-card { background: var(--bg); border: 2px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; transition: var(--transition); display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.company-card:hover { border-color: var(--primary); background: var(--primary-light); }
+.company-card .cc-info { flex: 1; min-width: 0; cursor: pointer; }
+.company-card .cc-name { font-weight: 800; font-size: .92rem; color: var(--text); margin-bottom: 3px; }
+.company-card .cc-meta { font-size: .7rem; color: var(--muted); }
+.company-card .cc-actions { display: flex; gap: 4px; }
+.company-card .cc-action { padding: 6px 10px; border-radius: 6px; cursor: pointer; transition: var(--transition); font-weight: 700; }
+.company-card .cc-action:hover { background: var(--primary-light); }
+.company-card .cc-delete { color: var(--red); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: 700; }
+.company-card .cc-delete:hover { background: var(--red-light); }
+.launch-actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+.launch-actions .btn { flex: 1; min-width: 120px; padding: 11px 16px; }
+.role-badge { display: inline-block; font-size: .62rem; font-weight: 800; padding: 2px 8px; border-radius: 8px; text-transform: uppercase; letter-spacing: .3px; }
+.role-admin { background: linear-gradient(135deg, #1E40AF, #3B82F6); color: #fff; }
+.role-junior { background: linear-gradient(135deg, #D97706, #FBBF24); color: #fff; }
+.role-clerk { background: linear-gradient(135deg, #7C3AED, #A78BFA); color: #fff; }
+.role-accountant { background: linear-gradient(135deg, #16A34A, #22C55E); color: #fff; }
+
+/* SIDEBAR */
+.sidebar { width:260px; background: var(--sidebar-bg); color: var(--sidebar-text); display:flex; flex-direction:column; height:100vh; flex-shrink:0; z-index:100; box-shadow: 4px 0 24px rgba(15,23,42,.12); position:relative; overflow:hidden; }
+.sidebar::before { content:''; position:absolute; top:-50%; right:-50%; width:200%; height:200%; background: radial-gradient(circle, rgba(255,255,255,.05) 0%, transparent 60%); animation: rotateBg 30s linear infinite; pointer-events:none; }
+@keyframes rotateBg { from{transform:rotate(0);} to{transform:rotate(360deg);} }
+.sidebar-header { padding:16px 20px; border-bottom:1px solid rgba(255,255,255,.12); display:flex; align-items:flex-start; flex-direction:column; gap:4px; position:relative; z-index:1; }
+.sidebar-header .sh-title { display:flex; align-items:center; gap:8px; font-size:1rem; font-weight:800; white-space: nowrap; overflow: hidden; }
+.sidebar-header .sh-title > span:first-child { animation: bounceIcon 3s ease-in-out infinite; }
+.sidebar-header .sh-company { font-size:.66rem; opacity:.7; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.sidebar-menu { flex:1; overflow-y:auto; padding:6px 0; position:relative; z-index:1; }
+.sidebar-menu::-webkit-scrollbar { width:5px; } .sidebar-menu::-webkit-scrollbar-thumb { background: rgba(255,255,255,.2); border-radius:3px; }
+.menu-item { padding:10px 20px; cursor:pointer; display:flex; align-items:center; gap:10px; font-size:.85rem; border-left:4px solid transparent; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; position:relative; transition: var(--transition); }
+.menu-item:hover, .menu-item.active { border-left-color: var(--gold); transform: translateX(3px); background: rgba(255,255,255,.08); }
+.menu-item.active { box-shadow: inset 0 0 20px rgba(255,255,255,.05); }
+.menu-item > * { position:relative; z-index:1; }
+.menu-section { padding:10px 20px 6px; font-size:.64rem; text-transform:uppercase; opacity:.55; letter-spacing:1px; font-weight:600; }
+.submenu-parent { padding:10px 20px; cursor:pointer; display:flex; align-items:center; gap:10px; font-size:.85rem; border-left:4px solid transparent; white-space:nowrap; overflow:hidden; transition: var(--transition); }
+.submenu-parent:hover { border-left-color: var(--gold); background: rgba(255,255,255,.08); }
+.submenu-parent.active-parent { border-left-color: var(--gold); background: rgba(255,255,255,.06); }
+.submenu-parent .arrow { margin-left:auto; transition: transform .3s ease; font-size: .68rem; opacity: .7; }
+.submenu-parent.open .arrow { transform: rotate(90deg); }
+.submenu-items { max-height: 0; overflow: hidden; transition: max-height .35s ease; background: rgba(0,0,0,.18); }
+.submenu-items.open { max-height: 800px; }
+.submenu-items .menu-item { padding-left: 46px; font-size: .82rem; }
+.sidebar-footer { padding:12px 14px; background: rgba(0,0,0,.22); font-size:.72rem; border-top:1px solid rgba(255,255,255,.1); position:relative; z-index:1; }
+.db-status { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.db-dot { width:8px; height:8px; background:#22C55E; border-radius:50%; animation: pulseDot 2s infinite; }
+@keyframes pulseDot { 0% { box-shadow: 0 0 0 0 rgba(34,197,94,.7); } 70% { box-shadow: 0 0 0 8px rgba(34,197,94,0); } 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); } }
+.db-path { font-family:monospace; font-size:.62rem; color:#cbd5e1; word-break:break-all; margin-bottom:6px; }
+.db-btn { background: linear-gradient(135deg, var(--gold), #F59E0B); color:#fff; border:none; padding:7px 12px; border-radius:6px; font-size:.7rem; cursor:pointer; width:100%; font-weight:bold; margin-bottom:5px; }
+.db-btn.outline { background: transparent; border: 1px solid rgba(255,255,255,.3); }
+
+/* MAIN */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; position:relative; z-index:1; }
+.top-header { background: rgba(255,255,255,.85); backdrop-filter: blur(12px); padding:11px 18px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); box-shadow: var(--shadow-sm); flex-wrap:wrap; gap:8px; position:sticky; top:0; z-index:50; }
+.search-bar { display:flex; align-items:center; background: var(--bg); border:2px solid transparent; border-radius:8px; padding:8px 14px; flex:1; min-width:140px; max-width:420px; transition: var(--transition); }
+.search-bar:focus-within { border-color: var(--primary); background:#fff; box-shadow: 0 0 0 4px var(--primary-glow); }
+.search-bar input { border:none; background:transparent; outline:none; width:100%; margin-left:8px; font-size:.88rem; }
+.header-actions { display:flex; align-items:center; gap:10px; flex-wrap: wrap; }
+.lang-toggle { background: var(--primary-light); color: var(--primary); border:1px solid var(--primary); padding:6px 12px; border-radius:20px; font-weight:bold; font-size:.72rem; cursor:pointer; white-space: nowrap; }
+.user-profile { display:flex; align-items:center; gap:8px; font-weight:600; font-size:.82rem; }
+.user-avatar { width:32px; height:32px; background: linear-gradient(135deg, var(--gold), #F59E0B); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:.8rem; flex-shrink: 0; }
+.mobile-toggle { display:none; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color:#fff; border:none; font-size:1.25rem; padding:7px 11px; border-radius:8px; cursor:pointer; margin-right:8px; flex-shrink: 0; }
+.content { flex:1; padding:20px; overflow-y:auto; display:none; -webkit-overflow-scrolling: touch; }
+.content.active { display:block; animation: fadeSlide .3s cubic-bezier(.4,0,.2,1); }
+@keyframes fadeSlide { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+.section-title { font-size:1.08rem; font-weight:bold; color: var(--primary); margin-bottom:16px; display:inline-block; padding-bottom:6px; position:relative; }
+.section-title::after { content:''; position:absolute; left:0; right:0; bottom:0; height:3px; background: linear-gradient(90deg, var(--gold), var(--gold-light), transparent); border-radius:2px; }
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:20px; }
+.stat-card { background: var(--card); padding:16px; border-radius:12px; box-shadow: var(--shadow); border-left:4px solid var(--primary); transition: var(--transition); }
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.stat-card .label { font-size:.7rem; color:var(--muted); margin-bottom:6px; font-weight:600; text-transform:uppercase; }
+.stat-card .value { font-size:1.5rem; font-weight:bold; }
+.stat-card .sub { font-size:.68rem; color:var(--muted); margin-top:3px; }
+.card { background: var(--card); border-radius:12px; padding:16px; box-shadow: var(--shadow); margin-bottom:16px; overflow-x:auto; -webkit-overflow-scrolling: touch; }
+.card-header { font-weight:bold; margin-bottom:12px; font-size:.92rem; display:flex; justify-content:space-between; flex-wrap:wrap; gap:5px; align-items:center; }
+table { width:100%; border-collapse:collapse; font-size:.82rem; min-width:460px; }
+th { text-align:left; padding:9px; background: var(--bg); color: var(--muted); font-weight:700; border-bottom:2px solid var(--border); font-size:.7rem; text-transform:uppercase; }
+td { padding:10px 9px; border-bottom:1px solid var(--border); }
+.badge { padding:3px 9px; border-radius:6px; font-size:.68rem; font-weight:700; white-space:nowrap; }
+.badge-blue { background: var(--primary-light); color: var(--primary); }
+.badge-gold { background: var(--gold-light); color: var(--gold-dark); }
+.badge-green { background: var(--green-light); color: var(--green); }
+.badge-red { background: var(--red-light); color: var(--red); }
+.badge-grey { background: #E5E7EB; color: #4B5563; }
+.btn { padding:9px 15px; border:none; border-radius:8px; font-size:.82rem; font-weight:700; cursor:pointer; transition: var(--transition); }
+.btn-primary { background: linear-gradient(135deg, var(--gold), #F59E0B); color:#fff; box-shadow: 0 4px 12px var(--gold-glow); }
+.btn-primary:hover { transform: translateY(-2px); }
+.btn-secondary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color:#fff; }
+.btn-secondary:hover { transform: translateY(-2px); }
+.btn-success { background: linear-gradient(135deg, var(--green), #15803D); color:#fff; }
+.btn-wa { background: linear-gradient(135deg, var(--whatsapp), #1EA855); color:#fff; }
+.btn-purple { background: linear-gradient(135deg, var(--purple), #6D28D9); color:#fff; }
+.btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+.btn-outline:hover { background: var(--primary); color:#fff; }
+.btn-danger { background: linear-gradient(135deg, var(--red), #B91C1C); color:#fff; }
+.btn-sm { padding:6px 11px; font-size:.72rem; border-radius:6px; }
+.btn-xs { padding:4px 8px; font-size:.68rem; border-radius:5px; }
+.btn-group { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+.form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; }
+.form-grid-3 { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
+.form-grid-4 { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; }
+.form-group { margin-bottom:12px; }
+.form-group label { display:block; font-size:.72rem; margin-bottom:5px; color: var(--muted); font-weight:700; text-transform:uppercase; }
+.form-group input, .form-group select, .form-group textarea { width:100%; padding:9px 11px; border: 2px solid var(--border); border-radius:8px; font-size:.86rem; font-family:inherit; transition: var(--transition); background: var(--card); color: var(--text); }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); outline:none; box-shadow: 0 0 0 4px var(--primary-glow); }
+.form-section-title { font-size:.88rem; font-weight:bold; color: var(--primary); margin:18px 0 10px; padding-bottom:6px; border-bottom: 2px dashed var(--border); display:flex; align-items:center; gap:8px; flex-wrap: wrap; justify-content: space-between; }
+.form-section-title > span:first-child { display:flex; align-items: center; gap: 8px; }
+.form-section-title::before { content:''; width:4px; height:14px; background: linear-gradient(180deg, var(--gold), #F59E0B); border-radius:2px; position: absolute; margin-left: -14px; }
+.form-section-title { padding-left: 14px; position: relative; }
+.split-view { display:grid; grid-template-columns:1fr 1fr; gap:14px; min-height:450px; }
+.split-panel { display:flex; flex-direction:column; border:1px solid var(--border); border-radius:12px; overflow:hidden; min-height:280px; background: var(--card); box-shadow: var(--shadow); }
+.split-header { background: linear-gradient(135deg, var(--primary-light), #DBEAFE); padding:11px 15px; font-weight:bold; font-size:.86rem; color: var(--primary); border-bottom:1px solid var(--border); }
+.split-content { flex:1; padding:14px; overflow-y:auto; background:var(--card); font-size:.86rem; line-height:1.65; color: var(--text); }
+.draft-output { font-family:'Times New Roman',serif; line-height:1.85; }
+.modal-overlay { position:fixed; inset:0; background: rgba(15,23,42,.55); backdrop-filter: blur(4px); display:none; align-items:center; justify-content:center; z-index:1000; padding:14px; }
+.modal-overlay.active { display:flex; }
+.modal { background: var(--card); border-radius:14px; padding:24px; width:100%; max-width:520px; box-shadow: 0 25px 50px rgba(15,23,42,.25); max-height:90vh; overflow-y:auto; animation: modalPop .35s cubic-bezier(.34,1.56,.64,1); }
+.modal h2 { font-size:1.1rem; margin-bottom:14px; color: var(--primary); }
+.toast { position:fixed; bottom:22px; right:22px; background: linear-gradient(135deg, var(--green), #15803D); color:#fff; padding:13px 20px; border-radius:12px; box-shadow: 0 12px 28px rgba(22,163,74,.35); font-weight:700; font-size:.86rem; z-index:2000; transform: translateY(120px); opacity:0; transition: all .35s cubic-bezier(.34,1.56,.64,1); max-width:340px; display:flex; align-items:center; gap:10px; }
+.toast::before { content:'✓'; font-size:1.05rem; }
+.toast.show { transform: translateY(0); opacity:1; }
+.toast.error { background: linear-gradient(135deg, var(--red), #B91C1C); } .toast.error::before { content:'!'; }
+.toast.info { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); } .toast.info::before { content:'i'; font-style:italic; }
+.attach-zone { border: 2px dashed var(--border); border-radius: 10px; padding: 20px; text-align: center; background: var(--bg); cursor: pointer; transition: var(--transition); margin-bottom: 12px; }
+.attach-zone:hover { border-color: var(--primary); background: var(--primary-light); }
+.attach-zone .icon { font-size: 2rem; display: block; margin-bottom: 6px; opacity: .7; }
+.attach-zone .title { font-weight: 700; font-size: .88rem; color: var(--primary); }
+.attach-zone .hint { font-size: .72rem; color: var(--muted); }
+.attach-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.attach-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; flex-wrap: wrap; }
+.attach-file-icon { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #fff; flex-shrink: 0; }
+.file-type-pdf { background: linear-gradient(135deg, #DC2626, #991B1B); }
+.file-type-doc { background: linear-gradient(135deg, #2563EB, #1E40AF); }
+.file-type-img { background: linear-gradient(135deg, #7C3AED, #5B21B6); }
+.file-type-other { background: linear-gradient(135deg, #64748B, #475569); }
+.attach-info { flex: 1; min-width: 120px; }
+.attach-name { font-size: .82rem; font-weight: 700; word-break: break-word; }
+.attach-meta { font-size: .7rem; color: var(--muted); margin-top: 2px; }
+.attach-actions { display: flex; gap: 5px; }
+.quick-docs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.quick-doc-btn { padding: 7px 12px; background: var(--primary-light); color: var(--primary); border: 2px solid transparent; border-radius: 20px; font-size: .75rem; font-weight: 700; cursor: pointer; transition: var(--transition); }
+.quick-doc-btn:hover { border-color: var(--primary); transform: translateY(-2px); }
+.chain-deed-panel { background: linear-gradient(135deg, #F0F9FF, #E0F2FE); border: 2px solid #7DD3FC; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+.chain-deed-panel h3 { font-size: .95rem; color: #0369A1; margin-bottom: 6px; }
+.chain-deed-panel .subtitle { font-size: .78rem; color: var(--muted); margin-bottom: 12px; }
+.chain-link { background: #fff; border: 1px solid #BAE6FD; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+.chain-link-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.chain-link-num { background: linear-gradient(135deg, #0369A1, #075985); color: #fff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .75rem; }
+.chain-link-remove { color: var(--red); cursor: pointer; font-weight: 700; padding: 3px 8px; border-radius: 6px; font-size: .72rem; }
+.chain-link-remove:hover { background: var(--red-light); }
+.chain-deed-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.chain-deed-gap { background: var(--gold-light); border-left: 4px solid var(--gold); padding: 10px 12px; border-radius: 6px; font-size: .76rem; color: var(--gold-dark); margin-top: 10px; }
+.chain-deed-gap.error { background: var(--red-light); border-color: var(--red); color: var(--red); }
+.ai-panel { background: linear-gradient(135deg, #F5F3FF, #EDE9FE); border: 2px solid #DDD6FE; border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+.ai-panel h3 { font-size: 1rem; color: var(--purple); margin-bottom: 6px; }
+.ai-panel .subtitle { font-size: .78rem; color: var(--muted); margin-bottom: 14px; }
+.ai-status { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--card); border-radius: 10px; border: 1px solid #DDD6FE; }
+.ai-pulse { width: 10px; height: 10px; background: var(--purple); border-radius: 50%; animation: aiPulse 1.6s infinite; flex-shrink: 0; }
+@keyframes aiPulse { 0% { box-shadow: 0 0 0 0 rgba(124,58,237,.7); } 70% { box-shadow: 0 0 0 12px rgba(124,58,237,0); } 100% { box-shadow: 0 0 0 0 rgba(124,58,237,0); } }
+.ai-status .ai-text { flex: 1; font-size: .82rem; font-weight: 600; color: var(--purple); }
+.ai-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.ai-tab { padding: 9px 16px; background: var(--card); border: 2px solid var(--border); border-radius: 10px; font-size: .82rem; font-weight: 700; cursor: pointer; color: var(--muted); transition: var(--transition); }
+.ai-tab.active { background: linear-gradient(135deg, var(--purple), #6D28D9); color: #fff; border-color: var(--purple); }
+.multi-card { background: linear-gradient(135deg, #F0F9FF, #E0F2FE); border: 2px solid #7DD3FC; border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+.multi-card.applicant { background: linear-gradient(135deg, #F0FDF4, #DCFCE7); border-color: #86EFAC; }
+.multi-card.respondent { background: linear-gradient(135deg, #FEF2F2, #FEE2E2); border-color: #FCA5A5; }
+.multi-card.address { background: linear-gradient(135deg, #FEF3C7, #FDE68A); border-color: #FCD34D; }
+.multi-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; flex-wrap: wrap; }
+.multi-card-num { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .75rem; flex-shrink: 0; }
+.multi-card.applicant .multi-card-num { background: linear-gradient(135deg, #16A34A, #15803D); }
+.multi-card.respondent .multi-card-num { background: linear-gradient(135deg, #DC2626, #B91C1C); }
+.multi-card.address .multi-card-num { background: linear-gradient(135deg, #D97706, #B45309); }
+.multi-card-remove { color: var(--red); cursor: pointer; font-weight: 700; padding: 3px 8px; border-radius: 6px; font-size: .72rem; border: 1px solid transparent; transition: var(--transition); }
+.multi-card-remove:hover { background: var(--red-light); border-color: var(--red); }
+.multi-card-label { font-weight: 700; font-size: .8rem; margin-bottom: 8px; color: var(--primary); }
+.multi-card.applicant .multi-card-label { color: #166534; }
+.multi-card.respondent .multi-card-label { color: #991B1B; }
+.multi-card.address .multi-card-label { color: #B45309; }
+.folder-upload-panel { background: linear-gradient(135deg, #F0FDF4, #DCFCE7); border: 2px solid #86EFAC; border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+.folder-upload-panel h3 { font-size: 1rem; color: #166534; margin-bottom: 6px; }
+.folder-upload-panel .subtitle { font-size: .78rem; color: var(--muted); margin-bottom: 14px; }
+.folder-scan-result { background: #fff; border: 1px solid #86EFAC; border-radius: 10px; padding: 14px; margin-top: 12px; }
+.folder-scan-result .stat-line { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px dashed #D1FAE5; font-size: .82rem; }
+.folder-scan-result .stat-line:last-child { border-bottom: none; }
+.folder-scan-result .stat-line strong { color: #166534; }
+.folder-progress { background: #D1FAE5; border-radius: 20px; height: 9px; overflow: hidden; margin: 12px 0; }
+.folder-progress-bar { background: linear-gradient(90deg, #16A34A, #22C55E); height: 100%; width: 0%; transition: width .4s ease; border-radius: 20px; }
+.learning-insight { background: linear-gradient(135deg, #FEF3C7, #FDE68A); border-left: 4px solid var(--gold); border-radius: 8px; padding: 10px 14px; margin-top: 10px; font-size: .8rem; color: var(--gold-dark); }
+.act-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.act-tab { padding: 8px 14px; background: var(--card); border: 2px solid var(--border); border-radius: 8px; font-size: .8rem; font-weight: 700; cursor: pointer; color: var(--muted); }
+.act-tab.active { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; border-color: var(--primary); }
+.act-section { margin-bottom: 18px; }
+.act-section-title { font-size: .92rem; font-weight: bold; color: var(--primary); margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
+.act-provision { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 8px; }
+.act-provision .prov-num { font-weight: 700; color: var(--primary); font-size: .82rem; }
+.act-provision .prov-text { font-size: .8rem; margin-top: 5px; line-height: 1.55; }
+.act-provision .prov-text-bn { font-size: .8rem; color: var(--muted); margin-top: 3px; line-height: 1.55; font-style: italic; }
+.dash-hero { background: linear-gradient(135deg, var(--primary) 0%, #1D4ED8 60%, var(--gold) 140%); border-radius: 16px; padding: 22px; color: #fff; margin-bottom: 20px; position: relative; overflow: hidden; box-shadow: 0 12px 32px rgba(30,64,175,.28); }
+.dash-hero::before { content: ''; position: absolute; top: -60%; right: -20%; width: 400px; height: 400px; background: radial-gradient(circle, rgba(255,255,255,.18) 0%, transparent 60%); border-radius: 50%; animation: heroPulse 8s ease-in-out infinite; }
+@keyframes heroPulse { 0%,100% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.15); opacity: .6; } }
+.dash-hero h1 { font-size: 1.3rem; font-weight: 800; margin-bottom: 6px; position: relative; letter-spacing: -.3px; }
+.dash-hero p { font-size: .82rem; opacity: .9; position: relative; max-width: 620px; line-height: 1.55; }
+.dash-hero .dash-hero-meta { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; position: relative; font-size: .72rem; }
+.dash-hero .dash-hero-meta span { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.18); padding: 5px 12px; border-radius: 20px; }
+.iconic-menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.iconic-tile { background: var(--card); border: 2px solid var(--border); border-radius: 16px; padding: 18px 14px; text-align: center; cursor: pointer; transition: var(--transition); position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 10px; min-height: 145px; justify-content: center; }
+.iconic-tile::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, var(--primary-light), var(--gold-light)); opacity: 0; transition: opacity .3s; }
+.iconic-tile:hover::before { opacity: 1; }
+.iconic-tile > * { position: relative; z-index: 1; }
+.iconic-tile:hover { border-color: var(--primary); transform: translateY(-6px); box-shadow: 0 14px 32px rgba(30,64,175,.22); }
+.iconic-tile .tile-icon-wrap { width: 62px; height: 62px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: #fff; box-shadow: 0 8px 20px rgba(30,64,175,.24); transition: transform .35s cubic-bezier(.34,1.56,.64,1); }
+.iconic-tile:hover .tile-icon-wrap { transform: scale(1.12) rotate(-6deg); }
+.iconic-tile.mut .tile-icon-wrap { background: linear-gradient(135deg, #1E40AF, #3B82F6); }
+.iconic-tile.misc .tile-icon-wrap { background: linear-gradient(135deg, #7C3AED, #A78BFA); }
+.iconic-tile.lrapp .tile-icon-wrap { background: linear-gradient(135deg, #059669, #34D399); }
+.iconic-tile.lrtt .tile-icon-wrap { background: linear-gradient(135deg, #0891B2, #22D3EE); }
+.iconic-tile.conv .tile-icon-wrap { background: linear-gradient(135deg, #EA580C, #FB923C); }
+.iconic-tile.cause .tile-icon-wrap { background: linear-gradient(135deg, #D97706, #FBBF24); }
+.iconic-tile.calc .tile-icon-wrap { background: linear-gradient(135deg, #DC2626, #F87171); }
+.iconic-tile.ai .tile-icon-wrap { background: linear-gradient(135deg, #4F46E5, #818CF8); }
+.iconic-tile .tile-name { font-size: .88rem; font-weight: 800; color: var(--text); letter-spacing: -.2px; }
+.iconic-tile .tile-sub { font-size: .68rem; color: var(--muted); margin-top: -4px; line-height: 1.4; }
+.iconic-tile .tile-badge { position: absolute; top: 10px; right: 10px; background: linear-gradient(135deg, var(--gold), #F59E0B); color: #fff; font-size: .6rem; font-weight: 800; padding: 3px 8px; border-radius: 10px; }
+.iconic-tile .tile-count { font-size: .7rem; color: var(--primary); font-weight: 700; }
+
+/* CASE DASHBOARD */
+.case-dash-hero { background: linear-gradient(135deg, var(--primary), #1D4ED8); border-radius: 14px; padding: 20px; color: #fff; margin-bottom: 18px; position: relative; overflow: hidden; }
+.case-dash-hero.misc { background: linear-gradient(135deg, #7C3AED, #4C1D95); }
+.case-dash-hero.lrapp { background: linear-gradient(135deg, #059669, #065F46); }
+.case-dash-hero.lrtt { background: linear-gradient(135deg, #0891B2, #155E75); }
+.case-dash-hero.conv { background: linear-gradient(135deg, #EA580C, #9A3412); }
+.case-dash-hero h1 { font-size: 1.2rem; font-weight: 800; margin-bottom: 4px; }
+.case-dash-hero p { font-size: .8rem; opacity: .9; line-height: 1.5; }
+.status-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.status-chip { padding: 7px 14px; background: var(--card); border: 2px solid var(--border); border-radius: 20px; font-size: .75rem; font-weight: 700; cursor: pointer; color: var(--muted); transition: var(--transition); }
+.status-chip:hover { border-color: var(--primary); color: var(--primary); }
+.status-chip.active { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; border-color: var(--primary); }
+.status-chip .count { background: rgba(255,255,255,.25); padding: 1px 7px; border-radius: 10px; font-size: .65rem; margin-left: 5px; }
+.status-chip:not(.active) .count { background: var(--bg); color: var(--muted); }
+.row-actions { display: flex; gap: 4px; flex-wrap: wrap; }
+.row-actions button { padding: 4px 8px; border-radius: 5px; border: 1px solid var(--border); background: var(--card); font-size: .68rem; font-weight: 700; cursor: pointer; transition: var(--transition); color: var(--primary); }
+.row-actions button:hover { background: var(--primary-light); border-color: var(--primary); }
+.row-actions button.del { color: var(--red); }
+.row-actions button.del:hover { background: var(--red-light); border-color: var(--red); }
+.row-actions button.prn { color: var(--gold-dark); }
+.empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+.empty-state .icon { font-size: 2.6rem; display: block; margin-bottom: 10px; opacity: .5; }
+.empty-state .title { font-size: .95rem; font-weight: 700; margin-bottom: 5px; color: var(--text); }
+.empty-state .desc { font-size: .78rem; line-height: 1.5; }
+.fab { position:fixed; bottom:22px; right:22px; width:54px; height:54px; background: linear-gradient(135deg, var(--gold), #F59E0B); color:#fff; border:none; border-radius:50%; font-size:1.5rem; cursor:pointer; box-shadow: 0 8px 24px var(--gold-glow); z-index:900; }
+.fab-menu { position:fixed; bottom:88px; right:22px; display:flex; flex-direction:column; gap:10px; z-index:899; opacity:0; pointer-events:none; transition: var(--transition); }
+.fab-menu.open { opacity:1; pointer-events:auto; }
+.fab-menu-item { display:flex; align-items:center; gap:10px; background: var(--card); padding:10px 16px; border-radius:30px; box-shadow: var(--shadow-lg); cursor:pointer; font-size:.82rem; font-weight:700; white-space:nowrap; }
+.vakalatnama-warning { background: var(--red-light); border: 1px solid var(--red); border-radius: 8px; padding: 10px 14px; font-size: .76rem; color: var(--red); margin-top: 8px; display: none; }
+.vakalatnama-warning.show { display: block; }
+.limitation-alert { background: var(--red-light); border: 2px solid var(--red); border-radius: 10px; padding: 12px; margin-bottom: 12px; display: flex; gap: 10px; align-items: center; }
+.limitation-alert .icon { font-size: 1.6rem; }
+.limitation-alert .text { flex: 1; font-size: .82rem; color: var(--red); font-weight: 700; }
+.limitation-ok { background: var(--green-light); border: 2px solid var(--green); border-radius: 10px; padding: 12px; margin-bottom: 12px; display: flex; gap: 10px; align-items: center; }
+.limitation-ok .icon { font-size: 1.6rem; }
+.limitation-ok .text { flex: 1; font-size: .82rem; color: var(--green); font-weight: 700; }
+.user-list-item { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.user-list-avatar { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; flex-shrink: 0; }
+.user-list-info { flex: 1; min-width: 140px; }
+.user-list-name { font-weight: 700; font-size: .88rem; word-break: break-word; }
+.user-list-role { font-size: .7rem; color: var(--muted); margin-top: 2px; }
+.party-card { background: var(--card); border: 2px solid var(--border); border-radius: 12px; padding: 14px; cursor: pointer; transition: var(--transition); position: relative; }
+.party-card:hover { border-color: var(--primary); transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+.party-card-actions { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; opacity: 0; transition: var(--transition); }
+.party-card:hover .party-card-actions { opacity: 1; }
+.party-card-actions button { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--border); background: var(--card); cursor: pointer; font-size: .72rem; display: flex; align-items: center; justify-content: center; }
+.party-card-actions button.del:hover { background: var(--red-light); border-color: var(--red); color: var(--red); }
+.party-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; margin-bottom:16px; }
+.party-avatar { width:44px; height:44px; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:.95rem; flex-shrink:0; }
+.party-name { font-weight:bold; font-size:.9rem; word-break: break-word; }
+.party-meta { font-size:.72rem; color:var(--muted); margin-top:2px; word-break: break-word; }
+.vault-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.vault-stat { background: var(--card); padding: 12px; border-radius: 10px; box-shadow: var(--shadow-sm); text-align: center; }
+.vault-stat .num { font-size: 1.4rem; font-weight: bold; color: var(--primary); }
+.vault-stat .lbl { font-size: .68rem; color: var(--muted); text-transform: uppercase; font-weight: 600; margin-top: 3px; }
+.vault-toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; padding: 12px; background: var(--card); border-radius: 10px; }
+.vault-toolbar input[type="text"] { padding: 9px 12px; border: 2px solid var(--border); border-radius: 8px; font-size: .85rem; background: var(--card); color: var(--text); flex: 1; min-width: 140px; }
+.vault-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.vault-card { background: var(--card); border: 2px solid var(--border); border-radius: 12px; padding: 14px; transition: var(--transition); }
+.vault-card:hover { border-color: var(--primary); transform: translateY(-4px); }
+.vault-card-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: #fff; margin-bottom: 8px; }
+.vault-card-name { font-size: .85rem; font-weight: 700; margin-bottom: 4px; word-break: break-word; }
+.vault-card-meta { font-size: .7rem; color: var(--muted); }
+.vault-card-actions { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); display: flex; gap: 6px; }
+.vault-card-actions button { flex: 1; padding: 5px 8px; border: 1px solid var(--border); background: var(--card); border-radius: 6px; font-size: .68rem; font-weight: 700; cursor: pointer; color: var(--primary); }
+.vault-card-actions button.danger { color: var(--red); }
+.search-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; padding: 14px; background: var(--card); border-radius: 10px; margin-bottom: 14px; }
+.search-filters input, .search-filters select { padding: 9px 11px; border: 2px solid var(--border); border-radius: 8px; font-size: .82rem; background: var(--card); color: var(--text); }
+.report-card { background: var(--card); border-radius: 12px; padding: 18px; margin-bottom: 14px; box-shadow: var(--shadow); border-left: 4px solid var(--primary); }
+.report-card h3 { font-size: .95rem; color: var(--primary); margin-bottom: 8px; }
+
+@media(max-width:1024px) { .split-view { grid-template-columns:1fr; } }
+@media(max-width:768px) {
+  html { font-size: 15px; }
+  body { flex-direction:column; }
+  .mobile-toggle { display:inline-block; }
+  .sidebar { position:fixed; left:-100%; top:0; height:100vh; width:270px; transition: left .3s ease; }
+  .sidebar.open { left:0; }
+  .main { width:100%; }
+  .top-header { padding:10px 14px; gap:8px; }
+  .content { padding:14px; }
+  .stats-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:10px; }
+  .stat-card { padding:14px; }
+  .stat-card .value { font-size:1.25rem; }
+  .form-grid, .form-grid-3, .form-grid-4 { grid-template-columns:1fr; }
+  table { font-size:.75rem; min-width:340px; }
+  th, td { padding:8px 6px; }
+  .toast { bottom:14px; right:14px; left:14px; max-width: none; }
+  .fab { bottom:14px; right:14px; width:50px; height:50px; font-size:1.35rem; }
+  .fab-menu { right:14px; bottom:74px; }
+  .vault-grid { grid-template-columns:1fr; }
+  .iconic-menu-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .iconic-tile { min-height: 125px; padding: 14px 10px; gap: 8px; }
+  .iconic-tile .tile-icon-wrap { width: 48px; height: 48px; font-size: 1.35rem; border-radius: 15px; }
+  .iconic-tile .tile-name { font-size: .8rem; }
+  .iconic-tile .tile-sub { font-size: .6rem; }
+  .dash-hero h1 { font-size: 1.05rem; }
+  .dash-hero p { font-size: .75rem; }
+  .launch-card { padding: 22px 16px; border-radius: 16px; }
+  .launch-choice { grid-template-columns: 1fr; gap: 10px; }
+  .launch-logo h1 { font-size: 1.3rem; }
+  .launch-logo .logo-icon { font-size: 2.6rem; }
+  .card { padding: 14px; }
+}
+@media(max-width:480px) {
+  html { font-size: 14px; }
+  .top-header { flex-direction:column; align-items:stretch; }
+  .search-bar { max-width: 100%; }
+  .header-actions { justify-content: space-between; }
+  .stats-grid { grid-template-columns:1fr 1fr; }
+  .btn-group { flex-direction:column; }
+  .btn-group .btn { width:100%; }
+  .iconic-menu-grid { grid-template-columns: 1fr 1fr; }
+  .iconic-tile { min-height: 110px; padding: 12px 8px; gap: 6px; }
+  .iconic-tile .tile-icon-wrap { width: 40px; height: 40px; font-size: 1.2rem; border-radius: 13px; }
+  .iconic-tile .tile-name { font-size: .72rem; }
+  .iconic-tile .tile-sub { display: none; }
+  .modal { padding: 16px; }
+  .launch-card { padding: 18px 12px; }
+  .user-profile span:not(.user-avatar) { display: none; }
+}
+@media(max-width:360px) {
+  .iconic-menu-grid { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns:1fr; }
+}
+body.theme-dark { --bg: #0F172A; --card: #1E293B; --text: #F1F5F9; --muted: #94A3B8; --border: #334155; --primary: #3B82F6; --primary-light: #1E3A8A; --gold: #F59E0B; --gold-light: #78350F; --green: #10B981; --red: #EF4444; --purple: #A78BFA; --purple-light: #4C1D95; --sidebar-bg: linear-gradient(180deg, #020617 0%, #0F172A 60%, #1E293B 100%); }
+</style>
+</head>
+<body>
+
+<!-- LAUNCH -->
+<div id="launchScreen">
+  <div class="launch-card">
+    <div class="launch-logo">
+      <span class="logo-icon">⚖️</span>
+      <h1>SRK Case Manager</h1>
+      <p>Legal Chamber & Land Case Management</p>
+    </div>
+    <div class="launch-steps"><div class="step active" id="step1"></div><div class="step" id="step2"></div><div class="step" id="step3"></div></div>
+
+    <div id="launchWelcome">
+      <div class="launch-title" style="text-align:center;">Welcome to SRK Case Manager</div>
+      <div class="launch-subtitle" style="text-align:center;">Set up your chamber workspace. Manage multiple companies from one place.</div>
+      <div class="launch-choice">
+        <div class="launch-choice-card" onclick="showLaunchCreate()"><span class="icon">🏛️</span><div class="name">Create Company</div><div class="desc">Start a new workspace</div></div>
+        <div class="launch-choice-card" onclick="showLaunchSelect()" id="openExistingCard" style="opacity:.5;pointer-events:none;"><span class="icon">📂</span><div class="name">Open Existing</div><div class="desc">Select a saved workspace</div></div>
+        <div class="launch-choice-card" onclick="triggerRestore()"><span class="icon">♻️</span><div class="name">Restore</div><div class="desc">From backup file (.json)</div></div>
+      </div>
+      <input type="file" id="restoreInput" accept=".json" style="display:none" onchange="restoreCompanyFromFile(event)">
+    </div>
+
+    <div id="launchCreate" style="display:none;">
+      <div class="launch-title">Create Your Company / Firm</div>
+      <div class="launch-subtitle">Details appear on all documents and reports.</div>
+      <div class="launch-section-title">Company Details</div>
+      <div class="form-group"><label>Company Name *</label><input type="text" id="lc-name" placeholder="e.g. SRK Legal Chamber"></div>
+      <div class="form-grid-3">
+        <div class="form-group"><label>Firm Type</label><select id="lc-type"><option>Advocate Chamber</option><option>Law Firm</option><option>Legal Consultancy</option><option>Solo Practice</option><option>Partnership Firm</option></select></div>
+        <div class="form-group"><label>Bar Council Reg No</label><input type="text" id="lc-barcouncil"></div>
+        <div class="form-group"><label>GST / PAN</label><input type="text" id="lc-gst"></div>
+      </div>
+      <div class="launch-section-title">Address</div>
+      <div class="form-group"><label>Office Address</label><input type="text" id="lc-address"></div>
+      <div class="form-grid-3">
+        <div class="form-group"><label>City / District</label><input type="text" id="lc-city"></div>
+        <div class="form-group"><label>State</label><input type="text" id="lc-state" value="West Bengal"></div>
+        <div class="form-group"><label>PIN</label><input type="text" id="lc-pin"></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group"><label>Office Phone</label><input type="text" id="lc-phone"></div>
+        <div class="form-group"><label>Office Email</label><input type="email" id="lc-email"></div>
+      </div>
+      <div class="launch-section-title">Main User (Admin)</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Your Full Name *</label><input type="text" id="lc-admin-name"></div>
+        <div class="form-group"><label>Your Email *</label><input type="email" id="lc-admin-email"></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group"><label>Your Phone</label><input type="text" id="lc-admin-phone"></div>
+        <div class="form-group"><label>Login Password *</label><input type="password" id="lc-admin-password" placeholder="Min 4 characters"></div>
+      </div>
+      <div class="launch-actions">
+        <button class="btn btn-outline" onclick="showLaunchWelcome()">← Back</button>
+        <button class="btn btn-primary" onclick="createCompany()">Create Workspace →</button>
+      </div>
+    </div>
+
+    <div id="launchSelect" style="display:none;">
+      <div class="launch-title">Select Your Company</div>
+      <div class="launch-subtitle">Choose a workspace to continue.</div>
+      <div id="companyList"></div>
+      <div class="launch-actions">
+        <button class="btn btn-outline" onclick="showLaunchWelcome()">← Back</button>
+        <button class="btn btn-primary" onclick="showLaunchCreate()">+ Create New</button>
+      </div>
+    </div>
+
+    <div id="launchLogin" style="display:none;">
+      <div class="launch-title" id="loginCompanyName">Login</div>
+      <div class="launch-subtitle">Enter your credentials.</div>
+      <div class="form-group"><label>Email</label><input type="text" id="login-email"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="login-password" onkeypress="if(event.key==='Enter') loginUser()"></div>
+      <div class="launch-actions">
+        <button class="btn btn-outline" onclick="showLaunchSelect()">← Back</button>
+        <button class="btn btn-primary" onclick="loginUser()">Log In →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="appContainer" style="display:none; width:100%; height:100%;">
+
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sh-title"><span>⚖️</span> <span>SRK Case Manager</span></div>
+    <div class="sh-company" id="sidebarCompanyName">—</div>
+  </div>
+  <div class="sidebar-menu">
+    <div class="menu-item active" onclick="showPage('dashboard',this)"><span>🏠</span> <span>Dashboard</span></div>
+    <div class="menu-section">Cases</div>
+    <div class="menu-item" onclick="showCaseDashboard('mutation', this)"><span>📝</span> <span>Mutation Case</span></div>
+    <div class="menu-item" onclick="showCaseDashboard('misc', this)"><span>📁</span> <span>Misc Case</span></div>
+    <div class="menu-item" onclick="showCaseDashboard('lrappeal', this)"><span>📤</span> <span>LR Appeal</span></div>
+    <div class="menu-item" onclick="showCaseDashboard('lrtt', this)"><span>🏛️</span> <span>WBLRTT</span></div>
+    <div class="menu-item" onclick="showCaseDashboard('conversion', this)"><span>🔄</span> <span>Conversion</span></div>
+    <div class="menu-section">More</div>
+    <div class="menu-item" onclick="showPage('causelist',this)"><span>📅</span> <span>Daily Cause List</span></div>
+    <div class="menu-item" onclick="showPage('sharecalculator',this)"><span>🧮</span> <span>Share Calculator</span></div>
+    <div class="menu-item" onclick="showPage('aistudio',this)"><span>🧠</span> <span>AI Studio</span></div>
+    <div class="submenu-parent" onclick="toggleSubmenu('sub-parties', this)"><span>👥</span> <span>Parties & Team</span><span class="arrow">▶</span></div>
+    <div class="submenu-items" id="sub-parties">
+      <div class="menu-item" onclick="showPage('parties',this)"><span>👥</span> <span>Party Registry</span></div>
+      <div class="menu-item" onclick="showPage('users',this)"><span>🔐</span> <span>Team & Roles</span></div>
+    </div>
+    <div class="submenu-parent" onclick="toggleSubmenu('sub-laws', this)"><span>📚</span> <span>Laws</span><span class="arrow">▶</span></div>
+    <div class="submenu-items" id="sub-laws">
+      <div class="menu-item" onclick="showPage('wblract',this)"><span>📖</span> <span>WBLR Act 1955</span></div>
+      <div class="menu-item" onclick="showPage('wblrmanual',this)"><span>📘</span> <span>WBLR Manual</span></div>
+    </div>
+    <div class="submenu-parent" onclick="toggleSubmenu('sub-comm', this)"><span>💬</span> <span>Communication</span><span class="arrow">▶</span></div>
+    <div class="submenu-items" id="sub-comm">
+      <div class="menu-item" onclick="showPage('messages',this)"><span>💬</span> <span>Messages</span></div>
+      <div class="menu-item" onclick="showPage('vault',this)"><span>🗄️</span> <span>Document Vault</span></div>
+    </div>
+    <div class="submenu-parent" onclick="toggleSubmenu('sub-settings', this)"><span>⚙️</span> <span>Settings</span><span class="arrow">▶</span></div>
+    <div class="submenu-items" id="sub-settings">
+      <div class="menu-item" onclick="showPage('timeline',this)"><span>📔</span> <span>Case Diary</span></div>
+      <div class="menu-item" onclick="openModal()"><span>⚙️</span> <span>Preferences</span></div>
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="db-status"><div class="db-dot"></div><span>Local Storage Active</span></div>
+    <div class="db-path" id="dbPathLabel">SRK_Data.db</div>
+    <button class="db-btn" onclick="switchCompany()">🏢 Switch Company</button>
+    <button class="db-btn outline" onclick="logoutUser()">🚪 Logout</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="top-header">
+    <div style="display:flex;align-items:center;flex:1;min-width:0;">
+      <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+      <div class="search-bar"><span>🔍</span><input type="text" placeholder="Search case, party, Dag..."></div>
+    </div>
+    <div class="header-actions">
+      <div class="company-switcher" onclick="switchCompany()" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--primary-light); border: 1px solid var(--primary); border-radius: 20px; cursor: pointer; font-size: .78rem; font-weight: 700; color: var(--primary);">
+        <span>🏢</span><span id="headerCompanyName" style="max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">—</span><span>⇄</span>
+      </div>
+      <button class="lang-toggle" onclick="showToast('Language: English (demo)', false, 'info')">EN / বাং</button>
+      <div class="user-profile"><div class="user-avatar" id="headerUserAvatar">–</div><span id="headerUserName">—</span><span class="role-badge role-admin" id="headerUserRole">—</span></div>
+    </div>
+  </div>
+
+  <!-- MAIN DASHBOARD -->
+  <div id="page-dashboard" class="content active">
+    <div class="dash-hero">
+      <h1 id="dashWelcome">Welcome back</h1>
+      <p>Your chamber at a glance — click any case type to see its dashboard and status report.</p>
+      <div class="dash-hero-meta">
+        <span id="dashCompanyPill">🏢 —</span><span>📅 Today</span>
+        <span id="dashCasesPill">📁 0 Cases</span><span id="dashHearingsPill">🏛️ 0 Hearings</span>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="label">Total Cases</div><div class="value" id="statCases">0</div><div class="sub">All types</div></div>
+      <div class="stat-card" style="border-left-color:var(--gold);"><div class="label">Today's Hearings</div><div class="value" id="statHearings">0</div><div class="sub">From cause list</div></div>
+      <div class="stat-card" style="border-left-color:var(--green);"><div class="label">Pending Cases</div><div class="value" id="statPending">0</div><div class="sub">Not disposed</div></div>
+      <div class="stat-card" style="border-left-color:var(--purple);"><div class="label">Vault Files</div><div class="value" id="statVault">0</div><div class="sub">Documents</div></div>
+    </div>
+    <div class="section-title">Case Types / মামলার ধরন</div>
+    <div class="iconic-menu-grid">
+      <div class="iconic-tile mut" onclick="showCaseDashboard('mutation', null)"><div class="tile-icon-wrap">📝</div><div class="tile-name">Mutation Case</div><div class="tile-sub">মিউটেশন কেস</div><div class="tile-count" id="tileCount-mutation">0 cases</div></div>
+      <div class="iconic-tile misc" onclick="showCaseDashboard('misc', null)"><div class="tile-icon-wrap">📁</div><div class="tile-name">Misc Case</div><div class="tile-sub">মিস কেস</div><div class="tile-count" id="tileCount-misc">0 cases</div></div>
+      <div class="iconic-tile lrapp" onclick="showCaseDashboard('lrappeal', null)"><div class="tile-icon-wrap">📤</div><div class="tile-name">LR Appeal</div><div class="tile-sub">এল.আর. আপিল</div><div class="tile-count" id="tileCount-lrappeal">0 cases</div></div>
+      <div class="iconic-tile lrtt" onclick="showCaseDashboard('lrtt', null)"><div class="tile-icon-wrap">🏛️</div><div class="tile-name">WBLRTT</div><div class="tile-sub">এল.আর.টি.টি</div><div class="tile-count" id="tileCount-lrtt">0 cases</div></div>
+      <div class="iconic-tile conv" onclick="showCaseDashboard('conversion', null)"><div class="tile-icon-wrap">🔄</div><div class="tile-name">Conversion</div><div class="tile-sub">কনভার্সন</div><div class="tile-count" id="tileCount-conversion">0 cases</div></div>
+      <div class="iconic-tile cause" onclick="showPage('causelist', null)"><div class="tile-icon-wrap">📅</div><div class="tile-name">Cause List</div><div class="tile-sub">দৈনিক কার্যতালিকা</div></div>
+      <div class="iconic-tile calc" onclick="showPage('sharecalculator', null)"><div class="tile-icon-wrap">🧮</div><div class="tile-name">Share Calc</div><div class="tile-sub">হিস্যা ক্যালকুলেটর</div></div>
+      <div class="iconic-tile ai" onclick="showPage('aistudio', null)"><div class="tile-icon-wrap">🧠</div><div class="tile-name">AI Studio</div><div class="tile-sub">এআই স্টুডিও</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span>📅 Today's Cause List</span><button class="btn btn-outline btn-sm" onclick="showPage('causelist', null)">View All →</button></div>
+      <div id="dashboardCauseList"></div>
+    </div>
+  </div>
+
+  <!-- CASE DASHBOARDS (5) -->
+  <div id="page-case-mutation" class="content"></div>
+  <div id="page-case-misc" class="content"></div>
+  <div id="page-case-lrappeal" class="content"></div>
+  <div id="page-case-lrtt" class="content"></div>
+  <div id="page-case-conversion" class="content"></div>
+
+  <!-- ENTRY FORMS -->
+  <div id="page-entry-mutation" class="content">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+      <div class="section-title" style="margin:0;">New Mutation Case</div>
+      <button class="btn btn-outline btn-sm" onclick="showCaseDashboard('mutation', null)">← Back to Dashboard</button>
+    </div>
+    <div class="card">
+      <div class="form-section-title">Case Details</div>
+      <div class="form-grid-4">
+        <div class="form-group"><label>Case No *</label><input type="text" id="em-caseNo" placeholder="MUT/YYYY/____"></div>
+        <div class="form-group"><label>Mutation Application No</label><input type="text" id="em-appNo"></div>
+        <div class="form-group"><label>GRN No</label><input type="text" id="em-grn"></div>
+        <div class="form-group"><label>Filing Date</label><input type="date" id="em-filingDate"></div>
+      </div>
+      <div class="form-grid-3">
+        <div class="form-group"><label>Case Type</label><select id="em-subType"><option>Purchase Mutation</option><option>Inheritance Mutation</option><option>Gift Deed Mutation</option><option>Court Decree Mutation</option></select></div>
+        <div class="form-group"><label>Forum</label><select id="em-forum"><option>BL&LRO</option><option>SDL&LRO</option><option>DL&LRO</option></select></div>
+        <div class="form-group"><label>Status</label><select id="em-status"><option>Filed</option><option>Notice Issued</option><option>Hearing</option><option>Order Reserved</option><option>Allowed</option><option>Rejected</option></select></div>
+      </div>
+      <div class="form-grid-3">
+        <div class="form-group"><label>Petitioner/Applicant Name</label><input type="text" id="em-party"></div>
+        <div class="form-group"><label>Opposite Party</label><input type="text" id="em-opp"></div>
+        <div class="form-group"><label>Next Hearing Date</label><input type="date" id="em-nextDate"></div>
+      </div>
+      <div class="form-section-title" style="justify-content:space-between;"><span>Land Schedule(s)</span><button class="btn btn-primary btn-sm" onclick="addLandSchedule('mut')">+ Add Schedule</button></div>
+      <div id="mut-land-schedules"></div>
+      <div class="form-section-title" style="justify-content:space-between;"><span>Applicant(s)</span><button class="btn btn-primary btn-sm" onclick="addApplicant('mut')">+ Add Applicant</button></div>
+      <div id="mut-applicants-list"></div>
+      <div class="form-section-title" style="justify-content:space-between;"><span>Respondent(s)</span><button class="btn btn-primary btn-sm" onclick="addRespondent('mut')">+ Add Respondent</button></div>
+      <div id="mut-respondents-list"></div>
+      <div class="form-section-title" style="justify-content:space-between;"><span>Address(es)</span><button class="btn btn-primary btn-sm" onclick="addAddress('mut')">+ Add Address</button></div>
+      <div id="mut-addresses-list"></div>
+      <div class="form-section-title">📜 Chain Deed Builder</div>
+      <div class="chain-deed-panel">
+        <div id="mut-chain-container"></div>
+        <button class="btn btn-outline btn-sm" onclick="addChainLink('mut')">+ Add Deed Link</button>
+        <div class="chain-deed-actions">
+          <button class="btn btn-purple" onclick="generateChainDeed('mut')">🧠 Generate Chain Deed</button>
+          <button class="btn btn-success" onclick="downloadChainDeedWord('mut')">📝 Download Word</button>
+        </div>
+        <div id="mut-chain-output"></div>
+      </div>
+      <div class="form-section-title">📎 Quick Documents</div>
+      <div class="quick-docs">
+        <div class="quick-doc-btn" onclick="quickAddDoc('mut','Chain Deed')">📜 Chain Deed</div>
+        <div class="quick-doc-btn" onclick="quickAddDoc('mut','Waris Certificate')">👥 Waris Cert</div>
+        <div class="quick-doc-btn" onclick="quickAddDoc('mut','Power of Attorney')">⚖️ POA</div>
+        <div class="quick-doc-btn" onclick="quickAddDoc('mut','Registered Deed')">📄 Deed</div>
+        <div class="quick-doc-btn" onclick="quickAddDoc('mut','Vakalatnama')">📝 Vakalatnama</div>
+      </div>
+      <div class="attach-zone" onclick="triggerFileInput('mut')"><span class="icon">📤</span><div class="title">Click to attach files</div><input type="file" id="fileInput-mut" multiple style="display:none" onchange="handleFiles(event,'mut')"></div>
+      <div class="attach-list" id="attachList-mut"></div>
+      <div class="btn-group" style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
+        <button class="btn btn-primary" onclick="saveCaseForm('mutation')">💾 Save Case</button>
+        <button class="btn btn-wa" onclick="saveCaseForm('mutation', true)">💬 Save & Send Alert</button>
+        <button class="btn btn-danger" onclick="showCaseDashboard('mutation', null)">← Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="page-entry-misc" class="content">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+      <div class="section-title" style="margin:0;">New Misc Case</div>
+      <button class="btn btn-outline btn-sm" onclick="showCaseDashboard('misc', null)">← Back to Dashboard</button>
+    </div>
+    <div class="card">
+      <div class="form-section-title">Case Details</div>
+      <div class="form-grid-4">
+        <div class="form-group"><label>Case No *</label><input type="text" id="esc-caseNo" placeholder="Misc/__ of YYYY"></div>
+        <div class="form-group"><label>Docket No</label><input type="text" id="esc-docket"></div>
+        <div class="form-group"><label>Filing Date</label><input type="date" id="esc-filingDate"></div>
+        <div class="form-group"><label>Case Type</label><select id="esc-subType"><option>10000 Share Problem</option><option>Record Correction</option><option>Name Correction</option><option>RS to LR Conveyance</option><option>Boundary Dispute</option><option>Erroneous Record</option></select></div>
+      </div>
+      <div class="form-grid-3">
+        <div class="form-group"><label>Forum</label><select id="esc-forum"><option>BL&LRO</option><option>SDL&LRO</option><option>DL&LRO</option></select></div>
+        <div class="form-group"><label>Status</label><select id="esc-status"><option>Filed</option><option>Notice Issued</option><option>Hearing</option><option>Order Reserved</option><option>Disposed</option></select></div>
+        <div class="form-group"><label>Petitioner Name</label><input type="text" id="esc-party"></div>
+      </div>
+      <div class="form-grid-3">
+        <div class="form-group"><label>Opposite Party</label><input type="text" id="esc-opp"></div>
+        <div class="form-group"><label>Next Hearing Date</label><input type="date" id="esc-nextDate"></div>
+        <div class="form-group"><label>Priority</label><select id="esc-priority"><option>Normal</option><option>High</option><option>Urgent</option></select></div>
+      </div>
+      <div class="form-section-title" style="justify-content:space-between;"><span>Land Schedule(s)</span><button class="btn btn-primary btn-sm" onclick="addLandSchedule('misc')">+ Add Schedule</button></div>
+      <div id="misc-land-schedules"></div>
+      <div class="form-section-title" style="justify-content:space-between;"><span>Petitioner(s)</span><button class="btn btn-primary btn-sm" onclick="addApplicant('misc')">+ Add</button></div>
+      <div id="misc-applicants-list"></div>
+      <div class="form-section-title" style="justify-content:space-between;"><span>Opposite Party</span><button class="btn btn-primary btn-sm" onclick="addRespondent('misc')">+ Add</button></div>
+      <div id="misc-respondents-list"></div>
+      <div class="form-section-title" style="justify-content:space-between;"><span>Address(es)</span><button class="btn btn-primary btn-sm" onclick="addAddress('misc')">+ Add</button></div>
+      <div id="misc-addresses-list"></div>
+      <div class="form-section-title">📜 Chain Deed Builder</div>
+      <div class="chain-deed-panel">
+        <div id="misc-chain-container"></div>
+        <button class="btn btn-outline btn-sm" onclick="addChainLink('misc')">+ Add Deed Link</button>
+        <div class="chain-deed-actions">
+          <button class="btn btn-purple" onclick="generateChainDeed('misc')">🧠 Generate</button>
+          <button class="btn btn-success" onclick="downloadChainDeedWord('misc')">📝 Download</button>
+        </div>
+        <div id="misc-chain-output"></div>
+      </div>
+      <div class="attach-zone" onclick="triggerFileInput('misc')"><span class="icon">📤</span><div class="title">Click to attach files</div><input type="file" id="fileInput-misc" multiple style="display:none" onchange="handleFiles(event,'misc')"></div>
+      <div class="attach-list" id="attachList-misc"></div>
+      <div class="btn-group" style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
+        <button class="btn btn-primary" onclick="saveCaseForm('misc')">💾 Save Case</button>
+        <button class="btn btn-wa" onclick="saveCaseForm('misc', true)">💬 Save & Send Alert</button>
+        <button class="btn btn-danger" onclick="showCaseDashboard('misc', null)">← Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="page-entry-lrappeal" class="content">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+      <div class="section-title" style="margin:0;">New LR Appeal</div>
+      <button class="btn btn-outline btn-sm" onclick="showCaseDashboard('lrappeal', null)">← Back to Dashboard</button>
+    </div>
+    <div class="card">
+      <div class="form-section-title">Appeal Details</div>
+      <div class="form-grid-4">
+        <div class="form-group"><label>Appeal No *</label><input type="text" id="ela-caseNo"></div>
+        <div class="form-group"><label>Appeal Type</label><select id="ela-subType"><option>Section 54 Appeal</option><option>Section 51A(5) Appeal</option><option>Delay Condonation</option></select></div>
+        <div class="form-group"><label>Filing Date</label><input type="date" id="ela-filingDate"></div>
+        <div class="form-group"><label>Status</label><select id="ela-status"><option>Filed</option><option>Admitted</option><option>Stay Granted</option><option>Hearing</option><option>Allowed</option><option>Dismissed</option></select></div>
+      </div>
+      <div class="form-grid-3">
+        <div class="form-group"><label>Impugned Order No</label><input type="text" id="ela-orderNo"></div>
+        <div class="form-group"><label>Order Date</label><input type="date" id="ela-orderDate" onchange="calcLimitationEntry()"></div>
+        <div class="form-group"><label>Next Hearing Date</label><input type="date" id="ela-nextDate"></div>
+      </div>
+      <div id="ela-limitation-result"></div>
+      <div class="form-grid-3">
+        <div class="form-group"><label>Appellant Name</label><input type="text" id="ela-party"></div>
+        <div class="form-group"><label>Respondent Name</label><input type="text" id="ela-opp"></div>
+        <div class="form-group"><label>Forum</label><select id="ela-forum"><option>DL&LRO</option><option>WBLRTT</option></select></div>
+      </div>
+      <div class="form-section-title" style="justify-content:space-between;"><span>Land Schedule(s)</span><button class="btn btn-primary btn-sm" onclick="addLandSchedule('lrappeal')">+ Add Schedule</button></div>
+      <div id="lrappeal-land-schedules"></div>
+      <div class="form-section-title" style="justify-content:space-between;"><span>Appellant(s)</span><button class="btn btn-primary btn-sm" onclick="addApplicant('lrappeal')">+ Add</button></div>
+      <div id="lrappeal-applicants-list"></div>
+      <div class="form-section-title" style="justify-content:space-between;"><span>Respondent(s)</span><button class="btn btn-primary btn-sm" onclick="addRespondent('lrappeal')">+ Add</button></div>
+      <div id="lrappeal-respondents-list"></div>
+      <div class="form-section-title">Grounds of Appeal</div>
+      <div class="form-group"><textarea id="ela-grounds" rows="3"></textarea></div>
+      <div class="attach-zone" onclick="triggerFileInput('lrappeal')"><span class="icon">📤</span><div class="title">Click to attach files</div><input type="file" id="fileInput-lrappeal" multiple style="display:none" onchange="handleFiles(event,'lrappeal')"></div>
+      <div class="attach-list" id="attachList-lrappeal"></div>
+      <div class="btn-group" style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
+        <button class="btn btn-primary" onclick="saveCaseForm('lrappeal')">💾 Save Case</button>
+        <button class="btn btn-wa" onclick="saveCaseForm('lrappeal', true)">💬 Save & Send Alert</button>
+        <button class="btn btn-danger" onclick="showCaseDashboard('lrappeal', null)">← Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="page-entry-lrtt" class="content">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+      <div class="section-title" style="margin:0;">New WBLRTT Case</div>
+      <button class="btn btn-outline btn-sm" onclick="showCaseDashboard('lrtt', null)">← Back to Dashboard</button>
+    </div>
+    <div class="card">
+      <div class="form-section-title">Tribunal Details</div>
+      <div class="form-grid-4">
+        <div class="form-group"><label>O.A. No *</label><input type="text" id="elt-caseNo"></div>
+        <div class="form-group"><label>Case Type</label><select id="elt-subType"><option>10000 Share Problem</option><option>Record Correction</option><option>Name Correction</option><option>RS to LR Conveyance</option><option>Appeal against Order</option></select></div>
+        <div class="form-group"><label>Filing Date</label><input type="date" id="elt-filingDate"></div>
+        <div class="form-group"><label>Status</label><select id="elt-status"><option>OA Filed</option><option>Notice Issued</option><option>Hearing</option><option>Order Reserved</option><option>Allowed</option><option>Dismissed</option></select></div>
+      </div>
+      <div class="form-grid-3">
+        <div class="form-group"><label>Bench</label><select id="elt-forum"><option>Division Bench - I</option><option>Division Bench - II</option></select></div>
+        <div class="form-group"><label>Applicant Name</label><input type="text" id="elt-party"></div>
+        <div class="form-group"><label>Next Hearing Date</label><input type="date" id="elt-nextDate"></div>
+      </div>
+      <div class="form-section-title" style="justify-content:space-between;"><span>Land Schedule(s)</span><button class="btn btn-primary btn-sm" onclick="addLandSchedule('lrtt')">+ Add Schedule</button></div>
+      <div id="lrtt-land-schedules"></div>
+      <div class="form-section-title" style="justify-content:space-between;"><span>Applicant(s)</span><button class="btn btn-primary btn-sm" onclick="addApplicant('lrtt')">+ Add</button></div>
+      <div id="lrtt-applicants-list"></div>
+      <div class="form-section-title" style="justify-content:space-between;"><span>Respondent(s)</span><button class="btn btn-primary btn-sm" onclick="addRespondent('lrtt')">+ Add</button></div>
+      <div id="lrtt-respondents-list"></div>
+      <div class="attach-zone" onclick="triggerFileInput('lrtt')"><span class="icon">📤</span><div class="title">Click to attach files</div><input type="file" id="fileInput-lrtt" multiple style="display:none" onchange="handleFiles(event,'lrtt')"></div>
+      <div class="attach-list" id="attachList-lrtt"></div>
+      <div class="btn-group" style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
+        <button class="btn btn-primary" onclick="saveCaseForm('lrtt')">💾 Save Case</button>
+        <button class="btn btn-wa" onclick="saveCaseForm('lrtt', true)">💬 Save & Send Alert</button>
+        <button class="btn btn-danger" onclick="showCaseDashboard('lrtt', null)">← Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="page-entry-conversion" class="content">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+      <div class="section-title" style="margin:0;">New Conversion Case</div>
+      <button class="btn btn-outline btn-sm" onclick="showCaseDashboard('conversion', null)">← Back to Dashboard</button>
+    </div>
+    <div class="card">
+      <div class="form-section-title">Application Details</div>
+      <div class="form-grid-4">
+        <div class="form-group"><label>App No *</label><input type="text" id="ecv-caseNo"></div>
+        <div class="form-group"><label>Case Type</label><select id="ecv-subType"><option>Sali to Bastu</option><option>Danga to Bastu</option><option>Pond to Bastu</option><option>Agricultural to Commercial</option><option>Other</option></select></div>
+        <div class="form-group"><label>App Date</label><input type="date" id="ecv-filingDate"></div>
+        <div class="form-group"><label>Status</label><select id="ecv-status"><option>Applied</option><option>Site Verified</option><option>Report Submitted</option><option>Order Passed</option><option>Rejected</option></select></div>
+      </div>
+      <div class="form-grid-3">
+        <div class="form-group"><label>Target Officer</label><select id="ecv-forum"><option>DL&LRO</option><option>SDL&LRO</option></select></div>
+        <div class="form-group"><label>Applicant Name</label><input type="text" id="ecv-party"></div>
+        <div class="form-group"><label>Next Date</label><input type="date" id="ecv-nextDate"></div>
+      </div>
+      <div class="form-section-title" style="justify-content:space-between;"><span>Land Schedule(s)</span><button class="btn btn-primary btn-sm" onclick="addLandSchedule('conv')">+ Add Schedule</button></div>
+      <div id="conv-land-schedules"></div>
+      <div class="form-section-title" style="justify-content:space-between;"><span>Applicant(s)</span><button class="btn btn-primary btn-sm" onclick="addApplicant('conv')">+ Add</button></div>
+      <div id="conv-applicants-list"></div>
+      <div class="attach-zone" onclick="triggerFileInput('conv')"><span class="icon">📤</span><div class="title">Click to attach files</div><input type="file" id="fileInput-conv" multiple style="display:none" onchange="handleFiles(event,'conv')"></div>
+      <div class="attach-list" id="attachList-conv"></div>
+      <div class="btn-group" style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
+        <button class="btn btn-primary" onclick="saveCaseForm('conversion')">💾 Save Case</button>
+        <button class="btn btn-wa" onclick="saveCaseForm('conversion', true)">💬 Save & Send Alert</button>
+        <button class="btn btn-danger" onclick="showCaseDashboard('conversion', null)">← Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CAUSE LIST -->
+  <div id="page-causelist" class="content">
+    <div class="section-title">📅 Daily Cause List</div>
+    <div class="card">
+      <div class="card-header"><span>Today's Hearings</span>
+        <div class="btn-group" style="margin:0;"><button class="btn btn-primary btn-sm" onclick="addCauseListRow()">+ Add</button><button class="btn btn-secondary btn-sm" onclick="printSection('causeListPrint')">🖨️ Print</button></div>
+      </div>
+      <div id="causeListPrint">
+        <div class="empty-state" id="causeListEmpty"><span class="icon">📅</span><div class="title">No hearings scheduled</div></div>
+        <table id="causeListTable" style="display:none;"><thead><tr><th>Time</th><th>Case No</th><th>Forum</th><th>Party</th><th>Status</th><th>Actions</th></tr></thead><tbody id="causeListBody"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHARE CALCULATOR -->
+  <div id="page-sharecalculator" class="content">
+    <div class="section-title">🧮 Share Calculator</div>
+    <div class="card">
+      <div class="card-header">📊 Share Calculator (out of 10000)</div>
+      <div class="form-grid-3">
+        <div class="form-group"><label>Total Area</label><input type="number" id="shareTotalArea" step="any"></div>
+        <div class="form-group"><label>Unit</label><select id="shareTotalUnit"><option value="acre">Acre</option><option value="bigha">Bigha</option><option value="katha">Katha</option><option value="satak">Satak</option><option value="sqft">Sq.Ft.</option><option value="hectare">Hectare</option></select></div>
+        <div class="form-group"><label>Display</label><select id="shareDisplayUnit"><option value="auto">All units</option><option value="acre">Acre</option><option value="bigha">Bigha</option><option value="katha">Katha</option><option value="satak">Satak</option><option value="sqft">Sq.Ft.</option></select></div>
+      </div>
+      <div class="form-section-title" style="justify-content:space-between;"><span>Portions</span><button class="btn btn-primary btn-sm" onclick="addSharePortion()">+ Add Portion</button></div>
+      <div id="sharePortionsList"></div>
+      <div class="btn-group" style="margin-top:14px;"><button class="btn btn-purple" onclick="calculate10000Share()">🧮 Calculate</button><button class="btn btn-outline" onclick="clearShareCalculator()">🔄 Clear</button></div>
+      <div id="shareResult" style="margin-top:14px;"></div>
+    </div>
+    <div class="card" style="background:linear-gradient(135deg,#FFFBEB,#FEF3C7);border:2px solid #FDE68A;">
+      <div class="card-header" style="color:var(--gold-dark);">🕌 Muslim Farayez</div>
+      <div class="form-grid-3">
+        <div class="form-group"><label>Total Property</label><input type="number" id="farayezTotal" value="0"></div>
+        <div class="form-group"><label>Unit</label><select id="farayezUnit"><option>₹</option><option>Acre</option><option>Katha</option></select></div>
+        <div class="form-group"><label>Gender</label><select id="farayezGender"><option value="male">Male</option><option value="female">Female</option></select></div>
+      </div>
+      <div class="form-grid-3"><div class="form-group"><label>Husband</label><input type="number" id="farayezHusband" value="0" min="0" max="1"></div><div class="form-group"><label>Wives</label><input type="number" id="farayezWife" value="0" min="0"></div><div class="form-group"><label>Sons</label><input type="number" id="farayezSons" value="0" min="0"></div></div>
+      <div class="form-grid-3"><div class="form-group"><label>Daughters</label><input type="number" id="farayezDaughters" value="0" min="0"></div><div class="form-group"><label>Father alive?</label><select id="farayezFather"><option value="no">No</option><option value="yes">Yes</option></select></div><div class="form-group"><label>Mother alive?</label><select id="farayezMother"><option value="no">No</option><option value="yes">Yes</option></select></div></div>
+      <div class="btn-group"><button class="btn btn-primary" onclick="calculateFarayez()">🕌 Calculate</button><button class="btn btn-outline" onclick="clearFarayez()">🔄 Clear</button></div>
+      <div id="farayezResult" style="margin-top:14px;"></div>
+    </div>
+  </div>
+
+  <!-- AI STUDIO -->
+  <div id="page-aistudio" class="content">
+    <div class="section-title">🧠 AI Studio</div>
+    <div class="ai-tabs">
+      <div class="ai-tab active" onclick="switchAITab('generate', this)">📝 Generate</div>
+      <div class="ai-tab" onclick="switchAITab('folder', this)">📂 Folder Learning</div>
+      <div class="ai-tab" onclick="switchAITab('learned', this)">🎓 Learned</div>
+    </div>
+    <div id="ai-tab-generate">
+      <div class="ai-panel">
+        <h3>🧠 AI Document Learning Engine</h3>
+        <div class="subtitle">Upload documents for AI to learn your chamber's formats.</div>
+        <div class="ai-status"><div class="ai-pulse"></div><div class="ai-text">Tracking <strong id="aiDocCount">0</strong> documents · <strong id="aiLearnPct">0%</strong> learning</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">Generate New Document</div>
+        <div class="form-group"><label>Template</label><select id="aiStudioTemplate"><option value="rti">RTI Application</option><option value="mutation">Mutation Petition</option><option value="misc">Misc Case</option><option value="lrappeal">LR Appeal u/s 54</option><option value="delay">Delay Condonation</option><option value="chaindeed">Chain Deed</option></select></div>
+        <div class="form-grid"><div class="form-group"><label>Party</label><input type="text" id="aiParty"></div><div class="form-group"><label>Case Ref</label><input type="text" id="aiCase"></div></div>
+        <div class="form-group"><label>Subject</label><input type="text" id="aiSubject"></div>
+        <div class="form-group"><label>Points</label><textarea rows="3" id="aiPoints"></textarea></div>
+        <button class="btn btn-purple" style="width:100%;" onclick="generateFromStudio()">🧠 Generate</button>
+      </div>
+      <div class="card"><div class="card-header">📄 Output</div><div class="split-content draft-output" id="aiStudioOutput" style="min-height:150px;border:1px solid var(--border);border-radius:8px;"><em style="color:#94a3b8;">Fill details and click Generate...</em></div><div class="btn-group"><button class="btn btn-success" onclick="convertToWord('aiStudioOutput')">📝 Word</button><button class="btn btn-outline" onclick="copyOutput('aiStudioOutput')">📋 Copy</button></div></div>
+    </div>
+    <div id="ai-tab-folder" style="display:none;">
+      <div class="folder-upload-panel">
+        <h3>📁 Connect Chamber Folder</h3>
+        <div class="subtitle">Bulk upload documents — AI learns pattern, sections, language.</div>
+        <div class="attach-zone" onclick="document.getElementById('folderInput').click()" style="background:#fff;border-color:#86EFAC;"><span class="icon">📂</span><div class="title" style="color:#166534;">Click to Select Folder</div><input type="file" id="folderInput" webkitdirectory directory multiple style="display:none" onchange="handleFolderUpload(event)"></div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="startFolderScan()">📂 Start Scanning</button><button class="btn btn-outline" onclick="clearFolderScan()">🔄 Reset</button></div>
+      </div>
+      <div id="folderScanOutput"></div>
+    </div>
+    <div id="ai-tab-learned" style="display:none;">
+      <div class="card"><div class="card-header">🧠 Learned Patterns</div><div id="learnedPatternsContent"><p style="text-align:center;padding:20px;color:var(--muted);">Scan a folder to see patterns.</p></div></div>
+      <div class="card"><div class="card-header">✨ Generate Using Learned Format</div>
+        <div class="form-group"><label>Party Name</label><input type="text" id="learnedParty"></div>
+        <div class="form-group"><label>Subject</label><input type="text" id="learnedSubject"></div>
+        <div class="form-group"><label>Facts</label><textarea rows="3" id="learnedPoints"></textarea></div>
+        <button class="btn btn-purple" style="width:100%;" onclick="generateFromLearned()">🧠 Generate</button>
+      </div>
+      <div class="card" id="learnedOutputCard" style="display:none;"><div class="card-header">📄 Output</div><div class="split-content draft-output" id="learnedOutput" style="min-height:150px;border:1px solid var(--border);border-radius:8px;"></div><div class="btn-group"><button class="btn btn-success" onclick="convertToWord('learnedOutput')">📝 Word</button><button class="btn btn-outline" onclick="copyOutput('learnedOutput')">📋 Copy</button></div></div>
+    </div>
+  </div>
+
+  <!-- PARTIES -->
+  <div id="page-parties" class="content">
+    <div class="section-title">Party Registry</div>
+    <div class="card">
+      <div class="card-header"><span>All Parties</span><button class="btn btn-primary btn-sm" onclick="openAddPartyModal()">+ Add Party</button></div>
+      <div class="party-grid" id="partiesList"></div>
+    </div>
+  </div>
+
+  <!-- USERS -->
+  <div id="page-users" class="content">
+    <div class="section-title">🔐 Team & Roles</div>
+    <div class="card"><div class="card-header"><span>Members</span><button class="btn btn-primary btn-sm" onclick="openAddUserModal()">+ Add User</button></div><div id="usersList"></div></div>
+    <div class="card"><div class="card-header">🔍 Activity Log</div><div id="activityLog"></div></div>
+  </div>
+
+  <!-- WBLR ACT -->
+  <div id="page-wblract" class="content">
+    <div class="section-title">📖 WBLR Act, 1955</div>
+    <div class="act-tabs"><div class="act-tab active" onclick="showActChapter('all', this)">All</div><div class="act-tab" onclick="showActChapter('preliminary', this)">Ch. I</div><div class="act-tab" onclick="showActChapter('ror', this)">Ch. VIIA</div><div class="act-tab" onclick="showActChapter('appeal', this)">Appeals</div></div>
+    <div id="actContent"></div>
+  </div>
+
+  <!-- WBLR MANUAL -->
+  <div id="page-wblrmanual" class="content">
+    <div class="section-title">📘 WBLR Manual, 1991</div>
+    <div class="act-tabs"><div class="act-tab active" onclick="showManualChapter('all', this)">All</div><div class="act-tab" onclick="showManualChapter('mutation', this)">Mutation</div></div>
+    <div id="manualContent"></div>
+  </div>
+
+  <!-- CASE DIARY -->
+  <div id="page-timeline" class="content">
+    <div class="section-title">Case Diary</div>
+    <div class="card">
+      <div class="card-header"><span>Select Case:</span><select id="timelineCaseSelect" onchange="loadTimeline(this.value)" style="padding:7px 11px;border:2px solid var(--border);border-radius:8px;font-size:.83rem;"><option value="">-- No cases yet --</option></select><button class="btn btn-primary btn-sm" onclick="openAddEntry()">+ Add Entry</button></div>
+      <div id="timelineView"><div class="empty-state"><span class="icon">📔</span><div class="title">No entries</div></div></div>
+    </div>
+  </div>
+
+  <!-- MESSAGES -->
+  <div id="page-messages" class="content">
+    <div class="section-title">Send Messages</div>
+    <div class="card">
+      <div class="card-header">✍️ Compose</div>
+      <div class="form-group"><label>Party</label><select id="partySelect"><option value="">-- Add parties first --</option></select></div>
+      <div class="form-group"><label>Message</label><textarea id="msgBody" rows="5" oninput="updateCharCount()"></textarea><div style="font-size:.7rem;color:var(--muted);text-align:right;" id="charCounter">0 / 160</div></div>
+      <button class="btn btn-success" style="width:100%;" onclick="sendMessage()">📤 Send</button>
+    </div>
+  </div>
+
+  <!-- VAULT -->
+  <div id="page-vault" class="content">
+    <div class="section-title">🗄️ Document Vault</div>
+    <div class="vault-stats"><div class="vault-stat"><div class="num" id="vaultTotal">0</div><div class="lbl">Total</div></div><div class="vault-stat"><div class="num" id="vaultPdf">0</div><div class="lbl">PDFs</div></div><div class="vault-stat"><div class="num" id="vaultDoc">0</div><div class="lbl">Word</div></div></div>
+    <div class="vault-toolbar"><button class="btn btn-primary" onclick="triggerVaultUpload()">📤 Upload</button><input type="text" id="vaultSearch" placeholder="🔍 Search..." oninput="filterVault()"><input type="file" id="vaultFileInput" multiple style="display:none" onchange="handleVaultFiles(event)"></div>
+    <div class="vault-grid" id="vaultGrid"></div>
+  </div>
+</div>
+
+<button class="fab" onclick="toggleFab()">+</button>
+<div class="fab-menu" id="fabMenu">
+  <div class="fab-menu-item" onclick="showCaseDashboard('mutation', null); toggleFab();"><span>📝</span> Mutation</div>
+  <div class="fab-menu-item" onclick="showCaseDashboard('misc', null); toggleFab();"><span>📁</span> Misc</div>
+  <div class="fab-menu-item" onclick="showCaseDashboard('lrappeal', null); toggleFab();"><span>📤</span> LR Appeal</div>
+  <div class="fab-menu-item" onclick="showPage('sharecalculator', null); toggleFab();"><span>🧮</span> Share Calc</div>
+  <div class="fab-menu-item" onclick="showPage('aistudio', null); toggleFab();"><span>🧠</span> AI Studio</div>
+</div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="addUserModal"><div class="modal"><h2>+ Add Team Member</h2><div class="form-group"><label>Full Name *</label><input type="text" id="nu-name"></div><div class="form-group"><label>Email *</label><input type="email" id="nu-email"></div><div class="form-grid"><div class="form-group"><label>Phone</label><input type="text" id="nu-phone"></div><div class="form-group"><label>Role *</label><select id="nu-role"><option value="Admin">Admin</option><option value="Junior Advocate">Junior Advocate</option><option value="Clerk">Clerk</option><option value="Accountant">Accountant</option></select></div></div><div class="form-group"><label>Password *</label><input type="password" id="nu-password"></div><div class="btn-group"><button class="btn btn-primary" style="flex:1;" onclick="saveNewUser()">💾 Save</button><button class="btn btn-outline" onclick="document.getElementById('addUserModal').classList.remove('active')">Cancel</button></div></div></div>
+<div class="modal-overlay" id="addPartyModal"><div class="modal"><h2>+ Add Party</h2><div class="form-grid"><div class="form-group"><label>Full Name *</label><input type="text" id="np-name"></div><div class="form-group"><label>Type *</label><select id="np-type"><option>Client</option><option>Opposite Party</option><option>Vendor</option><option>Advocate</option></select></div></div><div class="form-grid"><div class="form-group"><label>Phone</label><input type="text" id="np-phone"></div><div class="form-group"><label>Email</label><input type="email" id="np-email"></div></div><div class="form-group"><label>Address</label><input type="text" id="np-address"></div><div class="btn-group"><button class="btn btn-primary" style="flex:1;" onclick="saveNewParty()">💾 Save</button><button class="btn btn-outline" onclick="document.getElementById('addPartyModal').classList.remove('active')">Cancel</button></div></div></div>
+<div class="modal-overlay" id="sendModal"><div class="modal"><h2>💾 Send Alert?</h2><p style="font-size:.85rem;color:var(--muted);margin-bottom:14px;">Case <strong id="sendCaseNo"></strong></p><div style="display:flex;flex-direction:column;gap:10px;"><label><input type="radio" name="sendCh" value="whatsapp" checked> 💬 WhatsApp</label><label><input type="radio" name="sendCh" value="sms"> 📱 SMS</label><label><input type="radio" name="sendCh" value="both"> 💬📱 Both</label><label><input type="radio" name="sendCh" value="skip"> ⏭️ Skip</label></div><div class="btn-group" style="margin-top:14px;"><button class="btn btn-success" style="flex:1;" onclick="confirmSend()">📤 Send</button><button class="btn btn-outline" onclick="document.getElementById('sendModal').classList.remove('active')">Cancel</button></div></div></div>
+<div class="modal-overlay" id="diaryModal"><div class="modal"><h2>📔 Add Diary Entry</h2><div class="form-group"><label>Date</label><input type="date" id="diaryDate"></div><div class="form-group"><label>Type</label><select id="diaryType"><option>Hearing</option><option>Order Passed</option><option>Filing</option><option>Notice Received</option></select></div><div class="form-group"><label>Title</label><input type="text" id="diaryTitle"></div><div class="form-group"><label>Details</label><textarea rows="3" id="diaryBody"></textarea></div><div class="form-group"><label>Next Date</label><input type="date" id="diaryNext"></div><div class="btn-group"><button class="btn btn-primary" style="flex:1;" onclick="saveDiaryEntry()">💾 Save</button><button class="btn btn-outline" onclick="document.getElementById('diaryModal').classList.remove('active')">Cancel</button></div></div></div>
+<div class="modal-overlay" id="dbModal"><div class="modal"><h2>⚙️ Settings</h2><div class="form-section-title">Theme</div><div class="form-group"><select id="themeSelect" onchange="changeTheme(this.value)"><option value="default">Default Light</option><option value="dark">Midnight Dark</option></select></div><div class="form-section-title">Company</div><div class="form-group"><label>Active Company</label><input type="text" id="settingsCompany" disabled></div><div class="form-section-title">Backup</div><div class="btn-group"><button class="btn btn-primary" style="flex:1;" onclick="exportCompanyData()">📤 Export Data</button><button class="btn btn-secondary" style="flex:1;" onclick="triggerRestore()">📥 Restore</button></div><div class="btn-group" style="margin-top:12px;"><button class="btn btn-outline" style="width:100%;" onclick="document.getElementById('dbModal').classList.remove('active')">Close</button></div></div></div>
+
+<div class="toast" id="toast">Saved!</div>
+
+<div id="root" style="display:none;"></div>
+<script type="module" src="/src/main.tsx"></script>
+
+<script>
+// ============================================================
+// CONSTANTS
+// ============================================================
+const STORAGE_KEY = 'srk_case_manager_v2';
+const CASE_TYPES = {
+  mutation: { label: 'Mutation Case', bengali: 'মিউটেশন কেস', statuses: ['Filed','Notice Issued','Hearing','Order Reserved','Allowed','Rejected'], subTypes: ['Purchase Mutation','Inheritance Mutation','Gift Deed Mutation','Court Decree Mutation'], icon: '📝' },
+  misc: { label: 'Misc Case', bengali: 'মিস কেস', statuses: ['Filed','Notice Issued','Hearing','Order Reserved','Disposed'], subTypes: ['10000 Share Problem','Record Correction','Name Correction','RS to LR Conveyance','Boundary Dispute','Erroneous Record'], icon: '📁' },
+  lrappeal: { label: 'LR Appeal', bengali: 'এল.আর. আপিল', statuses: ['Filed','Admitted','Stay Granted','Hearing','Allowed','Dismissed'], subTypes: ['Section 54 Appeal','Section 51A(5) Appeal','Delay Condonation'], icon: '📤' },
+  lrtt: { label: 'WBLRTT Case', bengali: 'এল.আর.টি.টি', statuses: ['OA Filed','Notice Issued','Hearing','Order Reserved','Allowed','Dismissed'], subTypes: ['10000 Share Problem','Record Correction','Name Correction','RS to LR Conveyance','Appeal against Order'], icon: '🏛️' },
+  conversion: { label: 'Conversion Case', bengali: 'কনভার্সন', statuses: ['Applied','Site Verified','Report Submitted','Order Passed','Rejected'], subTypes: ['Sali to Bastu','Danga to Bastu','Pond to Bastu','Agricultural to Commercial','Other'], icon: '🔄' }
+};
+
+let appData = { companies: [], activeCompanyId: null, activeUserId: null };
+let activeCompany = null;
+let activeUser = null;
+let appInitialized = false;
+let currentCaseFilter = { mutation: 'All', misc: 'All', lrappeal: 'All', lrtt: 'All', conversion: 'All' };
+
+// ============================================================
+// CLOSE CONFIRMATION
+// ============================================================
+window.addEventListener('beforeunload', function (e) {
+  if (appInitialized && appData.activeUserId) {
+    e.preventDefault();
+    e.returnValue = 'Are you sure you want to close SRK Case Manager?';
+    return 'Are you sure you want to close SRK Case Manager?';
+  }
+});
+
+// ============================================================
+// STORAGE
+// ============================================================
+function loadAppData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) { appData = JSON.parse(raw); if (!appData.companies) appData.companies = []; }
+  } catch (e) { console.warn(e); }
+}
+function saveAppData() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); } catch (e) {} }
+
+// ============================================================
+// LAUNCH
+// ============================================================
+function showLaunchWelcome() {
+  ['launchWelcome','launchCreate','launchSelect','launchLogin'].forEach((id, i) => { const el = document.getElementById(id); if (el) el.style.display = i === 0 ? 'block' : 'none'; });
+  setLaunchStep(1);
+  const card = document.getElementById('openExistingCard');
+  if (card) {
+    if (appData.companies.length > 0) { card.style.opacity = '1'; card.style.pointerEvents = 'auto'; }
+    else { card.style.opacity = '.5'; card.style.pointerEvents = 'none'; }
+  }
+}
+function showLaunchCreate() {
+  document.getElementById('launchWelcome').style.display = 'none';
+  document.getElementById('launchCreate').style.display = 'block';
+  document.getElementById('launchSelect').style.display = 'none';
+  document.getElementById('launchLogin').style.display = 'none';
+  setLaunchStep(2);
+}
+function showLaunchSelect() {
+  document.getElementById('launchWelcome').style.display = 'none';
+  document.getElementById('launchCreate').style.display = 'none';
+  document.getElementById('launchSelect').style.display = 'block';
+  document.getElementById('launchLogin').style.display = 'none';
+  setLaunchStep(2);
+  renderCompanyList();
+}
+function showLaunchLogin(companyId) {
+  appData.activeCompanyId = companyId;
+  const c = appData.companies.find(x => x.id === companyId);
+  if (!c) return;
+  ['launchWelcome','launchCreate','launchSelect'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+  document.getElementById('launchLogin').style.display = 'block';
+  document.getElementById('loginCompanyName').textContent = 'Login — ' + c.name;
+  document.getElementById('login-email').value = ''; document.getElementById('login-password').value = '';
+  setLaunchStep(3);
+}
+function setLaunchStep(n) { document.querySelectorAll('.launch-steps .step').forEach((s, i) => { s.classList.toggle('active', i < n); }); }
+function renderCompanyList() {
+  const list = document.getElementById('companyList');
+  if (!list) return;
+  if (appData.companies.length === 0) { list.innerHTML = '<div class="empty-state"><span class="icon">🏢</span><div class="title">No companies yet</div></div>'; return; }
+  list.innerHTML = appData.companies.map(c => `<div class="company-card"><div class="cc-info" onclick="showLaunchLogin('${c.id}')"><div class="cc-name">${escapeHtml(c.name)}</div><div class="cc-meta">${escapeHtml(c.type)} • ${(c.users||[]).length} user(s) • ${(c.cases||[]).length} cases</div></div><div class="cc-actions"><div class="cc-action" onclick="event.stopPropagation(); showLaunchLogin('${c.id}')">→</div><div class="cc-delete" onclick="event.stopPropagation(); deleteCompany('${c.id}')">🗑️</div></div></div>`).join('');
+}
+function deleteCompany(companyId) {
+  const c = appData.companies.find(x => x.id === companyId);
+  if (!c || !confirm(`Delete "${c.name}"? All data lost.`)) return;
+  appData.companies = appData.companies.filter(x => x.id !== companyId);
+  saveAppData(); showToast('🗑️ Company deleted'); renderCompanyList(); showLaunchWelcome();
+}
+function createCompany() {
+  const name = document.getElementById('lc-name').value.trim();
+  const adminName = document.getElementById('lc-admin-name').value.trim();
+  const adminEmail = document.getElementById('lc-admin-email').value.trim().toLowerCase();
+  const adminPassword = document.getElementById('lc-admin-password').value;
+  if (!name) { showToast('Company name required', true); return; }
+  if (!adminName) { showToast('Your name required', true); return; }
+  if (!adminEmail) { showToast('Email required', true); return; }
+  if (!adminPassword || adminPassword.length < 4) { showToast('Password must be 4+ chars', true); return; }
+  const newCompany = {
+    id: 'c_' + Date.now() + '_' + Math.random().toString(36).substr(2,6),
+    name, type: document.getElementById('lc-type').value,
+    barCouncil: document.getElementById('lc-barcouncil').value, gst: document.getElementById('lc-gst').value,
+    address: document.getElementById('lc-address').value, city: document.getElementById('lc-city').value,
+    state: document.getElementById('lc-state').value, pin: document.getElementById('lc-pin').value,
+    phone: document.getElementById('lc-phone').value, email: document.getElementById('lc-email').value,
+    createdAt: Date.now(),
+    users: [{ id: 'u_' + Date.now(), name: adminName, email: adminEmail, phone: document.getElementById('lc-admin-phone').value, role: 'Admin', isMain: true, password: adminPassword, createdAt: Date.now() }],
+    cases: [], parties: [], vaultFiles: [], causeList: [], diaryData: {}, messages: [], activityLog: []
+  };
+  appData.companies.push(newCompany);
+  appData.activeCompanyId = newCompany.id;
+  appData.activeUserId = newCompany.users[0].id;
+  saveAppData(); showToast('✅ Company created'); enterApp();
+}
+function loginUser() {
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const password = document.getElementById('login-password').value;
+  const c = appData.companies.find(x => x.id === appData.activeCompanyId);
+  if (!c) { showToast('Company not found', true); return; }
+  const user = c.users.find(u => u.email.toLowerCase() === email && u.password === password);
+  if (!user) { showToast('Invalid credentials', true); return; }
+  appData.activeUserId = user.id; saveAppData();
+  showToast(`✅ Welcome, ${user.name}`); enterApp();
+}
+function logoutUser() {
+  if (!confirm('Logout from current session?')) return;
+  appData.activeUserId = null; saveAppData();
+  document.getElementById('appContainer').style.display = 'none';
+  document.getElementById('launchScreen').style.display = 'flex';
+  showLaunchSelect();
+}
+function switchCompany() {
+  if (!confirm('Switch to another company? You will be logged out.')) return;
+  appData.activeUserId = null; saveAppData();
+  document.getElementById('appContainer').style.display = 'none';
+  document.getElementById('launchScreen').style.display = 'flex';
+  showLaunchSelect();
+}
+function exportCompanyData() {
+  if (!activeCompany) return;
+  const dataStr = JSON.stringify(activeCompany, null, 2);
+  const blob = new Blob([dataStr], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'SRK_Backup_' + activeCompany.name.replace(/\s+/g, '_') + '_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click(); URL.revokeObjectURL(a.href);
+  logActivity('Exported company data'); saveAppData();
+  showToast('📤 Data exported'); document.getElementById('dbModal').classList.remove('active');
+}
+function triggerRestore() { document.getElementById('restoreInput').click(); }
+function restoreCompanyFromFile(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    try {
+      const data = JSON.parse(evt.target.result);
+      if (!data.name || !data.users) { showToast('Invalid backup file', true); return; }
+      if (appData.companies.some(x => x.name === data.name)) { if (!confirm(`Company "${data.name}" exists. Restore as copy?`)) return; data.name += ' (Restored)'; }
+      data.id = 'c_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
+      if (data.users) data.users.forEach(u => { u.id = 'u_' + Date.now() + '_' + Math.random().toString(36).substr(2,5); });
+      appData.companies.push(data); saveAppData();
+      showToast('✅ Company restored'); e.target.value = ''; showLaunchSelect();
+    } catch (err) { showToast('Invalid file', true); }
+  };
+  reader.readAsText(file);
+}
+
+// ============================================================
+// ENTER APP
+// ============================================================
+function enterApp() {
+  activeCompany = appData.companies.find(x => x.id === appData.activeCompanyId);
+  if (!activeCompany) { showLaunchSelect(); return; }
+  activeUser = activeCompany.users.find(x => x.id === appData.activeUserId);
+  if (!activeUser) { showLaunchLogin(activeCompany.id); return; }
+  appInitialized = true;
+  document.getElementById('launchScreen').style.display = 'none';
+  document.getElementById('appContainer').style.display = 'flex';
+  document.getElementById('sidebarCompanyName').textContent = activeCompany.name;
+  document.getElementById('headerCompanyName').textContent = activeCompany.name;
+  document.getElementById('headerUserName').textContent = activeUser.name;
+  document.getElementById('headerUserAvatar').textContent = initialsOf(activeUser.name);
+  document.getElementById('headerUserRole').textContent = activeUser.role;
+  document.getElementById('headerUserRole').className = 'role-badge ' + roleClassFor(activeUser.role);
+  document.getElementById('dashWelcome').textContent = `Welcome back, ${activeUser.name}`;
+  document.getElementById('dashCompanyPill').textContent = '🏢 ' + activeCompany.name;
+  document.getElementById('dbPathLabel').textContent = 'ID: ' + activeCompany.id.substr(0,12);
+  refreshAllViews();
+  applyRoleRestrictions();
+  showPage('dashboard', document.querySelector('.menu-item'));
+}
+function initialsOf(name) { return name.split(' ').filter(Boolean).slice(-2).map(w => w[0]).join('').toUpperCase() || 'U'; }
+function roleClassFor(role) { return { 'Admin':'role-admin','Junior Advocate':'role-junior','Clerk':'role-clerk','Accountant':'role-accountant' }[role] || 'role-admin'; }
+function applyRoleRestrictions() {
+  const teamMenu = document.querySelector('.menu-item[onclick*="showPage(\'users\'"]');
+  if (teamMenu) teamMenu.style.display = activeUser.role === 'Admin' ? 'flex' : 'none';
+}
+
+// ============================================================
+// REFRESH ALL
+// ============================================================
+function refreshAllViews() {
+  Object.keys(caseAttachments).forEach(p => caseAttachments[p] = []);
+  Object.keys(chainLinks).forEach(p => chainLinks[p] = []);
+  Object.keys(landSchedules).forEach(p => landSchedules[p] = []);
+  Object.keys(applicants).forEach(p => applicants[p] = []);
+  Object.keys(respondents).forEach(p => respondents[p] = []);
+  Object.keys(addresses).forEach(p => addresses[p] = []);
+  ['mut','misc','lrtt','lrappeal','conv'].forEach(p => {
+    renderCaseAttachments(p); renderLandSchedules(p); renderApplicants(p); renderRespondents(p); renderAddresses(p);
+  });
+  ['mut','misc','lrappeal'].forEach(p => renderChainLinks(p));
+  renderParties(); renderUsers(); renderVault(); renderCauseList(); renderDashboardCauseList(); renderTimelineSelect(); renderPartySelect();
+  updateStats(); updateMainTileCounts();
+}
+
+// ============================================================
+// NAV
+// ============================================================
+function showPage(id, el) {
+  document.querySelectorAll('.content').forEach(e => e.classList.remove('active'));
+  document.querySelectorAll('.menu-item').forEach(e => e.classList.remove('active'));
+  const target = document.getElementById('page-' + id);
+  if (target) target.classList.add('active');
+  if (el) el.classList.add('active');
+  else { const m = document.querySelector(`.menu-item[onclick*="showPage('${id}'"]`); if (m) m.classList.add('active'); }
+  if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
+  if (id === 'wblract') renderAct();
+  if (id === 'wblrmanual') renderManual();
+  if (id === 'parties') renderParties();
+  if (id === 'users') renderUsers();
+  if (id === 'vault') renderVault();
+  highlightActiveParent();
+}
+function showCaseDashboard(type, el) {
+  document.querySelectorAll('.content').forEach(e => e.classList.remove('active'));
+  document.querySelectorAll('.menu-item').forEach(e => e.classList.remove('active'));
+  const target = document.getElementById('page-case-' + type);
+  if (target) target.classList.add('active');
+  if (el) el.classList.add('active');
+  else { const m = document.querySelector(`.menu-item[onclick*="showCaseDashboard('${type}'"]`); if (m) m.classList.add('active'); }
+  if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
+  renderCaseDashboard(type);
+}
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+function toggleFab() { document.getElementById('fabMenu').classList.toggle('open'); }
+function toggleSubmenu(id, el) { const s = document.getElementById(id); if (!s) return; s.classList.toggle('open'); el.classList.toggle('open'); el.classList.toggle('active-parent'); }
+function highlightActiveParent() {
+  const a = document.querySelector('.menu-item.active'); if (!a) return;
+  const p = a.closest('.submenu-items');
+  if (p) { p.classList.add('open'); const h = p.previousElementSibling; if (h && h.classList.contains('submenu-parent')) { h.classList.add('open'); h.classList.add('active-parent'); } }
+}
+function showToast(msg, isError, type) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : (type === 'info' ? ' info' : ''));
+  setTimeout(() => { t.className = 'toast'; }, 2800);
+}
+function openModal() {
+  if (activeCompany) document.getElementById('settingsCompany').value = activeCompany.name;
+  document.getElementById('dbModal').classList.add('active');
+}
+function changeTheme(theme) { document.body.className = ''; if (theme !== 'default') document.body.classList.add('theme-' + theme); showToast('🎨 Theme: ' + theme, false, 'info'); }
+
+// ============================================================
+// CASE DASHBOARD (category-wise)
+// ============================================================
+function getCasesOfType(type) { return (activeCompany && activeCompany.cases ? activeCompany.cases : []).filter(c => c.type === type); }
+function renderCaseDashboard(type) {
+  const container = document.getElementById('page-case-' + type);
+  if (!container) return;
+  const meta = CASE_TYPES[type];
+  const cases = getCasesOfType(type);
+  const currentFilter = currentCaseFilter[type] || 'All';
+
+  // Status counts
+  const statusCounts = {};
+  meta.statuses.forEach(s => statusCounts[s] = 0);
+  cases.forEach(c => { if (statusCounts[c.status] !== undefined) statusCounts[c.status]++; else statusCounts[c.status] = (statusCounts[c.status] || 0) + 1; });
+  const total = cases.length;
+  const pending = cases.filter(c => !['Allowed','Rejected','Disposed','Dismissed','Order Passed'].includes(c.status)).length;
+  const disposed = total - pending;
+
+  // Filter cases
+  const filtered = currentFilter === 'All' ? cases : cases.filter(c => c.status === currentFilter);
+  const heroClass = { mutation: '', misc: 'misc', lrappeal: 'lrapp', lrtt: 'lrtt', conversion: 'conv' }[type] || '';
+
+  container.innerHTML = `
+    <div class="case-dash-hero ${heroClass}">
+      <h1>${meta.icon} ${meta.label} Dashboard</h1>
+      <p>${meta.bengali} — Category-wise status report and case list. Click any case to view/edit or print.</p>
+      <div class="dash-hero-meta" style="margin-top:12px;">
+        <span>📁 ${total} Total</span>
+        <span>⏳ ${pending} Pending</span>
+        <span>✅ ${disposed} Disposed</span>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card"><div class="label">Total Cases</div><div class="value">${total}</div><div class="sub">All ${meta.label.toLowerCase()}s</div></div>
+      <div class="stat-card" style="border-left-color:var(--gold);"><div class="label">Pending</div><div class="value">${pending}</div><div class="sub">In progress</div></div>
+      <div class="stat-card" style="border-left-color:var(--green);"><div class="label">Disposed</div><div class="value">${disposed}</div><div class="sub">Closed</div></div>
+      <div class="stat-card" style="border-left-color:var(--purple);"><div class="label">Sub-Types</div><div class="value">${meta.subTypes.length}</div><div class="sub">Categories</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span>📋 Case List (${filtered.length})</span>
+        <div class="btn-group" style="margin:0;">
+          <button class="btn btn-primary btn-sm" onclick="showPage('entry-${type}', null)">+ New Entry</button>
+          <button class="btn btn-secondary btn-sm" onclick="printCaseDashboard('${type}')">🖨️ Print Report</button>
+        </div>
+      </div>
+
+      <div class="status-chips">
+        <div class="status-chip ${currentFilter === 'All' ? 'active' : ''}" onclick="setCaseFilter('${type}', 'All')">All <span class="count">${total}</span></div>
+        ${meta.statuses.map(s => `<div class="status-chip ${currentFilter === s ? 'active' : ''}" onclick="setCaseFilter('${type}', '${s}')">${s} <span class="count">${statusCounts[s] || 0}</span></div>`).join('')}
+      </div>
+
+      <div id="caseTablePrint-${type}">
+        ${filtered.length === 0 ? `<div class="empty-state"><span class="icon">${meta.icon}</span><div class="title">No ${meta.label.toLowerCase()} cases ${currentFilter !== 'All' ? 'with status "' + currentFilter + '"' : 'yet'}</div><div class="desc">Click "+ New Entry" to add the first case.</div></div>` : `
+          <table>
+            <thead>
+              <tr>
+                <th>Case No</th>
+                <th>Sub-Type</th>
+                <th>Party</th>
+                <th>Forum</th>
+                <th>Filing</th>
+                <th>Next</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filtered.map(c => `
+                <tr>
+                  <td><strong>${escapeHtml(c.caseNo)}</strong></td>
+                  <td>${escapeHtml(c.subType || '—')}</td>
+                  <td>${escapeHtml(c.party || '—')}</td>
+                  <td>${escapeHtml(c.forum || '—')}</td>
+                  <td>${c.filingDate ? formatDate(c.filingDate) : '—'}</td>
+                  <td>${c.nextDate ? formatDate(c.nextDate) : '—'}</td>
+                  <td><span class="badge ${badgeForStatus(c.status)}">${escapeHtml(c.status)}</span></td>
+                  <td><div class="row-actions">
+                    <button onclick="viewCaseDetail('${c.id}')">👁️</button>
+                    <button onclick="editCase('${c.id}')">✏️</button>
+                    <button class="prn" onclick="printCaseRow('${c.id}')">🖨️</button>
+                    <button class="del" onclick="deleteCase('${c.id}')">🗑️</button>
+                  </div></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">📊 Sub-Type Distribution</div>
+      ${meta.subTypes.map(st => {
+        const count = cases.filter(c => c.subType === st).length;
+        const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+        return `<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:4px;"><span>${escapeHtml(st)}</span><strong>${count}</strong></div><div style="background:var(--bg);height:8px;border-radius:4px;overflow:hidden;"><div style="background:linear-gradient(90deg, var(--primary), var(--gold));height:100%;width:${pct}%;transition:width .4s;"></div></div></div>`;
+      }).join('')}
+    </div>
+  `;
+}
+function setCaseFilter(type, status) { currentCaseFilter[type] = status; renderCaseDashboard(type); }
+function badgeForStatus(status) {
+  if (['Allowed','Disposed','Order Passed'].includes(status)) return 'badge-green';
+  if (['Rejected','Dismissed'].includes(status)) return 'badge-red';
+  if (['Filed','Applied','OA Filed'].includes(status)) return 'badge-blue';
+  if (['Hearing','Notice Issued','Site Verified','Report Submitted','Admitted','Stay Granted'].includes(status)) return 'badge-gold';
+  if (status === 'Order Reserved') return 'badge-grey';
+  return 'badge-gold';
+}
+function formatDate(d) { try { return new Date(d).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }); } catch { return d; } }
+function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+function updateMainTileCounts() {
+  Object.keys(CASE_TYPES).forEach(t => {
+    const el = document.getElementById('tileCount-' + t);
+    if (el) el.textContent = getCasesOfType(t).length + ' case' + (getCasesOfType(t).length !== 1 ? 's' : '');
+  });
+}
+function viewCaseDetail(caseId) {
+  const c = activeCompany.cases.find(x => x.id === caseId);
+  if (!c) return;
+  alert(`${c.type.toUpperCase()} Case\n\nCase No: ${c.caseNo}\nSub-Type: ${c.subType || '—'}\nStatus: ${c.status}\nParty: ${c.party || '—'}\nOpposite: ${c.opp || '—'}\nForum: ${c.forum || '—'}\nFiling Date: ${c.filingDate || '—'}\nNext Hearing: ${c.nextDate || '—'}`);
+}
+function editCase(caseId) {
+  const c = activeCompany.cases.find(x => x.id === caseId);
+  if (!c) return;
+  const newStatus = prompt('Update Status:', c.status);
+  if (newStatus === null) return;
+  const newNext = prompt('Next Hearing Date (YYYY-MM-DD):', c.nextDate || '');
+  if (newNext === null) return;
+  c.status = newStatus;
+  if (newNext) c.nextDate = newNext;
+  logActivity(`Updated case ${c.caseNo}`);
+  saveAppData();
+  renderCaseDashboard(c.type);
+  showToast('✏️ Case updated');
+}
+function deleteCase(caseId) {
+  const c = activeCompany.cases.find(x => x.id === caseId);
+  if (!c) return;
+  if (!confirm(`Delete case "${c.caseNo}"? This cannot be undone.`)) return;
+  activeCompany.cases = activeCompany.cases.filter(x => x.id !== caseId);
+  logActivity(`Deleted case ${c.caseNo}`);
+  saveAppData();
+  renderCaseDashboard(c.type);
+  updateStats(); updateMainTileCounts(); renderTimelineSelect();
+  showToast('🗑️ Case deleted');
+}
+function printCaseRow(caseId) {
+  const c = activeCompany.cases.find(x => x.id === caseId);
+  if (!c) return;
+  const w = window.open('', '_blank');
+  if (!w) { showToast('Pop-up blocked', true); return; }
+  w.document.write(`<html><head><title>Case - ${escapeHtml(c.caseNo)}</title><style>body{font-family:'Times New Roman',serif;padding:40px;}</style></head><body><h2>${escapeHtml(activeCompany.name)}</h2><hr><h3>${escapeHtml(c.caseNo)}</h3><p><strong>Type:</strong> ${c.type}</p><p><strong>Sub-Type:</strong> ${escapeHtml(c.subType || '—')}</p><p><strong>Status:</strong> ${escapeHtml(c.status)}</p><p><strong>Party:</strong> ${escapeHtml(c.party || '—')}</p><p><strong>Opposite Party:</strong> ${escapeHtml(c.opp || '—')}</p><p><strong>Forum:</strong> ${escapeHtml(c.forum || '—')}</p><p><strong>Filing Date:</strong> ${c.filingDate || '—'}</p><p><strong>Next Hearing:</strong> ${c.nextDate || '—'}</p></body></html>`);
+  w.document.close(); w.print();
+}
+function printCaseDashboard(type) {
+  const meta = CASE_TYPES[type];
+  const cases = getCasesOfType(type);
+  const w = window.open('', '_blank');
+  if (!w) { showToast('Pop-up blocked', true); return; }
+  const rows = cases.map(c => `<tr><td>${escapeHtml(c.caseNo)}</td><td>${escapeHtml(c.subType||'—')}</td><td>${escapeHtml(c.party||'—')}</td><td>${escapeHtml(c.forum||'—')}</td><td>${c.status}</td><td>${c.nextDate||'—'}</td></tr>`).join('');
+  w.document.write(`<html><head><title>${meta.label} Report</title><style>body{font-family:'Times New Roman',serif;padding:40px;} table{width:100%;border-collapse:collapse;margin-top:14px;} th,td{border:1px solid #ccc;padding:8px;text-align:left;} th{background:#EFF6FF;} h1{color:#1E40AF;}</style></head><body><h1>${escapeHtml(activeCompany.name)}</h1><h3>${meta.label} — Status Report</h3><p>Generated: ${new Date().toLocaleString('en-IN')}</p><p>Total Cases: <strong>${cases.length}</strong></p><table><thead><tr><th>Case No</th><th>Sub-Type</th><th>Party</th><th>Forum</th><th>Status</th><th>Next</th></tr></thead><tbody>${rows || '<tr><td colspan="6" style="text-align:center;">No cases</td></tr>'}</tbody></table></body></html>`);
+  w.document.close(); w.print();
+}
+
+// ============================================================
+// SAVE CASE FORM
+// ============================================================
+function saveCaseForm(type, sendAlert) {
+  const meta = CASE_TYPES[type];
+  const prefix = { mutation:'em', misc:'esc', lrappeal:'ela', lrtt:'elt', conversion:'ecv' }[type];
+  const caseNoEl = document.getElementById(prefix + '-caseNo');
+  if (!caseNoEl) return;
+  const caseNo = caseNoEl.value.trim();
+  if (!caseNo) { showToast('Case No is required', true); return; }
+  const partyEl = document.getElementById(prefix + '-party');
+  const party = partyEl ? partyEl.value.trim() : '';
+
+  const newCase = {
+    id: 'case_' + Date.now() + '_' + Math.random().toString(36).substr(2,5),
+    type,
+    caseNo,
+    subType: document.getElementById(prefix + '-subType')?.value || '',
+    status: document.getElementById(prefix + '-status')?.value || 'Filed',
+    party: party,
+    opp: document.getElementById(prefix + '-opp')?.value.trim() || '',
+    forum: document.getElementById(prefix + '-forum')?.value || '',
+    filingDate: document.getElementById(prefix + '-filingDate')?.value || '',
+    nextDate: document.getElementById(prefix + '-nextDate')?.value || '',
+    createdAt: Date.now(),
+    createdBy: activeUser ? activeUser.id : 'admin'
+  };
+  if (!activeCompany.cases) activeCompany.cases = [];
+  activeCompany.cases.push(newCase);
+  logActivity(`Created ${meta.label} ${caseNo}`);
+  saveAppData();
+  clearCaseForm(type);
+  updateStats(); updateMainTileCounts(); renderTimelineSelect();
+  showToast(`💾 ${meta.label} ${caseNo} saved`);
+  if (sendAlert) {
+    const sm = document.getElementById('sendModal');
+    if (sm) {
+      document.getElementById('sendCaseNo').textContent = caseNo;
+      sm.classList.add('active');
+    }
+  } else {
+    showCaseDashboard(type, null);
+  }
+}
+function clearCaseForm(type) {
+  const prefix = { mutation:'em', misc:'esc', lrappeal:'ela', lrtt:'elt', conversion:'ecv' }[type];
+  const cEl = document.getElementById(prefix + '-caseNo'); if (cEl) cEl.value = '';
+  const pEl = document.getElementById(prefix + '-party'); if (pEl) pEl.value = '';
+  const oEl = document.getElementById(prefix + '-opp'); if (oEl) oEl.value = '';
+  const prefixMap = { mutation:'mut', misc:'misc', lrappeal:'lrappeal', lrtt:'lrtt', conversion:'conv' };
+  const p = prefixMap[type];
+  if (caseAttachments[p]) caseAttachments[p] = [];
+  if (landSchedules[p]) landSchedules[p] = [];
+  if (applicants[p]) applicants[p] = [];
+  if (respondents[p]) respondents[p] = [];
+  if (addresses[p]) addresses[p] = [];
+  renderCaseAttachments(p); renderLandSchedules(p); renderApplicants(p); renderRespondents(p); renderAddresses(p);
+  if (chainLinks[p]) { chainLinks[p] = []; renderChainLinks(p); }
+}
+function confirmSend() { document.getElementById('sendModal').classList.remove('active'); showToast('✅ Alert sent'); }
+
+// ============================================================
+// CAUSE LIST
+// ============================================================
+function renderCauseList() {
+  const empty = document.getElementById('causeListEmpty'); const table = document.getElementById('causeListTable'); const body = document.getElementById('causeListBody');
+  if (!body || !activeCompany) return;
+  const list = activeCompany.causeList || [];
+  if (list.length === 0) { empty.style.display = 'block'; table.style.display = 'none'; return; }
+  empty.style.display = 'none'; table.style.display = 'table';
+  body.innerHTML = list.map((e, i) => `<tr><td>${escapeHtml(e.time||'--:--')}</td><td>${escapeHtml(e.caseNo||'—')}</td><td>${escapeHtml(e.forum||'—')}</td><td>${escapeHtml(e.party||'—')}</td><td><span class="badge badge-${e.status==='READY'?'green':'gold'}">${e.status||'PENDING'}</span></td><td><div class="row-actions"><button onclick="printCauseRow(${i})">🖨️</button><button onclick="editCauseRow(${i})">✏️</button><button class="del" onclick="deleteCauseRow(${i})">🗑️</button></div></td></tr>`).join('');
+  document.getElementById('statHearings').textContent = list.length;
+}
+function addCauseListRow() {
+  const time = prompt('Time:', '10:30 AM'); if (time === null) return;
+  const caseNo = prompt('Case No:', ''); if (caseNo === null) return;
+  const forum = prompt('Forum:', ''); if (forum === null) return;
+  const party = prompt('Party:', ''); if (party === null) return;
+  const status = prompt('Status (READY/PENDING):', 'PENDING'); if (status === null) return;
+  if (!activeCompany.causeList) activeCompany.causeList = [];
+  activeCompany.causeList.push({ time, caseNo, forum, party, status: status.toUpperCase() });
+  logActivity(`Added cause: ${caseNo}`); saveAppData(); renderCauseList(); renderDashboardCauseList();
+  showToast('✅ Added');
+}
+function editCauseRow(i) {
+  const e = activeCompany.causeList[i]; if (!e) return;
+  const t = prompt('Time:', e.time); if (t === null) return;
+  const c = prompt('Case No:', e.caseNo); if (c === null) return;
+  const f = prompt('Forum:', e.forum); if (f === null) return;
+  const p = prompt('Party:', e.party); if (p === null) return;
+  const s = prompt('Status:', e.status); if (s === null) return;
+  e.time = t; e.caseNo = c; e.forum = f; e.party = p; e.status = s.toUpperCase();
+  saveAppData(); renderCauseList(); renderDashboardCauseList(); showToast('✏️ Updated');
+}
+function deleteCauseRow(i) { if (!confirm('Delete?')) return; activeCompany.causeList.splice(i, 1); saveAppData(); renderCauseList(); renderDashboardCauseList(); showToast('🗑️ Deleted'); }
+function printCauseRow(i) {
+  const e = activeCompany.causeList[i]; if (!e) return;
+  const w = window.open('', '_blank');
+  if (!w) { showToast('Pop-up blocked', true); return; }
+  w.document.write(`<html><head><title>Cause</title></head><body style="font-family:'Times New Roman',serif;padding:40px;"><h2>${escapeHtml(e.caseNo)}</h2><p>Time: ${escapeHtml(e.time)}</p><p>Forum: ${escapeHtml(e.forum)}</p><p>Party: ${escapeHtml(e.party)}</p><p>Status: ${escapeHtml(e.status)}</p></body></html>`);
+  w.document.close(); w.print();
+}
+function renderDashboardCauseList() {
+  const el = document.getElementById('dashboardCauseList'); if (!el || !activeCompany) return;
+  const list = activeCompany.causeList || [];
+  if (list.length === 0) { el.innerHTML = '<div class="empty-state"><span class="icon">📅</span><div class="title">No hearings scheduled today</div></div>'; return; }
+  el.innerHTML = `<table><thead><tr><th>Time</th><th>Case & Forum</th><th>Status</th></tr></thead><tbody>${list.slice(0, 3).map(e => `<tr><td>${escapeHtml(e.time)}</td><td>${escapeHtml(e.caseNo)} — ${escapeHtml(e.forum)}</td><td><span class="badge badge-${e.status==='READY'?'green':'gold'}">${e.status}</span></td></tr>`).join('')}</tbody></table>`;
+}
+
+// ============================================================
+// DISTRICTS
+// ============================================================
+const wbDistricts = {"Alipurduar":["Alipurduar-I","Alipurduar-II","Falakata","Kalchini","Kumargram","Madarihat"],"Bankura":["Bankura-I","Bankura-II","Barjora","Chhatna","Gangajalghati","Hirbandh","Indpur","Indus","Joypur","Khatra","Onda","Patrasayer","Raipur","Ranibundh","Saltora","Sarenga","Simlapal","Sonamukhi","Taldangra","Vishnupur"],"Birbhum":["Bolpur-Sriniketan","Dubrajpur","Illambazar","Khayrasole","Labpur","Mahammadbazar","Mayureswar-I","Mayureswar-II","Murarai-I","Murarai-II","Nalhati-I","Nalhati-II","Nanoor","Rajnagar","Rampurhat-I","Rampurhat-II","Sainthia","Suri-I","Suri-II"],"Coochbehar":["Coochbehar-I","Coochbehar-II","Dinhata-I","Dinhata-II","Haldibari","Mathabhanga-I","Mathabhanga-II","Mekliganj","Sitai","Sitalkuchi","Tufanganj-I","Tufanganj-II"],"Dakshin Dinajpur":["Balurghat","Bansihari","Gangarampur","Hili","Harirampur","Kumarganj","Kushmandi","Tapan"],"Darjeeling":["Darjeeling-Pulbazar","Jorebunglow-Sukhiapokhri","Kharibari","Matigara","Naxalbari","Phansidewa","Rangli-Rangliot","Kurseong","Mirik"],"Hooghly":["Arambagh","Balagarh","Chanditala-I","Chanditala-II","Chinsurah-Mogra","Dhaniakhali","Goghat-I","Goghat-II","Haripal","Jangipara","Khanakul-I","Khanakul-II","Pandua","Polba-Dadpur","Pursurah","Serampore-Uttarpara","Singur","Tarakeswar"],"Howrah":["Amta-I","Amta-II","Bagnan-I","Bagnan-II","Bally Jagachha","Domjur","Jagatballavpur","Panchla","Sankrail","Shyampur-I","Shyampur-II","Udaynarayanpur","Uluberia-I","Uluberia-II"],"Jalpaiguri":["Dhupguri","Maynaguri","Mal","Matiali","Nagrakata","Rajganj","Sadar"],"Jhargram":["Binpur-I","Binpur-II","Gopiballavpur-I","Gopiballavpur-II","Jamboni","Jhargram","Nayagram","Sankrail"],"Kalimpong":["Gorubathan","Kalimpong-I","Kalimpong-II","Lava"],"Kolkata":["Kolkata"],"Malda":["Bamangola","Chanchal-I","Chanchal-II","English Bazar","Gazole","Habibpur","Harishchandrapur-I","Harishchandrapur-II","Kaliachak-I","Kaliachak-II","Kaliachak-III","Manikchak","Old Malda","Ratua-I","Ratua-II"],"Murshidabad":["Beldanga-I","Beldanga-II","Berhampore","Bhagawangola-I","Bhagawangola-II","Bharatpur-I","Bharatpur-II","Burwan","Domkal","Farakka","Hariharpara","Jalangi","Kandi","Khargram","Lalgola","Murshidabad-Jiaganj","Nabagram","Naoda","Raghunathganj-I","Raghunathganj-II","Raninagar-I","Raninagar-II","Sagardighi","Samserganj","Suti-I","Suti-II"],"Nadia":["Chakdaha","Chapra","Hanskhali","Haringhata","Kaliganj","Karimpur-I","Karimpur-II","Krishnaganj","Krishnanagar-I","Krishnanagar-II","Nabadwip","Nakashipara","Ranaghat-I","Ranaghat-II","Santipur","Tehatta-I","Tehatta-II","Kalyani"],"North 24 Parganas":["Amdanga","Baduria","Bagda","Bangaon","Barasat-I","Barasat-II","Barrackpore-I","Barrackpore-II","Basirhat-I","Basirhat-II","Deganga","Gaighata","Habra-I","Habra-II","Haroa","Hasnabad","Hingalganj","Barrackpore","Rajarhat","Sandeshkhali-I","Sandeshkhali-II","Swarupnagar"],"Paschim Bardhaman":["Barabani","Durgapur-Faridpur","Jamuria","Kanksa","Ondal","Pandabeswar","Raniganj","Salanpur"],"Paschim Medinipur":["Chandrakona-I","Chandrakona-II","Daspur-I","Daspur-II","Debra","Garbeta-I","Garbeta-II","Garbeta-III","Ghatal","Keshpur","Kharagpur-I","Kharagpur-II","Midnapore","Mohanpur","Narayangarh","Pingla","Sabang","Salboni","Dantan-I","Dantan-II","Keshiary"],"Purba Bardhaman":["Ausgram-I","Ausgram-II","Bhatar","Burdwan-I","Burdwan-II","Galsi-I","Galsi-II","Jamalpur","Kalna-I","Kalna-II","Katwa-I","Katwa-II","Ketugram-I","Ketugram-II","Khandaghosh","Mangolkote","Memari-I","Memari-II","Monteswar","Purbasthali-I","Purbasthali-II","Raina-I","Raina-II"],"Purba Medinipur":["Bhagabanpur-I","Bhagabanpur-II","Chandipur","Contai-I","Contai-II","Contai-III","Deshopran","Egra-I","Egra-II","Haldia","Khejuri-I","Khejuri-II","Kolaghat","Mahisadal","Moyna","Nandakumar","Nandigram-I","Nandigram-II","Panskura-I","Panskura-II","Potashpur-I","Potashpur-II","Ramnagar-I","Ramnagar-II","Sahid Matangini","Sutahata","Tamluk"],"Purulia":["Arsha","Balarampur","Barabazar","Bundwan","Hura","Ichagarh","Jhalda-I","Jhalda-II","Kashipur","Manbazar-I","Manbazar-II","Neturia","Para","Puncha","Purulia-I","Purulia-II","Raghunathpur-I","Raghunathpur-II","Santuri","Bagmundi"],"South 24 Parganas":["Baruipur","Bhangore-I","Bhangore-II","Bishnupur-I","Bishnupur-II","Budge Budge-I","Budge Budge-II","Canning-I","Canning-II","Diamond Harbour-I","Diamond Harbour-II","Falta","Gosaba","Jaynagar-I","Jaynagar-II","Kakdwip","Kulpi","Kultali","Magrahat-I","Magrahat-II","Mandirbazar","Mathurapur-I","Mathurapur-II","Namkhana","Patharpratima","Sagar","Sonarpur","Thakurpukur-Maheshtala","Basanti"],"Uttar Dinajpur":["Chopra","Goalpokhar-I","Goalpokhar-II","Hemtabad","Islampur","Itahar","Kaliaganj","Karandighi","Raiganj"]};
+
+// ============================================================
+// ATTACHMENTS / LAND SCHEDULES / PARTIES / ADDRESSES
+// ============================================================
+const caseAttachments = { mut:[], misc:[], lrtt:[], lrappeal:[], conv:[] };
+const chainLinks = { mut:[], misc:[], lrappeal:[] };
+const landSchedules = { mut:[], misc:[], lrtt:[], lrappeal:[], conv:[] };
+const applicants = { mut:[], misc:[], lrtt:[], lrappeal:[], conv:[] };
+const respondents = { mut:[], misc:[], lrtt:[], lrappeal:[], conv:[] };
+const addresses = { mut:[], misc:[], lrtt:[], lrappeal:[], conv:[] };
+let sharePortions = [];
+
+function addLandSchedule(p) { landSchedules[p].push({district:'',block:'',mouza:'',jl:'',khatian:'',dag:'',area:'',unit:'acre',classification:''}); renderLandSchedules(p); }
+function removeLandSchedule(p, i) { landSchedules[p].splice(i,1); renderLandSchedules(p); }
+function updateLandSchedule(p, i, f, v) { if (landSchedules[p][i]) landSchedules[p][i][f] = v; }
+function renderLandSchedules(p) {
+  const c = document.getElementById(p + '-land-schedules'); if (!c) return;
+  const items = landSchedules[p] || [];
+  if (items.length === 0) { c.innerHTML = '<p style="text-align:center;padding:14px;color:var(--muted);font-size:.8rem;">No land schedule added yet.</p>'; return; }
+  c.innerHTML = items.map((s, i) => `<div class="multi-card"><div class="multi-card-header"><div style="display:flex;align-items:center;gap:10px;"><div class="multi-card-num">${i+1}</div><div class="multi-card-label">Schedule ${i+1}</div></div><button class="multi-card-remove" onclick="removeLandSchedule('${p}', ${i})">× Remove</button></div>
+  <div class="form-grid-3"><div class="form-group" style="margin-bottom:8px;"><label style="font-size:.66rem;">District</label><select onchange="updateLandSchedule('${p}',${i},'district',this.value); populateScheduleBlocks('${p}',${i},this.value)"><option value="">-- District --</option>${Object.keys(wbDistricts).sort().map(d => `<option value="${d}" ${s.district===d?'selected':''}>${d}</option>`).join('')}</select></div>
+  <div class="form-group" style="margin-bottom:8px;"><label style="font-size:.66rem;">Block</label><select id="${p}-sched-block-${i}" onchange="updateLandSchedule('${p}',${i},'block',this.value)"><option value="">-- Block --</option>${s.district && wbDistricts[s.district] ? wbDistricts[s.district].sort().map(b => `<option value="${b}" ${s.block===b?'selected':''}>${b}</option>`).join('') : ''}</select></div>
+  <div class="form-group" style="margin-bottom:8px;"><label style="font-size:.66rem;">Mouza</label><input type="text" value="${s.mouza}" oninput="updateLandSchedule('${p}',${i},'mouza',this.value)"></div></div>
+  <div class="form-grid-3"><div class="form-group" style="margin-bottom:8px;"><label style="font-size:.66rem;">JL No</label><input type="text" value="${s.jl}" oninput="updateLandSchedule('${p}',${i},'jl',this.value)"></div><div class="form-group" style="margin-bottom:8px;"><label style="font-size:.66rem;">Khatian</label><input type="text" value="${s.khatian}" oninput="updateLandSchedule('${p}',${i},'khatian',this.value)"></div><div class="form-group" style="margin-bottom:8px;"><label style="font-size:.66rem;">Dag</label><input type="text" value="${s.dag}" oninput="updateLandSchedule('${p}',${i},'dag',this.value)"></div></div>
+  <div class="form-grid-3"><div class="form-group" style="margin-bottom:0;"><label style="font-size:.66rem;">Area</label><input type="text" value="${s.area}" oninput="updateLandSchedule('${p}',${i},'area',this.value)"></div><div class="form-group" style="margin-bottom:0;"><label style="font-size:.66rem;">Unit</label><select onchange="updateLandSchedule('${p}',${i},'unit',this.value)"><option value="acre" ${s.unit==='acre'?'selected':''}>Acre</option><option value="bigha" ${s.unit==='bigha'?'selected':''}>Bigha</option><option value="katha" ${s.unit==='katha'?'selected':''}>Katha</option><option value="satak" ${s.unit==='satak'?'selected':''}>Satak</option><option value="sqft" ${s.unit==='sqft'?'selected':''}>Sq.Ft.</option></select></div><div class="form-group" style="margin-bottom:0;"><label style="font-size:.66rem;">Class</label><select onchange="updateLandSchedule('${p}',${i},'classification',this.value)"><option value="">--</option><option value="Sali" ${s.classification==='Sali'?'selected':''}>Sali</option><option value="Danga" ${s.classification==='Danga'?'selected':''}>Danga</option><option value="Bastu" ${s.classification==='Bastu'?'selected':''}>Bastu</option><option value="Pond" ${s.classification==='Pond'?'selected':''}>Pond</option></select></div></div></div>`).join('');
+}
+function populateScheduleBlocks(p, i, d) { const bs = document.getElementById(`${p}-sched-block-${i}`); if (!bs) return; bs.innerHTML = '<option value="">-- Block --</option>'; if (!d || !wbDistricts[d]) return; wbDistricts[d].sort().forEach(b => { const o = document.createElement('option'); o.value=b; o.textContent=b; bs.appendChild(o); }); }
+
+function addApplicant(p) { applicants[p].push({name:'',father:'',age:'',address:'',phone:''}); renderApplicants(p); }
+function removeApplicant(p, i) { applicants[p].splice(i,1); renderApplicants(p); }
+function updateApplicant(p, i, f, v) { if (applicants[p][i]) applicants[p][i][f]=v; }
+function renderApplicants(p) {
+  const c = document.getElementById(p + '-applicants-list'); if (!c) return;
+  const items = applicants[p] || [];
+  if (items.length === 0) { c.innerHTML = '<p style="text-align:center;padding:14px;color:var(--muted);font-size:.8rem;">No applicant added.</p>'; return; }
+  c.innerHTML = items.map((a, i) => `<div class="multi-card applicant"><div class="multi-card-header"><div style="display:flex;align-items:center;gap:10px;"><div class="multi-card-num">${i+1}</div><div class="multi-card-label">Applicant ${i+1}</div></div><button class="multi-card-remove" onclick="removeApplicant('${p}', ${i})">× Remove</button></div>
+  <div class="form-grid-3"><div class="form-group" style="margin-bottom:8px;"><label style="font-size:.66rem;">Full Name</label><input type="text" value="${a.name}" oninput="updateApplicant('${p}',${i},'name',this.value)"></div><div class="form-group" style="margin-bottom:8px;"><label style="font-size:.66rem;">Father's/Husband's Name</label><input type="text" value="${a.father}" oninput="updateApplicant('${p}',${i},'father',this.value)"></div><div class="form-group" style="margin-bottom:8px;"><label style="font-size:.66rem;">Age</label><input type="text" value="${a.age}" oninput="updateApplicant('${p}',${i},'age',this.value)"></div></div>
+  <div class="form-grid"><div class="form-group" style="margin-bottom:0;"><label style="font-size:.66rem;">Address</label><input type="text" value="${a.address}" oninput="updateApplicant('${p}',${i},'address',this.value)"></div><div class="form-group" style="margin-bottom:0;"><label style="font-size:.66rem;">Phone</label><input type="text" value="${a.phone}" oninput="updateApplicant('${p}',${i},'phone',this.value)"></div></div></div>`).join('');
+}
+function addRespondent(p) { respondents[p].push({name:'',father:'',age:'',address:'',phone:'',type:'Private'}); renderRespondents(p); }
+function removeRespondent(p, i) { respondents[p].splice(i,1); renderRespondents(p); }
+function updateRespondent(p, i, f, v) { if (respondents[p][i]) respondents[p][i][f]=v; }
+function renderRespondents(p) {
+  const c = document.getElementById(p + '-respondents-list'); if (!c) return;
+  const items = respondents[p] || [];
+  if (items.length === 0) { c.innerHTML = '<p style="text-align:center;padding:14px;color:var(--muted);font-size:.8rem;">No respondent added.</p>'; return; }
+  c.innerHTML = items.map((r, i) => `<div class="multi-card respondent"><div class="multi-card-header"><div style="display:flex;align-items:center;gap:10px;"><div class="multi-card-num">${i+1}</div><div class="multi-card-label">Respondent ${i+1}</div></div><button class="multi-card-remove" onclick="removeRespondent('${p}', ${i})">× Remove</button></div>
+  <div class="form-grid-3"><div class="form-group" style="margin-bottom:8px;"><label style="font-size:.66rem;">Full Name</label><input type="text" value="${r.name}" oninput="updateRespondent('${p}',${i},'name',this.value)"></div><div class="form-group" style="margin-bottom:8px;"><label style="font-size:.66rem;">Father's Name</label><input type="text" value="${r.father}" oninput="updateRespondent('${p}',${i},'father',this.value)"></div><div class="form-group" style="margin-bottom:8px;"><label style="font-size:.66rem;">Type</label><select onchange="updateRespondent('${p}',${i},'type',this.value)"><option value="Private" ${r.type==='Private'?'selected':''}>Private</option><option value="State" ${r.type==='State'?'selected':''}>State</option><option value="Govt Dept" ${r.type==='Govt Dept'?'selected':''}>Govt Dept</option></select></div></div>
+  <div class="form-grid"><div class="form-group" style="margin-bottom:0;"><label style="font-size:.66rem;">Address</label><input type="text" value="${r.address}" oninput="updateRespondent('${p}',${i},'address',this.value)"></div><div class="form-group" style="margin-bottom:0;"><label style="font-size:.66rem;">Phone</label><input type="text" value="${r.phone}" oninput="updateRespondent('${p}',${i},'phone',this.value)"></div></div></div>`).join('');
+}
+function addAddress(p) { addresses[p].push({label:'',line1:'',line2:'',city:'',pin:'',state:'West Bengal'}); renderAddresses(p); }
+function removeAddress(p, i) { addresses[p].splice(i,1); renderAddresses(p); }
+function updateAddress(p, i, f, v) { if (addresses[p][i]) addresses[p][i][f]=v; }
+function renderAddresses(p) {
+  const c = document.getElementById(p + '-addresses-list'); if (!c) return;
+  const items = addresses[p] || [];
+  if (items.length === 0) { c.innerHTML = '<p style="text-align:center;padding:14px;color:var(--muted);font-size:.8rem;">No address added.</p>'; return; }
+  c.innerHTML = items.map((a, i) => `<div class="multi-card address"><div class="multi-card-header"><div style="display:flex;align-items:center;gap:10px;"><div class="multi-card-num">${i+1}</div><div class="multi-card-label">Address ${i+1}</div></div><button class="multi-card-remove" onclick="removeAddress('${p}', ${i})">× Remove</button></div>
+  <div class="form-grid-3"><div class="form-group" style="margin-bottom:8px;"><label style="font-size:.66rem;">Label</label><input type="text" value="${a.label}" oninput="updateAddress('${p}',${i},'label',this.value)" placeholder="Present/Permanent"></div><div class="form-group" style="margin-bottom:8px;"><label style="font-size:.66rem;">Line 1</label><input type="text" value="${a.line1}" oninput="updateAddress('${p}',${i},'line1',this.value)"></div><div class="form-group" style="margin-bottom:8px;"><label style="font-size:.66rem;">Line 2</label><input type="text" value="${a.line2}" oninput="updateAddress('${p}',${i},'line2',this.value)"></div></div>
+  <div class="form-grid-3"><div class="form-group" style="margin-bottom:0;"><label style="font-size:.66rem;">City</label><input type="text" value="${a.city}" oninput="updateAddress('${p}',${i},'city',this.value)"></div><div class="form-group" style="margin-bottom:0;"><label style="font-size:.66rem;">PIN</label><input type="text" value="${a.pin}" oninput="updateAddress('${p}',${i},'pin',this.value)"></div><div class="form-group" style="margin-bottom:0;"><label style="font-size:.66rem;">State</label><input type="text" value="${a.state}" oninput="updateAddress('${p}',${i},'state',this.value)"></div></div></div>`).join('');
+}
+function addChainLink(p) { if (!chainLinks[p]) chainLinks[p] = []; chainLinks[p].push({deedNo:'',deedDate:'',vendor:'',purchaser:'',area:'',consideration:''}); renderChainLinks(p); }
+function removeChainLink(p, i) { chainLinks[p].splice(i,1); renderChainLinks(p); }
+function updateChainLink(p, i, f, v) { if (chainLinks[p][i]) chainLinks[p][i][f]=v; }
+function renderChainLinks(p) {
+  const c = document.getElementById(p + '-chain-container'); if (!c) return;
+  const links = chainLinks[p] || [];
+  if (links.length === 0) { c.innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:.8rem;">No deed links yet.</div>'; return; }
+  c.innerHTML = links.map((l, i) => `<div class="chain-link"><div class="chain-link-header"><div class="chain-link-num">${i+1}</div><div class="chain-link-remove" onclick="removeChainLink('${p}', ${i})">× Remove</div></div>
+  <div class="form-grid-3" style="margin-bottom:8px;"><div class="form-group" style="margin-bottom:0;"><label style="font-size:.66rem;">Deed No</label><input type="text" value="${l.deedNo}" oninput="updateChainLink('${p}',${i},'deedNo',this.value)"></div><div class="form-group" style="margin-bottom:0;"><label style="font-size:.66rem;">Deed Date</label><input type="date" value="${l.deedDate}" oninput="updateChainLink('${p}',${i},'deedDate',this.value)"></div><div class="form-group" style="margin-bottom:0;"><label style="font-size:.66rem;">Consideration</label><input type="text" value="${l.consideration}" oninput="updateChainLink('${p}',${i},'consideration',this.value)"></div></div>
+  <div class="form-grid-3"><div class="form-group" style="margin-bottom:0;"><label style="font-size:.66rem;">Vendor</label><input type="text" value="${l.vendor}" oninput="updateChainLink('${p}',${i},'vendor',this.value)"></div><div class="form-group" style="margin-bottom:0;"><label style="font-size:.66rem;">Purchaser</label><input type="text" value="${l.purchaser}" oninput="updateChainLink('${p}',${i},'purchaser',this.value)"></div><div class="form-group" style="margin-bottom:0;"><label style="font-size:.66rem;">Area</label><input type="text" value="${l.area}" oninput="updateChainLink('${p}',${i},'area',this.value)"></div></div></div>`).join('');
+}
+function triggerFileInput(p) { document.getElementById('fileInput-' + p).click(); }
+function handleFiles(e, p) { Array.from(e.target.files).forEach(f => addCaseAttachment(p, f)); e.target.value = ''; }
+function addCaseAttachment(p, file) { if (!caseAttachments[p]) caseAttachments[p]=[]; caseAttachments[p].push({name:file.name,size:formatSize(file.size),type:getFileType(file.name),date:new Date().toISOString().slice(0,10)}); renderCaseAttachments(p); showToast('📎 Attached'); }
+function renderCaseAttachments(p) {
+  const list = document.getElementById('attachList-' + p); if (!list) return;
+  list.innerHTML = (caseAttachments[p] || []).map((f, i) => `<div class="attach-item"><div class="attach-file-icon file-type-${f.type}">${getFileIcon(f.type)}</div><div class="attach-info"><div class="attach-name">${f.category ? '[' + f.category + '] ' : ''}${escapeHtml(f.name)}</div><div class="attach-meta">${f.size} • ${f.date}</div></div><div class="attach-actions"><button class="btn btn-outline btn-xs" onclick="showToast('📄 Opening')">View</button><button class="btn btn-outline btn-xs" style="color:var(--red);" onclick="deleteCaseAttachment('${p}',${i})">🗑️</button></div></div>`).join('');
+}
+function deleteCaseAttachment(p, i) { if (confirm('Delete?')) { caseAttachments[p].splice(i,1); renderCaseAttachments(p); } }
+function quickAddDoc(p, docType) {
+  const input = document.createElement('input'); input.type='file'; input.multiple = true;
+  input.onchange = (e) => { Array.from(e.target.files).forEach(f => { if (!caseAttachments[p]) caseAttachments[p]=[]; caseAttachments[p].push({name:f.name,size:formatSize(f.size),type:getFileType(f.name),date:new Date().toISOString().slice(0,10),category:docType}); }); renderCaseAttachments(p); showToast(`📎 ${docType} added`); };
+  input.click();
+}
+function getFileType(name) { const ext = (name.split('.').pop() || '').toLowerCase(); if (['pdf'].includes(ext)) return 'pdf'; if (['doc','docx','odt','rtf'].includes(ext)) return 'doc'; if (['jpg','jpeg','png','gif','bmp','webp'].includes(ext)) return 'img'; return 'other'; }
+function getFileIcon(type) { return { pdf:'📕', doc:'📘', img:'🖼️', other:'📄' }[type] || '📄'; }
+function formatSize(b) { if (b < 1024) return b + ' B'; if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB'; return (b/(1024*1024)).toFixed(2) + ' MB'; }
+
+// ============================================================
+// PARTIES
+// ============================================================
+function openAddPartyModal() { ['np-name','np-phone','np-email','np-address'].forEach(id => document.getElementById(id).value = ''); document.getElementById('addPartyModal').classList.add('active'); }
+function saveNewParty() {
+  const name = document.getElementById('np-name').value.trim();
+  const type = document.getElementById('np-type').value;
+  if (!name) { showToast('Name required', true); return; }
+  if (!activeCompany.parties) activeCompany.parties = [];
+  activeCompany.parties.push({ id: 'p_' + Date.now(), name, type, phone: document.getElementById('np-phone').value.trim(), email: document.getElementById('np-email').value.trim(), address: document.getElementById('np-address').value.trim(), createdAt: Date.now(), createdBy: activeUser ? activeUser.id : 'admin' });
+  logActivity(`Added party ${name} (${type})`); saveAppData();
+  document.getElementById('addPartyModal').classList.remove('active');
+  renderParties(); renderPartySelect(); showToast('✅ Party added');
+}
+function renderParties() {
+  const list = document.getElementById('partiesList'); if (!list || !activeCompany) return;
+  const parties = activeCompany.parties || [];
+  if (parties.length === 0) { list.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><span class="icon">👥</span><div class="title">No parties added yet</div></div>'; return; }
+  list.innerHTML = parties.map(p => `<div class="party-card"><div class="party-card-actions"><button onclick="printParty('${p.id}')">🖨️</button><button class="del" onclick="deleteParty('${p.id}')">🗑️</button></div><div style="display:flex;gap:12px;align-items:center;"><div class="party-avatar">${initialsOf(p.name)}</div><div><div class="party-name">${escapeHtml(p.name)}</div><div class="party-meta">${escapeHtml(p.type)}${p.phone ? ' • ' + p.phone : ''}</div></div></div></div>`).join('');
+}
+function deleteParty(id) { if (!confirm('Delete?')) return; activeCompany.parties = activeCompany.parties.filter(x => x.id !== id); logActivity(`Deleted party`); saveAppData(); renderParties(); renderPartySelect(); showToast('🗑️ Deleted'); }
+function printParty(id) {
+  const p = activeCompany.parties.find(x => x.id === id); if (!p) return;
+  const w = window.open('', '_blank');
+  if (!w) { showToast('Pop-up blocked', true); return; }
+  w.document.write(`<html><head><title>Party</title></head><body style="font-family:'Times New Roman',serif;padding:40px;"><h2>${escapeHtml(p.name)}</h2><p>Type: ${escapeHtml(p.type)}</p><p>Phone: ${escapeHtml(p.phone || '—')}</p><p>Email: ${escapeHtml(p.email || '—')}</p><p>Address: ${escapeHtml(p.address || '—')}</p><p>Company: ${escapeHtml(activeCompany.name)}</p></body></html>`);
+  w.document.close(); w.print();
+}
+function renderPartySelect() {
+  const sel = document.getElementById('partySelect'); if (!sel || !activeCompany) return;
+  const parties = activeCompany.parties || [];
+  if (parties.length === 0) { sel.innerHTML = '<option value="">-- Add parties first --</option>'; return; }
+  sel.innerHTML = '<option value="">-- Select --</option>' + parties.map(p => `<option value="${p.id}">${escapeHtml(p.name)} (${escapeHtml(p.type)})</option>`).join('');
+}
+
+// ============================================================
+// USERS
+// ============================================================
+function openAddUserModal() { if (activeUser && activeUser.role !== 'Admin') { showToast('Only Admin', true); return; } ['nu-name','nu-email','nu-phone','nu-password'].forEach(id => document.getElementById(id).value = ''); document.getElementById('addUserModal').classList.add('active'); }
+function saveNewUser() {
+  const name = document.getElementById('nu-name').value.trim();
+  const email = document.getElementById('nu-email').value.trim().toLowerCase();
+  const password = document.getElementById('nu-password').value;
+  if (!name || !email || !password || password.length < 4) { showToast('Fill all fields (password 4+)', true); return; }
+  if (activeCompany.users.some(u => u.email.toLowerCase() === email)) { showToast('Email exists', true); return; }
+  activeCompany.users.push({ id: 'u_' + Date.now(), name, email, phone: document.getElementById('nu-phone').value.trim(), role: document.getElementById('nu-role').value, password, isMain: false, createdAt: Date.now() });
+  logActivity(`Added user ${name}`); saveAppData();
+  document.getElementById('addUserModal').classList.remove('active');
+  renderUsers(); showToast('✅ User added');
+}
+function renderUsers() {
+  const list = document.getElementById('usersList'); if (!list || !activeCompany) return;
+  const users = activeCompany.users || [];
+  if (users.length === 0) { list.innerHTML = '<div class="empty-state"><span class="icon">👤</span><div class="title">No users added yet</div></div>'; }
+  else {
+    list.innerHTML = users.map(u => `<div class="user-list-item"><div class="user-list-avatar" style="background:linear-gradient(135deg,#1E40AF,#3B82F6);">${initialsOf(u.name)}</div><div class="user-list-info"><div class="user-list-name">${escapeHtml(u.name)} ${u.isMain ? '<span style="font-size:.6rem;background:var(--gold-light);color:var(--gold-dark);padding:2px 6px;border-radius:6px;margin-left:6px;">Main</span>' : ''}</div><div class="user-list-role"><span class="role-badge ${roleClassFor(u.role)}">${u.role}</span> · ${escapeHtml(u.email)}${u.phone ? ' · ' + u.phone : ''}</div></div><div class="row-actions">${!u.isMain && activeUser && activeUser.role === 'Admin' ? `<button class="del" onclick="deleteUser('${u.id}')">🗑️</button>` : ''}</div></div>`).join('');
+  }
+  const log = document.getElementById('activityLog');
+  const acts = activeCompany.activityLog || [];
+  if (acts.length === 0) { log.innerHTML = '<div class="empty-state"><span class="icon">📋</span><div class="title">No activity yet</div></div>'; }
+  else { log.innerHTML = `<table><thead><tr><th>Time</th><th>Action</th></tr></thead><tbody>${acts.slice().reverse().slice(0,50).map(a => `<tr><td>${new Date(a.time).toLocaleString('en-IN')}</td><td>${escapeHtml(a.text)}</td></tr>`).join('')}</tbody></table>`; }
+}
+function deleteUser(id) { if (!confirm('Delete this user?')) return; const u = activeCompany.users.find(x => x.id === id); if (!u) return; activeCompany.users = activeCompany.users.filter(x => x.id !== id); logActivity(`Deleted user ${u.name}`); saveAppData(); renderUsers(); showToast('🗑️ Deleted'); }
+function logActivity(text) { if (!activeCompany.activityLog) activeCompany.activityLog = []; activeCompany.activityLog.push({ time: Date.now(), text, userId: activeUser ? activeUser.id : null }); }
+
+// ============================================================
+// VAULT
+// ============================================================
+function renderVault() {
+  const grid = document.getElementById('vaultGrid'); if (!grid || !activeCompany) return;
+  const vf = activeCompany.vaultFiles || [];
+  const search = (document.getElementById('vaultSearch')?.value || '').toLowerCase();
+  const filtered = vf.filter(f => f.name.toLowerCase().includes(search));
+  document.getElementById('vaultTotal').textContent = vf.length;
+  document.getElementById('vaultPdf').textContent = vf.filter(f => f.type === 'pdf').length;
+  document.getElementById('vaultDoc').textContent = vf.filter(f => f.type === 'doc').length;
+  if (filtered.length === 0) { grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><span class="icon">🗄️</span><div class="title">Vault is empty</div></div>'; return; }
+  grid.innerHTML = filtered.map(f => `<div class="vault-card"><div class="vault-card-icon file-type-${f.type}">${getFileIcon(f.type)}</div><div class="vault-card-name">${escapeHtml(f.name)}</div><div class="vault-card-meta">${f.size} • ${f.date}</div><div class="vault-card-actions"><button onclick="showToast('View')">👁️</button><button class="danger" onclick="deleteVaultFile('${f.id}')">🗑️</button></div></div>`).join('');
+  updateStats();
+}
+function triggerVaultUpload() { document.getElementById('vaultFileInput').click(); }
+function handleVaultFiles(e) {
+  if (!activeCompany.vaultFiles) activeCompany.vaultFiles = [];
+  Array.from(e.target.files).forEach(f => { activeCompany.vaultFiles.push({ id:'v_'+Date.now()+Math.random(), name:f.name, category:'other', size:formatSize(f.size), type:getFileType(f.name), date:new Date().toISOString().slice(0,10), aiLearned:true }); });
+  e.target.value = ''; logActivity('Uploaded vault files'); saveAppData(); renderVault(); showToast('✅ Saved');
+}
+function deleteVaultFile(id) { if (!confirm('Delete?')) return; activeCompany.vaultFiles = activeCompany.vaultFiles.filter(x => x.id !== id); saveAppData(); renderVault(); showToast('🗑️ Deleted'); }
+function filterVault() { renderVault(); }
+
+// ============================================================
+// DIARY
+// ============================================================
+function renderTimelineSelect() {
+  const sel = document.getElementById('timelineCaseSelect'); if (!sel || !activeCompany) return;
+  const cases = activeCompany.cases || [];
+  if (cases.length === 0) { sel.innerHTML = '<option value="">-- No cases yet --</option>'; return; }
+  sel.innerHTML = cases.map(c => `<option value="${c.id}">${escapeHtml(c.caseNo)} — ${c.type}</option>`).join('');
+}
+function loadTimeline(caseId) {
+  const view = document.getElementById('timelineView'); if (!view || !activeCompany) return;
+  if (!caseId) { view.innerHTML = '<div class="empty-state"><span class="icon">📔</span><div class="title">No case selected</div></div>'; return; }
+  const entries = (activeCompany.diaryData && activeCompany.diaryData[caseId]) || [];
+  if (entries.length === 0) { view.innerHTML = '<div class="empty-state"><span class="icon">📔</span><div class="title">No diary entries</div></div>'; return; }
+  view.innerHTML = entries.map(e => `<div style="position:relative;margin-bottom:18px;padding-left:32px;"><div style="position:absolute;left:0;top:4px;width:24px;height:24px;border-radius:50%;background:var(--gold);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:bold;">${e.type.charAt(0)}</div><div style="font-size:.7rem;color:var(--muted);font-weight:700;">${new Date(e.date).toLocaleDateString('en-IN')}</div><div style="font-size:.88rem;font-weight:bold;">${escapeHtml(e.title)}</div><div style="font-size:.8rem;color:#475569;background:var(--bg);padding:9px;border-radius:8px;margin-top:5px;">${escapeHtml(e.body)}</div></div>`).join('');
+}
+function openAddEntry() { const caseId = document.getElementById('timelineCaseSelect').value; if (!caseId) { showToast('Save a case first', true); return; } document.getElementById('diaryDate').value = new Date().toISOString().slice(0,10); document.getElementById('diaryModal').classList.add('active'); }
+function saveDiaryEntry() {
+  const caseId = document.getElementById('timelineCaseSelect').value;
+  if (!caseId) { showToast('No case selected', true); return; }
+  if (!activeCompany.diaryData) activeCompany.diaryData = {};
+  if (!activeCompany.diaryData[caseId]) activeCompany.diaryData[caseId] = [];
+  activeCompany.diaryData[caseId].unshift({ date: document.getElementById('diaryDate').value || new Date().toISOString().slice(0,10), type: document.getElementById('diaryType').value, title: document.getElementById('diaryTitle').value || document.getElementById('diaryType').value, body: document.getElementById('diaryBody').value || '—' });
+  logActivity('Added diary entry'); saveAppData(); loadTimeline(caseId);
+  document.getElementById('diaryModal').classList.remove('active'); showToast('📔 Saved');
+}
+
+// ============================================================
+// MESSAGES
+// ============================================================
+function sendMessage() {
+  const p = document.getElementById('partySelect').value;
+  const b = document.getElementById('msgBody').value.trim();
+  if (!p) { showToast('Select party', true); return; }
+  if (!b) { showToast('Write message', true); return; }
+  if (!activeCompany.messages) activeCompany.messages = [];
+  activeCompany.messages.push({ time: Date.now(), partyId: p, body: b });
+  logActivity('Sent message'); saveAppData(); document.getElementById('msgBody').value = ''; showToast('✅ Sent');
+}
+function updateCharCount() { document.getElementById('charCounter').textContent = `${document.getElementById('msgBody').value.length} / 160`; }
+
+// ============================================================
+// CHAIN DEED
+// ============================================================
+function generateChainDeed(p) {
+  const links = chainLinks[p] || [];
+  const outputDiv = document.getElementById(p + '-chain-output');
+  if (links.length === 0) { showToast('Add at least one deed link', true); return; }
+  const sorted = [...links].sort((a, b) => { if (!a.deedDate) return 1; if (!b.deedDate) return -1; return new Date(a.deedDate) - new Date(b.deedDate); });
+  let gaps = [];
+  for (let i = 1; i < sorted.length; i++) { const pp = (sorted[i-1].purchaser||'').trim().toLowerCase(); const cv = (sorted[i].vendor||'').trim().toLowerCase(); if (pp && cv && pp !== cv) gaps.push(`Link ${i} → ${i+1}: "${sorted[i-1].purchaser}" ≠ "${sorted[i].vendor}"`); }
+  let html = `<div style="font-family:'Times New Roman',serif;line-height:1.8;"><div style="text-align:center;"><h2>CHAIN OF TITLE</h2><div>${escapeHtml(activeCompany.name)}</div></div><hr><table style="width:100%;border-collapse:collapse;font-size:.8rem;margin:12px 0;border:1px solid #ccc;"><thead><tr style="background:#EFF6FF;"><th style="padding:7px;border:1px solid #ccc;">#</th><th style="padding:7px;border:1px solid #ccc;">Deed No</th><th style="padding:7px;border:1px solid #ccc;">Date</th><th style="padding:7px;border:1px solid #ccc;">Vendor</th><th style="padding:7px;border:1px solid #ccc;">Purchaser</th><th style="padding:7px;border:1px solid #ccc;">Area</th><th style="padding:7px;border:1px solid #ccc;text-align:right;">Consideration</th></tr></thead><tbody>`;
+  sorted.forEach((l, i) => { html += `<tr><td style="padding:7px;border:1px solid #ccc;">${i+1}</td><td style="padding:7px;border:1px solid #ccc;">${escapeHtml(l.deedNo||'—')}</td><td style="padding:7px;border:1px solid #ccc;">${l.deedDate||'—'}</td><td style="padding:7px;border:1px solid #ccc;">${escapeHtml(l.vendor||'—')}</td><td style="padding:7px;border:1px solid #ccc;">${escapeHtml(l.purchaser||'—')}</td><td style="padding:7px;border:1px solid #ccc;">${escapeHtml(l.area||'—')}</td><td style="padding:7px;border:1px solid #ccc;text-align:right;">${escapeHtml(l.consideration||'—')}</td></tr>`; });
+  html += `</tbody></table><div style="margin-top:20px;text-align:right;"><strong>Prepared by:</strong><br>${escapeHtml(activeUser.name)}<br>${escapeHtml(activeCompany.name)}<br>Date: ${new Date().toLocaleDateString('en-IN')}</div></div>`;
+  outputDiv.innerHTML = html;
+  if (gaps.length > 0) outputDiv.innerHTML += `<div class="chain-deed-gap error"><strong>⚠️ Gaps:</strong><br>${gaps.map(g => '• ' + escapeHtml(g)).join('<br>')}</div>`;
+  else outputDiv.innerHTML += `<div class="chain-deed-gap"><strong>✅ Chain Verified.</strong></div>`;
+  showToast('📜 Chain Deed generated');
+}
+function downloadChainDeedWord(p) { const o = document.getElementById(p + '-chain-output'); if (!o || !o.innerHTML.trim()) { showToast('Generate first', true); return; } const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'></head><body style="font-family:'Times New Roman',serif;padding:40px;">${o.innerHTML}</body></html>`; const blob = new Blob(['\ufeff', html], { type: 'application/msword' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Chain_Deed_' + Date.now() + '.doc'; a.click(); showToast('📝 Downloaded'); }
+
+// ============================================================
+// LIMITATION / SHARE / FARAYEZ
+// ============================================================
+function calcLimitationEntry() {
+  const orderDate = document.getElementById('ela-orderDate')?.value;
+  const resultDiv = document.getElementById('ela-limitation-result');
+  if (!resultDiv || !orderDate) { if (resultDiv) resultDiv.innerHTML = ''; return; }
+  const today = new Date();
+  const rules = [{ label:'Section 54 WBLR Act', days:60 }, { label:'Section 5 Limitation Act', days:90 }];
+  let html = '';
+  rules.forEach(rule => {
+    const deadline = new Date(orderDate); deadline.setDate(deadline.getDate() + rule.days);
+    const daysLeft = Math.ceil((deadline - today) / (1000*60*60*24));
+    if (daysLeft < 0) html += `<div class="limitation-alert"><span class="icon">❌</span><div class="text">EXPIRED ${Math.abs(daysLeft)} days — ${rule.label}</div></div>`;
+    else if (daysLeft <= 7) html += `<div class="limitation-alert"><span class="icon">🚨</span><div class="text">URGENT: ${daysLeft} days — ${rule.label}</div></div>`;
+    else html += `<div class="limitation-ok"><span class="icon">✅</span><div class="text">${daysLeft} days — ${rule.label}</div></div>`;
+  });
+  resultDiv.innerHTML = html;
+}
+const unitToSqft = { acre:43560, bigha:14400, katha:720, chittak:45, satak:435.6, decimal:435.6, sqft:1, hectare:107639 };
+const unitLabels = { acre:'Acre', bigha:'Bigha', katha:'Katha', satak:'Satak', sqft:'Sq.Ft.' };
+function addSharePortion() { sharePortions.push({ area:0, unit:'katha', chittak:0, sqft:0 }); renderSharePortions(); }
+function removeSharePortion(i) { sharePortions.splice(i,1); renderSharePortions(); }
+function updateSharePortion(i, f, v) { if (sharePortions[i]) sharePortions[i][f]=v; }
+function renderSharePortions() {
+  const c = document.getElementById('sharePortionsList'); if (!c) return;
+  if (sharePortions.length === 0) { c.innerHTML = '<p style="text-align:center;padding:16px;color:var(--muted);font-size:.8rem;">Click "+ Add Portion"</p>'; return; }
+  c.innerHTML = sharePortions.map((p, i) => `<div style="background:#F0F9FF;border:1px solid #BAE6FD;border-radius:10px;padding:12px;margin-bottom:8px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div style="background:linear-gradient(135deg,#0369A1,#075985);color:#fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.75rem;">${i+1}</div><button class="btn btn-outline btn-xs" onclick="removeSharePortion(${i})" style="color:var(--red);border-color:var(--red);">× Remove</button></div><div class="form-grid-4"><div class="form-group" style="margin-bottom:0;"><label style="font-size:.66rem;">Unit</label><select onchange="updateSharePortion(${i},'unit',this.value)"><option value="katha" ${p.unit==='katha'?'selected':''}>Katha</option><option value="bigha" ${p.unit==='bigha'?'selected':''}>Bigha</option><option value="acre" ${p.unit==='acre'?'selected':''}>Acre</option><option value="satak" ${p.unit==='satak'?'selected':''}>Satak</option><option value="sqft" ${p.unit==='sqft'?'selected':''}>Sq.Ft.</option></select></div><div class="form-group" style="margin-bottom:0;"><label style="font-size:.66rem;">Amount</label><input type="number" step="any" value="${p.area}" oninput="updateSharePortion(${i},'area',parseFloat(this.value)||0)"></div><div class="form-group" style="margin-bottom:0;"><label style="font-size:.66rem;">Chittak</label><input type="number" step="any" value="${p.chittak}" oninput="updateSharePortion(${i},'chittak',parseFloat(this.value)||0)"></div><div class="form-group" style="margin-bottom:0;"><label style="font-size:.66rem;">Sq.Ft.</label><input type="number" step="any" value="${p.sqft}" oninput="updateSharePortion(${i},'sqft',parseFloat(this.value)||0)"></div></div></div>`).join('');
+}
+function convertToSqft(a, u, c, s) { let t = 0; if (a && unitToSqft[u]) t += a * unitToSqft[u]; if (c) t += c*45; if (s) t += s; return t; }
+function calculate10000Share() {
+  const totalArea = parseFloat(document.getElementById('shareTotalArea').value) || 0;
+  const totalUnit = document.getElementById('shareTotalUnit').value;
+  const displayUnit = document.getElementById('shareDisplayUnit').value;
+  if (totalArea <= 0) { showToast('Enter total area', true); return; }
+  if (sharePortions.length === 0) { showToast('Add portion', true); return; }
+  const totalSqft = totalArea * unitToSqft[totalUnit];
+  let portionsSqft = 0; let bh = '';
+  sharePortions.forEach((p, i) => { const ps = convertToSqft(p.area, p.unit, p.chittak, p.sqft); portionsSqft += ps; bh += `<div>Portion ${i+1}: ${p.area||0} ${unitLabels[p.unit]} = ${ps.toFixed(2)} Sq.Ft.</div>`; });
+  const share = (portionsSqft / totalSqft) * 10000;
+  const pct = (portionsSqft / totalSqft) * 100;
+  const riu = {}; Object.keys(unitToSqft).forEach(u => riu[u] = portionsSqft / unitToSqft[u]);
+  let dh = '';
+  if (displayUnit === 'auto') { dh = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:10px;">${['acre','bigha','katha','satak','sqft'].map(u => `<div style="background:#fff;padding:10px;border-radius:8px;border:1px solid #BAE6FD;"><div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;">${unitLabels[u]}</div><div style="font-size:1rem;font-weight:700;color:#0369A1;">${riu[u].toFixed(4)}</div></div>`).join('')}</div>`; }
+  else { dh = `<div style="background:#fff;padding:14px;border-radius:8px;border:1px solid #BAE6FD;text-align:center;"><div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;">${unitLabels[displayUnit]}</div><div style="font-size:1.5rem;font-weight:700;color:#0369A1;">${riu[displayUnit].toFixed(4)}</div></div>`; }
+  document.getElementById('shareResult').innerHTML = `<div style="background:linear-gradient(135deg,#F0F9FF,#E0F2FE);border:2px solid #7DD3FC;border-radius:12px;padding:18px;"><h3 style="color:#0369A1;margin-bottom:8px;">📊 Result</h3><div style="background:#fff;padding:12px;border-radius:8px;margin-bottom:12px;"><div style="font-size:.72rem;color:var(--muted);margin-bottom:6px;">Total Land</div><div style="font-weight:700;">${totalArea} ${unitLabels[totalUnit]} = ${totalSqft.toFixed(2)} Sq.Ft.</div></div><div style="background:#fff;padding:12px;border-radius:8px;margin-bottom:12px;">${bh}<div style="margin-top:6px;padding-top:6px;border-top:1px dashed #BAE6FD;font-weight:700;">Total = ${portionsSqft.toFixed(2)} Sq.Ft.</div></div><div style="background:linear-gradient(135deg,#FEF3C7,#FDE68A);border:2px solid var(--gold);border-radius:10px;padding:14px;text-align:center;"><div style="font-size:.75rem;color:var(--gold-dark);text-transform:uppercase;">Share out of 10000</div><div style="font-size:2.2rem;font-weight:900;color:var(--gold-dark);line-height:1;">${share.toFixed(2)}</div><div style="font-size:.8rem;color:var(--muted);margin-top:6px;">= ${pct.toFixed(4)}% of total</div></div>${dh}<div class="btn-group" style="margin-top:12px;"><button class="btn btn-secondary btn-sm" onclick="printSection('shareResult')">🖨️ Print</button></div></div>`;
+  showToast('✅ Calculated');
+}
+function clearShareCalculator() { sharePortions = []; document.getElementById('shareTotalArea').value = ''; renderSharePortions(); document.getElementById('shareResult').innerHTML = ''; }
+function calculateFarayez() {
+  const total = parseFloat(document.getElementById('farayezTotal').value) || 0;
+  const unit = document.getElementById('farayezUnit').value;
+  const gender = document.getElementById('farayezGender').value;
+  const husband = parseInt(document.getElementById('farayezHusband').value) || 0;
+  const wife = parseInt(document.getElementById('farayezWife').value) || 0;
+  const sons = parseInt(document.getElementById('farayezSons').value) || 0;
+  const daughters = parseInt(document.getElementById('farayezDaughters').value) || 0;
+  const fatherAlive = document.getElementById('farayezFather').value === 'yes';
+  const motherAlive = document.getElementById('farayezMother').value === 'yes';
+  if (total <= 0) { showToast('Enter total', true); return; }
+  const has = sons > 0 || daughters > 0;
+  let q = {};
+  if (gender === 'female' && husband === 1) q.husband = has ? 1/4 : 1/2;
+  if (gender === 'male' && wife > 0) { const wt = has ? 1/8 : 1/4; q.wifeTotal = wt; q.wifeEach = wt / wife; }
+  if (fatherAlive && has) q.father = 1/6;
+  if (motherAlive) q.mother = has ? 1/6 : 1/3;
+  if (daughters > 0 && sons === 0) q.daughters = daughters === 1 ? 1/2 : 2/3;
+  let sum = 0; Object.values(q).forEach(v => { if (v) sum += v; });
+  const rem = Math.max(0, 1 - sum);
+  const res = [];
+  if (q.husband) res.push({ n:'Husband', f:q.husband, a:q.husband*total });
+  if (q.wifeEach) { res.push({ n:'Wife (each)', f:q.wifeEach, a:q.wifeEach*total, c:wife }); if (wife > 1) res.push({ n:'Wife (total)', f:q.wifeTotal, a:q.wifeTotal*total }); }
+  if (q.father) res.push({ n:'Father', f:q.father, a:q.father*total });
+  if (q.mother) res.push({ n:'Mother', f:q.mother, a:q.mother*total });
+  if (q.daughters && sons === 0) { const e = q.daughters/daughters; res.push({ n:'Daughter (each)', f:e, a:e*total, c:daughters }); if (daughters > 1) res.push({ n:'Daughter (total)', f:q.daughters, a:q.daughters*total }); }
+  if (has && sons > 0) { const tp = sons*2 + daughters*1; const ss = (rem*2)/tp; const ds = (rem*1)/tp; res.push({ n:'Son (each)', f:ss, a:ss*total, c:sons }); if (daughters > 0) res.push({ n:'Daughter (each)', f:ds, a:ds*total, c:daughters }); }
+  else if (!has && fatherAlive && rem > 0) res.push({ n:'Father (Residuary)', f:rem, a:rem*total });
+  let html = `<div style="background:linear-gradient(135deg,#FFFBEB,#FEF3C7);border:2px solid var(--gold);border-radius:12px;padding:18px;"><h3 style="color:var(--gold-dark);margin-bottom:12px;">🕌 Farayez Result</h3><table style="width:100%;border-collapse:collapse;font-size:.82rem;"><thead><tr style="background:#FEF3C7;"><th style="padding:8px;text-align:left;">Heir</th><th style="padding:8px;text-align:center;">Fraction</th><th style="padding:8px;text-align:center;">%</th><th style="padding:8px;text-align:right;">Amount</th></tr></thead><tbody>`;
+  res.forEach(r => { html += `<tr><td style="padding:8px;border-bottom:1px solid #FDE68A;">${r.n}${r.c?` × ${r.c}`:''}</td><td style="padding:8px;text-align:center;border-bottom:1px solid #FDE68A;font-family:monospace;">${fmtFrac(r.f)}</td><td style="padding:8px;text-align:center;border-bottom:1px solid #FDE68A;">${(r.f*100).toFixed(2)}%</td><td style="padding:8px;text-align:right;border-bottom:1px solid #FDE68A;font-weight:700;">${unit} ${r.a.toLocaleString('en-IN', {maximumFractionDigits:2})}</td></tr>`; });
+  html += `</tbody></table></div>`;
+  document.getElementById('farayezResult').innerHTML = html;
+  showToast('🕌 Calculated');
+}
+function fmtFrac(d) { const c = [[1,2,'1/2'],[1,3,'1/3'],[2,3,'2/3'],[1,4,'1/4'],[3,4,'3/4'],[1,6,'1/6'],[1,8,'1/8']]; for (const [n, de, l] of c) if (Math.abs(d - n/de) < 0.001) return l; const den = 10000, num = Math.round(d*den); const gcd = (a,b) => b?gcd(b,a%b):a; const g = gcd(num,den); return `${num/g}/${den/g}`; }
+function clearFarayez() { ['farayezHusband','farayezWife','farayezSons','farayezDaughters'].forEach(id => document.getElementById(id).value = 0); document.getElementById('farayezFather').value = 'no'; document.getElementById('farayezMother').value = 'no'; document.getElementById('farayezResult').innerHTML = ''; }
+
+// ============================================================
+// AI STUDIO
+// ============================================================
+function switchAITab(tab, el) { document.querySelectorAll('.ai-tab').forEach(t => t.classList.remove('active')); if (el) el.classList.add('active'); document.getElementById('ai-tab-generate').style.display = tab === 'generate' ? 'block' : 'none'; document.getElementById('ai-tab-folder').style.display = tab === 'folder' ? 'block' : 'none'; document.getElementById('ai-tab-learned').style.display = tab === 'learned' ? 'block' : 'none'; }
+function generateFromStudio() { const party = document.getElementById('aiParty').value || '[Party]'; const subject = document.getElementById('aiSubject').value || '[Subject]'; const points = document.getElementById('aiPoints').value || '[Points]'; document.getElementById('aiStudioOutput').innerHTML = `<div style="font-family:'Times New Roman',serif;"><div style="text-align:center;"><strong>${escapeHtml(activeCompany.name)}</strong></div><div style="text-align:right;">Date: ${new Date().toLocaleDateString('en-IN')}</div><br><strong>Subject:</strong> ${escapeHtml(subject)}<br><strong>Party:</strong> ${escapeHtml(party)}<br><br>${escapeHtml(points).replace(/\n/g,'<br>')}<br><br><strong>PRAYER:</strong><br>Grant relief.</div>`; showToast('🧠 Generated'); }
+function convertToWord(id) { const el = document.getElementById(id); if (!el) return; const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'></head><body style="font-family:'Times New Roman',serif;padding:40px;">${el.innerHTML}</body></html>`; const blob = new Blob(['\ufeff', html], { type: 'application/msword' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Draft_' + Date.now() + '.doc'; a.click(); showToast('📝 Downloaded'); }
+function copyOutput(id) { const el = document.getElementById(id); if (el) navigator.clipboard.writeText(el.innerText).then(() => showToast('📋 Copied')); }
+function handleFolderUpload(e) { const f = Array.from(e.target.files); if (f.length === 0) return; document.getElementById('folderScanOutput').innerHTML = `<div class="folder-scan-result"><h4 style="color:#166534;">📁 Scanned</h4><div class="stat-line"><span>Files:</span><strong>${f.length}</strong></div></div>`; showToast(`📂 ${f.length} files`); }
+function startFolderScan() { const out = document.getElementById('folderScanOutput'); out.innerHTML = `<div class="folder-scan-result"><h4 style="color:#166534;">📂 Scanning...</h4><div class="folder-progress"><div class="folder-progress-bar" id="folderProgressBar"></div></div></div>`; const steps = [15,30,50,70,85,100]; steps.forEach((p, i) => { setTimeout(() => { const bar = document.getElementById('folderProgressBar'); if (bar) bar.style.width = p + '%'; if (i === steps.length - 1) setTimeout(() => { const tf = document.getElementById('folderInput').files?.length || 0; document.getElementById('aiDocCount').textContent = tf; document.getElementById('aiLearnPct').textContent = '100%'; document.getElementById('folderScanOutput').innerHTML = `<div class="folder-scan-result"><h4 style="color:#166534;">✅ Complete</h4><div class="stat-line"><span>Files:</span><strong>${tf}</strong></div></div>`; showToast('✅ Learned'); }, 400); }, i * 500); }); }
+function clearFolderScan() { document.getElementById('folderScanOutput').innerHTML = ''; document.getElementById('folderInput').value = ''; showToast('🔄 Reset'); }
+function generateFromLearned() { const party = document.getElementById('learnedParty').value || '[Party]'; const subj = document.getElementById('learnedSubject').value || '[Subject]'; const points = document.getElementById('learnedPoints').value || '[Points]'; document.getElementById('learnedOutput').innerHTML = `<div style="text-align:center;"><strong>${escapeHtml(activeCompany.name)}</strong></div><br><strong>Subject:</strong> ${escapeHtml(subj)}<br><strong>Party:</strong> ${escapeHtml(party)}<br><br>${escapeHtml(points).replace(/\n/g,'<br>')}<br><br>${escapeHtml(party)}<br>Through<br>${escapeHtml(activeUser.name)}`; document.getElementById('learnedOutputCard').style.display = 'block'; showToast('🧠 Generated'); }
+
+// ============================================================
+// WBLR ACT / MANUAL
+// ============================================================
+const actSections = [{ ch:'preliminary', num:'Section 2', title:'Definitions', en:'"Bargadar" means a person who cultivates the land of another on condition of delivering a share of the produce.', bn:'"বর্গাদার" অর্থ এমন ব্যক্তি যিনি উৎপাদনের একটি অংশ প্রদানের শর্তে অন্য ব্যক্তির জমি চাষ করেন।' },{ ch:'ror', num:'Section 50', title:'Record of Rights', en:'The Revenue Officer shall prepare and maintain a record-of-rights for every mauza.', bn:'রাজস্ব আধিকারিক প্রতিটি মৌজার জন্য রেকর্ড-অব-রাইটস প্রস্তুত করবেন।' },{ ch:'ror', num:'Section 51A', title:'Draft and Final Publication', en:'(1) Draft ROR. (4) Finally published. (5) Appeal within 30 days.', bn:'(১) খসড়া। (৪) চূড়ান্ত প্রকাশ। (৫) ৩০ দিনে আপিল।' },{ ch:'appeal', num:'Section 54', title:'Appeal to DL&LRO', en:'Appeal within 60 days from every Revenue Officer order.', bn:'প্রতিটি রাজস্ব আদেশ থেকে ৬০ দিনে আপিল।' }];
+const manualChapters = [{ ch:'mutation', num:'Ch. IV', title:'Mutation of Names', en:'Application to BL&LRO.', bn:'বিএলঅ্যান্ডএলআরও-এর কাছে আবেদন।' }];
+let currentActChapter = 'all', currentManualChapter = 'all';
+function renderAct() { const c = document.getElementById('actContent'); if (!c) return; let s = actSections; if (currentActChapter !== 'all') s = s.filter(x => x.ch === currentActChapter); c.innerHTML = s.map(x => `<div class="act-section"><div class="act-section-title">${x.num}: ${x.title}</div><div class="act-provision"><div class="prov-num">${x.num}</div><div class="prov-text">${x.en}</div><div class="prov-text-bn">${x.bn}</div></div></div>`).join(''); }
+function showActChapter(ch, el) { currentActChapter = ch; document.querySelectorAll('#page-wblract .act-tab').forEach(t => t.classList.remove('active')); if (el) el.classList.add('active'); renderAct(); }
+function renderManual() { const c = document.getElementById('manualContent'); if (!c) return; let m = manualChapters; if (currentManualChapter !== 'all') m = m.filter(x => x.ch === currentManualChapter); c.innerHTML = m.map(x => `<div class="act-section"><div class="act-section-title">${x.num}: ${x.title}</div><div class="act-provision"><div class="prov-num">${x.num}</div><div class="prov-text">${x.en}</div><div class="prov-text-bn">${x.bn}</div></div></div>`).join(''); }
+function showManualChapter(ch, el) { currentManualChapter = ch; document.querySelectorAll('#page-wblrmanual .act-tab').forEach(t => t.classList.remove('active')); if (el) el.classList.add('active'); renderManual(); }
+
+// ============================================================
+// PRINT / MISC
+// ============================================================
+function printSection(id) {
+  const el = document.getElementById(id); if (!el) return;
+  const w = window.open('', '_blank');
+  if (!w) { showToast('Pop-up blocked', true); return; }
+  w.document.write(`<html><head><title>Print</title><style>body{font-family:'Times New Roman',serif;padding:40px;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #ccc;padding:8px;}</style></head><body><h2>${escapeHtml(activeCompany.name)}</h2><hr>${el.innerHTML}</body></html>`);
+  w.document.close(); w.print();
+}
+function updateStats() {
+  if (!activeCompany) return;
+  const cases = activeCompany.cases || [];
+  const causeList = activeCompany.causeList || [];
+  const vaultFiles = activeCompany.vaultFiles || [];
+  document.getElementById('statCases').textContent = cases.length;
+  document.getElementById('statHearings').textContent = causeList.length;
+  document.getElementById('statVault').textContent = vaultFiles.length;
+  const pendingCount = cases.filter(c => !['Allowed','Rejected','Disposed','Dismissed','Order Passed'].includes(c.status)).length;
+  document.getElementById('statPending').textContent = pendingCount;
+  document.getElementById('dashCasesPill').textContent = `📁 ${cases.length} Cases`;
+  document.getElementById('dashHearingsPill').textContent = `🏛️ ${causeList.length} Hearings`;
+}
+
+// INIT
+document.addEventListener('DOMContentLoaded', () => {
+  loadAppData();
+  if (appData.companies.length > 0) { const card = document.getElementById('openExistingCard'); if (card) { card.style.opacity = '1'; card.style.pointerEvents = 'auto'; } }
+  showLaunchWelcome();
+  const stEl = document.getElementById('lc-state'); if (stEl) stEl.value = 'West Bengal';
+});
+document.addEventListener('click', (e) => { const fab = document.querySelector('.fab'), fm = document.getElementById('fabMenu'); if (fab && fm && !fab.contains(e.target) && !fm.contains(e.target)) fm.classList.remove('open'); });
+window.addEventListener('resize', () => { if (window.innerWidth > 768) { const sb = document.getElementById('sidebar'); if (sb) sb.classList.remove('open'); } });
+</script>
+</body>
+</html>
