@@ -1,7 +1,7 @@
 ```yaml
 name: Build SRK Case Manager EXE
 
-on:
+'on':
   workflow_dispatch:
   push:
     branches:
@@ -10,6 +10,7 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
+
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
