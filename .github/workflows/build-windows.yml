@@ -2,9 +2,6 @@ name: Build SRK Case Manager EXE
 
 'on':
   workflow_dispatch:
-  push:
-    branches:
-      - main
 
 jobs:
   build-windows:
