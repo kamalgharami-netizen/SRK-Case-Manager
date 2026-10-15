@@ -1,13 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { Scale, Building2, FolderOpen, RotateCcw, ArrowRight, UserPlus, LogIn, Trash2, Shield } from 'lucide-react';
+import { Scale, Building2, FolderOpen, RotateCcw, ArrowRight, UserPlus, Trash2, CheckCircle2, AlertCircle, X, Upload, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { wbDistricts } from '../data/wbDistricts';
+import { CompanyLogo, BADGE_OPTIONS, COLOR_OPTIONS } from './CompanyLogo';
 
-export const LaunchScreen: React.FC = () => {
-  const { companies, selectCompany, createCompany, deleteCompany, loginUser, restoreCompany, showToast } = useApp();
-  const [view, setView] = useState<'welcome' | 'create' | 'select' | 'login'>(
-    companies.length === 0 ? 'create' : 'welcome'
+interface LaunchScreenProps {
+  onClose?: () => void;
+}
+
+export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
+  const { companies, selectCompany, createCompany, deleteCompany, restoreCompany, showToast, t } = useApp();
+  const logoFileRef = useRef<HTMLInputElement>(null);
+  
+  // When no companies exist (First-Time Launch), default to 'create'.
+  // If companies exist, default to 'select'.
+  const [view, setView] = useState<'create' | 'restore' | 'select'>(
+    companies.length === 0 ? 'create' : 'create'
   );
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
 
   // Form states for creation
   const [name, setName] = useState('');
@@ -15,11 +24,16 @@ export const LaunchScreen: React.FC = () => {
   const [barCouncil, setBarCouncil] = useState('');
   const [gst, setGst] = useState('');
   const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
+  const [city, setCity] = useState('Kolkata');
   const [state, setState] = useState('West Bengal');
   const [pin, setPin] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+
+  // Dynamic Logo states (Vyapar style)
+  const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined);
+  const [logoBadge, setLogoBadge] = useState<any>('scales');
+  const [logoColor, setLogoColor] = useState('#2563EB');
 
   // Admin user states
   const [adminName, setAdminName] = useState('');
@@ -27,60 +41,61 @@ export const LaunchScreen: React.FC = () => {
   const [adminPhone, setAdminPhone] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
 
-  // Login states
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-
-  const targetCompany = companies.find(c => c.id === selectedCompanyId) || (companies.length > 0 ? companies[0] : null);
+  const districtList = Object.keys(wbDistricts);
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      showToast('Firm/Company name is required', 'error');
+      showToast('Firm / Chamber name is required', 'error');
       return;
     }
     if (!adminName.trim()) {
-      showToast('Admin Advocate name is required', 'error');
+      showToast('Advocate name is required', 'error');
       return;
     }
     if (!adminEmail.trim()) {
-      showToast('Admin email is required', 'error');
-      return;
-    }
-    if (adminPassword.length < 3) {
-      showToast('Password must be at least 3 characters', 'error');
+      showToast('Email address is required', 'error');
       return;
     }
 
     createCompany(
       {
-        name,
+        name: name.trim(),
         type,
-        barCouncil,
-        gst,
-        address,
-        city,
-        state,
-        pin,
-        phone,
-        email
+        barCouncil: barCouncil.trim() || 'WB/Advocate',
+        gst: gst.trim(),
+        address: address.trim(),
+        city: city.trim() || 'Kolkata',
+        state: state.trim() || 'West Bengal',
+        pin: pin.trim(),
+        phone: phone.trim() || adminPhone.trim(),
+        email: email.trim() || adminEmail.trim(),
+        logoUrl,
+        logoBadge,
+        logoColor
       },
       {
-        name: adminName,
-        email: adminEmail,
-        phone: adminPhone,
-        password: adminPassword
+        name: adminName.trim(),
+        email: adminEmail.trim(),
+        phone: adminPhone.trim(),
+        password: adminPassword || 'admin123'
       }
     );
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!loginEmail.trim()) {
-      showToast('Enter your login email', 'error');
+  const handleLogoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('Logo file should be under 2MB', 'error');
       return;
     }
-    loginUser(loginEmail, loginPassword);
+    const reader = new FileReader();
+    reader.onload = evt => {
+      setLogoUrl(evt.target?.result as string);
+      showToast('Logo image uploaded!');
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleRestoreFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -98,9 +113,22 @@ export const LaunchScreen: React.FC = () => {
     reader.readAsText(file);
   };
 
+  const isFirstLaunch = companies.length === 0;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4 sm:p-6 text-slate-100">
-      <div className="w-full max-w-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 max-h-[92vh] overflow-y-auto">
+      <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 max-h-[94vh] overflow-y-auto">
+        {/* Optional Close button if launched as modal inside existing session */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            title="Close"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
+
         {/* Brand header */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-700 text-white shadow-lg shadow-blue-700/25 mb-3">
@@ -112,119 +140,81 @@ export const LaunchScreen: React.FC = () => {
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
             West Bengal Legal Chamber & Land Case Management Platform
           </p>
-        </div>
 
-        {/* Step indicator */}
-        <div className="flex gap-2 mb-6">
-          <div className={`h-1.5 flex-1 rounded-full ${view === 'welcome' ? 'bg-blue-600' : 'bg-slate-200 dark:bg-slate-800'}`} />
-          <div className={`h-1.5 flex-1 rounded-full ${view === 'create' || view === 'select' ? 'bg-blue-600' : 'bg-slate-200 dark:bg-slate-800'}`} />
-          <div className={`h-1.5 flex-1 rounded-full ${view === 'login' ? 'bg-blue-600' : 'bg-slate-200 dark:bg-slate-800'}`} />
-        </div>
-
-        {/* VIEW: Welcome */}
-        {view === 'welcome' && (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-lg font-bold">Chamber Workspace Setup</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Manage mutation petitions, misc cases, LR appeals, WBLRTT filings, daily cause lists & calculations.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <button
-                onClick={() => setView('create')}
-                className="flex flex-col items-center p-5 rounded-xl border-2 border-slate-200 dark:border-slate-800 hover:border-blue-600 hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-all text-center group cursor-pointer"
-              >
-                <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                  <Building2 className="w-6 h-6" />
-                </div>
-                <div className="font-bold text-sm">Create Firm</div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                  Start fresh chamber workspace
-                </div>
-              </button>
-
-              <button
-                onClick={() => setView('select')}
-                className={`flex flex-col items-center p-5 rounded-xl border-2 border-slate-200 dark:border-slate-800 transition-all text-center group ${
-                  companies.length > 0
-                    ? 'hover:border-blue-600 hover:bg-blue-50/50 dark:hover:bg-blue-950/30 cursor-pointer'
-                    : 'opacity-50 cursor-not-allowed'
-                }`}
-                disabled={companies.length === 0}
-              >
-                <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                  <FolderOpen className="w-6 h-6" />
-                </div>
-                <div className="font-bold text-sm">Open Firm ({companies.length})</div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                  Select saved chamber
-                </div>
-              </button>
-
-              <label className="flex flex-col items-center p-5 rounded-xl border-2 border-slate-200 dark:border-slate-800 hover:border-emerald-600 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition-all text-center group cursor-pointer">
-                <input
-                  type="file"
-                  accept=".json"
-                  className="hidden"
-                  onChange={handleRestoreFile}
-                />
-                <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                  <RotateCcw className="w-6 h-6" />
-                </div>
-                <div className="font-bold text-sm">Restore Data</div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                  From backup .json file
-                </div>
-              </label>
-            </div>
-
-            {companies.length > 0 && (
-              <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
-                <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                  Quick Access
-                </div>
-                <div
-                  onClick={() => {
-                    setSelectedCompanyId(companies[0].id);
-                    setView('login');
-                  }}
-                  className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between cursor-pointer transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
-                      {companies[0].name.slice(0, 2).toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold">{companies[0].name}</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">
-                        {companies[0].cases?.length || 0} cases · {companies[0].users?.length || 0} members · {companies[0].city}
-                      </div>
-                    </div>
-                  </div>
-                  <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                    Enter <ArrowRight className="w-3.5 h-3.5" />
-                  </span>
-                </div>
+          {isFirstLaunch && (
+            <div className="mt-3.5 p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800/60 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2.5 shadow-xs text-left">
+              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <strong className="font-bold text-amber-800 dark:text-amber-300 block text-xs sm:text-sm">
+                  Mandatory First-Time Setup · চেম্বার নিবন্ধন বাধ্যতামূলক
+                </strong>
+                <p className="mt-0.5 text-slate-600 dark:text-slate-300 text-[11px] sm:text-xs leading-relaxed">
+                  Welcome Senior Advocate / Learned Counsel. Before you can begin managing West Bengal land cases, daily cause lists, or AI drafts, registering your legal chamber or law firm is mandatory. All records remain 100% private and stored offline in your device.
+                </p>
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
 
-        {/* VIEW: Create Company */}
+        {/* Mode switcher tabs (First time: Create or Restore) */}
+        <div className="flex border-b border-slate-200 dark:border-slate-800 mb-6">
+          <button
+            type="button"
+            onClick={() => setView('create')}
+            className={`flex-1 pb-3 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition-colors cursor-pointer ${
+              view === 'create'
+                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <Building2 className="w-4 h-4" />
+            {isFirstLaunch ? '1. Create Chamber / Firm' : 'Register New Chamber'}
+          </button>
+          
+          <button
+            type="button"
+            onClick={() => setView('restore')}
+            className={`flex-1 pb-3 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition-colors cursor-pointer ${
+              view === 'restore'
+                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <RotateCcw className="w-4 h-4" />
+            {isFirstLaunch ? '2. Restore Backup Data' : 'Restore from JSON'}
+          </button>
+
+          {!isFirstLaunch && (
+            <button
+              type="button"
+              onClick={() => setView('select')}
+              className={`flex-1 pb-3 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition-colors cursor-pointer ${
+                view === 'select'
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <FolderOpen className="w-4 h-4" />
+              Existing Chambers ({companies.length})
+            </button>
+          )}
+        </div>
+
+        {/* VIEW 1: Create Chamber / Firm (First time setup) */}
         {view === 'create' && (
           <form onSubmit={handleCreateSubmit} className="space-y-4">
             <div>
-              <h2 className="text-lg font-bold">Register Chamber / Firm</h2>
+              <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                Chamber / Firm Registration
+              </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                These credentials will appear on generated pleadings, drafts, and cause lists.
+                Setup your legal practice details once. You will be logged in permanently.
               </p>
             </div>
 
             <div className="border-b border-slate-200 dark:border-slate-800 pb-1">
               <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
-                1. Firm Information
+                1. Chamber / Firm Information
               </span>
             </div>
 
@@ -237,7 +227,7 @@ export const LaunchScreen: React.FC = () => {
                 required
                 value={name}
                 onChange={e => setName(e.target.value)}
-                placeholder="e.g. SRK Legal Chamber & Associates"
+                placeholder="e.g. S.R. Khan Legal Chamber & Associates"
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
               />
             </div>
@@ -294,7 +284,7 @@ export const LaunchScreen: React.FC = () => {
                 type="text"
                 value={address}
                 onChange={e => setAddress(e.target.value)}
-                placeholder="Room No. 14, Alipore Judges Court Bar Association Building"
+                placeholder="Alipore Judges Court Bar Association Building, Kolkata"
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
               />
             </div>
@@ -302,15 +292,17 @@ export const LaunchScreen: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                  City / District
+                  District (WB) *
                 </label>
-                <input
-                  type="text"
+                <select
                   value={city}
                   onChange={e => setCity(e.target.value)}
-                  placeholder="Kolkata / Alipore"
                   className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                />
+                >
+                  {districtList.map(dist => (
+                    <option key={dist} value={dist}>{dist}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
@@ -339,14 +331,14 @@ export const LaunchScreen: React.FC = () => {
 
             <div className="border-b border-slate-200 dark:border-slate-800 pt-2 pb-1">
               <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
-                2. Senior Advocate / Admin User
+                2. Senior Advocate Profile (Chamber Head)
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                  Full Name *
+                  Advocate Full Name *
                 </label>
                 <input
                   type="text"
@@ -359,7 +351,7 @@ export const LaunchScreen: React.FC = () => {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                  Email Address *
+                  Advocate Email *
                 </label>
                 <input
                   type="email"
@@ -387,44 +379,152 @@ export const LaunchScreen: React.FC = () => {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                  Login Password *
+                  Password (Optional)
                 </label>
                 <input
                   type="password"
-                  required
                   value={adminPassword}
                   onChange={e => setAdminPassword(e.target.value)}
-                  placeholder="Min 3 characters"
+                  placeholder="Optional"
                   className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
                 />
               </div>
             </div>
 
-            <div className="flex gap-3 pt-3">
-              <button
-                type="button"
-                onClick={() => setView('welcome')}
-                className="px-4 py-2 text-sm font-semibold rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
-                Back
-              </button>
+            {/* 3. Dynamic Logo & Insignia Branding (Vyapar Style) */}
+            <div className="border-b border-slate-200 dark:border-slate-800 pt-2 pb-1">
+              <span className="text-xs font-bold text-blue-600 uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>3. Chamber Dynamic Logo & Branding (Vyapar Style)</span>
+              </span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 space-y-3">
+              <div className="flex items-center gap-3">
+                <CompanyLogo
+                  company={{ name: name || 'Legal Chamber', logoUrl, logoBadge, logoColor } as any}
+                  size="lg"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                    Live Dynamic Logo Preview
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    Displays on Header, Sidebar, Dashboard & printed case briefs
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => logoFileRef.current?.click()}
+                  className="px-3 py-1.5 text-xs font-bold rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 text-slate-700 dark:text-slate-300 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{logoUrl ? 'Change' : 'Upload Logo'}</span>
+                </button>
+                <input
+                  ref={logoFileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleLogoFile}
+                />
+              </div>
+
+              {/* Insignia Badges */}
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 pt-1">
+                {BADGE_OPTIONS.map(b => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => {
+                      setLogoBadge(b.id);
+                      setLogoUrl(undefined);
+                    }}
+                    className={`py-1 px-1.5 rounded-lg text-center border text-[11px] transition-all cursor-pointer ${
+                      logoBadge === b.id && !logoUrl
+                        ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/60 font-bold text-blue-700 dark:text-blue-300 ring-1 ring-blue-600'
+                        : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    <span className="truncate block">{b.label.split(' ')[0]}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Color Scheme Picker */}
+              <div className="flex items-center gap-2 pt-1">
+                <span className="text-[11px] font-bold text-slate-500">Accent Color:</span>
+                <div className="flex items-center gap-2">
+                  {COLOR_OPTIONS.map(c => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setLogoColor(c.id)}
+                      className={`w-5 h-5 rounded-full transition-transform cursor-pointer ${
+                        logoColor === c.id ? 'scale-125 ring-2 ring-blue-600' : 'hover:scale-110 opacity-70'
+                      }`}
+                      style={{ backgroundColor: c.id }}
+                      title={c.label}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3">
               <button
                 type="submit"
-                className="flex-1 px-4 py-2 text-sm font-semibold rounded-lg bg-blue-700 hover:bg-blue-800 text-white shadow-md transition-colors flex items-center justify-center gap-2"
+                className="w-full py-3 px-4 text-sm font-bold rounded-xl bg-blue-700 hover:bg-blue-800 text-white shadow-lg shadow-blue-700/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                Create Workspace <ArrowRight className="w-4 h-4" />
+                <span>Launch & Enter Chamber Workspace</span>
+                <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </form>
         )}
 
-        {/* VIEW: Select Company */}
-        {view === 'select' && (
+        {/* VIEW 2: Restore from Backup */}
+        {view === 'restore' && (
+          <div className="space-y-6 py-4">
+            <div className="text-center">
+              <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                Restore Existing Chamber from Backup
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                If you already have an exported SRK backup JSON file, restore it here to resume work immediately.
+              </p>
+            </div>
+
+            <label className="flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed border-emerald-500/50 hover:border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/20 transition-all cursor-pointer group text-center">
+              <input
+                type="file"
+                accept=".json"
+                className="hidden"
+                onChange={handleRestoreFile}
+              />
+              <div className="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-md">
+                <RotateCcw className="w-8 h-8" />
+              </div>
+              <div className="font-bold text-sm text-slate-900 dark:text-slate-100 mb-1">
+                Click to Select Backup JSON File
+              </div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">
+                Restores cases, cause list, diary, parties, and documents without any password barrier
+              </div>
+            </label>
+          </div>
+        )}
+
+        {/* VIEW 3: Existing Chambers List (if multiple chambers exist) */}
+        {view === 'select' && companies.length > 0 && (
           <div className="space-y-4">
             <div>
-              <h2 className="text-lg font-bold">Select Chamber Workspace</h2>
+              <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                Your Chamber Workspaces
+              </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Switch between your legal chambers or solo practice books.
+                Click any chamber to open it directly.
               </p>
             </div>
 
@@ -432,16 +532,11 @@ export const LaunchScreen: React.FC = () => {
               {companies.map(c => (
                 <div
                   key={c.id}
-                  className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between transition-colors group"
+                  className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between transition-colors group cursor-pointer"
+                  onClick={() => selectCompany(c.id)}
                 >
-                  <div
-                    onClick={() => {
-                      setSelectedCompanyId(c.id);
-                      setView('login');
-                    }}
-                    className="flex items-center gap-3 flex-1 cursor-pointer"
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
                       {c.name.slice(0, 2).toUpperCase()}
                     </div>
                     <div>
@@ -449,29 +544,33 @@ export const LaunchScreen: React.FC = () => {
                         {c.name}
                       </div>
                       <div className="text-xs text-slate-500 dark:text-slate-400">
-                        {c.type} · {c.users?.length || 0} user(s) · {c.cases?.length || 0} cases · {c.city || 'West Bengal'}
+                        {c.type} · {c.cases?.length || 0} cases · {c.city || 'West Bengal'}
                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => {
-                        setSelectedCompanyId(c.id);
-                        setView('login');
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        selectCompany(c.id);
                       }}
-                      className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 hover:bg-blue-100 transition-colors"
+                      className="px-4 py-1.5 text-xs font-bold rounded-lg bg-blue-700 text-white hover:bg-blue-800 transition-colors flex items-center gap-1.5"
                     >
-                      Login
+                      <span>Open</span>
+                      <ArrowRight className="w-3 h-3" />
                     </button>
                     {companies.length > 1 && (
                       <button
-                        onClick={() => {
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
                           if (confirm(`Delete chamber workspace "${c.name}"?`)) {
                             deleteCompany(c.id);
                           }
                         }}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                        className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
                         title="Delete Company"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -482,117 +581,17 @@ export const LaunchScreen: React.FC = () => {
               ))}
             </div>
 
-            <div className="flex gap-3 pt-3">
-              <button
-                type="button"
-                onClick={() => setView('welcome')}
-                className="px-4 py-2 text-sm font-semibold rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
-                Back
-              </button>
+            <div className="pt-2">
               <button
                 type="button"
                 onClick={() => setView('create')}
-                className="flex-1 px-4 py-2 text-sm font-semibold rounded-lg bg-blue-700 hover:bg-blue-800 text-white transition-colors flex items-center justify-center gap-2"
+                className="w-full py-2.5 px-3 text-xs font-semibold rounded-xl border border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-500 text-slate-600 dark:text-slate-300 hover:text-blue-600 transition-colors flex items-center justify-center gap-2"
               >
-                <UserPlus className="w-4 h-4" /> Create Another Firm
+                <UserPlus className="w-4 h-4" />
+                <span>+ Register Another Chamber Workspace</span>
               </button>
             </div>
           </div>
-        )}
-
-        {/* VIEW: Login */}
-        {view === 'login' && targetCompany && (
-          <form onSubmit={handleLoginSubmit} className="space-y-4">
-            <div>
-              <div className="inline-block px-2.5 py-1 rounded-md text-[11px] font-semibold bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 mb-2">
-                {targetCompany.name}
-              </div>
-              <h2 className="text-lg font-bold">Sign In to Chamber</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Select your user account or enter your credentials.
-              </p>
-            </div>
-
-            {/* Quick user selection pills */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-2">
-                Chamber Members
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {targetCompany.users.map(u => (
-                  <button
-                    key={u.id}
-                    type="button"
-                    onClick={() => {
-                      setLoginEmail(u.email);
-                      setLoginPassword(u.password || '');
-                    }}
-                    className={`p-2.5 rounded-lg border text-left flex items-center gap-2.5 transition-all ${
-                      loginEmail.toLowerCase() === u.email.toLowerCase()
-                        ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-200 ring-1 ring-blue-600'
-                        : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40'
-                    }`}
-                  >
-                    <div className="w-7 h-7 rounded-full bg-blue-700 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                      {u.name.slice(0, 1)}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-xs font-bold truncate">{u.name}</div>
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1">
-                        <Shield className="w-3 h-3 text-amber-600" />
-                        {u.role}
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                Email Address
-              </label>
-              <input
-                type="email"
-                required
-                value={loginEmail}
-                onChange={e => setLoginEmail(e.target.value)}
-                placeholder="user@chamber.in"
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                Password
-              </label>
-              <input
-                type="password"
-                required
-                value={loginPassword}
-                onChange={e => setLoginPassword(e.target.value)}
-                placeholder="Enter password"
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
-              />
-            </div>
-
-            <div className="flex gap-3 pt-3">
-              <button
-                type="button"
-                onClick={() => setView('select')}
-                className="px-4 py-2 text-sm font-semibold rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
-                Back
-              </button>
-              <button
-                type="submit"
-                className="flex-1 px-4 py-2 text-sm font-semibold rounded-lg bg-blue-700 hover:bg-blue-800 text-white transition-colors flex items-center justify-center gap-2"
-              >
-                <LogIn className="w-4 h-4" /> Enter Chamber
-              </button>
-            </div>
-          </form>
         )}
       </div>
     </div>

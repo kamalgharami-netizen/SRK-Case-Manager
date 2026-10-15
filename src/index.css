@@ -7,6 +7,37 @@
   }
 }
 
+/* Viewing & Display Options Modes */
+html.text-scale-large {
+  font-size: 108%;
+}
+
+html.density-compact .py-3 {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+html.density-compact .py-4 {
+  padding-top: 0.65rem !important;
+  padding-bottom: 0.65rem !important;
+}
+
+html.density-compact .p-4 {
+  padding: 0.75rem !important;
+}
+
+html.density-compact .p-5 {
+  padding: 0.85rem !important;
+}
+
+html.density-compact .gap-4 {
+  gap: 0.75rem !important;
+}
+
+html.high-contrast-mode {
+  filter: contrast(1.1);
+}
+
 /* Custom crisp scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

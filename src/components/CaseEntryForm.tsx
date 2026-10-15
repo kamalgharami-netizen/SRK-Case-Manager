@@ -23,14 +23,16 @@ import {
   Download,
   Paperclip,
   Clock,
-  Sparkles
+  Sparkles,
+  Link as LinkIcon
 } from 'lucide-react';
 
 interface CaseEntryFormProps {
   type: CaseType;
   editingCase?: CaseItem | null;
   onBack: () => void;
-  onSaved: (savedCase: CaseItem) => void;
+  onSaved: (savedCase: CaseItem, openChainDeed?: boolean) => void;
+  onOpenAiDraft?: (type: CaseType, prefilledData: Partial<CaseItem>) => void;
 }
 
 const FORUMS_BY_TYPE: Record<CaseType, string[]> = {
@@ -104,7 +106,8 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   type,
   editingCase,
   onBack,
-  onSaved
+  onSaved,
+  onOpenAiDraft
 }) => {
   const { addCase, updateCase, showToast, activeCompany } = useApp();
 
@@ -143,6 +146,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     editingCase?.targetOfficer || ''
   );
   const [notes, setNotes] = useState(editingCase?.notes || '');
+  const [postSaveCase, setPostSaveCase] = useState<CaseItem | null>(null);
 
   // Sub-collections
   const [landSchedules, setLandSchedules] = useState<LandSchedule[]>(
@@ -214,7 +218,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   } | null>(null);
 
   useEffect(() => {
-    if (type === 'lrappeal' && impugnedOrderDate) {
+    if ((type === 'lrappeal' || type === 'firstappeal') && impugnedOrderDate) {
       const orderD = new Date(impugnedOrderDate);
       const today = new Date();
       const diffMs = today.getTime() - orderD.getTime();
@@ -235,10 +239,31 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         sec5DaysLeft,
         statusSec54
       });
+    } else if (type === 'rti' && filingDate) {
+      const filingD = new Date(filingDate);
+      const today = new Date();
+      const diffMs = today.getTime() - filingD.getTime();
+      const daysElapsed = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+      const sec54DaysLeft = 30 - daysElapsed; // RTI Sec 7(1) PIO 30 days
+      const sec51ADaysLeft = 30 - daysElapsed; // RTI Sec 19(1) 30 days First Appeal
+      const sec5DaysLeft = 90 - daysElapsed; // 90 days Second Appeal
+
+      let statusSec54: 'Safe' | 'Urgent' | 'Expired' = 'Safe';
+      if (sec54DaysLeft < 0) statusSec54 = 'Expired';
+      else if (sec54DaysLeft <= 5) statusSec54 = 'Urgent';
+
+      setLimitationStats({
+        daysElapsed,
+        sec54DaysLeft,
+        sec51ADaysLeft,
+        sec5DaysLeft,
+        statusSec54
+      });
     } else {
       setLimitationStats(null);
     }
-  }, [type, impugnedOrderDate]);
+  }, [type, impugnedOrderDate, filingDate]);
 
   // Land schedule methods
   const addLandSchedule = () => {
@@ -520,11 +545,64 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       window.open(waUrl, '_blank');
     }
 
-    onSaved(resultCase);
+    const isChainCase = ['mutation', 'misc', 'lrappeal', 'lrtt'].includes(type);
+    if (isChainCase) {
+      setPostSaveCase(resultCase);
+      showToast('Case details saved! Chain Deed making option ready.');
+    } else {
+      onSaved(resultCase, false);
+    }
   };
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
+      {/* Post-Save Chain Deed Modal for Mutation, Misc, LR Appeal, LRTT */}
+      {postSaveCase && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
+            <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-xs">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+            <div className="text-center">
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
+                Case Details Saved Successfully!
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Case No: <strong className="text-blue-600 dark:text-blue-400 font-mono">{postSaveCase.caseNo}</strong> ({postSaveCase.subType})
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs text-blue-900 dark:text-blue-200 space-y-1">
+              <div className="font-bold flex items-center gap-1.5 text-blue-800 dark:text-blue-300">
+                <LinkIcon className="w-4 h-4 text-blue-600" />
+                <span>Chain Deed Making (ধারাবাহিক চেইন দলিল)</span>
+              </div>
+              <p className="text-[11px] leading-relaxed text-blue-800/80 dark:text-blue-200/80">
+                A Chain of Title Deed making option is available for this case. The format is sourced from your <strong>Settings &gt; Chain Sample</strong> master draft and populated with this particular case's information.
+              </p>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <button
+                type="button"
+                onClick={() => onSaved(postSaveCase, true)}
+                className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-colors"
+              >
+                <LinkIcon className="w-4 h-4" />
+                <span>Proceed to Chain Deed Making (চেইন দলিল তৈরি)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onSaved(postSaveCase, false)}
+                className="w-full py-2 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+              >
+                <span>Return to {postSaveCase.type.toUpperCase()} Dashboard</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Header bar */}
       <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
         <div className="flex items-center gap-3">
@@ -544,7 +622,32 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {type !== 'mutation' && onOpenAiDraft && (
+            <button
+              type="button"
+              onClick={() => {
+                onOpenAiDraft(type, {
+                  type,
+                  caseNo: caseNo || 'New Case',
+                  subType,
+                  party,
+                  opp,
+                  forum,
+                  filingDate,
+                  nextDate,
+                  grounds,
+                  landSchedules,
+                  applicants,
+                  respondents
+                });
+              }}
+              className="px-3 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
+              title={`Draft ${type.toUpperCase()} petition using AI`}
+            >
+              <Sparkles className="w-4 h-4" /> AI Draft ({type.toUpperCase()})
+            </button>
+          )}
           <button
             onClick={() => handleSave(false)}
             className="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
@@ -778,13 +881,15 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
           </div>
         </div>
 
-        {/* Limitation Countdown Strip for LR Appeal */}
-        {type === 'lrappeal' && limitationStats && (
+        {/* Limitation Countdown Strip for LR Appeal, First Appeal and RTI */}
+        {(type === 'lrappeal' || type === 'firstappeal' || type === 'rti') && limitationStats && (
           <div className="p-3.5 rounded-lg border bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 space-y-2">
             <div className="flex items-center justify-between text-xs font-bold">
               <span className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
                 <Clock className="w-4 h-4 text-blue-600" />
-                Statutory Limitation Analysis (Days Elapsed: {limitationStats.daysElapsed})
+                {type === 'rti'
+                  ? `RTI Statutory Response Countdown (Days Elapsed: ${limitationStats.daysElapsed})`
+                  : `Statutory Limitation Analysis (Days Elapsed: ${limitationStats.daysElapsed})`}
               </span>
               <span
                 className={`px-2 py-0.5 rounded text-[10px] font-bold ${
@@ -795,22 +900,28 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                     : 'bg-rose-100 text-rose-800'
                 }`}
               >
-                Section 54: {limitationStats.statusSec54}
+                {type === 'rti'
+                  ? `SPIO Status: ${limitationStats.statusSec54}`
+                  : `Section 54: ${limitationStats.statusSec54}`}
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
               <div className="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                <div className="text-[10px] text-slate-500 uppercase">Section 54 (60 Days)</div>
+                <div className="text-[10px] text-slate-500 uppercase">
+                  {type === 'rti' ? 'SPIO Reply Deadline (30 Days u/s 7)' : 'Section 54 (60 Days)'}
+                </div>
                 <div className="font-mono font-bold mt-0.5">
                   {limitationStats.sec54DaysLeft >= 0
                     ? `${limitationStats.sec54DaysLeft} days remaining`
-                    : `Expired by ${Math.abs(limitationStats.sec54DaysLeft)} days (Sec 5 required)`}
+                    : `Expired by ${Math.abs(limitationStats.sec54DaysLeft)} days (Appeal ripe)`}
                 </div>
               </div>
 
               <div className="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                <div className="text-[10px] text-slate-500 uppercase">Section 51A(5) (30 Days)</div>
+                <div className="text-[10px] text-slate-500 uppercase">
+                  {type === 'rti' ? 'First Appeal Limit (30 Days u/s 19)' : 'Section 51A(5) (30 Days)'}
+                </div>
                 <div className="font-mono font-bold mt-0.5">
                   {limitationStats.sec51ADaysLeft >= 0
                     ? `${limitationStats.sec51ADaysLeft} days remaining`
@@ -819,7 +930,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
               </div>
 
               <div className="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                <div className="text-[10px] text-slate-500 uppercase">Limitation Act (90 Days)</div>
+                <div className="text-[10px] text-slate-500 uppercase">
+                  {type === 'rti' ? 'Second Appeal / Commission (90 Days)' : 'Limitation Act (90 Days)'}
+                </div>
                 <div className="font-mono font-bold mt-0.5">
                   {limitationStats.sec5DaysLeft >= 0
                     ? `${limitationStats.sec5DaysLeft} days remaining`
@@ -836,7 +949,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-              2. Land Schedule Details (জমির তফসিল)
+              2. Land Schedule Details (সম্পত্তির তপশীল বিবরণ)
             </span>
             <span className="text-[11px] text-slate-400 ml-2">
               ({landSchedules.length} Schedule{landSchedules.length > 1 ? 's' : ''})
@@ -1416,7 +1529,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         />
       </div>
 
-      {/* Action Footer */}
+      {/* Action Footer (Desktop & Tablet) */}
       <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
         <button
           type="button"
@@ -1425,6 +1538,30 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         >
           Cancel
         </button>
+        {type !== 'mutation' && onOpenAiDraft && (
+          <button
+            type="button"
+            onClick={() => {
+              onOpenAiDraft(type, {
+                type,
+                caseNo: caseNo || 'New Case',
+                subType,
+                party,
+                opp,
+                forum,
+                filingDate,
+                nextDate,
+                grounds,
+                landSchedules,
+                applicants,
+                respondents
+              });
+            }}
+            className="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4" /> AI Drafting
+          </button>
+        )}
         <button
           type="button"
           onClick={() => handleSave(false)}
@@ -1438,6 +1575,48 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
           className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
         >
           <Share2 className="w-4 h-4" /> Save & Launch WhatsApp
+        </button>
+      </div>
+
+      {/* Sticky Mobile Bottom Bar: "please make fitable or adjustable according to device. which will show all the options of the device." */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3 py-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 shadow-2xl">
+        <button
+          type="button"
+          onClick={onBack}
+          className="py-2 px-2.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold"
+        >
+          Back
+        </button>
+        {type !== 'mutation' && onOpenAiDraft && (
+          <button
+            type="button"
+            onClick={() => {
+              onOpenAiDraft(type, {
+                type,
+                caseNo: caseNo || 'New Case',
+                subType,
+                party,
+                opp,
+                forum,
+                filingDate,
+                nextDate,
+                grounds,
+                landSchedules,
+                applicants,
+                respondents
+              });
+            }}
+            className="py-2 px-2.5 rounded-lg bg-violet-600 text-white text-xs font-bold flex items-center gap-1 shadow-sm shrink-0"
+          >
+            <Sparkles className="w-3.5 h-3.5" /> AI Draft
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => handleSave(false)}
+          className="flex-1 py-2 px-3 rounded-lg bg-blue-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md"
+        >
+          <Save className="w-4 h-4" /> Save Case
         </button>
       </div>
     </div>

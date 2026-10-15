@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Company, User, CaseItem, Party, CauseItem, VaultFile, DiaryEntry, MessageItem } from '../types';
+import { Company, User, CaseItem, Party, CauseItem, VaultFile, DiaryEntry, MessageItem, SampleDraftItem } from '../types';
+import { AppLanguage, translations, Translations } from '../data/translations';
+import { initialChamberData } from '../data/seedData';
+import { INITIAL_SAMPLE_DRAFTS } from '../data/sampleDraftTemplates';
 
 const STORAGE_KEY = 'srk_case_manager_v4';
 
@@ -9,14 +12,46 @@ interface ToastState {
   type: 'success' | 'error' | 'info';
 }
 
+export type ViewDensity = 'comfortable' | 'compact';
+export type ViewMode = 'grid' | 'table';
+export type FontSize = 'normal' | 'large';
+
 interface AppContextType {
   companies: Company[];
   activeCompany: Company | null;
   activeUser: User | null;
   theme: 'light' | 'dark';
   setTheme: (t: 'light' | 'dark') => void;
+  toggleTheme: () => void;
+  language: AppLanguage;
+  setLanguage: (lang: AppLanguage) => void;
+  toggleLanguage: () => void;
+  t: Translations;
   toast: ToastState | null;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
+
+  // Viewing & Display Options
+  viewDensity: ViewDensity;
+  setViewDensity: (d: ViewDensity) => void;
+  toggleViewDensity: () => void;
+  viewMode: ViewMode;
+  setViewMode: (m: ViewMode) => void;
+  toggleViewMode: () => void;
+  fontSize: FontSize;
+  setFontSize: (s: FontSize) => void;
+  toggleFontSize: () => void;
+  highContrast: boolean;
+  setHighContrast: (hc: boolean) => void;
+  toggleHighContrast: () => void;
+  isViewModalOpen: boolean;
+  openViewModal: () => void;
+  closeViewModal: () => void;
+  resetViewPreferences: () => void;
+
+  // Chamber Setup Modal
+  isChamberSetupOpen: boolean;
+  setIsChamberSetupOpen: (open: boolean) => void;
+  openChamberSetup: () => void;
   
   // Auth & Company Lifecycle
   createCompany: (
@@ -31,6 +66,9 @@ interface AppContextType {
       pin: string;
       phone: string;
       email: string;
+      logoUrl?: string;
+      logoBadge?: 'scales' | 'pillar' | 'gavel' | 'shield' | 'book' | 'ashoka';
+      logoColor?: string;
     },
     admin: {
       name: string;
@@ -39,6 +77,7 @@ interface AppContextType {
       password: string;
     }
   ) => boolean;
+  updateCompanyDetails: (details: Partial<Company>) => boolean;
   selectCompany: (companyId: string) => void;
   deleteCompany: (companyId: string) => void;
   loginUser: (email: string, password?: string) => boolean;
@@ -69,6 +108,13 @@ interface AppContextType {
   addVaultFile: (file: Omit<VaultFile, 'id'>) => void;
   deleteVaultFile: (id: string) => void;
 
+  // Sample Drafts & Formats in Vault / Settings
+  sampleDrafts: SampleDraftItem[];
+  addSampleDraft: (draft: Omit<SampleDraftItem, 'id' | 'lastUpdated'>) => void;
+  updateSampleDraft: (id: string, updates: Partial<SampleDraftItem>) => void;
+  deleteSampleDraft: (id: string) => void;
+  resetSampleDrafts: () => void;
+
   // Diary Actions
   addDiaryEntry: (entry: Omit<DiaryEntry, 'id'>) => void;
   deleteDiaryEntry: (caseId: string, entryId: string) => void;
@@ -82,33 +128,46 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [companies, setCompanies] = useState<Company[]>(() => {
     try {
-      // Clear legacy storage keys containing demo company
-      localStorage.removeItem('srk_case_manager_v3');
-      localStorage.removeItem('srk_case_manager_v2');
-      localStorage.removeItem('srk_case_manager_v1');
-
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
+      const isSetupDone = localStorage.getItem('srk_first_time_setup_done') === 'true';
+      if (saved && isSetupDone) {
         const parsed = JSON.parse(saved);
         if (parsed.companies && Array.isArray(parsed.companies) && parsed.companies.length > 0) {
-          // Exclude any demo company IDs
-          const realCompanies = parsed.companies.filter((c: Company) => c.id !== 'c_srk_main_01');
-          return realCompanies;
+          // Ensure no leftover demo data is displayed
+          return parsed.companies.map((c: Company) => {
+            const hasDemoCases = c.cases?.some(cs => cs.id === 'c_fa_001' || cs.id.startsWith('c_fa_') || cs.party?.includes('Bimal Krishna') || cs.id?.startsWith('c_mut_'));
+            if (hasDemoCases) {
+              return {
+                ...c,
+                cases: [],
+                parties: [],
+                causeList: [],
+                vaultFiles: [],
+                messages: []
+              };
+            }
+            return c;
+          });
         }
       }
     } catch (e) {
       console.error('Failed to load companies from localStorage', e);
     }
+    // First time opening the app: Empty, company creation is mandatory!
     return [];
   });
 
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
+      const isSetupDone = localStorage.getItem('srk_first_time_setup_done') === 'true';
+      if (saved && isSetupDone) {
         const parsed = JSON.parse(saved);
-        if (parsed.activeCompanyId && parsed.activeCompanyId !== 'c_srk_main_01') {
+        if (parsed.activeCompanyId) {
           return parsed.activeCompanyId;
+        }
+        if (parsed.companies && parsed.companies.length > 0) {
+          return parsed.companies[0].id;
         }
       }
     } catch {}
@@ -118,10 +177,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [activeUserId, setActiveUserId] = useState<string | null>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
+      const isSetupDone = localStorage.getItem('srk_first_time_setup_done') === 'true';
+      if (saved && isSetupDone) {
         const parsed = JSON.parse(saved);
-        if (parsed.activeUserId && parsed.activeUserId !== 'u_admin_srk') {
+        if (parsed.activeUserId) {
           return parsed.activeUserId;
+        }
+        if (parsed.companies && parsed.companies.length > 0 && parsed.companies[0].users?.length > 0) {
+          return parsed.companies[0].users[0].id;
         }
       }
     } catch {}
@@ -135,6 +198,130 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch {}
     return 'light';
   });
+
+  const [language, setLanguageState] = useState<AppLanguage>(() => {
+    try {
+      const savedLang = localStorage.getItem('srk_language');
+      if (savedLang === 'bn' || savedLang === 'en') return savedLang;
+    } catch {}
+    return 'en';
+  });
+
+  // Viewing & Display Preferences State
+  const [viewDensity, setViewDensityState] = useState<ViewDensity>(() => {
+    try {
+      const saved = localStorage.getItem('srk_view_density');
+      if (saved === 'compact' || saved === 'comfortable') return saved;
+    } catch {}
+    return 'comfortable';
+  });
+
+  const [viewMode, setViewModeState] = useState<ViewMode>(() => {
+    try {
+      const saved = localStorage.getItem('srk_view_mode');
+      if (saved === 'grid' || saved === 'table') return saved;
+    } catch {}
+    return 'grid';
+  });
+
+  const [fontSize, setFontSizeState] = useState<FontSize>(() => {
+    try {
+      const saved = localStorage.getItem('srk_font_size');
+      if (saved === 'large' || saved === 'normal') return saved;
+    } catch {}
+    return 'normal';
+  });
+
+  const [highContrast, setHighContrastState] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('srk_high_contrast') === 'true';
+    } catch {}
+    return false;
+  });
+
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isChamberSetupOpen, setIsChamberSetupOpen] = useState(false);
+
+  const openViewModal = () => setIsViewModalOpen(true);
+  const closeViewModal = () => setIsViewModalOpen(false);
+  const openChamberSetup = () => setIsChamberSetupOpen(true);
+
+  const setViewDensity = (d: ViewDensity) => setViewDensityState(d);
+  const toggleViewDensity = () => setViewDensityState(prev => (prev === 'comfortable' ? 'compact' : 'comfortable'));
+
+  const setViewMode = (m: ViewMode) => setViewModeState(m);
+  const toggleViewMode = () => setViewModeState(prev => (prev === 'grid' ? 'table' : 'grid'));
+
+  const setFontSize = (s: FontSize) => setFontSizeState(s);
+  const toggleFontSize = () => setFontSizeState(prev => (prev === 'normal' ? 'large' : 'normal'));
+
+  const setHighContrast = (hc: boolean) => setHighContrastState(hc);
+  const toggleHighContrast = () => setHighContrastState(prev => !prev);
+
+  const toggleTheme = () => setThemeState(prev => (prev === 'light' ? 'dark' : 'light'));
+
+  const resetViewPreferences = () => {
+    setViewDensityState('comfortable');
+    setViewModeState('grid');
+    setFontSizeState('normal');
+    setHighContrastState(false);
+    setThemeState('light');
+    showToast(language === 'bn' ? 'ডিসপ্লে সেটিংস ডিফল্ট করা হয়েছে' : 'Display preferences reset to default', 'info');
+  };
+
+  // Sync viewing preferences to DOM and localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('srk_view_density', viewDensity);
+      if (viewDensity === 'compact') {
+        document.documentElement.classList.add('density-compact');
+      } else {
+        document.documentElement.classList.remove('density-compact');
+      }
+    } catch {}
+  }, [viewDensity]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('srk_view_mode', viewMode);
+    } catch {}
+  }, [viewMode]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('srk_font_size', fontSize);
+      if (fontSize === 'large') {
+        document.documentElement.classList.add('text-scale-large');
+      } else {
+        document.documentElement.classList.remove('text-scale-large');
+      }
+    } catch {}
+  }, [fontSize]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('srk_high_contrast', String(highContrast));
+      if (highContrast) {
+        document.documentElement.classList.add('high-contrast-mode');
+      } else {
+        document.documentElement.classList.remove('high-contrast-mode');
+      }
+    } catch {}
+  }, [highContrast]);
+
+  const setLanguage = (lang: AppLanguage) => {
+    setLanguageState(lang);
+    try {
+      localStorage.setItem('srk_language', lang);
+    } catch {}
+    showToast(lang === 'bn' ? 'ভাষা পরিবর্তন করা হয়েছে: বাংলা' : 'Language switched to: English', 'success');
+  };
+
+  const toggleLanguage = () => {
+    setLanguage(language === 'en' ? 'bn' : 'en');
+  };
+
+  const t = translations[language];
 
   const [toast, setToast] = useState<ToastState | null>(null);
 
@@ -178,8 +365,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }, 3200);
   };
 
-  const activeCompany = companies.find(c => c.id === activeCompanyId) || null;
-  const activeUser = activeCompany?.users.find(u => u.id === activeUserId) || null;
+  const activeCompany = companies.find(c => c.id === activeCompanyId) || (companies.length > 0 ? companies[0] : null);
+  const activeUser = activeCompany ? (activeCompany.users.find(u => u.id === activeUserId) || activeCompany.users[0] || null) : null;
 
   const logActivity = (text: string) => {
     if (!activeCompanyId) return;
@@ -231,6 +418,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       pin: details.pin,
       phone: details.phone,
       email: details.email,
+      logoUrl: details.logoUrl,
+      logoBadge: details.logoBadge || 'scales',
+      logoColor: details.logoColor || '#2563EB',
       createdAt: Date.now(),
       users: [adminUser],
       cases: [],
@@ -253,7 +443,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCompanies(prev => [...prev, newCompany]);
     setActiveCompanyId(newCompanyId);
     setActiveUserId(newUserId);
+    try {
+      localStorage.setItem('srk_first_time_setup_done', 'true');
+    } catch {}
+    setIsChamberSetupOpen(false);
     showToast(`Workspace "${details.name}" created successfully`);
+    return true;
+  };
+
+  const updateCompanyDetails = (updates: Partial<Company>) => {
+    if (!activeCompanyId) return false;
+    setCompanies(prev =>
+      prev.map(c => {
+        if (c.id === activeCompanyId) {
+          return { ...c, ...updates };
+        }
+        return c;
+      })
+    );
+    showToast('Chamber profile and branding updated');
     return true;
   };
 
@@ -264,7 +472,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return;
     }
     setActiveCompanyId(companyId);
-    setActiveUserId(null); // Require login for security
+    setActiveUserId(company.users[0]?.id || null);
+    showToast(`Switched to "${company.name}"`);
   };
 
   const deleteCompany = (companyId: string) => {
@@ -306,12 +515,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const logoutUser = () => {
-    setActiveUserId(null);
-    showToast('Logged out of session', 'info');
+    showToast(`Current active advocate: ${activeUser?.name || 'Admin'}`, 'info');
   };
 
   const switchCompany = () => {
-    setActiveUserId(null);
+    if (companies.length <= 1) {
+      showToast(`Active Chamber: ${activeCompany?.name || 'Main Chamber'}`, 'info');
+      return;
+    }
+    const currentIndex = companies.findIndex(c => c.id === activeCompanyId);
+    const nextIndex = (currentIndex + 1) % companies.length;
+    const nextCompany = companies[nextIndex];
+    setActiveCompanyId(nextCompany.id);
+    setActiveUserId(nextCompany.users[0]?.id || null);
+    showToast(`Switched to "${nextCompany.name}"`);
   };
 
   const restoreCompany = (restored: Company): boolean => {
@@ -330,6 +547,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setCompanies(prev => [...prev, updated]);
       setActiveCompanyId(newId);
       setActiveUserId(updated.users[0]?.id || null);
+      try {
+        localStorage.setItem('srk_first_time_setup_done', 'true');
+      } catch {}
+      setIsChamberSetupOpen(false);
       showToast(`Restored "${updated.name}" successfully`);
       return true;
     } catch {
@@ -556,6 +777,72 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     showToast('Document deleted', 'info');
   };
 
+  // Sample Drafts & Formats Actions in Settings / Vault
+  const sampleDrafts = activeCompany?.sampleDrafts || INITIAL_SAMPLE_DRAFTS;
+
+  const addSampleDraft = (draft: Omit<SampleDraftItem, 'id' | 'lastUpdated'>) => {
+    const newItem: SampleDraftItem = {
+      ...draft,
+      id: 'sd_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      lastUpdated: Date.now()
+    };
+    setCompanies(prev =>
+      prev.map(c => {
+        if (c.id !== activeCompanyId) return c;
+        const existing = c.sampleDrafts || INITIAL_SAMPLE_DRAFTS;
+        return {
+          ...c,
+          sampleDrafts: [newItem, ...existing]
+        };
+      })
+    );
+    logActivity(`Created sample draft template: ${draft.title}`);
+    showToast(`Saved format "${draft.title}" in Document Vault`);
+  };
+
+  const updateSampleDraft = (id: string, updates: Partial<SampleDraftItem>) => {
+    setCompanies(prev =>
+      prev.map(c => {
+        if (c.id !== activeCompanyId) return c;
+        const existing = c.sampleDrafts || INITIAL_SAMPLE_DRAFTS;
+        return {
+          ...c,
+          sampleDrafts: existing.map(item =>
+            item.id === id ? { ...item, ...updates, lastUpdated: Date.now() } : item
+          )
+        };
+      })
+    );
+    showToast('Sample format updated in Vault');
+  };
+
+  const deleteSampleDraft = (id: string) => {
+    setCompanies(prev =>
+      prev.map(c => {
+        if (c.id !== activeCompanyId) return c;
+        const existing = c.sampleDrafts || INITIAL_SAMPLE_DRAFTS;
+        return {
+          ...c,
+          sampleDrafts: existing.filter(item => item.id !== id)
+        };
+      })
+    );
+    showToast('Sample format removed from Vault', 'info');
+  };
+
+  const resetSampleDrafts = () => {
+    setCompanies(prev =>
+      prev.map(c => {
+        if (c.id !== activeCompanyId) return c;
+        return {
+          ...c,
+          sampleDrafts: INITIAL_SAMPLE_DRAFTS
+        };
+      })
+    );
+    showToast('Reset sample drafts to West Bengal standard legal formats');
+  };
+
   // Diary Actions
   const addDiaryEntry = (entry: Omit<DiaryEntry, 'id'>) => {
     const newEntry: DiaryEntry = {
@@ -629,9 +916,34 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         activeUser,
         theme,
         setTheme,
+        toggleTheme,
+        language,
+        setLanguage,
+        toggleLanguage,
+        t,
         toast,
         showToast,
+        viewDensity,
+        setViewDensity,
+        toggleViewDensity,
+        viewMode,
+        setViewMode,
+        toggleViewMode,
+        fontSize,
+        setFontSize,
+        toggleFontSize,
+        highContrast,
+        setHighContrast,
+        toggleHighContrast,
+        isViewModalOpen,
+        openViewModal,
+        closeViewModal,
+        resetViewPreferences,
+        isChamberSetupOpen,
+        setIsChamberSetupOpen,
+        openChamberSetup,
         createCompany,
+        updateCompanyDetails,
         selectCompany,
         deleteCompany,
         loginUser,
@@ -651,6 +963,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         deleteCauseItem,
         addVaultFile,
         deleteVaultFile,
+        sampleDrafts,
+        addSampleDraft,
+        updateSampleDraft,
+        deleteSampleDraft,
+        resetSampleDrafts,
         addDiaryEntry,
         deleteDiaryEntry,
         sendMessage

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { LaunchScreen } from './components/LaunchScreen';
 import { Header } from './components/Header';
@@ -17,17 +17,51 @@ import { StatutoryLibrary } from './components/StatutoryLibrary';
 import { CommunicationCenter } from './components/CommunicationCenter';
 import { CaseDetailModal } from './components/CaseDetailModal';
 import { BackupModal } from './components/BackupModal';
+import { ViewingOptionsModal } from './components/ViewingOptionsModal';
+import { ChainDeedModal } from './components/ChainDeedModal';
 import { Toast } from './components/Toast';
 import { CaseType, CaseItem } from './types';
-import { Plus, FileText, Send, Calendar, Brain, X, Gavel, FileSearch } from 'lucide-react';
+import {
+  Plus,
+  FileText,
+  Send,
+  Calendar,
+  Brain,
+  X,
+  Gavel,
+  FileSearch,
+  Archive,
+  LayoutDashboard,
+  FolderGit2,
+  RefreshCw,
+  Building,
+  Settings,
+  Sparkles,
+  ChevronRight
+} from 'lucide-react';
+
+interface AiStudioReturnContext {
+  page: NavPage;
+  entryMode: CaseType | null;
+  editingCase: CaseItem | null;
+}
 
 const MainAppContent: React.FC = () => {
-  const { activeUser, activeCompany } = useApp();
+  const { activeUser, activeCompany, companies, isChamberSetupOpen, setIsChamberSetupOpen, language } = useApp();
 
   const [currentPage, setCurrentPage] = useState<NavPage>('dashboard');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024;
+    }
+    return true;
+  });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<'branding' | 'vault' | 'chainSample' | 'backup'>('branding');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Mobile Bottom Sheet for Case Categories
+  const [mobileCasesSheetOpen, setMobileCasesSheetOpen] = useState(false);
 
   // Case Entry Form state
   const [entryMode, setEntryMode] = useState<CaseType | null>(null);
@@ -36,32 +70,281 @@ const MainAppContent: React.FC = () => {
   // Case Detail Modal state
   const [viewingCaseId, setViewingCaseId] = useState<string | null>(null);
 
+  // Chain Deed Modal state (Mutation, Misc, LR Appeal, LRTT)
+  const [chainDeedCaseId, setChainDeedCaseId] = useState<string | null>(null);
+
   // FAB Menu state
   const [fabOpen, setFabOpen] = useState(false);
 
-  // If not logged in, render the LaunchScreen
-  if (!activeUser || !activeCompany) {
-    return <LaunchScreen />;
-  }
+  // AI Studio Context State (for form-type specific locked drafting)
+  const [aiStudioConfig, setAiStudioConfig] = useState<{
+    caseType: CaseType | 'all';
+    locked: boolean;
+    prefill: Partial<CaseItem> | null;
+    returnTo?: AiStudioReturnContext;
+  }>({
+    caseType: 'all',
+    locked: false,
+    prefill: null
+  });
+
+  // Track state for native-like back button navigation
+  const isNavigatingRef = useRef(false);
+
+  // Push browser history state so mobile back button steps back smoothly
+  const pushHistoryState = useCallback((state: Record<string, any>) => {
+    if (typeof window !== 'undefined') {
+      try {
+        window.history.pushState(
+          {
+            ...state,
+            timestamp: Date.now()
+          },
+          ''
+        );
+      } catch (e) {
+        console.warn('history.pushState error:', e);
+      }
+    }
+  }, []);
+
+  // Initialize base history state on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        window.history.replaceState({ app: 'srk-case-manager', root: true, page: 'dashboard' }, '');
+      } catch (e) {
+        console.warn('history.replaceState error:', e);
+      }
+    }
+  }, []);
+
+  // Sync Hardware / Browser / Gesture Back Button on Mobile
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      // Step backwards from top-most layer to bottom-most:
+      if (fabOpen) {
+        setFabOpen(false);
+        return;
+      }
+      if (mobileCasesSheetOpen) {
+        setMobileCasesSheetOpen(false);
+        return;
+      }
+      if (settingsOpen) {
+        setSettingsOpen(false);
+        return;
+      }
+      if (chainDeedCaseId) {
+        setChainDeedCaseId(null);
+        return;
+      }
+      if (viewingCaseId) {
+        setViewingCaseId(null);
+        return;
+      }
+      if (currentPage === 'aistudio' && aiStudioConfig.locked) {
+        // Return from locked AI Studio back to form or menu
+        if (aiStudioConfig.returnTo) {
+          const { page, entryMode: prevEntry, editingCase: prevEdit } = aiStudioConfig.returnTo;
+          setAiStudioConfig({ caseType: 'all', locked: false, prefill: null });
+          setCurrentPage(page);
+          if (prevEntry) {
+            setEntryMode(prevEntry);
+            setEditingCase(prevEdit);
+          }
+        } else {
+          setAiStudioConfig({ caseType: 'all', locked: false, prefill: null });
+          setCurrentPage('dashboard');
+        }
+        return;
+      }
+      if (entryMode !== null) {
+        setEntryMode(null);
+        setEditingCase(null);
+        return;
+      }
+      if (sidebarOpen && typeof window !== 'undefined' && window.innerWidth < 1024) {
+        setSidebarOpen(false);
+        return;
+      }
+      if (currentPage !== 'dashboard') {
+        setCurrentPage('dashboard');
+        return;
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [
+    fabOpen,
+    mobileCasesSheetOpen,
+    settingsOpen,
+    chainDeedCaseId,
+    viewingCaseId,
+    currentPage,
+    aiStudioConfig,
+    entryMode,
+    sidebarOpen
+  ]);
+
+  // Programmatic Back handler (invoked by Header Back button or explicit UI triggers)
+  const handleGoBack = useCallback(() => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      window.history.back();
+    } else {
+      // Fallback unwind if direct URL opened
+      if (fabOpen) setFabOpen(false);
+      else if (mobileCasesSheetOpen) setMobileCasesSheetOpen(false);
+      else if (settingsOpen) setSettingsOpen(false);
+      else if (chainDeedCaseId) setChainDeedCaseId(null);
+      else if (viewingCaseId) setViewingCaseId(null);
+      else if (currentPage === 'aistudio' && aiStudioConfig.locked) {
+        if (aiStudioConfig.returnTo) {
+          const { page, entryMode: prevEntry, editingCase: prevEdit } = aiStudioConfig.returnTo;
+          setAiStudioConfig({ caseType: 'all', locked: false, prefill: null });
+          setCurrentPage(page);
+          if (prevEntry) {
+            setEntryMode(prevEntry);
+            setEditingCase(prevEdit);
+          }
+        } else {
+          setAiStudioConfig({ caseType: 'all', locked: false, prefill: null });
+          setCurrentPage('dashboard');
+        }
+      } else if (entryMode !== null) {
+        setEntryMode(null);
+        setEditingCase(null);
+      } else if (sidebarOpen && window.innerWidth < 1024) {
+        setSidebarOpen(false);
+      } else if (currentPage !== 'dashboard') {
+        setCurrentPage('dashboard');
+      }
+    }
+  }, [
+    fabOpen,
+    mobileCasesSheetOpen,
+    settingsOpen,
+    chainDeedCaseId,
+    viewingCaseId,
+    currentPage,
+    aiStudioConfig,
+    entryMode,
+    sidebarOpen
+  ]);
+
+  const canGoBack = Boolean(
+    entryMode !== null ||
+      viewingCaseId !== null ||
+      chainDeedCaseId !== null ||
+      settingsOpen ||
+      mobileCasesSheetOpen ||
+      (currentPage === 'aistudio' && aiStudioConfig.locked) ||
+      currentPage !== 'dashboard'
+  );
+
+  const handleOpenSettings = (tab: 'branding' | 'vault' | 'chainSample' | 'backup' = 'branding') => {
+    setSettingsTab(tab);
+    setSettingsOpen(true);
+    pushHistoryState({ modal: 'settings', tab });
+  };
 
   const handleOpenNewCase = (type: CaseType) => {
     setEditingCase(null);
     setEntryMode(type);
+    pushHistoryState({ view: 'entry', type });
   };
 
   const handleEditCase = (c: CaseItem) => {
     setEditingCase(c);
     setEntryMode(c.type);
+    pushHistoryState({ view: 'edit', id: c.id, type: c.type });
   };
 
-  const handleCaseSaved = (c: CaseItem) => {
+  const handleCaseSaved = (c: CaseItem, openChainDeed?: boolean) => {
     setEntryMode(null);
     setEditingCase(null);
     // Navigate to that case's dashboard
     setCurrentPage(`case-${c.type}` as NavPage);
+    pushHistoryState({ page: `case-${c.type}` });
+    if (openChainDeed) {
+      setChainDeedCaseId(c.id);
+      pushHistoryState({ modal: 'chain-deed', id: c.id });
+    }
   };
 
+  // Launch AI Studio strictly tailored to a specific Case / Form type
+  // "according to form type only show the options for ai drafting in the rti, misc case, lr appeal case or any others"
+  const handleOpenAiDraft = useCallback(
+    (type: CaseType, prefilledData?: Partial<CaseItem>) => {
+      if (type === 'mutation') return; // Mutation drafting is completely removed as requested
+
+      const returnTo: AiStudioReturnContext = {
+        page: currentPage,
+        entryMode,
+        editingCase
+      };
+
+      setAiStudioConfig({
+        caseType: type,
+        locked: true,
+        prefill: prefilledData || null,
+        returnTo
+      });
+
+      pushHistoryState({ view: 'aistudio', caseType: type });
+      setEntryMode(null);
+      setCurrentPage('aistudio');
+    },
+    [currentPage, entryMode, editingCase, pushHistoryState]
+  );
+
+  // Return back from AI Studio to previous entry form or case menu
+  const handleAiStudioBack = useCallback(() => {
+    if (aiStudioConfig.returnTo) {
+      const { page, entryMode: prevEntry, editingCase: prevEdit } = aiStudioConfig.returnTo;
+      setAiStudioConfig({ caseType: 'all', locked: false, prefill: null });
+      setCurrentPage(page);
+      if (prevEntry) {
+        setEntryMode(prevEntry);
+        setEditingCase(prevEdit);
+      }
+    } else {
+      setAiStudioConfig({ caseType: 'all', locked: false, prefill: null });
+      setCurrentPage('dashboard');
+    }
+  }, [aiStudioConfig]);
+
+  // Navigate helper with history push
+  const handleNavigatePage = (page: NavPage) => {
+    setEntryMode(null);
+    if (page === 'vault') {
+      handleOpenSettings('vault');
+    } else {
+      if (page === 'aistudio') {
+        // Normal unlocked AI Studio
+        setAiStudioConfig({ caseType: 'all', locked: false, prefill: null });
+      }
+      setCurrentPage(page);
+      pushHistoryState({ page });
+    }
+  };
+
+  // Mandatory First Launch: If no company registered, or chamber setup explicitly requested
+  if (!activeUser || !activeCompany || companies.length === 0 || isChamberSetupOpen) {
+    return (
+      <LaunchScreen
+        onClose={isChamberSetupOpen && companies.length > 0 ? () => setIsChamberSetupOpen(false) : undefined}
+      />
+    );
+  }
+
   const viewingCase = activeCompany.cases.find(c => c.id === viewingCaseId) || null;
+  const chainDeedCase = activeCompany.cases.find(c => c.id === chainDeedCaseId) || null;
+
+  const getCaseCount = (type: CaseType) => {
+    return activeCompany?.cases.filter(c => c.type === type).length || 0;
+  };
 
   return (
     <div className="flex h-screen w-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-hidden font-sans">
@@ -76,53 +359,80 @@ const MainAppContent: React.FC = () => {
           setViewingCaseId(null);
           handleEditCase(c);
         }}
+        onOpenChainDeed={c => {
+          setChainDeedCaseId(c.id);
+          pushHistoryState({ modal: 'chain-deed', id: c.id });
+        }}
+        onOpenAiDraft={handleOpenAiDraft}
       />
 
-      {/* Preferences / Backup Modal */}
+      {/* Dedicated Chain Deed Modal */}
+      <ChainDeedModal
+        caseItem={chainDeedCase}
+        isOpen={!!chainDeedCaseId}
+        onClose={() => setChainDeedCaseId(null)}
+      />
+
+      {/* Preferences / Backup / Vault Modal */}
       <BackupModal
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
+        initialTab={settingsTab}
       />
 
-      {/* Collapsible Sidebar */}
+      {/* Display & Viewing Options Modal */}
+      <ViewingOptionsModal />
+
+      {/* Collapsible Sidebar for Desktop & Tablets */}
       <Sidebar
         currentPage={currentPage}
-        onNavigate={page => {
-          setEntryMode(null);
-          setCurrentPage(page);
-        }}
+        onNavigate={handleNavigatePage}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenSettings={handleOpenSettings}
       />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        {/* Sticky Top Bar Contract */}
+        {/* Sticky Top Bar with Mobile Back button & Responsive layout */}
         <Header
           onToggleSidebar={() => setSidebarOpen(prev => !prev)}
           isSidebarOpen={sidebarOpen}
-          onOpenSettings={() => setSettingsOpen(true)}
+          onOpenSettings={() => handleOpenSettings('branding')}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          canGoBack={canGoBack}
+          onGoBack={handleGoBack}
         />
 
-        {/* Dynamic Viewport */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        {/* Dynamic Viewport with responsive bottom padding for mobile navigation bar */}
+        <main className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-8 pb-24 lg:pb-8">
           {entryMode ? (
             <CaseEntryForm
               type={entryMode}
               editingCase={editingCase}
-              onBack={() => setEntryMode(null)}
+              onBack={() => {
+                setEntryMode(null);
+                setEditingCase(null);
+              }}
               onSaved={handleCaseSaved}
+              onOpenAiDraft={handleOpenAiDraft}
             />
           ) : (
             <>
               {currentPage === 'dashboard' && (
                 <Dashboard
-                  onNavigate={setCurrentPage}
+                  onNavigate={handleNavigatePage}
                   onOpenNewCase={handleOpenNewCase}
-                  onViewCaseDetail={id => setViewingCaseId(id)}
+                  onViewCaseDetail={id => {
+                    setViewingCaseId(id);
+                    pushHistoryState({ modal: 'case-detail', id });
+                  }}
+                  onOpenChainDeed={c => {
+                    setChainDeedCaseId(c.id);
+                    pushHistoryState({ modal: 'chain-deed', id: c.id });
+                  }}
+                  onOpenSettings={handleOpenSettings}
                 />
               )}
 
@@ -130,8 +440,15 @@ const MainAppContent: React.FC = () => {
                 <CaseDashboard
                   type="mutation"
                   onOpenNewCase={handleOpenNewCase}
-                  onViewCaseDetail={id => setViewingCaseId(id)}
+                  onViewCaseDetail={id => {
+                    setViewingCaseId(id);
+                    pushHistoryState({ modal: 'case-detail', id });
+                  }}
                   onEditCase={handleEditCase}
+                  onOpenChainDeed={c => {
+                    setChainDeedCaseId(c.id);
+                    pushHistoryState({ modal: 'chain-deed', id: c.id });
+                  }}
                 />
               )}
 
@@ -139,8 +456,16 @@ const MainAppContent: React.FC = () => {
                 <CaseDashboard
                   type="misc"
                   onOpenNewCase={handleOpenNewCase}
-                  onViewCaseDetail={id => setViewingCaseId(id)}
+                  onViewCaseDetail={id => {
+                    setViewingCaseId(id);
+                    pushHistoryState({ modal: 'case-detail', id });
+                  }}
                   onEditCase={handleEditCase}
+                  onOpenChainDeed={c => {
+                    setChainDeedCaseId(c.id);
+                    pushHistoryState({ modal: 'chain-deed', id: c.id });
+                  }}
+                  onOpenAiDraft={handleOpenAiDraft}
                 />
               )}
 
@@ -148,8 +473,16 @@ const MainAppContent: React.FC = () => {
                 <CaseDashboard
                   type="lrappeal"
                   onOpenNewCase={handleOpenNewCase}
-                  onViewCaseDetail={id => setViewingCaseId(id)}
+                  onViewCaseDetail={id => {
+                    setViewingCaseId(id);
+                    pushHistoryState({ modal: 'case-detail', id });
+                  }}
                   onEditCase={handleEditCase}
+                  onOpenChainDeed={c => {
+                    setChainDeedCaseId(c.id);
+                    pushHistoryState({ modal: 'chain-deed', id: c.id });
+                  }}
+                  onOpenAiDraft={handleOpenAiDraft}
                 />
               )}
 
@@ -157,8 +490,12 @@ const MainAppContent: React.FC = () => {
                 <CaseDashboard
                   type="firstappeal"
                   onOpenNewCase={handleOpenNewCase}
-                  onViewCaseDetail={id => setViewingCaseId(id)}
+                  onViewCaseDetail={id => {
+                    setViewingCaseId(id);
+                    pushHistoryState({ modal: 'case-detail', id });
+                  }}
                   onEditCase={handleEditCase}
+                  onOpenAiDraft={handleOpenAiDraft}
                 />
               )}
 
@@ -166,8 +503,12 @@ const MainAppContent: React.FC = () => {
                 <CaseDashboard
                   type="rti"
                   onOpenNewCase={handleOpenNewCase}
-                  onViewCaseDetail={id => setViewingCaseId(id)}
+                  onViewCaseDetail={id => {
+                    setViewingCaseId(id);
+                    pushHistoryState({ modal: 'case-detail', id });
+                  }}
                   onEditCase={handleEditCase}
+                  onOpenAiDraft={handleOpenAiDraft}
                 />
               )}
 
@@ -175,8 +516,16 @@ const MainAppContent: React.FC = () => {
                 <CaseDashboard
                   type="lrtt"
                   onOpenNewCase={handleOpenNewCase}
-                  onViewCaseDetail={id => setViewingCaseId(id)}
+                  onViewCaseDetail={id => {
+                    setViewingCaseId(id);
+                    pushHistoryState({ modal: 'case-detail', id });
+                  }}
                   onEditCase={handleEditCase}
+                  onOpenChainDeed={c => {
+                    setChainDeedCaseId(c.id);
+                    pushHistoryState({ modal: 'chain-deed', id: c.id });
+                  }}
+                  onOpenAiDraft={handleOpenAiDraft}
                 />
               )}
 
@@ -184,8 +533,12 @@ const MainAppContent: React.FC = () => {
                 <CaseDashboard
                   type="conversion"
                   onOpenNewCase={handleOpenNewCase}
-                  onViewCaseDetail={id => setViewingCaseId(id)}
+                  onViewCaseDetail={id => {
+                    setViewingCaseId(id);
+                    pushHistoryState({ modal: 'case-detail', id });
+                  }}
                   onEditCase={handleEditCase}
+                  onOpenAiDraft={handleOpenAiDraft}
                 />
               )}
 
@@ -193,7 +546,14 @@ const MainAppContent: React.FC = () => {
 
               {currentPage === 'sharecalculator' && <ShareCalculator />}
 
-              {currentPage === 'aistudio' && <AiStudio />}
+              {currentPage === 'aistudio' && (
+                <AiStudio
+                  initialCaseType={aiStudioConfig.caseType}
+                  lockCaseType={aiStudioConfig.locked}
+                  prefilledCase={aiStudioConfig.prefill}
+                  onBack={handleAiStudioBack}
+                />
+              )}
 
               {currentPage === 'parties' && <PartyRegistry />}
 
@@ -201,7 +561,30 @@ const MainAppContent: React.FC = () => {
 
               {currentPage === 'wblract' && <StatutoryLibrary />}
 
-              {currentPage === 'vault' && <DocumentVault />}
+              {currentPage === 'vault' && (
+                <div className="max-w-xl mx-auto my-12 p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-4 shadow-sm">
+                  <div className="w-14 h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto shadow-xs">
+                    <Archive className="w-7 h-7" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
+                      Document Vault &amp; Samples Shifted to Settings
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
+                      All legal sample drafts, deed templates, chain master samples, and uploaded vault documents are now centralized under Chamber Settings.
+                    </p>
+                  </div>
+                  <div className="pt-2">
+                    <button
+                      onClick={() => handleOpenSettings('vault')}
+                      className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md inline-flex items-center gap-2 cursor-pointer transition-colors"
+                    >
+                      <Archive className="w-4 h-4" />
+                      <span>Open Document Vault &amp; Samples in Settings</span>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {currentPage === 'timeline' && <CaseDiary />}
 
@@ -211,8 +594,254 @@ const MainAppContent: React.FC = () => {
         </main>
       </div>
 
-      {/* Floating Action Button (FAB) Menu */}
-      <div className="fixed bottom-6 right-6 z-40">
+      {/* Mobile Bottom Sheet for Case Categories */}
+      {mobileCasesSheetOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end">
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
+            onClick={() => setMobileCasesSheetOpen(false)}
+          />
+          <div className="relative bg-white dark:bg-slate-900 rounded-t-3xl border-t border-slate-200 dark:border-slate-800 p-4 shadow-2xl space-y-3 max-h-[80vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
+            <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto" />
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-sm font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <FolderGit2 className="w-4 h-4 text-blue-600" />
+                <span>Land Case Menus (মামলার মেনুসমূহ)</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setMobileCasesSheetOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileCasesSheetOpen(false);
+                  handleNavigatePage('case-mutation');
+                }}
+                className={`p-3 rounded-xl border text-left flex items-center justify-between transition-colors ${
+                  currentPage === 'case-mutation'
+                    ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 font-bold'
+                    : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-blue-500" />
+                  <span>Mutation</span>
+                </div>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
+                  {getCaseCount('mutation')}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileCasesSheetOpen(false);
+                  handleNavigatePage('case-misc');
+                }}
+                className={`p-3 rounded-xl border text-left flex items-center justify-between transition-colors ${
+                  currentPage === 'case-misc'
+                    ? 'border-purple-600 bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 font-bold'
+                    : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <FolderGit2 className="w-4 h-4 text-purple-500" />
+                  <span>Misc Case</span>
+                </div>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
+                  {getCaseCount('misc')}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileCasesSheetOpen(false);
+                  handleNavigatePage('case-lrappeal');
+                }}
+                className={`p-3 rounded-xl border text-left flex items-center justify-between transition-colors ${
+                  currentPage === 'case-lrappeal'
+                    ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold'
+                    : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Send className="w-4 h-4 text-emerald-500" />
+                  <span>LR Appeal</span>
+                </div>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
+                  {getCaseCount('lrappeal')}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileCasesSheetOpen(false);
+                  handleNavigatePage('case-firstappeal');
+                }}
+                className={`p-3 rounded-xl border text-left flex items-center justify-between transition-colors ${
+                  currentPage === 'case-firstappeal'
+                    ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 font-bold'
+                    : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Gavel className="w-4 h-4 text-indigo-500" />
+                  <span>First Appeal</span>
+                </div>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
+                  {getCaseCount('firstappeal')}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileCasesSheetOpen(false);
+                  handleNavigatePage('case-rti');
+                }}
+                className={`p-3 rounded-xl border text-left flex items-center justify-between transition-colors ${
+                  currentPage === 'case-rti'
+                    ? 'border-teal-600 bg-teal-50 dark:bg-teal-950/40 text-teal-800 dark:text-teal-300 font-bold'
+                    : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <FileSearch className="w-4 h-4 text-teal-500" />
+                  <span>RTI Query</span>
+                </div>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
+                  {getCaseCount('rti')}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileCasesSheetOpen(false);
+                  handleNavigatePage('case-conversion');
+                }}
+                className={`p-3 rounded-xl border text-left flex items-center justify-between transition-colors ${
+                  currentPage === 'case-conversion'
+                    ? 'border-amber-600 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 font-bold'
+                    : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 text-amber-500" />
+                  <span>Conversion</span>
+                </div>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
+                  {getCaseCount('conversion')}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileCasesSheetOpen(false);
+                  handleNavigatePage('case-lrtt');
+                }}
+                className={`col-span-2 p-3 rounded-xl border text-left flex items-center justify-between transition-colors ${
+                  currentPage === 'case-lrtt'
+                    ? 'border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-bold'
+                    : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Building className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                  <span>WBLRTT Land Tribunal</span>
+                </div>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
+                  {getCaseCount('lrtt')}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dedicated Thumb-Friendly Bottom Navigation Bar for Mobile: "fitable or adjustable according to device" */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 h-16 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-2 flex items-center justify-around shadow-2xl">
+        <button
+          type="button"
+          onClick={() => handleNavigatePage('dashboard')}
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
+            currentPage === 'dashboard' && !entryMode
+              ? 'text-blue-600 dark:text-blue-400 font-bold'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+          }`}
+        >
+          <LayoutDashboard className="w-5 h-5" />
+          <span className="text-[10px]">Home</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setMobileCasesSheetOpen(prev => !prev)}
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
+            mobileCasesSheetOpen || currentPage.startsWith('case-')
+              ? 'text-blue-600 dark:text-blue-400 font-bold'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+          }`}
+        >
+          <FolderGit2 className="w-5 h-5" />
+          <span className="text-[10px]">Cases</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setAiStudioConfig({ caseType: 'all', locked: false, prefill: null });
+            handleNavigatePage('aistudio');
+          }}
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
+            currentPage === 'aistudio'
+              ? 'text-violet-600 dark:text-violet-400 font-bold'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+          }`}
+        >
+          <Brain className="w-5 h-5 text-violet-600" />
+          <span className="text-[10px]">AI Draft</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleNavigatePage('causelist')}
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
+            currentPage === 'causelist'
+              ? 'text-amber-600 dark:text-amber-400 font-bold'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+          }`}
+        >
+          <Calendar className="w-5 h-5" />
+          <span className="text-[10px]">Cause List</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleOpenSettings('vault')}
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
+            settingsOpen
+              ? 'text-indigo-600 dark:text-indigo-400 font-bold'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+          }`}
+        >
+          <Settings className="w-5 h-5" />
+          <span className="text-[10px]">Settings</span>
+        </button>
+      </nav>
+
+      {/* Floating Action Button (FAB) Menu - positioned cleanly above mobile nav */}
+      <div className="fixed bottom-20 lg:bottom-6 right-4 sm:right-6 z-40">
         {fabOpen && (
           <div className="absolute bottom-16 right-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-2 shadow-2xl space-y-1 w-52 animate-in fade-in slide-in-from-bottom-2 duration-150">
             <button
@@ -224,6 +853,17 @@ const MainAppContent: React.FC = () => {
             >
               <FileText className="w-4 h-4 text-blue-600" />
               <span>+ New Mutation</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setFabOpen(false);
+                handleOpenNewCase('misc');
+              }}
+              className="w-full px-3 py-2 text-xs font-semibold rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-left flex items-center gap-2 cursor-pointer"
+            >
+              <FolderGit2 className="w-4 h-4 text-purple-600" />
+              <span>+ New Misc Case</span>
             </button>
 
             <button
@@ -262,7 +902,7 @@ const MainAppContent: React.FC = () => {
             <button
               onClick={() => {
                 setFabOpen(false);
-                setCurrentPage('causelist');
+                handleNavigatePage('causelist');
               }}
               className="w-full px-3 py-2 text-xs font-semibold rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-left flex items-center gap-2 cursor-pointer"
             >
@@ -273,7 +913,8 @@ const MainAppContent: React.FC = () => {
             <button
               onClick={() => {
                 setFabOpen(false);
-                setCurrentPage('aistudio');
+                setAiStudioConfig({ caseType: 'all', locked: false, prefill: null });
+                handleNavigatePage('aistudio');
               }}
               className="w-full px-3 py-2 text-xs font-semibold rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-left flex items-center gap-2 cursor-pointer"
             >

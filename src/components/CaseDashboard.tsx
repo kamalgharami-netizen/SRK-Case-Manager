@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { CaseType, CaseItem } from '../types';
+import { CompanyLogo } from './CompanyLogo';
 import {
   FileText,
   FolderGit2,
@@ -16,7 +17,14 @@ import {
   Filter,
   ArrowUpDown,
   Gavel,
-  FileSearch
+  FileSearch,
+  BookOpen,
+  Clock,
+  CheckCircle2,
+  Brain,
+  Sparkles,
+  ArrowRight,
+  Link as LinkIcon
 } from 'lucide-react';
 
 interface CaseDashboardProps {
@@ -24,6 +32,8 @@ interface CaseDashboardProps {
   onOpenNewCase: (type: CaseType) => void;
   onViewCaseDetail: (caseId: string) => void;
   onEditCase: (c: CaseItem) => void;
+  onOpenChainDeed?: (c: CaseItem) => void;
+  onOpenAiDraft?: (type: CaseType, c?: CaseItem) => void;
 }
 
 const MODULE_META: Record<
@@ -36,6 +46,10 @@ const MODULE_META: Record<
     bgBadge: string;
     subTypes: string[];
     statuses: string[];
+    lawRef: string;
+    forum: string;
+    limitation: string;
+    checklist: string[];
   }
 > = {
   mutation: {
@@ -50,7 +64,16 @@ const MODULE_META: Record<
       'Gift Deed Mutation',
       'Court Decree Mutation'
     ],
-    statuses: ['Filed', 'Notice Issued', 'Hearing', 'Order Reserved', 'Allowed', 'Rejected']
+    statuses: ['Filed', 'Notice Issued', 'Hearing', 'Order Reserved', 'Allowed', 'Rejected'],
+    lawRef: 'Sec 50 & 50A West Bengal Land Reforms Act 1955',
+    forum: 'Block Land & Land Reforms Officer (BL&LRO)',
+    limitation: 'Hearing notice within 30 days of registration',
+    checklist: [
+      'Registered Deed copy (দলিল)',
+      'Warishan / Legal Heir Certificate (ওয়ারিশান)',
+      'Current ROR / Khatian Parcha (খতিয়ান পর্চা)',
+      'Mutation Application Form & Self-Declaration'
+    ]
   },
   misc: {
     title: 'Misc Case',
@@ -66,7 +89,16 @@ const MODULE_META: Record<
       'Boundary Dispute',
       'Erroneous Record'
     ],
-    statuses: ['Filed', 'Notice Issued', 'Hearing', 'Order Reserved', 'Disposed']
+    statuses: ['Filed', 'Notice Issued', 'Hearing', 'Order Reserved', 'Disposed'],
+    lawRef: 'Sec 50 / 51A WBLR Act & West Bengal Land Reforms Manual',
+    forum: 'Revenue Officer / BL&LRO (Section 50/51A Authority)',
+    limitation: 'Filing within period of discovery of clerical/share error',
+    checklist: [
+      '10,000 Share reconciliation statement',
+      'RS Khatian & LR Khatian comparative sheet',
+      'Trace Map showing plot boundaries',
+      'All Co-sharers notice addresses'
+    ]
   },
   lrappeal: {
     title: 'LR Appeal (Sec 54)',
@@ -75,7 +107,16 @@ const MODULE_META: Record<
     color: 'text-emerald-600',
     bgBadge: 'bg-emerald-600',
     subTypes: ['Section 54 Appeal', 'Section 51A(5) Appeal', 'Delay Condonation'],
-    statuses: ['Filed', 'Admitted', 'Stay Granted', 'Hearing', 'Allowed', 'Dismissed']
+    statuses: ['Filed', 'Admitted', 'Stay Granted', 'Hearing', 'Allowed', 'Dismissed'],
+    lawRef: 'Section 54 of West Bengal Land Reforms Act 1955',
+    forum: 'District Land & Land Reforms Officer (DL&LRO) / Collector',
+    limitation: '30 Days from date of BL&LRO final order (Sec 5 Limitation Act petition if delayed)',
+    checklist: [
+      'Certified copy of impugned BL&LRO Order',
+      'Memo of Appeal with Ground of Appeal',
+      'Interim Stay Application under Sec 54(3)',
+      'Court fee stamps & Process fee vouchers'
+    ]
   },
   firstappeal: {
     title: 'First Appeal',
@@ -90,7 +131,16 @@ const MODULE_META: Record<
       'Civil Court First Appeal',
       'RTI First Appeal u/s 19(1)'
     ],
-    statuses: ['Filed', 'Admitted', 'Notice Issued', 'Stay Granted', 'Hearing', 'Allowed', 'Dismissed']
+    statuses: ['Filed', 'Admitted', 'Notice Issued', 'Stay Granted', 'Hearing', 'Allowed', 'Dismissed'],
+    lawRef: 'Section 54 WBLR Act / Section 96 Code of Civil Procedure 1908',
+    forum: 'District Collector / District Judge / Appellate Authority',
+    limitation: '30 Days for Revenue Appeals; 30/90 Days for Civil First Appeals',
+    checklist: [
+      'Certified copy of Judgment / Impugned Order',
+      'Formal Decree Sheet / Order Sheet copy',
+      'Lower Court Record (LCR) requisition',
+      'Caveat Search Report'
+    ]
   },
   rti: {
     title: 'RTI Matter',
@@ -106,7 +156,16 @@ const MODULE_META: Record<
       'Vested Land Record Query',
       'Inquiry Report Request'
     ],
-    statuses: ['Application Sent', 'PIO Replied', 'Info Provided', 'First Appeal Filed', 'Hearing', 'Disposed']
+    statuses: ['Application Sent', 'PIO Replied', 'Info Provided', 'First Appeal Filed', 'Hearing', 'Disposed'],
+    lawRef: 'Right to Information Act 2005 (Sec 6(1), Sec 19(1), Sec 19(3))',
+    forum: 'State Public Information Officer (SPIO) / First Appellate Authority (FAA)',
+    limitation: '30 Days for PIO reply; 30 Days for First Appeal; 90 Days for State Info Commission',
+    checklist: [
+      '₹10 Court Fee Stamp or IPO for Sec 6(1)',
+      'Proof of Indian Citizenship',
+      'Postal speed post tracking receipt',
+      'Copy of original unanswered RTI application for 1st Appeal'
+    ]
   },
   lrtt: {
     title: 'WBLRTT Tribunal',
@@ -121,7 +180,17 @@ const MODULE_META: Record<
       'RS to LR Conveyance',
       'Appeal against Order'
     ],
-    statuses: ['OA Filed', 'Notice Issued', 'Hearing', 'Order Reserved', 'Allowed', 'Dismissed']
+    statuses: ['OA Filed', 'Notice Issued', 'Hearing', 'Order Reserved', 'Allowed', 'Dismissed'],
+    lawRef: 'West Bengal Land Reforms & Tenancy Tribunal Act 1997 (Sec 6 & 10)',
+    forum: 'WBLRTT Benches, Bikas Bhavan / Salt Lake, Kolkata',
+    limitation: '60 Days from DL&LRO appellate order date',
+    checklist: [
+      'Original Application (O.A.) in prescribed format',
+      'Certified copy of DL&LRO Appellate Order',
+      'Certified copy of BL&LRO original order',
+      'Affidavit sworn before Notary / Oath Commissioner',
+      'Interim Order / Status Quo petition'
+    ]
   },
   conversion: {
     title: 'Conversion Case',
@@ -136,7 +205,16 @@ const MODULE_META: Record<
       'Agricultural to Commercial',
       'Other'
     ],
-    statuses: ['Applied', 'Site Verified', 'Report Submitted', 'Order Passed', 'Rejected']
+    statuses: ['Applied', 'Site Verified', 'Report Submitted', 'Order Passed', 'Rejected'],
+    lawRef: 'Section 4C & 4D West Bengal Land Reforms Act 1955',
+    forum: 'Sub-Divisional Land & Land Reforms Officer (SDL&LRO) / DL&LRO',
+    limitation: 'Pre-construction mandatory permission',
+    checklist: [
+      'Site plan & Trace map with North point',
+      'Physical inspection report by Revenue Inspector (RI)',
+      'NOC from local Gram Panchayat / Municipality',
+      'Conversion Fee Challan as per government circle rate'
+    ]
   }
 };
 
@@ -144,9 +222,11 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
   type,
   onOpenNewCase,
   onViewCaseDetail,
-  onEditCase
+  onEditCase,
+  onOpenChainDeed,
+  onOpenAiDraft
 }) => {
-  const { activeCompany, deleteCase } = useApp();
+  const { activeCompany, deleteCase, language } = useApp();
   const meta = MODULE_META[type];
   const Icon = meta.icon;
 
@@ -330,16 +410,22 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
       {/* Module Hero Banner */}
       <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-start gap-4">
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-slate-100 dark:bg-slate-800 ${meta.color}`}>
-            <Icon className="w-6 h-6" />
+          <div className="flex items-center -space-x-3 shrink-0">
+            <CompanyLogo company={activeCompany} size="lg" className="ring-2 ring-white dark:ring-slate-900 shadow-sm z-10" />
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-800 ${meta.color} ring-2 ring-white dark:ring-slate-900 shadow-sm`}>
+              <Icon className="w-6 h-6" />
+            </div>
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
-                {meta.title}
+                {language === 'bn' ? meta.bengali : meta.title}
               </h1>
               <span className="text-xs text-slate-500 dark:text-slate-400">
-                · {meta.bengali}
+                · {language === 'bn' ? meta.title : meta.bengali}
+              </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                {activeCompany?.name}
               </span>
             </div>
             <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 max-w-xl">
@@ -360,19 +446,93 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 flex-wrap shrink-0">
           <button
             onClick={printFullModuleReport}
             className="px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <Printer className="w-4 h-4" /> Print Report
           </button>
+          {type !== 'mutation' && onOpenAiDraft && (
+            <button
+              onClick={() => onOpenAiDraft(type)}
+              className="px-3.5 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
+              title={`Open AI Drafting Studio for ${meta.title}`}
+            >
+              <Sparkles className="w-4 h-4" /> AI Drafting ({language === 'bn' ? 'ড্রাফটিং' : 'Draft'})
+            </button>
+          )}
           <button
             onClick={() => onOpenNewCase(type)}
             className="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" /> New {meta.title}
           </button>
+        </div>
+      </div>
+
+      {/* Statutory Law Reference & Practice Handbook Card */}
+      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 shadow-xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+              {language === 'bn' ? 'আইন ও কার্যপদ্ধতি নির্দেশিকা' : 'Statutory & Practice Handbook'}
+            </h3>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+              {meta.lawRef}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <Clock className="w-3.5 h-3.5 text-amber-500" />
+            <span className="font-semibold text-slate-700 dark:text-slate-300">
+              {meta.limitation}
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 text-xs">
+          {/* Competent Forum */}
+          <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750">
+            <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {language === 'bn' ? 'সংশ্লিষ্ট আদালত / ফোরাম' : 'Competent Authority / Forum'}
+            </div>
+            <div className="font-bold text-slate-900 dark:text-slate-100 mt-1">
+              {meta.forum}
+            </div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+              West Bengal Land Revenue Jurisdiction
+            </div>
+          </div>
+
+          {/* Limitation & Timeline */}
+          <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750">
+            <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {language === 'bn' ? 'তামাদি ও সময়সীমা' : 'Limitation & Timeline'}
+            </div>
+            <div className="font-bold text-amber-700 dark:text-amber-400 mt-1">
+              {meta.limitation}
+            </div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+              Strict statutory compliance required
+            </div>
+          </div>
+
+          {/* Essential Checklist */}
+          <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750">
+            <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+              {language === 'bn' ? 'প্রয়োজনীয় কাগজপত্রের তালিকা' : 'Mandatory Document Checklist'}
+            </div>
+            <ul className="space-y-1">
+              {meta.checklist.slice(0, 3).map((item, idx) => (
+                <li key={idx} className="flex items-center gap-1.5 text-[11px] text-slate-700 dark:text-slate-300">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span className="truncate">{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
 
@@ -529,9 +689,27 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       </td>
                       <td className="py-3 px-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1">
+                          {['mutation', 'misc', 'lrappeal', 'lrtt'].includes(c.type) && onOpenChainDeed && (
+                            <button
+                              onClick={() => onOpenChainDeed(c)}
+                              className="p-1 rounded text-blue-600 hover:text-white hover:bg-blue-600 dark:hover:bg-blue-600 transition-colors cursor-pointer"
+                              title="Make / View Chain Deed Statement (Settings > Chain Sample)"
+                            >
+                              <LinkIcon className="w-4 h-4" />
+                            </button>
+                          )}
+                          {c.type !== 'mutation' && onOpenAiDraft && (
+                            <button
+                              onClick={() => onOpenAiDraft(c.type, c)}
+                              className="p-1 rounded text-violet-600 hover:text-white hover:bg-violet-600 transition-colors cursor-pointer"
+                              title="Draft Petition with AI for this case"
+                            >
+                              <Sparkles className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
                             onClick={() => onViewCaseDetail(c.id)}
-                            className="p-1 rounded text-slate-600 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors"
+                            className="p-1 rounded text-slate-600 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors cursor-pointer"
                             title="View Full Case File"
                           >
                             <Eye className="w-4 h-4" />

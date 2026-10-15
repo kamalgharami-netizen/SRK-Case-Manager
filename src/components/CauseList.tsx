@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { CauseItem } from '../types';
+import { CompanyLogo } from './CompanyLogo';
 import {
   Calendar,
   Plus,
@@ -204,10 +205,8 @@ export const CauseList: React.FC = () => {
       {/* Header Card */}
       <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
-              <Calendar className="w-5 h-5" />
-            </div>
+          <div className="flex items-center gap-3">
+            <CompanyLogo company={activeCompany} size="lg" className="shrink-0" />
             <div>
               <h1 className="text-xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
                 Daily Cause List (দৈনিক কার্যতালিকা)

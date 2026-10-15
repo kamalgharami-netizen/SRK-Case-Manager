@@ -107,6 +107,7 @@ export interface CaseItem {
   respondents: Respondent[];
   addresses: AddressItem[];
   chainLinks: ChainLink[];
+  chainDeedDraft?: string;
   attachments: CaseAttachment[];
   createdAt: number;
   createdBy: string;
@@ -173,6 +174,16 @@ export interface MessageItem {
   channel: 'WhatsApp' | 'SMS';
 }
 
+export interface SampleDraftItem {
+  id: string;
+  category: 'chain' | 'mutation' | 'misc' | 'lrappeal' | 'firstappeal' | 'rti' | 'conversion' | 'lrtt' | 'general';
+  title: string;
+  description: string;
+  templateText: string;
+  lastUpdated: number;
+  aiAssisted?: boolean;
+}
+
 export interface Company {
   id: string;
   name: string;
@@ -185,6 +196,9 @@ export interface Company {
   pin: string;
   phone: string;
   email: string;
+  logoUrl?: string;
+  logoBadge?: 'scales' | 'pillar' | 'gavel' | 'shield' | 'book' | 'ashoka';
+  logoColor?: string;
   createdAt: number;
   users: User[];
   cases: CaseItem[];
@@ -194,6 +208,8 @@ export interface Company {
   diaryData: Record<string, DiaryEntry[]>;
   messages: MessageItem[];
   activityLog: ActivityLogItem[];
+  chainSampleTemplate?: string;
+  sampleDrafts?: SampleDraftItem[];
 }
 
 export interface AppData {
