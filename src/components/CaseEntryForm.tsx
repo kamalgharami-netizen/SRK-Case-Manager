@@ -8,9 +8,12 @@ import {
   Respondent,
   AddressItem,
   ChainLink,
-  CaseAttachment
+  CaseAttachment,
+  Party,
+  HearingDateItem
 } from '../types';
 import { wbDistricts } from '../data/wbDistricts';
+import { ChainDeedModal } from './ChainDeedModal';
 import {
   ArrowLeft,
   Save,
@@ -24,8 +27,32 @@ import {
   Paperclip,
   Clock,
   Sparkles,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Users,
+  UserCheck,
+  ArrowRight,
+  Scroll,
+  Search,
+  Printer,
+  X,
+  Phone,
+  Building,
+  UserPlus,
+  Calendar,
+  Layers
 } from 'lucide-react';
+
+export const WB_DEED_TYPES = [
+  'সাফ কোবালা (Sale / Kobala)',
+  'দানপত্র (Gift Deed)',
+  'হেবা বিল এওয়াজ (Heba-bil-Ewaz)',
+  'হেবা ঘোষণা (Declaration of Heba)',
+  'বণ্টননামা / বাটোয়ারা (Partition Deed)',
+  'উইল / অসিয়তনামা / প্রোবেট (Will / Probate)',
+  'এওয়াজ বদল (Exchange Deed)',
+  'আদালত ডিক্রি / নিলাম (Court Decree / Auction Certificate)',
+  'অন্যান্য দলিল (Other Deed)'
+];
 
 interface CaseEntryFormProps {
   type: CaseType;
@@ -53,12 +80,16 @@ const SUBTYPES_BY_TYPE: Record<CaseType, string[]> = {
     'Court Decree Mutation'
   ],
   misc: [
-    '10000 Share Problem',
-    'Record Correction',
-    'Name Correction',
-    'RS to LR Conveyance',
-    'Boundary Dispute',
-    'Erroneous Record'
+    '10000 Share Overlapping / Share Problem (১০,০০০ অংশ সমাধান)',
+    'Barga Revoke / De-recording of Bargadar (বর্গা রেকর্ড রদ / সংশোধন)',
+    'Name Correction (নাম / পদবী সংশোধন)',
+    'Share Correction / Area Rectification (অংশ ও পরিমাণ ত্রুটি সংশোধন)',
+    'RS to LR Conveyance / Transfer Mapping (আর.এস. হইতে এল.আর. হস্তান্তর সমন্বয়)',
+    'Record Correction / Erroneous Record (ভুল রেকর্ড সংশোধন - Sec 50/51A)',
+    'Boundary Dispute / Demarcation (সীমানা বিবাদ / ডিমারকেশন)',
+    'Classification Correction / Porcha Rectification (শ্রেণি পরিবর্তন / পর্চা সংশোধন)',
+    'Vested Land / Ceiling Objection (ভেস্টেড / সিলিং আপত্তি সংশোধন)',
+    'Other Miscellaneous Petition (অন্যান্য মিস কেস)'
   ],
   lrappeal: ['Section 54 Appeal', 'Section 51A(5) Appeal', 'Delay Condonation'],
   firstappeal: [
@@ -92,9 +123,19 @@ const SUBTYPES_BY_TYPE: Record<CaseType, string[]> = {
   ]
 };
 
+// Requirement 6: Added 'Inquiry Pending' and 'Inquiry Complete' to mutation case statuses
 const STATUSES_BY_TYPE: Record<CaseType, string[]> = {
-  mutation: ['Filed', 'Notice Issued', 'Hearing', 'Order Reserved', 'Allowed', 'Rejected'],
-  misc: ['Filed', 'Notice Issued', 'Hearing', 'Order Reserved', 'Disposed'],
+  mutation: [
+    'Filed',
+    'Inquiry Pending',
+    'Inquiry Complete',
+    'Notice Issued',
+    'Hearing',
+    'Order Reserved',
+    'Allowed',
+    'Rejected'
+  ],
+  misc: ['Filed', 'Inquiry Pending', 'Inquiry Complete', 'Notice Issued', 'Hearing', 'Order Reserved', 'Disposed'],
   lrappeal: ['Filed', 'Admitted', 'Stay Granted', 'Hearing', 'Allowed', 'Dismissed'],
   firstappeal: ['Filed', 'Admitted', 'Stay Granted', 'Hearing', 'Allowed', 'Dismissed'],
   rti: ['Application Sent', 'PIO Replied', 'Info Provided', 'First Appeal Filed', 'Hearing', 'Disposed'],
@@ -109,10 +150,50 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   onSaved,
   onOpenAiDraft
 }) => {
-  const { addCase, updateCase, showToast, activeCompany } = useApp();
+  const { addCase, updateCase, showToast, activeCompany, addParty, sampleDrafts } = useApp();
+
+  // Active editing tracking (from props or from search box)
+  const [activeEditingCase, setActiveEditingCase] = useState<CaseItem | null>(editingCase || null);
+
+  const isMisc = type === 'misc';
+  const isMutation = type === 'mutation';
+
+  // Search box for updating existing data through deed no, app no / docket no, applicant name, case no
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchResults, setShowSearchResults] = useState(false);
+
+  // Requirement 3: Mutation case no starts with MN/, Misc case no starts with MISC/
+  const defaultCaseNo = () => {
+    if (editingCase?.caseNo) return editingCase.caseNo;
+    if (type === 'mutation') {
+      return `MN/${new Date().getFullYear()}/${Math.floor(100 + Math.random() * 900)}`;
+    }
+    if (type === 'misc') {
+      return `MISC/${new Date().getFullYear()}/${Math.floor(100 + Math.random() * 900)}`;
+    }
+    return '';
+  };
+
+  // Requirement 2: mutation application no starts with MUTE
+  const defaultAppNo = () => {
+    if (editingCase?.appNo) return editingCase.appNo;
+    if (type === 'mutation') {
+      return `MUTE-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    }
+    return '';
+  };
+
+  // Requirement 1 for Misc: Docket No starts with DOC
+  const defaultDocketNo = () => {
+    if (editingCase?.docketNo) return editingCase.docketNo;
+    if (type === 'misc') {
+      return `DOC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    }
+    return '';
+  };
 
   // Basic Details
-  const [caseNo, setCaseNo] = useState(editingCase?.caseNo || '');
+  const [caseNo, setCaseNo] = useState(defaultCaseNo);
   const [subType, setSubType] = useState(
     editingCase?.subType || SUBTYPES_BY_TYPE[type][0] || ''
   );
@@ -128,12 +209,62 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     editingCase?.filingDate || new Date().toISOString().slice(0, 10)
   );
   const [nextDate, setNextDate] = useState(editingCase?.nextDate || '');
+
+  // Requirement 6: Multiple hearing dates with + button
+  const [hearingList, setHearingList] = useState<HearingDateItem[]>(() => {
+    if (editingCase?.hearingList && editingCase.hearingList.length > 0) {
+      return editingCase.hearingList;
+    }
+    if (editingCase?.hearingDates && editingCase.hearingDates.length > 0) {
+      return editingCase.hearingDates.map((d, i) => ({
+        id: `hd_${i}_${Date.now()}`,
+        date: d,
+        stage: i === 0 ? 'Hearing / Inquiry' : `Hearing #${i + 1}`
+      }));
+    }
+    if (editingCase?.nextDate) {
+      return [{ id: 'hd_init', date: editingCase.nextDate, stage: 'Next Hearing' }];
+    }
+    return [{ id: 'hd_init', date: '', stage: 'Hearing / Inquiry' }];
+  });
+
+  const addHearingDate = () => {
+    setHearingList(prev => [
+      ...prev,
+      {
+        id: `hd_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        date: '',
+        stage: `Hearing #${prev.length + 1}`
+      }
+    ]);
+  };
+
+  const updateHearingDate = (idx: number, field: 'date' | 'stage', val: string) => {
+    setHearingList(prev => {
+      const copy = [...prev];
+      copy[idx] = { ...copy[idx], [field]: val };
+      if (field === 'date' && idx === 0) {
+        setNextDate(val);
+      }
+      return copy;
+    });
+  };
+
+  const removeHearingDate = (idx: number) => {
+    setHearingList(prev => {
+      const filtered = prev.filter((_, i) => i !== idx);
+      const res = filtered.length > 0 ? filtered : [{ id: `hd_${Date.now()}`, date: '', stage: 'Hearing' }];
+      setNextDate(res.find(h => h.date)?.date || '');
+      return res;
+    });
+  };
+
   const [priority, setPriority] = useState<'Normal' | 'High' | 'Urgent'>(
     editingCase?.priority || 'Normal'
   );
-  const [appNo, setAppNo] = useState(editingCase?.appNo || '');
+  const [appNo, setAppNo] = useState(defaultAppNo);
   const [grnNo, setGrnNo] = useState(editingCase?.grnNo || '');
-  const [docketNo, setDocketNo] = useState(editingCase?.docketNo || '');
+  const [docketNo, setDocketNo] = useState(defaultDocketNo);
   const [impugnedOrderNo, setImpugnedOrderNo] = useState(
     editingCase?.impugnedOrderNo || ''
   );
@@ -146,7 +277,22 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     editingCase?.targetOfficer || ''
   );
   const [notes, setNotes] = useState(editingCase?.notes || '');
-  const [postSaveCase, setPostSaveCase] = useState<CaseItem | null>(null);
+
+  // Requirement 9: Applicant's Deed Details
+  const [applicantDeedNo, setApplicantDeedNo] = useState(editingCase?.applicantDeedNo || '');
+  const [applicantDeedYear, setApplicantDeedYear] = useState(editingCase?.applicantDeedYear || '');
+  const [applicantDeedType, setApplicantDeedType] = useState(
+    editingCase?.applicantDeedType || 'সাফ কোবালা (Sale / Kobala)'
+  );
+  const [applicantAdsr, setApplicantAdsr] = useState(editingCase?.applicantAdsr || '');
+
+  // Requirement 10: Broker / Muhuri Name & Phone (Omitted from client/court prints; shown only in report & entry)
+  const [brokerName, setBrokerName] = useState(editingCase?.brokerName || '');
+  const [brokerPhone, setBrokerPhone] = useState(editingCase?.brokerPhone || '');
+
+  // Party Autocomplete suggestions
+  const [partySuggestions, setPartySuggestions] = useState<Party[]>([]);
+  const [showPartySuggestions, setShowPartySuggestions] = useState(false);
 
   // Sub-collections
   const [landSchedules, setLandSchedules] = useState<LandSchedule[]>(
@@ -179,8 +325,28 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     ]
   );
 
-  const [respondents, setRespondents] = useState<Respondent[]>(
-    editingCase?.respondents || [
+  const isMutationOrMisc = type === 'mutation' || type === 'misc';
+
+  const [respondents, setRespondents] = useState<Respondent[]>(() => {
+    if (editingCase?.respondents && editingCase.respondents.length > 0) {
+      return editingCase.respondents;
+    }
+    if (isMutationOrMisc) {
+      if (editingCase?.opp && editingCase.opp.trim() && editingCase.opp !== 'The State of West Bengal') {
+        return [
+          {
+            id: 'resp_' + Date.now(),
+            name: editingCase.opp,
+            father: '',
+            type: 'Private',
+            address: '',
+            phone: ''
+          }
+        ];
+      }
+      return [];
+    }
+    return [
       {
         id: 'resp_init',
         name: 'The State of West Bengal',
@@ -189,99 +355,216 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         address: '',
         phone: ''
       }
-    ]
+    ];
+  });
+
+  // Recorded Owner (Kept for Misc / Appeal, but omitted for Mutation as per Requirement 13)
+  const [recordedOwner, setRecordedOwner] = useState(editingCase?.recordedOwner || '');
+  const [recordedKhatian, setRecordedKhatian] = useState(
+    editingCase?.recordedKhatian || editingCase?.landSchedules?.[0]?.khatian || ''
+  );
+  const [recordedDag, setRecordedDag] = useState(
+    editingCase?.recordedDag || editingCase?.landSchedules?.[0]?.dag || ''
   );
 
   const [addresses, setAddresses] = useState<AddressItem[]>(
     editingCase?.addresses || []
   );
 
-  const [chainLinks, setChainLinks] = useState<ChainLink[]>(
-    editingCase?.chainLinks || []
-  );
+  // Chain of Title Links with multiple sellers/donors, buyers, and warish names
+  const [chainLinks, setChainLinks] = useState<ChainLink[]>(() => {
+    const raw = editingCase?.chainLinks || [];
+    return raw.map(l => ({
+      ...l,
+      vendors: l.vendors && l.vendors.length > 0 ? l.vendors : (l.vendor ? [l.vendor] : ['']),
+      purchasers: l.purchasers && l.purchasers.length > 0 ? l.purchasers : (l.purchaser ? [l.purchaser] : ['']),
+      warishNames: l.warishNames && l.warishNames.length > 0 ? l.warishNames : (l.purchaser ? [l.purchaser] : [''])
+    }));
+  });
 
   const [attachments, setAttachments] = useState<CaseAttachment[]>(
     editingCase?.attachments || []
   );
 
-  // Chain of title verification state
+  // Chain verification & modal states
   const [chainSummaryHtml, setChainSummaryHtml] = useState<string>('');
   const [chainGaps, setChainGaps] = useState<string[]>([]);
+  const [postSaveCase, setPostSaveCase] = useState<CaseItem | null>(null);
+  const [activeChainDeedModalCase, setActiveChainDeedModalCase] = useState<CaseItem | null>(null);
 
-  // Limitation calculation for LR Appeal
-  const [limitationStats, setLimitationStats] = useState<{
-    daysElapsed: number;
-    sec54DaysLeft: number;
-    sec51ADaysLeft: number;
-    sec5DaysLeft: number;
-    statusSec54: 'Safe' | 'Urgent' | 'Expired';
-  } | null>(null);
-
+  // Synchronize when editingCase prop changes
   useEffect(() => {
-    if ((type === 'lrappeal' || type === 'firstappeal') && impugnedOrderDate) {
-      const orderD = new Date(impugnedOrderDate);
-      const today = new Date();
-      const diffMs = today.getTime() - orderD.getTime();
-      const daysElapsed = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-      const sec54DaysLeft = 60 - daysElapsed;
-      const sec51ADaysLeft = 30 - daysElapsed;
-      const sec5DaysLeft = 90 - daysElapsed;
-
-      let statusSec54: 'Safe' | 'Urgent' | 'Expired' = 'Safe';
-      if (sec54DaysLeft < 0) statusSec54 = 'Expired';
-      else if (sec54DaysLeft <= 7) statusSec54 = 'Urgent';
-
-      setLimitationStats({
-        daysElapsed,
-        sec54DaysLeft,
-        sec51ADaysLeft,
-        sec5DaysLeft,
-        statusSec54
-      });
-    } else if (type === 'rti' && filingDate) {
-      const filingD = new Date(filingDate);
-      const today = new Date();
-      const diffMs = today.getTime() - filingD.getTime();
-      const daysElapsed = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-      const sec54DaysLeft = 30 - daysElapsed; // RTI Sec 7(1) PIO 30 days
-      const sec51ADaysLeft = 30 - daysElapsed; // RTI Sec 19(1) 30 days First Appeal
-      const sec5DaysLeft = 90 - daysElapsed; // 90 days Second Appeal
-
-      let statusSec54: 'Safe' | 'Urgent' | 'Expired' = 'Safe';
-      if (sec54DaysLeft < 0) statusSec54 = 'Expired';
-      else if (sec54DaysLeft <= 5) statusSec54 = 'Urgent';
-
-      setLimitationStats({
-        daysElapsed,
-        sec54DaysLeft,
-        sec51ADaysLeft,
-        sec5DaysLeft,
-        statusSec54
-      });
-    } else {
-      setLimitationStats(null);
+    if (editingCase) {
+      loadCaseDataIntoForm(editingCase);
     }
-  }, [type, impugnedOrderDate, filingDate]);
+  }, [editingCase]);
 
-  // Land schedule methods
+  // Load case into form (used by Search Box and Props)
+  const loadCaseDataIntoForm = (targetCase: CaseItem) => {
+    setActiveEditingCase(targetCase);
+    setCaseNo(targetCase.caseNo);
+    setSubType(targetCase.subType);
+    setStatus(targetCase.status);
+    setParty(targetCase.party);
+    setOpp(targetCase.opp);
+    setForum(targetCase.forum);
+    setFilingDate(targetCase.filingDate);
+    setNextDate(targetCase.nextDate || '');
+    setPriority(targetCase.priority || 'Normal');
+    setAppNo(targetCase.appNo || '');
+    setGrnNo(targetCase.grnNo || '');
+    setDocketNo(targetCase.docketNo || '');
+    setImpugnedOrderNo(targetCase.impugnedOrderNo || '');
+    setImpugnedOrderDate(targetCase.impugnedOrderDate || '');
+    setGrounds(targetCase.grounds || '');
+    setBench(targetCase.bench || '');
+    setTargetOfficer(targetCase.targetOfficer || '');
+    setNotes(targetCase.notes || '');
+
+    setApplicantDeedNo(targetCase.applicantDeedNo || '');
+    setApplicantDeedYear(targetCase.applicantDeedYear || '');
+    setApplicantDeedType(targetCase.applicantDeedType || 'সাফ কোবালা (Sale / Kobala)');
+    setApplicantAdsr(targetCase.applicantAdsr || '');
+    setBrokerName(targetCase.brokerName || '');
+    setBrokerPhone(targetCase.brokerPhone || '');
+
+    setRecordedOwner(targetCase.recordedOwner || '');
+    setRecordedKhatian(targetCase.recordedKhatian || '');
+    setRecordedDag(targetCase.recordedDag || '');
+
+    if (targetCase.landSchedules && targetCase.landSchedules.length > 0) {
+      setLandSchedules(targetCase.landSchedules);
+    }
+    if (targetCase.applicants && targetCase.applicants.length > 0) {
+      setApplicants(targetCase.applicants);
+    }
+    if (targetCase.respondents && targetCase.respondents.length > 0) {
+      setRespondents(targetCase.respondents);
+    }
+    if (targetCase.chainLinks && targetCase.chainLinks.length > 0) {
+      setChainLinks(
+        targetCase.chainLinks.map(l => ({
+          ...l,
+          vendors: l.vendors && l.vendors.length > 0 ? l.vendors : (l.vendor ? [l.vendor] : ['']),
+          purchasers: l.purchasers && l.purchasers.length > 0 ? l.purchasers : (l.purchaser ? [l.purchaser] : ['']),
+          warishNames: l.warishNames && l.warishNames.length > 0 ? l.warishNames : (l.purchaser ? [l.purchaser] : [''])
+        }))
+      );
+    }
+    if (targetCase.attachments) {
+      setAttachments(targetCase.attachments);
+    }
+    if (targetCase.hearingList && targetCase.hearingList.length > 0) {
+      setHearingList(targetCase.hearingList);
+    } else if (targetCase.hearingDates && targetCase.hearingDates.length > 0) {
+      setHearingList(
+        targetCase.hearingDates.map((d, i) => ({
+          id: `hd_${i}_${Date.now()}`,
+          date: d,
+          stage: i === 0 ? 'Hearing / Inquiry' : `Hearing #${i + 1}`
+        }))
+      );
+    } else if (targetCase.nextDate) {
+      setHearingList([{ id: 'hd_init', date: targetCase.nextDate, stage: 'Next Hearing' }]);
+    } else {
+      setHearingList([{ id: 'hd_init', date: '', stage: 'Hearing / Inquiry' }]);
+    }
+    setSearchQuery('');
+    setShowSearchResults(false);
+    showToast(`Loaded Case ${targetCase.caseNo} for updating`);
+  };
+
+  const handleClearFormToNew = () => {
+    setActiveEditingCase(null);
+    setCaseNo(
+      type === 'mutation'
+        ? `MN/${new Date().getFullYear()}/${Math.floor(100 + Math.random() * 900)}`
+        : type === 'misc'
+        ? `MISC/${new Date().getFullYear()}/${Math.floor(100 + Math.random() * 900)}`
+        : ''
+    );
+    setAppNo(type === 'mutation' ? `MUTE-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}` : '');
+    setDocketNo(type === 'misc' ? `DOC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}` : '');
+    setParty('');
+    setOpp('');
+    setGrnNo('');
+    setHearingList([{ id: 'hd_init', date: '', stage: 'Hearing / Inquiry' }]);
+    setNextDate('');
+    setApplicantDeedNo('');
+    setApplicantDeedYear('');
+    setApplicantDeedType('সাফ কোবালা (Sale / Kobala)');
+    setApplicantAdsr('');
+    setBrokerName('');
+    setBrokerPhone('');
+    setChainLinks([]);
+    setApplicants([
+      { id: 'app_' + Date.now(), name: '', father: '', age: '', address: '', phone: '' }
+    ]);
+    setRespondents([]);
+    showToast('Switched to New Case Entry mode');
+  };
+
+  // Filter existing cases for Search Box
+  const matchingCases = (activeCompany?.cases || []).filter(c => {
+    if (!searchQuery.trim()) return false;
+    if (c.type !== type) return false;
+    const q = searchQuery.toLowerCase().trim();
+    const matchCaseNo = c.caseNo?.toLowerCase().includes(q);
+    const matchAppNo = c.appNo?.toLowerCase().includes(q);
+    const matchDocketNo = c.docketNo?.toLowerCase().includes(q);
+    const matchParty = c.party?.toLowerCase().includes(q);
+    const matchDeed =
+      c.applicantDeedNo?.toLowerCase().includes(q) ||
+      c.chainLinks?.some(l => l.deedNo?.toLowerCase().includes(q));
+    return matchCaseNo || matchAppNo || matchDocketNo || matchParty || matchDeed;
+  });
+
+  // Handle party name typing and suggestions (Requirement 8)
+  const handlePartyChange = (val: string) => {
+    setParty(val);
+    updateMainApplicantField('name', val);
+
+    if (val.trim().length >= 2 && activeCompany?.parties) {
+      const q = val.toLowerCase().trim();
+      const matches = activeCompany.parties.filter(p => p.name.toLowerCase().includes(q));
+      setPartySuggestions(matches);
+      setShowPartySuggestions(matches.length > 0);
+    } else {
+      setShowPartySuggestions(false);
+    }
+  };
+
+  const handleSelectPartySuggestion = (selectedParty: Party) => {
+    setParty(selectedParty.name);
+    updateMainApplicantField('name', selectedParty.name);
+    if (selectedParty.phone) updateMainApplicantField('phone', selectedParty.phone);
+    if (selectedParty.address) updateMainApplicantField('address', selectedParty.address);
+    if (selectedParty.notes && selectedParty.notes.includes('Father:')) {
+      const fName = selectedParty.notes.replace('Father:', '').trim();
+      updateMainApplicantField('father', fName);
+    }
+    setShowPartySuggestions(false);
+    showToast(`Linked to Party Ledger: ${selectedParty.name}`);
+  };
+
+  // Requirement 12: Land Schedule Details with + option to add more schedule
   const addLandSchedule = () => {
     setLandSchedules(prev => [
       ...prev,
       {
         id: 'ls_' + Date.now(),
-        district: 'North 24 Parganas',
-        block: 'Rajarhat',
-        mouza: '',
-        jl: '',
+        district: landSchedules[0]?.district || 'North 24 Parganas',
+        block: landSchedules[0]?.block || 'Rajarhat',
+        mouza: landSchedules[0]?.mouza || '',
+        jl: landSchedules[0]?.jl || '',
         khatian: '',
         dag: '',
         area: '',
         unit: 'acre',
-        classification: 'Sali'
+        classification: 'Bastu'
       }
     ]);
+    showToast('New property schedule added');
   };
 
   const removeLandSchedule = (idx: number) => {
@@ -293,7 +576,6 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       prev.map((s, i) => {
         if (i !== idx) return s;
         if (field === 'district') {
-          // Reset block to first available in selected district
           const blocks = wbDistricts[val] || [];
           return { ...s, district: val, block: blocks[0] || '' };
         }
@@ -302,56 +584,199 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     );
   };
 
-  // Applicant methods
-  const addApplicant = () => {
-    setApplicants(prev => [
-      ...prev,
-      { id: 'app_' + Date.now(), name: '', father: '', age: '', address: '', phone: '' }
-    ]);
+  // Sync opposite party string from respondents array
+  const syncOppFromRespondents = (resps: Respondent[]) => {
+    const names = resps.map(r => r.name.trim()).filter(Boolean);
+    setOpp(names.join(', '));
   };
 
-  const removeApplicant = (idx: number) => {
-    setApplicants(prev => prev.filter((_, i) => i !== idx));
-  };
-
-  const updateApplicant = (idx: number, field: keyof Applicant, val: string) => {
-    setApplicants(prev =>
-      prev.map((a, i) => (i === idx ? { ...a, [field]: val } : a))
-    );
-  };
-
-  // Respondent methods
+  // Requirement 11: Opposite Party / Respondent(s) + option for more respondents and address
   const addRespondent = () => {
-    setRespondents(prev => [
-      ...prev,
-      { id: 'resp_' + Date.now(), name: '', father: '', type: 'Private', address: '', phone: '' }
-    ]);
+    const newResp: Respondent = {
+      id: 'resp_' + Date.now(),
+      name: '',
+      father: '',
+      type: 'Private',
+      address: '',
+      phone: ''
+    };
+    setRespondents(prev => {
+      const updated = [...prev, newResp];
+      if (isMutationOrMisc) {
+        syncOppFromRespondents(updated);
+      }
+      return updated;
+    });
   };
 
   const removeRespondent = (idx: number) => {
-    setRespondents(prev => prev.filter((_, i) => i !== idx));
+    setRespondents(prev => {
+      const updated = prev.filter((_, i) => i !== idx);
+      if (isMutationOrMisc) {
+        syncOppFromRespondents(updated);
+      }
+      return updated;
+    });
   };
 
   const updateRespondent = (idx: number, field: keyof Respondent, val: any) => {
-    setRespondents(prev =>
-      prev.map((r, i) => (i === idx ? { ...r, [field]: val } : r))
-    );
+    setRespondents(prev => {
+      const updated = prev.map((r, i) => (i === idx ? { ...r, [field]: val } : r));
+      if (isMutationOrMisc && field === 'name') {
+        syncOppFromRespondents(updated);
+      }
+      return updated;
+    });
   };
 
-  // Chain Link methods
-  const addChainLink = () => {
+  const updateMainApplicantField = (field: keyof Applicant, val: string) => {
+    setApplicants(prev => {
+      const first = prev[0] || { id: 'app_1', name: party, father: '', age: '', address: '', phone: '' };
+      return [{ ...first, [field]: val }, ...prev.slice(1)];
+    });
+  };
+
+  // Requirement 14: Chain deed adding + button: chain deed no, deed year, buyer one or more, saler/donor one or more
+  const addChainBuyerLink = () => {
+    const lastLink = chainLinks[chainLinks.length - 1];
+    const defaultVendor = lastLink ? (lastLink.purchasers?.join(', ') || lastLink.purchaser) : (recordedOwner || '');
     setChainLinks(prev => [
       ...prev,
       {
         id: 'cl_' + Date.now(),
+        linkType: 'deed',
         deedNo: '',
         deedDate: '',
-        vendor: '',
+        deedYear: '',
+        deedType: 'সাফ কোবালা (Sale / Kobala)',
+        vendor: defaultVendor,
         purchaser: '',
-        area: '',
-        consideration: ''
+        vendors: defaultVendor ? [defaultVendor] : [''],
+        purchasers: [''],
+        area: landSchedules[0] ? `${landSchedules[0].area} ${landSchedules[0].unit}` : '',
+        consideration: '',
+        registrationOffice: applicantAdsr || '',
+        notes: ''
       }
     ]);
+  };
+
+  // Add / remove multiple sellers/donors in a chain link
+  const addVendorToLink = (linkIdx: number) => {
+    setChainLinks(prev =>
+      prev.map((cl, i) => {
+        if (i !== linkIdx) return cl;
+        const curr = cl.vendors && cl.vendors.length > 0 ? cl.vendors : (cl.vendor ? [cl.vendor] : ['']);
+        return { ...cl, vendors: [...curr, ''] };
+      })
+    );
+  };
+
+  const removeVendorFromLink = (linkIdx: number, vIdx: number) => {
+    setChainLinks(prev =>
+      prev.map((cl, i) => {
+        if (i !== linkIdx) return cl;
+        const updated = (cl.vendors || []).filter((_, idx) => idx !== vIdx);
+        return { ...cl, vendors: updated, vendor: updated.join(', ') };
+      })
+    );
+  };
+
+  const updateVendorInLink = (linkIdx: number, vIdx: number, val: string) => {
+    setChainLinks(prev =>
+      prev.map((cl, i) => {
+        if (i !== linkIdx) return cl;
+        const updated = (cl.vendors || ['']).map((v, idx) => (idx === vIdx ? val : v));
+        return { ...cl, vendors: updated, vendor: updated.join(', ') };
+      })
+    );
+  };
+
+  // Add / remove multiple buyers in a chain link
+  const addPurchaserToLink = (linkIdx: number) => {
+    setChainLinks(prev =>
+      prev.map((cl, i) => {
+        if (i !== linkIdx) return cl;
+        const curr = cl.purchasers && cl.purchasers.length > 0 ? cl.purchasers : (cl.purchaser ? [cl.purchaser] : ['']);
+        return { ...cl, purchasers: [...curr, ''] };
+      })
+    );
+  };
+
+  const removePurchaserFromLink = (linkIdx: number, pIdx: number) => {
+    setChainLinks(prev =>
+      prev.map((cl, i) => {
+        if (i !== linkIdx) return cl;
+        const updated = (cl.purchasers || []).filter((_, idx) => idx !== pIdx);
+        return { ...cl, purchasers: updated, purchaser: updated.join(', ') };
+      })
+    );
+  };
+
+  const updatePurchaserInLink = (linkIdx: number, pIdx: number, val: string) => {
+    setChainLinks(prev =>
+      prev.map((cl, i) => {
+        if (i !== linkIdx) return cl;
+        const updated = (cl.purchasers || ['']).map((p, idx) => (idx === pIdx ? val : p));
+        return { ...cl, purchasers: updated, purchaser: updated.join(', ') };
+      })
+    );
+  };
+
+  // Requirement 15: Warish adding option with adding option name of the warishes
+  const addWarishLink = () => {
+    const lastLink = chainLinks[chainLinks.length - 1];
+    const defaultDeceased = lastLink ? (lastLink.purchasers?.join(', ') || lastLink.purchaser) : (recordedOwner || '');
+    setChainLinks(prev => [
+      ...prev,
+      {
+        id: 'cl_' + Date.now(),
+        linkType: 'warish',
+        deedNo: '',
+        deedDate: '',
+        deedYear: '',
+        deedType: 'ওয়ারিশান সূত্রে হস্তান্তর',
+        vendor: defaultDeceased,
+        purchaser: '',
+        warishNames: [''],
+        area: landSchedules[0] ? `${landSchedules[0].area} ${landSchedules[0].unit}` : '',
+        consideration: 'উত্তরাধিকার সূত্রে প্রাপ্ত',
+        registrationOffice: '',
+        warishDetails: '',
+        certificateRef: '',
+        notes: ''
+      }
+    ]);
+  };
+
+  const addWarishNameToLink = (linkIdx: number) => {
+    setChainLinks(prev =>
+      prev.map((cl, i) => {
+        if (i !== linkIdx) return cl;
+        const curr = cl.warishNames && cl.warishNames.length > 0 ? cl.warishNames : (cl.purchaser ? [cl.purchaser] : ['']);
+        return { ...cl, warishNames: [...curr, ''] };
+      })
+    );
+  };
+
+  const removeWarishNameFromLink = (linkIdx: number, wIdx: number) => {
+    setChainLinks(prev =>
+      prev.map((cl, i) => {
+        if (i !== linkIdx) return cl;
+        const updated = (cl.warishNames || []).filter((_, idx) => idx !== wIdx);
+        return { ...cl, warishNames: updated, purchaser: updated.join(', ') };
+      })
+    );
+  };
+
+  const updateWarishNameInLink = (linkIdx: number, wIdx: number, val: string) => {
+    setChainLinks(prev =>
+      prev.map((cl, i) => {
+        if (i !== linkIdx) return cl;
+        const updated = (cl.warishNames || ['']).map((w, idx) => (idx === wIdx ? val : w));
+        return { ...cl, warishNames: updated, purchaser: updated.join(', ') };
+      })
+    );
   };
 
   const removeChainLink = (idx: number) => {
@@ -364,128 +789,78 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     );
   };
 
+  // Continuity check
   const verifyAndGenerateChain = () => {
-    if (chainLinks.length === 0) {
-      showToast('Add at least one deed link', 'error');
-      return;
+    const applicantName = party.trim();
+    const gaps: string[] = [];
+
+    for (let i = 1; i < chainLinks.length; i++) {
+      const prevP = (chainLinks[i - 1].purchaser || chainLinks[i - 1].purchasers?.join(', ') || '').trim().toLowerCase();
+      const currV = (chainLinks[i].vendor || chainLinks[i].vendors?.join(', ') || '').trim().toLowerCase();
+      if (prevP && currV && !prevP.includes(currV) && !currV.includes(prevP)) {
+        gaps.push(
+          `Title transition alert between Step ${i} and Step ${i + 1}: Predecessor "${chainLinks[i - 1].purchaser}" does not match subsequent Transferor "${chainLinks[i].vendor}". (Verify intermediate deed or Warishan certificate).`
+        );
+      }
     }
 
-    const sorted = [...chainLinks].sort((a, b) => {
-      if (!a.deedDate) return 1;
-      if (!b.deedDate) return -1;
-      return new Date(a.deedDate).getTime() - new Date(b.deedDate).getTime();
-    });
-
-    const gaps: string[] = [];
-    for (let i = 1; i < sorted.length; i++) {
-      const prevPurchaser = sorted[i - 1].purchaser.trim().toLowerCase();
-      const currentVendor = sorted[i].vendor.trim().toLowerCase();
-      if (prevPurchaser && currentVendor && prevPurchaser !== currentVendor) {
+    if (applicantName && chainLinks.length > 0) {
+      const lastP = (chainLinks[chainLinks.length - 1].purchaser || '').trim().toLowerCase();
+      const applicant = applicantName.toLowerCase();
+      if (lastP && applicant && !lastP.includes(applicant) && !applicant.includes(lastP)) {
         gaps.push(
-          `Deed #${sorted[i - 1].deedNo} purchaser "${sorted[i - 1].purchaser}" does not match Deed #${sorted[i].deedNo} vendor "${sorted[i].vendor}".`
+          `Last step buyer "${chainLinks[chainLinks.length - 1].purchaser}" does not match Present Applicant "${party}". Ensure the latest deed or applicant deed conveys title directly to the applicant.`
         );
       }
     }
 
     setChainGaps(gaps);
-
-    const html = `
-      <div style="font-family:'Times New Roman',serif; padding: 16px;">
-        <h3 style="text-align: center; color: #1E3A8A; margin-bottom: 4px;">CHRONOLOGICAL CHAIN OF TITLE</h3>
-        <p style="text-align: center; font-size: 12px; color: #555; margin-bottom: 12px;">Case: ${caseNo || 'Draft Case'} · Party: ${party || 'Applicant'}</p>
-        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-          <thead>
-            <tr style="background-color: #EFF6FF;">
-              <th style="border: 1px solid #999; padding: 6px;">#</th>
-              <th style="border: 1px solid #999; padding: 6px;">Deed No</th>
-              <th style="border: 1px solid #999; padding: 6px;">Date</th>
-              <th style="border: 1px solid #999; padding: 6px;">Vendor (দাতা)</th>
-              <th style="border: 1px solid #999; padding: 6px;">Purchaser (গ্রহীতা)</th>
-              <th style="border: 1px solid #999; padding: 6px;">Area</th>
-              <th style="border: 1px solid #999; padding: 6px;">Consideration</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${sorted
-              .map(
-                (l, i) => `<tr>
-              <td style="border: 1px solid #999; padding: 6px; text-align: center;">${i + 1}</td>
-              <td style="border: 1px solid #999; padding: 6px; font-weight: bold;">${l.deedNo || '—'}</td>
-              <td style="border: 1px solid #999; padding: 6px;">${l.deedDate || '—'}</td>
-              <td style="border: 1px solid #999; padding: 6px;">${l.vendor || '—'}</td>
-              <td style="border: 1px solid #999; padding: 6px;">${l.purchaser || '—'}</td>
-              <td style="border: 1px solid #999; padding: 6px;">${l.area || '—'}</td>
-              <td style="border: 1px solid #999; padding: 6px;">${l.consideration || '—'}</td>
-            </tr>`
-              )
-              .join('')}
-          </tbody>
-        </table>
-      </div>
-    `;
-
-    setChainSummaryHtml(html);
-    showToast('Chain of title processed and verified');
-  };
-
-  const downloadChainWordDoc = () => {
-    if (!chainSummaryHtml) {
-      verifyAndGenerateChain();
+    if (gaps.length === 0) {
+      showToast('Unbroken title chain verified successfully!');
+    } else {
+      showToast(`Chain verified with ${gaps.length} notice(s)`, 'error');
     }
-    const html = `
-      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-        <head><meta charset='utf-8'><title>Chain of Title - ${caseNo}</title></head>
-        <body style="font-family:'Times New Roman',serif; padding:40px;">
-          ${chainSummaryHtml}
-        </body>
-      </html>
-    `;
-    const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Chain_Deed_${caseNo.replace(/[^a-zA-Z0-9]/g, '_') || 'Case'}.doc`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast('Chain Deed downloaded as Word (.doc)');
   };
 
-  // Quick document attachment simulator
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, category?: string) => {
-    const files = e.target.files;
-    if (!files) return;
-    Array.from(files).forEach(f => {
-      const ext = f.name.split('.').pop()?.toLowerCase();
-      let fType: 'pdf' | 'doc' | 'img' | 'other' = 'other';
-      if (ext === 'pdf') fType = 'pdf';
-      else if (['doc', 'docx'].includes(ext || '')) fType = 'doc';
-      else if (['jpg', 'jpeg', 'png'].includes(ext || '')) fType = 'img';
-
-      const sizeStr =
-        f.size < 1024 * 1024
-          ? (f.size / 1024).toFixed(1) + ' KB'
-          : (f.size / (1024 * 1024)).toFixed(2) + ' MB';
-
-      setAttachments(prev => [
-        ...prev,
-        {
-          id: 'att_' + Date.now() + Math.random(),
-          name: f.name,
-          size: sizeStr,
-          type: fType,
-          date: new Date().toISOString().slice(0, 10),
-          category: category || 'General Attachment'
-        }
-      ]);
-    });
-    showToast(`Attached ${files.length} document(s)`);
+  // AI Drafting Trigger for Misc Case & Other Non-Mutation Cases (Requirement 5)
+  const handleTriggerAiDraft = () => {
+    if (!onOpenAiDraft) return;
+    const primaryNextDate = hearingList.find(h => h.date)?.date || nextDate;
+    const allHearingDates = hearingList.map(h => h.date).filter(Boolean);
+    const prefillData: Partial<CaseItem> = {
+      id: activeEditingCase?.id || editingCase?.id,
+      type,
+      caseNo: caseNo.trim(),
+      subType,
+      status,
+      party: party.trim(),
+      opp: opp.trim(),
+      forum,
+      filingDate,
+      nextDate: primaryNextDate,
+      hearingDates: allHearingDates,
+      hearingList,
+      appNo: isMisc ? '' : appNo.trim(),
+      grnNo: isMisc ? '' : grnNo.trim(),
+      docketNo: docketNo.trim(),
+      applicantDeedNo: applicantDeedNo.trim(),
+      applicantDeedYear: applicantDeedYear.trim(),
+      applicantDeedType,
+      applicantAdsr: applicantAdsr.trim(),
+      brokerName: brokerName.trim(),
+      brokerPhone: brokerPhone.trim(),
+      landSchedules,
+      applicants,
+      respondents,
+      chainLinks,
+      notes,
+      grounds
+    };
+    onOpenAiDraft(type, prefillData);
   };
 
-  const removeAttachment = (id: string) => {
-    setAttachments(prev => prev.filter(a => a.id !== id));
-  };
-
-  const handleSave = (andSendWhatsApp = false) => {
+  // Requirement 16 & 18: Save and Update handlers
+  const handleSaveOrUpdate = (isUpdate = false, andSendWhatsApp = false) => {
     if (!caseNo.trim()) {
       showToast('Case Number is required', 'error');
       return;
@@ -495,26 +870,57 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       return;
     }
 
+    // Requirement 8: If party does not exist in Party Ledger, automatically add it
+    const trimmedParty = party.trim();
+    const partyExists = (activeCompany?.parties || []).some(
+      p => p.name.trim().toLowerCase() === trimmedParty.toLowerCase()
+    );
+    if (!partyExists) {
+      addParty({
+        name: trimmedParty,
+        type: 'Client',
+        phone: applicants[0]?.phone || '',
+        email: '',
+        address: applicants[0]?.address || '',
+        notes: applicants[0]?.father ? `Father/Husband: ${applicants[0].father}` : `Created from ${isMisc ? 'Misc' : 'Mutation'} entry`
+      });
+      showToast(`Added ${trimmedParty} to Party Ledger automatically`);
+    }
+
+    const primaryNextDate = hearingList.find(h => h.date)?.date || nextDate;
+    const allHearingDates = hearingList.map(h => h.date).filter(Boolean);
+
     const casePayload = {
       type,
       caseNo: caseNo.trim(),
       subType,
       status,
-      party: party.trim(),
+      party: trimmedParty,
       opp: opp.trim(),
       forum,
       filingDate,
-      nextDate,
+      nextDate: primaryNextDate,
+      hearingDates: allHearingDates,
+      hearingList,
       priority,
-      appNo,
-      grnNo,
-      docketNo,
+      appNo: isMisc ? '' : appNo.trim(),
+      grnNo: isMisc ? '' : grnNo.trim(),
+      docketNo: docketNo.trim(),
       impugnedOrderNo,
       impugnedOrderDate,
       grounds,
       bench,
       targetOfficer,
       notes,
+      applicantDeedNo: applicantDeedNo.trim(),
+      applicantDeedYear: applicantDeedYear.trim(),
+      applicantDeedType,
+      applicantAdsr: applicantAdsr.trim(),
+      brokerName: brokerName.trim(),
+      brokerPhone: brokerPhone.trim(),
+      recordedOwner: recordedOwner.trim(),
+      recordedKhatian: recordedKhatian.trim(),
+      recordedDag: recordedDag.trim(),
       landSchedules,
       applicants,
       respondents,
@@ -524,18 +930,23 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     };
 
     let resultCase: CaseItem;
-    if (editingCase) {
-      updateCase(editingCase.id, casePayload);
-      resultCase = { ...editingCase, ...casePayload };
+    const targetCaseId = activeEditingCase?.id || editingCase?.id;
+
+    if (isUpdate && targetCaseId) {
+      updateCase(targetCaseId, casePayload);
+      resultCase = { ...(activeEditingCase || editingCase)!, ...casePayload };
+      showToast(`Case ${caseNo} updated successfully!`);
     } else {
       resultCase = addCase(casePayload);
+      showToast(`New case ${caseNo} created and registered!`);
     }
 
     if (andSendWhatsApp) {
       const applicantPhone = applicants[0]?.phone || '';
+      const typeDisplay = isMisc ? 'Misc Case' : isMutation ? 'Mutation Case' : `${type.toUpperCase()} Case`;
       const textMsg = encodeURIComponent(
-        `Dear ${party}, your case ${caseNo} (${subType}) before ${forum} has been updated in our chamber book. Next Hearing Date: ${
-          nextDate || 'To be fixed'
+        `Dear ${party}, your ${typeDisplay} ${caseNo} (${subType}) before ${forum} has been registered/updated. Hearing Date: ${
+          primaryNextDate || 'To be notified'
         }. - ${activeCompany?.name || 'Legal Chamber'}`
       );
       const cleanPhone = applicantPhone.replace(/[^0-9]/g, '');
@@ -545,18 +956,168 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       window.open(waUrl, '_blank');
     }
 
-    const isChainCase = ['mutation', 'misc', 'lrappeal', 'lrtt'].includes(type);
-    if (isChainCase) {
-      setPostSaveCase(resultCase);
-      showToast('Case details saved! Chain Deed making option ready.');
-    } else {
-      onSaved(resultCase, false);
-    }
+    // Requirement 16 & 20: Forward to concern page / Show make chain deed option
+    setPostSaveCase(resultCase);
   };
 
+  // Requirement 19: Print Dossier (excluding broker/muhuri name & phone as per Requirement 10)
+  const handlePrintDossier = () => {
+    const printWin = window.open('', '_blank');
+    if (!printWin) return;
+    const docTitle = isMisc ? 'MISC CASE REGISTRY DOSSIER' : isMutation ? 'MUTATION CASE REGISTRY DOSSIER' : `${type.toUpperCase()} CASE REGISTRY DOSSIER`;
+    const subIdentifier = isMisc ? `Docket No: ${docketNo || '—'}` : `App No: ${appNo || '—'}`;
+    const allHearingDatesText = hearingList.filter(h => h.date).map((h, i) => `${i + 1}. ${h.date} (${h.stage || 'Hearing'})`).join(', ');
+
+    printWin.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${docTitle} - ${caseNo}</title>
+          <style>
+            body { font-family: 'Times New Roman', serif; padding: 30px; font-size: 13px; color: #111; line-height: 1.5; }
+            h2, h3 { margin: 0 0 6px 0; color: #1E3A8A; text-align: center; }
+            table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12px; }
+            th, td { border: 1px solid #444; padding: 6px 8px; text-align: left; }
+            th { background: #F1F5F9; font-weight: bold; }
+            .section-title { font-weight: bold; color: #1E3A8A; font-size: 13px; margin-top: 14px; margin-bottom: 4px; border-bottom: 1px solid #CBD5E1; padding-bottom: 2px; }
+            .grid-info { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+          </style>
+        </head>
+        <body>
+          <h2>${docTitle}</h2>
+          <div style="text-align: center; font-size: 12px; margin-bottom: 15px;">Competent Revenue Forum: ${forum} | Case No: ${caseNo} | ${subIdentifier}</div>
+          
+          <div class="section-title">1. CASE PARTICULARS (মামলার বিবরণ)</div>
+          <div class="grid-info">
+            <div><strong>Case Number:</strong> ${caseNo}</div>
+            <div><strong>${isMisc ? 'Docket Number' : 'Application Number'}:</strong> ${isMisc ? (docketNo || '—') : (appNo || '—')}</div>
+            <div><strong>Sub-Type / Matter:</strong> ${subType}</div>
+            ${!isMisc ? `<div><strong>GRN Fee Challan:</strong> ${grnNo || '—'}</div>` : ''}
+            <div><strong>Case Status:</strong> ${status}</div>
+            <div><strong>Adjudicating Forum:</strong> ${forum}</div>
+            <div><strong>Filing Date:</strong> ${filingDate}</div>
+            <div><strong>Hearing Date(s):</strong> ${allHearingDatesText || nextDate || '—'}</div>
+          </div>
+
+          <div class="section-title">2. PETITIONER / APPLICANT (আবেদনকারী বিবরণ)</div>
+          <div class="grid-info">
+            <div><strong>Applicant Name:</strong> ${party}</div>
+            <div><strong>Father / Husband:</strong> ${applicants[0]?.father || '—'}</div>
+            <div><strong>Contact Phone:</strong> ${applicants[0]?.phone || '—'}</div>
+            <div><strong>Residential Address:</strong> ${applicants[0]?.address || '—'}</div>
+            <div><strong>Applicant Deed No & Year:</strong> ${applicantDeedNo ? `Deed No ${applicantDeedNo} of ${applicantDeedYear || '—'}` : '—'}</div>
+            <div><strong>Deed Type & ADSR:</strong> ${applicantDeedType || '—'} (${applicantAdsr || '—'})</div>
+          </div>
+
+          <div class="section-title">3. OPPOSITE PARTY / RESPONDENT(S) (প্রতিপক্ষ / নোটিশ প্রাপক)</div>
+          ${respondents.length > 0 ? `
+            <table>
+              <thead><tr><th>#</th><th>Name</th><th>Category</th><th>Phone</th><th>Notice Address</th></tr></thead>
+              <tbody>
+                ${respondents.map((r, i) => `<tr><td>${i + 1}</td><td>${r.name}</td><td>${r.type}</td><td>${r.phone || '—'}</td><td>${r.address || '—'}</td></tr>`).join('')}
+              </tbody>
+            </table>
+          ` : '<div>Uncontested / No Opposite Party recorded.</div>'}
+
+          <div class="section-title">4. সম্পত্তির তপশীল বিবরণ (PROPERTY SCHEDULE)</div>
+          <table>
+            <thead><tr><th>#</th><th>District / Block</th><th>Mouza & JL</th><th>Khatian</th><th>Dag</th><th>Area</th><th>Classification</th></tr></thead>
+            <tbody>
+              ${landSchedules.map((s, i) => `<tr><td>${i + 1}</td><td>${s.district} / ${s.block}</td><td>${s.mouza} (JL ${s.jl})</td><td>${s.khatian}</td><td>${s.dag}</td><td>${s.area} ${s.unit}</td><td>${s.classification}</td></tr>`).join('')}
+            </tbody>
+          </table>
+
+          <div class="section-title">5. CHRONOLOGICAL CHAIN OF TITLE (ধারাবাহিক চেইন দলিল)</div>
+          ${chainLinks.length > 0 ? `
+            <table>
+              <thead><tr><th>#</th><th>Type</th><th>Deed / Cert No</th><th>Year</th><th>Transferor / Deceased</th><th>Transferee / Warishan</th><th>Office</th><th>Area</th></tr></thead>
+              <tbody>
+                ${chainLinks.map((l, i) => {
+                  const from = l.vendors && l.vendors.length > 0 ? l.vendors.join(', ') : l.vendor;
+                  const to = l.linkType === 'warish' 
+                    ? (l.warishNames && l.warishNames.length > 0 ? l.warishNames.join(', ') : l.purchaser)
+                    : (l.purchasers && l.purchasers.length > 0 ? l.purchasers.join(', ') : l.purchaser);
+                  return `<tr>
+                    <td>${i + 1}</td>
+                    <td>${l.linkType === 'warish' ? 'Warishan' : (l.deedType || 'Deed')}</td>
+                    <td>${l.linkType === 'warish' ? (l.certificateRef || 'Warishan Cert') : (l.deedNo || '—')}</td>
+                    <td>${l.deedYear || l.deedDate || '—'}</td>
+                    <td>${from || '—'}</td>
+                    <td>${to || '—'}</td>
+                    <td>${l.registrationOffice || '—'}</td>
+                    <td>${l.area || '—'}</td>
+                  </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          ` : '<div>No intermediate chain deeds recorded.</div>'}
+
+          <div style="margin-top: 40px; display: flex; justify-content: space-between;">
+            <div>Verified &amp; Submitted by: __________________</div>
+            <div>Revenue Authority Seal &amp; Signature: __________________</div>
+          </div>
+        </body>
+      </html>
+    `);
+    printWin.document.close();
+    printWin.print();
+  };
+
+  // Requirement 20: Direct Make Chain Deed button opener
+  const handleOpenChainDeedDirectly = () => {
+    const currentCase: CaseItem = {
+      id: activeEditingCase?.id || editingCase?.id || 'temp_' + Date.now(),
+      type,
+      caseNo: caseNo || 'MN/Draft',
+      subType,
+      status,
+      party: party || 'Applicant',
+      opp: opp || '—',
+      forum: forum || 'BL&LRO',
+      filingDate,
+      nextDate,
+      priority,
+      appNo,
+      grnNo,
+      docketNo,
+      applicantDeedNo,
+      applicantDeedYear,
+      applicantDeedType,
+      applicantAdsr,
+      landSchedules,
+      applicants,
+      respondents,
+      addresses,
+      chainLinks,
+      attachments,
+      createdAt: Date.now(),
+      createdBy: 'admin'
+    };
+    setActiveChainDeedModalCase(currentCase);
+  };
+
+  const isEditingExisting = Boolean(activeEditingCase || editingCase);
+
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-12">
-      {/* Post-Save Chain Deed Modal for Mutation, Misc, LR Appeal, LRTT */}
+    <div className="space-y-6 max-w-5xl mx-auto pb-16">
+      {/* Chain Deed Modal (Requirement 20) */}
+      {activeChainDeedModalCase && (
+        <ChainDeedModal
+          caseItem={activeChainDeedModalCase}
+          isOpen={true}
+          onClose={() => setActiveChainDeedModalCase(null)}
+          onSaveCase={updated => {
+            if (activeEditingCase || editingCase) {
+              updateCase(updated.id, updated);
+            }
+            setActiveChainDeedModalCase(null);
+            showToast('Chain Deed updated and saved to case!');
+          }}
+        />
+      )}
+
+      {/* Post-Save / Post-Update Forwarding Modal (Requirement 16 & 20) */}
+      {/* Post-Save / Post-Update Forwarding Modal (Requirement 16 & 20) */}
       {postSaveCase && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
@@ -565,104 +1126,277 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             </div>
             <div className="text-center">
               <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
-                Case Details Saved Successfully!
+                {postSaveCase.type === 'misc' ? 'Misc Case Saved Successfully!' : 'Mutation Case Saved Successfully!'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Case No: <strong className="text-blue-600 dark:text-blue-400 font-mono">{postSaveCase.caseNo}</strong> ({postSaveCase.subType})
+                Case No: <strong className="text-blue-600 dark:text-blue-400 font-mono">{postSaveCase.caseNo}</strong> · {postSaveCase.type === 'misc' ? 'Docket No: ' : 'App No: '}
+                <strong className="font-mono">{(postSaveCase.type === 'misc' ? postSaveCase.docketNo : postSaveCase.appNo) || '—'}</strong>
               </p>
             </div>
 
             <div className="p-3.5 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs text-blue-900 dark:text-blue-200 space-y-1">
               <div className="font-bold flex items-center gap-1.5 text-blue-800 dark:text-blue-300">
                 <LinkIcon className="w-4 h-4 text-blue-600" />
-                <span>Chain Deed Making (ধারাবাহিক চেইন দলিল)</span>
+                <span>Make &amp; Print Chain Deed (ধারাবাহিক চেইন দলিল তৈরি)</span>
               </div>
               <p className="text-[11px] leading-relaxed text-blue-800/80 dark:text-blue-200/80">
-                A Chain of Title Deed making option is available for this case. The format is sourced from your <strong>Settings &gt; Chain Sample</strong> master draft and populated with this particular case's information.
+                Generate and print the complete, case-specific title statement chronologically from record owner to applicant using AI and Data Vault samples.
               </p>
             </div>
 
             <div className="space-y-2 pt-2">
               <button
                 type="button"
-                onClick={() => onSaved(postSaveCase, true)}
+                onClick={() => {
+                  const saved = postSaveCase;
+                  setPostSaveCase(null);
+                  setActiveChainDeedModalCase(saved);
+                }}
                 className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-colors"
               >
                 <LinkIcon className="w-4 h-4" />
-                <span>Proceed to Chain Deed Making (চেইন দলিল তৈরি)</span>
+                <span>Proceed to Make &amp; Print Chain Deed</span>
               </button>
+
+              {postSaveCase.type === 'misc' && onOpenAiDraft && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const saved = postSaveCase;
+                    setPostSaveCase(null);
+                    onOpenAiDraft('misc', saved);
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-colors"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Proceed to AI Drafting Studio (মিস কেস ড্রাফটিং)</span>
+                </button>
+              )}
 
               <button
                 type="button"
                 onClick={() => onSaved(postSaveCase, false)}
                 className="w-full py-2 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
               >
-                <span>Return to {postSaveCase.type.toUpperCase()} Dashboard</span>
+                <span>Return to {postSaveCase.type === 'misc' ? 'Misc Case' : 'Mutation'} Dashboard</span>
               </button>
             </div>
           </div>
         </div>
       )}
-      {/* Header bar */}
-      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+
+      {/* Top Header & Actions Bar */}
+      <div className="flex flex-wrap items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4 gap-3">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            title="Cancel and Go Back"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
-            <h1 className="text-lg font-extrabold text-slate-900 dark:text-slate-100">
-              {editingCase ? `Edit ${editingCase.caseNo}` : `New ${SUBTYPES_BY_TYPE[type][0]}`}
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-extrabold text-slate-900 dark:text-slate-100">
+                {isEditingExisting
+                  ? `Edit ${caseNo || (isMisc ? 'Misc Case' : isMutation ? 'Mutation Case' : type)}`
+                  : `New ${isMisc ? 'Misc Case' : isMutation ? 'Mutation Case' : type} Entry`}
+              </h1>
+              {isEditingExisting && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                  Update Mode
+                </span>
+              )}
+            </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Chamber Case File Entry · {activeCompany?.name}
+              Chamber Case Entry · {activeCompany?.name}
             </p>
           </div>
         </div>
 
+        {/* Action Buttons: Save, Update, Cancel, Print, Make Chain Deed, AI Drafting */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Requirement 5: AI Drafting Option in Misc Case entry form */}
           {type !== 'mutation' && onOpenAiDraft && (
             <button
               type="button"
-              onClick={() => {
-                onOpenAiDraft(type, {
-                  type,
-                  caseNo: caseNo || 'New Case',
-                  subType,
-                  party,
-                  opp,
-                  forum,
-                  filingDate,
-                  nextDate,
-                  grounds,
-                  landSchedules,
-                  applicants,
-                  respondents
-                });
-              }}
-              className="px-3 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
-              title={`Draft ${type.toUpperCase()} petition using AI`}
+              onClick={handleTriggerAiDraft}
+              className="px-3.5 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Open AI Drafting Studio for this Case"
             >
-              <Sparkles className="w-4 h-4" /> AI Draft ({type.toUpperCase()})
+              <Sparkles className="w-4 h-4" />
+              <span>AI Drafting Studio</span>
             </button>
           )}
+
+          {/* Requirement 20: Make Chain Deed direct button */}
           <button
-            onClick={() => handleSave(false)}
+            type="button"
+            onClick={handleOpenChainDeedDirectly}
+            className="px-3 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 text-xs font-bold shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Make and print case-only Chain of Title statement"
+          >
+            <Scroll className="w-4 h-4 text-indigo-600" />
+            <span>Make Chain Deed</span>
+          </button>
+
+          {/* Requirement 19: Print Dossier button */}
+          <button
+            type="button"
+            onClick={handlePrintDossier}
+            className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold shadow-2xs flex items-center gap-1.5 cursor-pointer"
+            title="Print Case Dossier (Excluding broker/muhuri)"
+          >
+            <Printer className="w-4 h-4" />
+            <span>Print Dossier</span>
+          </button>
+
+          {/* Requirement 18: Update Button */}
+          {isEditingExisting && (
+            <button
+              type="button"
+              onClick={() => handleSaveOrUpdate(true, false)}
+              className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Update {isMisc ? 'Misc Case' : isMutation ? 'Mutation' : 'Case'}</span>
+            </button>
+          )}
+
+          {/* Requirement 16: Save Button */}
+          <button
+            type="button"
+            onClick={() => handleSaveOrUpdate(false, false)}
             className="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <Save className="w-4 h-4" /> Save Case File
+            <Save className="w-4 h-4" />
+            <span>Save {isMisc ? 'Misc Case' : isMutation ? 'Case File' : 'Case'}</span>
           </button>
+
+          {/* Requirement 17: Cancel Button */}
           <button
-            onClick={() => handleSave(true)}
-            className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
-            title="Save and launch WhatsApp client update"
+            type="button"
+            onClick={onBack}
+            className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold cursor-pointer"
           >
-            <Share2 className="w-4 h-4" /> Save & Alert WhatsApp
+            Cancel
           </button>
         </div>
       </div>
+
+      {/* Search Box for updating existing data through deed no, app no / docket no, applicant name, case no */}
+      <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-800/80 bg-blue-50/50 dark:bg-blue-950/30 space-y-2 relative">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <label className="text-xs font-bold text-blue-900 dark:text-blue-200 uppercase tracking-wide flex items-center gap-1.5">
+            <Search className="w-4 h-4 text-blue-600" />
+            <span>Search Existing {isMisc ? 'Misc' : isMutation ? 'Mutation' : type} Case to Load &amp; Update (বিদ্যমান কেস অনুসন্ধান ও আপডেট)</span>
+          </label>
+          {isEditingExisting && (
+            <button
+              type="button"
+              onClick={handleClearFormToNew}
+              className="text-xs font-bold text-rose-600 hover:text-rose-700 underline flex items-center gap-1 cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" /> Clear / Start New {isMisc ? 'Misc Case' : 'Mutation'}
+            </button>
+          )}
+        </div>
+
+        <div className="relative">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => {
+              setSearchQuery(e.target.value);
+              setShowSearchResults(e.target.value.trim().length > 0);
+            }}
+            onFocus={() => setShowSearchResults(searchQuery.trim().length > 0)}
+            placeholder={
+              isMisc
+                ? "Type Deed No, Docket No (DOC..), Applicant Name, or Misc Case No (MISC/..) to search & edit..."
+                : "Type Deed No, Application No (MUTE..), Applicant Name, or Case No (MN/..) to search & edit..."
+            }
+            className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-600"
+          />
+          <Search className="w-4 h-4 text-blue-500 absolute left-3 top-2.5" />
+
+          {showSearchResults && matchingCases.length > 0 && (
+            <div className="absolute left-0 right-0 top-full mt-1 z-30 max-h-60 overflow-y-auto bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl divide-y divide-slate-100 dark:divide-slate-800">
+              {matchingCases.map(c => (
+                <div
+                  key={c.id}
+                  onClick={() => loadCaseDataIntoForm(c)}
+                  className="p-2.5 hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer flex items-center justify-between text-xs transition-colors"
+                >
+                  <div>
+                    <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                      <span className="font-mono text-blue-600 dark:text-blue-400">{c.caseNo}</span>
+                      {c.docketNo && <span className="font-mono text-purple-600 text-[11px]">({c.docketNo})</span>}
+                      {c.appNo && <span className="font-mono text-slate-500 text-[11px]">({c.appNo})</span>}
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                        {c.status}
+                      </span>
+                    </div>
+                    <div className="text-slate-500 text-[11px]">
+                      Applicant: <strong>{c.party}</strong> · Forum: {c.forum}
+                      {c.applicantDeedNo ? ` · Deed: ${c.applicantDeedNo}` : ''}
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                    Load &amp; Edit <ArrowRight className="w-3 h-3" />
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {showSearchResults && searchQuery.trim().length > 0 && matchingCases.length === 0 && (
+            <div className="absolute left-0 right-0 top-full mt-1 z-30 p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-lg text-xs text-slate-500 text-center">
+              No matching case found for "{searchQuery}". Continue entering new case details below.
+            </div>
+          )}
+        </div>
+
+        {isEditingExisting && (
+          <div className="text-[11px] text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-1 pt-0.5">
+            <span>● Currently Editing:</span>
+            <strong className="font-mono">{caseNo}</strong>
+            <span>({party || 'Applicant'})</span>
+            <span className="text-slate-500">— Click "Update {isMisc ? 'Misc Case' : isMutation ? 'Mutation' : 'Case'}" when done.</span>
+          </div>
+        )}
+      </div>
+
+      {/* Requirement 4: Misc Case Type Box at top of Misc Case entry form with dropdown */}
+      {isMisc && (
+        <div className="p-4 rounded-xl border border-violet-200 dark:border-violet-800/80 bg-violet-50/70 dark:bg-violet-950/30 space-y-2.5">
+          <div className="flex items-center justify-between border-b border-violet-200/60 dark:border-violet-800/60 pb-1.5">
+            <label className="text-xs font-bold text-violet-900 dark:text-violet-200 uppercase tracking-wide flex items-center gap-1.5">
+              <Layers className="w-4 h-4 text-violet-600" />
+              <span>Misc Case Type / Matter (মিস কেসের ধরন ও বিষয়) *</span>
+            </label>
+            <span className="text-[11px] text-violet-700 dark:text-violet-300 font-semibold">
+              Select Specific Matter
+            </span>
+          </div>
+          <div>
+            <select
+              value={subType}
+              onChange={e => setSubType(e.target.value)}
+              className="w-full px-3 py-2 text-xs font-bold rounded-lg border border-violet-300 dark:border-violet-700 bg-white dark:bg-slate-900 text-violet-950 dark:text-violet-200 focus:outline-none focus:ring-2 focus:ring-violet-600 shadow-2xs cursor-pointer"
+            >
+              {SUBTYPES_BY_TYPE.misc.map(st => (
+                <option key={st} value={st}>
+                  {st}
+                </option>
+              ))}
+            </select>
+          </div>
+          <p className="text-[11px] text-violet-800/80 dark:text-violet-300/80 leading-relaxed">
+            Revenue Proceedings: 10,000 Share Overlapping, Barga Revoke / De-recording, Name Correction, Share Correction, RS to LR Conveyance Transfer, Boundary Demarcation, and Porcha Classification Rectification.
+          </p>
+        </div>
+      )}
 
       {/* 1. Core Case Details */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
@@ -672,20 +1406,51 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Requirement 3: Mutation Case No starts with MN/, Misc Case No starts with MISC/ */}
           <div>
             <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-              Case / OA / Appeal No *
+              {isMisc ? 'Misc Case No (Starts with MISC/) *' : isMutation ? 'Case No (Starts with MN/) *' : 'Case Number *'}
             </label>
             <input
               type="text"
               required
               value={caseNo}
               onChange={e => setCaseNo(e.target.value)}
-              placeholder="e.g. MUT/2026/0418"
+              placeholder={isMisc ? 'MISC/2026/0418' : isMutation ? 'MN/2026/0418' : 'Case/2026/001'}
               className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold text-blue-700 dark:text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
             />
           </div>
 
+          {/* Requirement 1: Mutation app no replaced with docket no for misc case */}
+          {isMisc ? (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                Docket No (ডকেট নং) *
+              </label>
+              <input
+                type="text"
+                value={docketNo}
+                onChange={e => setDocketNo(e.target.value)}
+                placeholder="DOC-2026-XXXX"
+                className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-600"
+              />
+            </div>
+          ) : (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                Mutation App No (Starts with MUTE) *
+              </label>
+              <input
+                type="text"
+                value={appNo}
+                onChange={e => setAppNo(e.target.value)}
+                placeholder="MUTE-2026-XXXX"
+                className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-600"
+              />
+            </div>
+          )}
+
+          {/* Sub-type / Matter */}
           <div>
             <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
               Sub-Type / Matter
@@ -703,14 +1468,33 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             </select>
           </div>
 
+          {/* Requirement 2: GRN No completely removed for Misc case */}
+          {!isMisc && (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                GRN Fee Challan No
+              </label>
+              <input
+                type="text"
+                value={grnNo}
+                onChange={e => setGrnNo(e.target.value)}
+                placeholder="19202600XXXXXX"
+                className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+          {/* Current Case Status with Inquiry Pending & Inquiry Complete */}
           <div>
             <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-              Current Case Status
+              Current Case Status *
             </label>
             <select
               value={status}
               onChange={e => setStatus(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
+              className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-blue-600"
             >
               {STATUSES_BY_TYPE[type].map(st => (
                 <option key={st} value={st}>
@@ -720,6 +1504,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             </select>
           </div>
 
+          {/* Adjudicating Forum */}
           <div>
             <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
               Adjudicating Forum
@@ -736,220 +1521,392 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
               ))}
             </select>
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div>
-            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-              Petitioner / Applicant *
-            </label>
-            <input
-              type="text"
-              required
-              value={party}
-              onChange={e => setParty(e.target.value)}
-              placeholder="Full name of client"
-              className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-blue-600"
-            />
-          </div>
 
           <div>
             <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-              Opposite Party / Respondent
-            </label>
-            <input
-              type="text"
-              value={opp}
-              onChange={e => setOpp(e.target.value)}
-              placeholder="e.g. State of WB / Co-sharers"
-              className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
-            />
-          </div>
-
-          <div>
-            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-              Filing Date
+              Filing / Application Date
             </label>
             <input
               type="date"
               value={filingDate}
               onChange={e => setFilingDate(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600 font-mono"
-            />
-          </div>
-
-          <div>
-            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-              Next Hearing Date
-            </label>
-            <input
-              type="date"
-              value={nextDate}
-              onChange={e => setNextDate(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600 font-mono font-bold text-blue-700 dark:text-blue-400"
+              className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
             />
           </div>
         </div>
 
-        {/* Type-specific optional fields */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-          {type === 'mutation' && (
-            <>
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                  Banglarbhumi App No
-                </label>
-                <input
-                  type="text"
-                  value={appNo}
-                  onChange={e => setAppNo(e.target.value)}
-                  placeholder="MUT-RJ-2026-XXXX"
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                  GRN Fee Challan No
-                </label>
-                <input
-                  type="text"
-                  value={grnNo}
-                  onChange={e => setGrnNo(e.target.value)}
-                  placeholder="19202600XXXXXX"
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
-                />
-              </div>
-            </>
-          )}
+        {/* Requirement 6: More than one hearing date with + button for every entry form */}
+        <div className="p-3.5 rounded-xl border border-blue-200 dark:border-blue-800/60 bg-blue-50/30 dark:bg-blue-950/20 space-y-2.5">
+          <div className="flex items-center justify-between border-b border-blue-200/60 dark:border-blue-800/60 pb-1.5">
+            <div className="flex items-center gap-1.5">
+              <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <span className="text-xs font-bold uppercase tracking-wider text-blue-800 dark:text-blue-300">
+                Hearing / Inquiry Date(s) (শুনানি ও তদন্তের তারিখসমূহ)
+              </span>
+              <span className="text-[10px] text-slate-500 font-mono">({hearingList.length} date{hearingList.length > 1 ? 's' : ''})</span>
+            </div>
+            <button
+              type="button"
+              onClick={addHearingDate}
+              className="px-2.5 py-1 text-xs font-bold rounded-lg bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/60 dark:hover:bg-blue-800 text-blue-800 dark:text-blue-200 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>+ Add Hearing Date</span>
+            </button>
+          </div>
 
-          {type === 'misc' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            {hearingList.map((h, hIdx) => (
+              <div
+                key={h.id}
+                className="p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center gap-2 shadow-2xs"
+              >
+                <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/80 text-blue-700 dark:text-blue-300 text-[10px] font-bold flex items-center justify-center shrink-0">
+                  {hIdx + 1}
+                </span>
+                <div className="flex-1 space-y-1">
+                  <input
+                    type="date"
+                    value={h.date}
+                    onChange={e => updateHearingDate(hIdx, 'date', e.target.value)}
+                    className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-mono font-bold text-blue-700 dark:text-blue-300 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                  />
+                  <input
+                    type="text"
+                    value={h.stage || ''}
+                    onChange={e => updateHearingDate(hIdx, 'stage', e.target.value)}
+                    placeholder="e.g. 1st Hearing / Spot Inquiry / Final Order"
+                    className="w-full px-2 py-0.5 text-[11px] rounded border border-slate-200 dark:border-slate-700 bg-transparent text-slate-600 dark:text-slate-400 focus:outline-none"
+                  />
+                </div>
+                {hearingList.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeHearingDate(hIdx)}
+                    className="p-1 text-rose-500 hover:text-rose-700 cursor-pointer shrink-0"
+                    title="Remove this hearing date"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Section 1 Litigants & Dates */}
+        <div className="space-y-4 pt-1">
+          {/* Requirement 8: Applicant Profile Card with Party Ledger auto-lookup and auto-creation */}
+          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                <UserCheck className="w-4 h-4" />
+                <span>Petitioner / Applicant Details (আবেদনকারী বিবরণ) *</span>
+              </span>
+              <span className="text-[10px] text-slate-500">Auto-synced with Party Ledger (খতিয়ানভুক্ত মক্কেল)</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 relative">
+              {/* Applicant Name with Ledger Autocomplete */}
+              <div className="relative">
+                <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                  Applicant Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={party}
+                  onChange={e => handlePartyChange(e.target.value)}
+                  placeholder="e.g. Sri Nirmal Sen"
+                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold focus:outline-none focus:ring-1 focus:ring-blue-600"
+                />
+
+                {/* Autocomplete dropdown for existing parties */}
+                {showPartySuggestions && partySuggestions.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-1 z-30 max-h-48 overflow-y-auto bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 shadow-lg divide-y divide-slate-100 dark:divide-slate-800">
+                    {partySuggestions.map(p => (
+                      <div
+                        key={p.id}
+                        onClick={() => handleSelectPartySuggestion(p)}
+                        className="p-2 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 cursor-pointer text-xs"
+                      >
+                        <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                          <span>{p.name}</span>
+                          <span className="text-[10px] px-1 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700">
+                            {p.type}
+                          </span>
+                        </div>
+                        {p.phone && <div className="text-[10px] text-slate-400 font-mono">{p.phone}</div>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                  Father / Husband Name
+                </label>
+                <input
+                  type="text"
+                  value={applicants[0]?.father || ''}
+                  onChange={e => updateMainApplicantField('father', e.target.value)}
+                  placeholder="Father / Husband Name"
+                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                  Phone / WhatsApp No
+                </label>
+                <input
+                  type="text"
+                  value={applicants[0]?.phone || ''}
+                  onChange={e => updateMainApplicantField('phone', e.target.value)}
+                  placeholder="98300XXXXX"
+                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono focus:outline-none focus:ring-1 focus:ring-blue-600"
+                />
+              </div>
+            </div>
+
             <div>
-              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                Docket Register No
+              <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                Residential Address (স্থায়ী ঠিকানা)
               </label>
               <input
                 type="text"
-                value={docketNo}
-                onChange={e => setDocketNo(e.target.value)}
-                placeholder="DK-2026-XXXX"
-                className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
+                value={applicants[0]?.address || ''}
+                onChange={e => updateMainApplicantField('address', e.target.value)}
+                placeholder="Vill, P.O., P.S., Dist, Pin"
+                className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-600"
               />
             </div>
-          )}
 
-          {type === 'lrappeal' && (
-            <>
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                  Impugned Order No
-                </label>
-                <input
-                  type="text"
-                  value={impugnedOrderNo}
-                  onChange={e => setImpugnedOrderNo(e.target.value)}
-                  placeholder="e.g. Order in Case No. 841/2025"
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                  Impugned Order Date (Limitation Baseline)
-                </label>
-                <input
-                  type="date"
-                  value={impugnedOrderDate}
-                  onChange={e => setImpugnedOrderDate(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
-                />
-              </div>
-            </>
-          )}
+            {/* Requirement 9: Applicant's Deed Details (Deed No, Year, Type of Deed, and ADSR) */}
+            <div className="p-3 rounded-lg border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/40 dark:bg-emerald-950/20 space-y-2 mt-2">
+              <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wide flex items-center gap-1.5">
+                <Scroll className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Applicant Purchase / Acquisition Deed Details (আবেদনকারীর দলিলের বিবরণ)</span>
+              </span>
 
-          <div>
-            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-              Priority
-            </label>
-            <select
-              value={priority}
-              onChange={e => setPriority(e.target.value as any)}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-            >
-              <option value="Normal">Normal</option>
-              <option value="High">High</option>
-              <option value="Urgent">Urgent (Stay / Injunction)</option>
-            </select>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                    Applicant Deed No (দলিল নং) *
+                  </label>
+                  <input
+                    type="text"
+                    value={applicantDeedNo}
+                    onChange={e => setApplicantDeedNo(e.target.value)}
+                    placeholder="e.g. 1045 / I-240"
+                    className="w-full px-2.5 py-1.5 text-xs rounded border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 font-mono font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                    Deed Year (দলিল বছর) *
+                  </label>
+                  <input
+                    type="text"
+                    value={applicantDeedYear}
+                    onChange={e => setApplicantDeedYear(e.target.value)}
+                    placeholder="e.g. 2021"
+                    className="w-full px-2.5 py-1.5 text-xs rounded border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 font-mono font-bold text-indigo-700 dark:text-indigo-300"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                    Type of Deed (দলিলের ধরন) *
+                  </label>
+                  <select
+                    value={applicantDeedType}
+                    onChange={e => setApplicantDeedType(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs rounded border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 font-semibold"
+                  >
+                    {WB_DEED_TYPES.map(dt => (
+                      <option key={dt} value={dt}>
+                        {dt}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                    ADSR / SRO (রেজিস্ট্রি অফিস)
+                  </label>
+                  <input
+                    type="text"
+                    value={applicantAdsr}
+                    onChange={e => setApplicantAdsr(e.target.value)}
+                    placeholder="e.g. ADSR Rajarhat / Cossipore"
+                    className="w-full px-2.5 py-1.5 text-xs rounded border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Requirement 10: Broker / Muhuri Name & Phone (Omitted from printing forms, shown only in report & entry) */}
+            <div className="p-3 rounded-lg border border-amber-200 dark:border-amber-800/60 bg-amber-50/40 dark:bg-amber-950/20 space-y-1.5 mt-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wide flex items-center gap-1.5">
+                  <UserPlus className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Broker / Muhuri Reference (মুহুরি / মধ্যস্থতাকারীর বিবরণ - চেম্বার রেকর্ড)</span>
+                </span>
+                <span className="text-[10px] text-amber-700 dark:text-amber-400 italic">
+                  * শুধুমাত্র চেম্বার রেকর্ডে থাকবে, কোনো সাধারণ প্রিন্ট বা দলিলে যাবে না
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                    Broker / Muhuri Full Name
+                  </label>
+                  <input
+                    type="text"
+                    value={brokerName}
+                    onChange={e => setBrokerName(e.target.value)}
+                    placeholder="e.g. Subir Ghosh (Muhuri)"
+                    className="w-full px-2.5 py-1.5 text-xs rounded border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                    Broker / Muhuri Phone Number
+                  </label>
+                  <input
+                    type="text"
+                    value={brokerPhone}
+                    onChange={e => setBrokerPhone(e.target.value)}
+                    placeholder="98310XXXXX"
+                    className="w-full px-2.5 py-1.5 text-xs rounded border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900 font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Requirement 11: Opposite Party / Respondent Section with + option */}
+          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 space-y-2.5">
+            <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5" />
+                  <span>Opposite Party / Respondent(s) (প্রতিপক্ষ / নোটিশ প্রাপক)</span>
+                </span>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                  Add respondents if statutory 15-day notice is to be served on vendors, co-sharers or adverse parties.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={addRespondent}
+                className="px-2.5 py-1 text-xs font-bold rounded-lg bg-rose-50 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 hover:bg-rose-100 border border-rose-200 dark:border-rose-800 flex items-center gap-1 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Add Respondent &amp; Address</span>
+              </button>
+            </div>
+
+            {respondents.length === 0 ? (
+              <div className="py-2.5 px-3 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-center text-xs text-slate-500 dark:text-slate-400">
+                No opposite party currently added (Uncontested mutation). Use <strong>+ Add Respondent &amp; Address</strong> above if notice is to be served.
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {respondents.map((r, i) => (
+                  <div
+                    key={r.id}
+                    className="p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 space-y-2 shadow-2xs"
+                  >
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-4 h-4 rounded-full bg-rose-100 text-rose-700 text-[10px] flex items-center justify-center font-bold">
+                          {i + 1}
+                        </span>
+                        <span>Opposite Party #{i + 1}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeRespondent(i)}
+                        className="text-rose-600 hover:text-rose-700 p-0.5 rounded cursor-pointer"
+                        title="Remove Respondent"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
+                          Respondent Name / Authority *
+                        </label>
+                        <input
+                          type="text"
+                          value={r.name}
+                          onChange={e => updateRespondent(i, 'name', e.target.value)}
+                          placeholder="e.g. Sri Subhas Sen (Co-sharer)"
+                          className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
+                          Category / Type
+                        </label>
+                        <select
+                          value={r.type}
+                          onChange={e => updateRespondent(i, 'type', e.target.value)}
+                          className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                        >
+                          <option value="Private">Private Party / Co-sharer / Vendor</option>
+                          <option value="Govt Dept">Govt Dept / BL&amp;LRO</option>
+                          <option value="State">State of West Bengal</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
+                          Contact Phone (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={r.phone || ''}
+                          onChange={e => updateRespondent(i, 'phone', e.target.value)}
+                          placeholder="Phone / Mobile"
+                          className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
+                        Notice Service Address (নোটিশ প্রেরণের সম্পূর্ণ ঠিকানা) *
+                      </label>
+                      <input
+                        type="text"
+                        value={r.address}
+                        onChange={e => updateRespondent(i, 'address', e.target.value)}
+                        placeholder="Full residential or official address for summons / notice"
+                        className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-
-        {/* Limitation Countdown Strip for LR Appeal, First Appeal and RTI */}
-        {(type === 'lrappeal' || type === 'firstappeal' || type === 'rti') && limitationStats && (
-          <div className="p-3.5 rounded-lg border bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 space-y-2">
-            <div className="flex items-center justify-between text-xs font-bold">
-              <span className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
-                <Clock className="w-4 h-4 text-blue-600" />
-                {type === 'rti'
-                  ? `RTI Statutory Response Countdown (Days Elapsed: ${limitationStats.daysElapsed})`
-                  : `Statutory Limitation Analysis (Days Elapsed: ${limitationStats.daysElapsed})`}
-              </span>
-              <span
-                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                  limitationStats.statusSec54 === 'Safe'
-                    ? 'bg-emerald-100 text-emerald-800'
-                    : limitationStats.statusSec54 === 'Urgent'
-                    ? 'bg-amber-100 text-amber-800'
-                    : 'bg-rose-100 text-rose-800'
-                }`}
-              >
-                {type === 'rti'
-                  ? `SPIO Status: ${limitationStats.statusSec54}`
-                  : `Section 54: ${limitationStats.statusSec54}`}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-              <div className="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                <div className="text-[10px] text-slate-500 uppercase">
-                  {type === 'rti' ? 'SPIO Reply Deadline (30 Days u/s 7)' : 'Section 54 (60 Days)'}
-                </div>
-                <div className="font-mono font-bold mt-0.5">
-                  {limitationStats.sec54DaysLeft >= 0
-                    ? `${limitationStats.sec54DaysLeft} days remaining`
-                    : `Expired by ${Math.abs(limitationStats.sec54DaysLeft)} days (Appeal ripe)`}
-                </div>
-              </div>
-
-              <div className="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                <div className="text-[10px] text-slate-500 uppercase">
-                  {type === 'rti' ? 'First Appeal Limit (30 Days u/s 19)' : 'Section 51A(5) (30 Days)'}
-                </div>
-                <div className="font-mono font-bold mt-0.5">
-                  {limitationStats.sec51ADaysLeft >= 0
-                    ? `${limitationStats.sec51ADaysLeft} days remaining`
-                    : `Expired by ${Math.abs(limitationStats.sec51ADaysLeft)} days`}
-                </div>
-              </div>
-
-              <div className="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                <div className="text-[10px] text-slate-500 uppercase">
-                  {type === 'rti' ? 'Second Appeal / Commission (90 Days)' : 'Limitation Act (90 Days)'}
-                </div>
-                <div className="font-mono font-bold mt-0.5">
-                  {limitationStats.sec5DaysLeft >= 0
-                    ? `${limitationStats.sec5DaysLeft} days remaining`
-                    : `Exceeded standard 90 days`}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* 2. Land Schedule(s) */}
+      {/* Requirement 12: 2. Land Schedule(s) with + option to add more schedule */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-              2. Land Schedule Details (সম্পত্তির তপশীল বিবরণ)
+              2. সম্পত্তির তপশীল বিবরণ (Property Schedule Details)
             </span>
             <span className="text-[11px] text-slate-400 ml-2">
               ({landSchedules.length} Schedule{landSchedules.length > 1 ? 's' : ''})
@@ -958,9 +1915,10 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
           <button
             type="button"
             onClick={addLandSchedule}
-            className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 hover:bg-blue-100 flex items-center gap-1 cursor-pointer"
+            className="px-3 py-1.5 text-xs font-bold rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 hover:bg-blue-100 border border-blue-200 dark:border-blue-800 flex items-center gap-1.5 cursor-pointer shadow-2xs"
           >
-            <Plus className="w-3.5 h-3.5" /> Add Schedule
+            <Plus className="w-3.5 h-3.5" />
+            <span>+ Add Schedule (আরেকটি তপশীল যোগ করুন)</span>
           </button>
         </div>
 
@@ -980,7 +1938,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                     onClick={() => removeLandSchedule(idx)}
                     className="text-xs text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer"
                   >
-                    <Trash2 className="w-3.5 h-3.5" /> Remove
+                    <Trash2 className="w-3.5 h-3.5" /> Remove Schedule
                   </button>
                 )}
               </div>
@@ -1129,495 +2087,568 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         </div>
       </div>
 
-      {/* 3. Applicants & Respondents Split */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Applicants */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">
-              3A. Applicant(s) / Petitioner
-            </span>
-            <button
-              type="button"
-              onClick={addApplicant}
-              className="px-2 py-0.5 text-xs font-semibold rounded bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 flex items-center gap-1"
-            >
-              <Plus className="w-3 h-3" /> Add
-            </button>
-          </div>
-
-          <div className="space-y-2.5">
-            {applicants.map((a, i) => (
-              <div
-                key={a.id}
-                className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-2"
-              >
-                <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
-                  <span>Applicant #{i + 1}</span>
-                  {applicants.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeApplicant(i)}
-                      className="text-rose-600 hover:text-rose-700"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    value={a.name}
-                    onChange={e => updateApplicant(i, 'name', e.target.value)}
-                    placeholder="Full Name"
-                    className="px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
-                  />
-                  <input
-                    type="text"
-                    value={a.father}
-                    onChange={e => updateApplicant(i, 'father', e.target.value)}
-                    placeholder="Father / Husband"
-                    className="px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    value={a.phone || ''}
-                    onChange={e => updateApplicant(i, 'phone', e.target.value)}
-                    placeholder="Phone / WhatsApp"
-                    className="px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
-                  />
-                  <input
-                    type="text"
-                    value={a.address}
-                    onChange={e => updateApplicant(i, 'address', e.target.value)}
-                    placeholder="Residential Address"
-                    className="px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Respondents */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-rose-600">
-              3B. Opposite Party / Respondent(s)
-            </span>
-            <button
-              type="button"
-              onClick={addRespondent}
-              className="px-2 py-0.5 text-xs font-semibold rounded bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 flex items-center gap-1"
-            >
-              <Plus className="w-3 h-3" /> Add
-            </button>
-          </div>
-
-          <div className="space-y-2.5">
-            {respondents.map((r, i) => (
-              <div
-                key={r.id}
-                className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-2"
-              >
-                <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
-                  <span>Respondent #{i + 1}</span>
-                  {respondents.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeRespondent(i)}
-                      className="text-rose-600 hover:text-rose-700"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    value={r.name}
-                    onChange={e => updateRespondent(i, 'name', e.target.value)}
-                    placeholder="Name / Authority"
-                    className="px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
-                  />
-                  <select
-                    value={r.type}
-                    onChange={e => updateRespondent(i, 'type', e.target.value)}
-                    className="px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
-                  >
-                    <option value="State">State of West Bengal</option>
-                    <option value="Govt Dept">Govt Department / Officer</option>
-                    <option value="Private">Private Party / Co-sharer</option>
-                  </select>
-                </div>
-
-                <input
-                  type="text"
-                  value={r.address}
-                  onChange={e => updateRespondent(i, 'address', e.target.value)}
-                  placeholder="Official / Residential Address"
-                  className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* 4. Chain of Title Builder (Chain Deeds) */}
+      {/* 4. Complete Chronological Chain of Title Builder */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 gap-2">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-              4. Chronological Chain Deed Builder (ধারাবাহিক দলিল)
-            </span>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Record deed lineage from parent vendor to current purchaser. Auto-detects breaks in title continuity.
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                3. Chronological Chain of Title Builder (ধারাবাহিক স্বত্ব ও চেইন দলিল নির্মাতা)
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+              Add Registered Chain Buyer deeds and Warish inheritances to establish continuous title down to the Applicant.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Requirement 14: + Button for Chain Buyer Deed */}
             <button
               type="button"
-              onClick={addChainLink}
-              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 hover:bg-amber-100 flex items-center gap-1 cursor-pointer"
+              onClick={addChainBuyerLink}
+              className="px-3 py-1.5 text-xs font-bold rounded-lg bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 hover:bg-blue-100 border border-blue-200 dark:border-blue-800 flex items-center gap-1.5 cursor-pointer shadow-2xs"
             >
-              <Plus className="w-3.5 h-3.5" /> Add Deed Link
+              <Scroll className="w-3.5 h-3.5 text-blue-600" />
+              <span>+ Add Chain Buyer Deed (দলিলমূলে চেইন ক্রেতা)</span>
             </button>
-            {chainLinks.length > 0 && (
-              <button
-                type="button"
-                onClick={verifyAndGenerateChain}
-                className="px-3 py-1 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1 cursor-pointer"
-              >
-                <Sparkles className="w-3.5 h-3.5" /> Verify Continuity
-              </button>
-            )}
+            {/* Requirement 15: + Button for Warish */}
+            <button
+              type="button"
+              onClick={addWarishLink}
+              className="px-3 py-1.5 text-xs font-bold rounded-lg bg-purple-50 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 hover:bg-purple-100 border border-purple-200 dark:border-purple-800 flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            >
+              <Users className="w-3.5 h-3.5 text-purple-600" />
+              <span>+ Add Warish (ওয়ারিশান সূত্রে হস্তান্তর)</span>
+            </button>
+            <button
+              type="button"
+              onClick={verifyAndGenerateChain}
+              className="px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1.5 cursor-pointer shadow-md transition-colors"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Verify Continuity</span>
+            </button>
           </div>
         </div>
 
+        {/* Step 0 (Origin of Title: Original Recorded Owner) is removed for mutation and misc cases */}
+        {!['mutation', 'misc'].includes(type) && (
+          <div className="p-3.5 rounded-xl border border-amber-200 dark:border-amber-800/70 bg-amber-50/60 dark:bg-amber-950/30 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-amber-600 text-white text-[10px] font-bold flex items-center justify-center">
+                  0
+                </span>
+                <span className="text-xs font-bold text-amber-900 dark:text-amber-200 uppercase tracking-wide">
+                  Origin of Title: Original Recorded Owner (মূল রেকর্ডীয় রায়ত)
+                </span>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">
+                  Recorded Owner Name
+                </label>
+                <input
+                  type="text"
+                  value={recordedOwner}
+                  onChange={e => setRecordedOwner(e.target.value)}
+                  placeholder="e.g. Sri Haripada Mondal"
+                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900 font-bold"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">
+                  Khatian No
+                </label>
+                <input
+                  type="text"
+                  value={recordedKhatian}
+                  onChange={e => setRecordedKhatian(e.target.value)}
+                  placeholder="1428"
+                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">
+                  Dag No
+                </label>
+                <input
+                  type="text"
+                  value={recordedDag}
+                  onChange={e => setRecordedDag(e.target.value)}
+                  placeholder="482"
+                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Visual Continuity Flowchart Pipeline */}
+        <div className="p-3 rounded-xl bg-slate-100/80 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-2 min-w-max text-xs">
+            <div className="px-2.5 py-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/60 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 font-bold flex items-center gap-1.5">
+              <UserCheck className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
+              <span>Origin of Title</span>
+            </div>
+
+            {chainLinks.map((cl, i) => (
+              <React.Fragment key={cl.id}>
+                <ArrowRight className="w-4 h-4 text-slate-400 shrink-0" />
+                <div
+                  className={`px-2.5 py-1.5 rounded-lg border font-semibold flex items-center gap-1.5 ${
+                    cl.linkType === 'warish'
+                      ? 'bg-purple-50 dark:bg-purple-950/60 border-purple-300 dark:border-purple-700 text-purple-900 dark:text-purple-200'
+                      : 'bg-blue-50 dark:bg-blue-950/60 border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-200'
+                  }`}
+                >
+                  {cl.linkType === 'warish' ? (
+                    <Users className="w-3.5 h-3.5 text-purple-600" />
+                  ) : (
+                    <Scroll className="w-3.5 h-3.5 text-blue-600" />
+                  )}
+                  <span>
+                    Step {i + 1}: {cl.purchaser || (cl.linkType === 'warish' ? 'Warishan' : 'Chain Buyer')}
+                    {cl.deedYear ? ` (${cl.deedYear})` : ''}
+                  </span>
+                </div>
+              </React.Fragment>
+            ))}
+
+            <ArrowRight className="w-4 h-4 text-slate-400 shrink-0" />
+
+            <div className="px-2.5 py-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 border border-emerald-300 dark:border-emerald-700 text-emerald-900 dark:text-emerald-200 font-bold flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Applicant: {party || 'Applicant'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Chain Items List */}
         {chainLinks.length === 0 ? (
-          <p className="text-xs text-slate-500 py-2">
-            No link deeds added. Click "Add Deed Link" to enter historical conveyances.
-          </p>
+          <div className="p-4 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-center text-xs text-slate-500 dark:text-slate-400">
+            No intermediate title transitions added yet (Direct conveyance / Unbroken title). Use <strong>+ Add Chain Buyer Deed</strong> or <strong>+ Add Warish</strong> above to construct the chain.
+          </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3.5">
             {chainLinks.map((cl, i) => (
               <div
                 key={cl.id}
-                className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-2"
+                className={`p-4 rounded-xl border space-y-3 shadow-2xs transition-colors ${
+                  cl.linkType === 'warish'
+                    ? 'border-purple-200 dark:border-purple-800/80 bg-purple-50/40 dark:bg-purple-950/20'
+                    : 'border-blue-200 dark:border-blue-800/80 bg-blue-50/30 dark:bg-blue-950/20'
+                }`}
               >
-                <div className="flex items-center justify-between text-xs font-bold">
-                  <span>Deed Link #{i + 1}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeChainLink(i)}
-                    className="text-rose-600 hover:text-rose-700 cursor-pointer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                <div className="flex items-center justify-between border-b border-slate-200/70 dark:border-slate-800 pb-2">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center ${
+                        cl.linkType === 'warish' ? 'bg-purple-600' : 'bg-blue-600'
+                      }`}
+                    >
+                      {i + 1}
+                    </span>
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      {cl.linkType === 'warish' ? (
+                        <>
+                          <Users className="w-3.5 h-3.5 text-purple-600" />
+                          <span>Step #{i + 1}: Warishan Succession (ওয়ারিশান সূত্রে প্রাপ্ত হস্তান্তর)</span>
+                        </>
+                      ) : (
+                        <>
+                          <Scroll className="w-3.5 h-3.5 text-blue-600" />
+                          <span>Step #{i + 1}: Registered Deed Conveyance (দলিলমূলে চেইন হস্তান্তর)</span>
+                        </>
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={cl.linkType || 'deed'}
+                      onChange={e => updateChainLink(i, 'linkType', e.target.value)}
+                      className="px-2 py-0.5 text-[11px] font-bold rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 cursor-pointer"
+                    >
+                      <option value="deed">Deed / Conveyance</option>
+                      <option value="warish">Warish / Inheritance</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => removeChainLink(i)}
+                      className="text-rose-600 hover:text-rose-700 p-1 rounded cursor-pointer"
+                      title="Remove Step"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  <input
-                    type="text"
-                    value={cl.deedNo}
-                    onChange={e => updateChainLink(i, 'deedNo', e.target.value)}
-                    placeholder="Deed No (e.g. 1120/1984)"
-                    className="px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono font-bold"
-                  />
-                  <input
-                    type="date"
-                    value={cl.deedDate}
-                    onChange={e => updateChainLink(i, 'deedDate', e.target.value)}
-                    className="px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono"
-                  />
-                  <input
-                    type="text"
-                    value={cl.vendor}
-                    onChange={e => updateChainLink(i, 'vendor', e.target.value)}
-                    placeholder="Vendor (দাতা / বিক্রেতা)"
-                    className="px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
-                  />
-                  <input
-                    type="text"
-                    value={cl.purchaser}
-                    onChange={e => updateChainLink(i, 'purchaser', e.target.value)}
-                    placeholder="Purchaser (গ্রহীতা / ক্রেতা)"
-                    className="px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-semibold"
-                  />
-                </div>
+                {/* Requirement 14: FORM FIELDS FOR DEED CONVEYANCE with multiple sellers and buyers */}
+                {cl.linkType !== 'warish' ? (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                          Deed No (দলিল নং) *
+                        </label>
+                        <input
+                          type="text"
+                          value={cl.deedNo || ''}
+                          onChange={e => updateChainLink(i, 'deedNo', e.target.value)}
+                          placeholder="e.g. 1120 / I-3418"
+                          className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono font-bold"
+                        />
+                      </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    value={cl.area}
-                    onChange={e => updateChainLink(i, 'area', e.target.value)}
-                    placeholder="Transferred Area (e.g. 0.08 Acre)"
-                    className="px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
-                  />
-                  <input
-                    type="text"
-                    value={cl.consideration}
-                    onChange={e => updateChainLink(i, 'consideration', e.target.value)}
-                    placeholder="Consideration Value (e.g. ₹ 28,50,000)"
-                    className="px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono"
-                  />
-                </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                          Year of Deed (দলিল বছর) *
+                        </label>
+                        <input
+                          type="text"
+                          value={cl.deedYear || ''}
+                          onChange={e => updateChainLink(i, 'deedYear', e.target.value)}
+                          placeholder="e.g. 1985 / 2004"
+                          className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono font-bold text-indigo-700 dark:text-indigo-300"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                          Type of Deed (দলিলের ধরন) *
+                        </label>
+                        <select
+                          value={cl.deedType || 'সাফ কোবালা (Sale / Kobala)'}
+                          onChange={e => updateChainLink(i, 'deedType', e.target.value)}
+                          className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-semibold"
+                        >
+                          {WB_DEED_TYPES.map(dt => (
+                            <option key={dt} value={dt}>
+                              {dt}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                          Sub-Registry (ADSR / SRO)
+                        </label>
+                        <input
+                          type="text"
+                          value={cl.registrationOffice || ''}
+                          onChange={e => updateChainLink(i, 'registrationOffice', e.target.value)}
+                          placeholder="e.g. A.D.S.R. Rajarhat"
+                          className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Requirement 14: Saler or Doner one or more can be added */}
+                    <div className="p-2.5 rounded-lg bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase">
+                          Transferor(s) / Saler(s) / Donor(s) (দাতা / বিক্রেতা - এক বা একাধিক যোগ করুন)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => addVendorToLink(i)}
+                          className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <Plus className="w-3 h-3" /> + Add Saler / Donor
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                        {(cl.vendors && cl.vendors.length > 0 ? cl.vendors : [cl.vendor || '']).map((v, vIdx) => (
+                          <div key={vIdx} className="flex items-center gap-1">
+                            <input
+                              type="text"
+                              value={v}
+                              onChange={e => updateVendorInLink(i, vIdx, e.target.value)}
+                              placeholder={`Seller / Donor #${vIdx + 1}`}
+                              className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-semibold"
+                            />
+                            {(cl.vendors?.length || 1) > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeVendorFromLink(i, vIdx)}
+                                className="text-rose-500 hover:text-rose-700 p-1 cursor-pointer"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Requirement 14: Buyer one or more can be added */}
+                    <div className="p-2.5 rounded-lg bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase">
+                          Chain Buyer(s) / Transferee(s) (গ্রহীতা / ক্রেতা - এক বা একাধিক যোগ করুন) *
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => addPurchaserToLink(i)}
+                          className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <Plus className="w-3 h-3" /> + Add Buyer
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                        {(cl.purchasers && cl.purchasers.length > 0 ? cl.purchasers : [cl.purchaser || '']).map((p, pIdx) => (
+                          <div key={pIdx} className="flex items-center gap-1">
+                            <input
+                              type="text"
+                              value={p}
+                              onChange={e => updatePurchaserInLink(i, pIdx, e.target.value)}
+                              placeholder={`Buyer #${pIdx + 1}`}
+                              className="w-full px-2.5 py-1.5 text-xs rounded border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-900 font-bold text-blue-700 dark:text-blue-300"
+                            />
+                            {(cl.purchasers?.length || 1) > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removePurchaserFromLink(i, pIdx)}
+                                className="text-rose-500 hover:text-rose-700 p-1 cursor-pointer"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                          Date of Registration (তারিখ)
+                        </label>
+                        <input
+                          type="date"
+                          value={cl.deedDate || ''}
+                          onChange={e => updateChainLink(i, 'deedDate', e.target.value)}
+                          className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                          Transferred Area (পরিমাণ)
+                        </label>
+                        <input
+                          type="text"
+                          value={cl.area || ''}
+                          onChange={e => updateChainLink(i, 'area', e.target.value)}
+                          placeholder="e.g. 0.08 Acre"
+                          className="w-full px-2 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                          Consideration (পণ মূল্য)
+                        </label>
+                        <input
+                          type="text"
+                          value={cl.consideration || ''}
+                          onChange={e => updateChainLink(i, 'consideration', e.target.value)}
+                          placeholder="₹ 15,00,000"
+                          className="w-full px-2 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* Requirement 15: FORM FIELDS FOR WARISH with option to add names of the warishes */
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                      <div>
+                        <label className="block text-[10px] font-bold text-purple-700 dark:text-purple-300 uppercase mb-0.5">
+                          Deceased Owner (মৃত পূর্ববর্তী ব্যক্তি) *
+                        </label>
+                        <input
+                          type="text"
+                          value={cl.vendor}
+                          onChange={e => updateChainLink(i, 'vendor', e.target.value)}
+                          placeholder="e.g. Late Haripada Mondal"
+                          className="w-full px-2.5 py-1.5 text-xs rounded border border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900 font-semibold"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-purple-700 dark:text-purple-300 uppercase mb-0.5">
+                          Warish Year (সনদ / মৃত্যুর বছর)
+                        </label>
+                        <input
+                          type="text"
+                          value={cl.deedYear || ''}
+                          onChange={e => updateChainLink(i, 'deedYear', e.target.value)}
+                          placeholder="e.g. 1998"
+                          className="w-full px-2.5 py-1.5 text-xs rounded border border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900 font-mono font-bold"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-purple-700 dark:text-purple-300 uppercase mb-0.5">
+                          Warishan Certificate Ref No
+                        </label>
+                        <input
+                          type="text"
+                          value={cl.certificateRef || ''}
+                          onChange={e => updateChainLink(i, 'certificateRef', e.target.value)}
+                          placeholder="e.g. Cert No. 240/GP dt 15/04/1998"
+                          className="w-full px-2.5 py-1.5 text-xs rounded border border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-purple-700 dark:text-purple-300 uppercase mb-0.5">
+                          Issuing Authority (কর্তৃপক্ষ)
+                        </label>
+                        <input
+                          type="text"
+                          value={cl.registrationOffice || ''}
+                          onChange={e => updateChainLink(i, 'registrationOffice', e.target.value)}
+                          placeholder="e.g. Pradhan, Patharghata Gram Panchayat"
+                          className="w-full px-2.5 py-1.5 text-xs rounded border border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Requirement 15: Adding option name of the warishes */}
+                    <div className="p-2.5 rounded-lg bg-white/70 dark:bg-slate-900/60 border border-purple-200 dark:border-purple-800 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-bold text-purple-700 dark:text-purple-300 uppercase">
+                          Names of Warishes (ওয়ারিশানদের নাম - একাধিক যোগ করুন) *
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => addWarishNameToLink(i)}
+                          className="text-[11px] font-bold text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <Plus className="w-3 h-3" /> + Add Warish Name
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                        {(cl.warishNames && cl.warishNames.length > 0 ? cl.warishNames : [cl.purchaser || '']).map((w, wIdx) => (
+                          <div key={wIdx} className="flex items-center gap-1">
+                            <input
+                              type="text"
+                              value={w}
+                              onChange={e => updateWarishNameInLink(i, wIdx, e.target.value)}
+                              placeholder={`Warish #${wIdx + 1} Name`}
+                              className="w-full px-2.5 py-1.5 text-xs rounded border border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900 font-bold text-purple-800 dark:text-purple-200"
+                            />
+                            {(cl.warishNames?.length || 1) > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeWarishNameFromLink(i, wIdx)}
+                                className="text-rose-500 hover:text-rose-700 p-1 cursor-pointer"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         )}
 
-        {/* Verification Alert / Output */}
+        {/* Verification Alert */}
         {chainGaps.length > 0 && (
-          <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs space-y-1">
-            <div className="font-bold flex items-center gap-1.5">
-              <AlertTriangle className="w-4 h-4 text-rose-600" />
-              Title Continuity Discrepancies Detected:
+          <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs space-y-1.5">
+            <div className="font-bold flex items-center gap-1.5 text-rose-700 dark:text-rose-300">
+              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>Title Continuity Notices:</span>
             </div>
             {chainGaps.map((gap, idx) => (
-              <div key={idx}>· {gap}</div>
-            ))}
-          </div>
-        )}
-
-        {chainSummaryHtml && (
-          <div className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-2">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                Formatted Chain of Title Generated
-              </span>
-              <button
-                type="button"
-                onClick={downloadChainWordDoc}
-                className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1"
-              >
-                <Download className="w-3.5 h-3.5" /> Download as Word (.doc)
-              </button>
-            </div>
-            <div
-              className="bg-white dark:bg-slate-900 p-3 rounded border border-slate-200 dark:border-slate-700 text-xs overflow-x-auto"
-              dangerouslySetInnerHTML={{ __html: chainSummaryHtml }}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* 5. Document Attachments & Vault links */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
-        <div className="border-b border-slate-100 dark:border-slate-800 pb-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-            5. Case Document Attachments (কাগজপত্র ও দলিল)
-          </span>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400">
-            Attach registered deeds, ROR Khatians, Waris certificates, and vakalatnama.
-          </p>
-        </div>
-
-        {/* Quick doc upload pills */}
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-blue-500 bg-slate-50 dark:bg-slate-800 text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1">
-            <Paperclip className="w-3.5 h-3.5 text-blue-600" />
-            <span>+ Registered Deed</span>
-            <input
-              type="file"
-              multiple
-              className="hidden"
-              onChange={e => handleFileUpload(e, 'Registered Deed')}
-            />
-          </label>
-
-          <label className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-blue-500 bg-slate-50 dark:bg-slate-800 text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1">
-            <Paperclip className="w-3.5 h-3.5 text-purple-600" />
-            <span>+ Khatian Copy</span>
-            <input
-              type="file"
-              multiple
-              className="hidden"
-              onChange={e => handleFileUpload(e, 'Khatian Copy')}
-            />
-          </label>
-
-          <label className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-blue-500 bg-slate-50 dark:bg-slate-800 text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1">
-            <Paperclip className="w-3.5 h-3.5 text-amber-600" />
-            <span>+ Waris Certificate</span>
-            <input
-              type="file"
-              multiple
-              className="hidden"
-              onChange={e => handleFileUpload(e, 'Waris Certificate')}
-            />
-          </label>
-
-          <label className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-blue-500 bg-slate-50 dark:bg-slate-800 text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1">
-            <Paperclip className="w-3.5 h-3.5 text-emerald-600" />
-            <span>+ Vakalatnama</span>
-            <input
-              type="file"
-              multiple
-              className="hidden"
-              onChange={e => handleFileUpload(e, 'Vakalatnama')}
-            />
-          </label>
-
-          <label className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-blue-500 bg-slate-50 dark:bg-slate-800 text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1">
-            <Paperclip className="w-3.5 h-3.5 text-rose-600" />
-            <span>+ Certified Copy</span>
-            <input
-              type="file"
-              multiple
-              className="hidden"
-              onChange={e => handleFileUpload(e, 'Certified Copy')}
-            />
-          </label>
-        </div>
-
-        {/* Attachment list */}
-        {attachments.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
-            {attachments.map(att => (
-              <div
-                key={att.id}
-                className="p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex items-center justify-between"
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center shrink-0">
-                    <FileText className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
-                      {att.name}
-                    </div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400">
-                      {att.category} · {att.size} · {att.date}
-                    </div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeAttachment(att.id)}
-                  className="p-1 text-slate-400 hover:text-rose-600"
-                  title="Remove attachment"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+              <div key={idx} className="pl-5 text-[11px]">
+                • {gap}
               </div>
             ))}
           </div>
-        ) : (
-          <p className="text-xs text-slate-500">No documents attached yet.</p>
         )}
       </div>
 
-      {/* Case Notes */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-2">
-        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-          Chamber Internal Notes & Instructions
-        </label>
-        <textarea
-          rows={3}
-          value={notes}
-          onChange={e => setNotes(e.target.value)}
-          placeholder="Enter notes on caveat check, BL&LRO inquiry remarks, client fee balance..."
-          className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
-        />
-      </div>
-
-      {/* Action Footer (Desktop & Tablet) */}
-      <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+      {/* Bottom Sticky Actions Bar */}
+      <div className="flex flex-wrap items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800 gap-3">
         <button
           type="button"
           onClick={onBack}
-          className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
         >
           Cancel
         </button>
-        {type !== 'mutation' && onOpenAiDraft && (
-          <button
-            type="button"
-            onClick={() => {
-              onOpenAiDraft(type, {
-                type,
-                caseNo: caseNo || 'New Case',
-                subType,
-                party,
-                opp,
-                forum,
-                filingDate,
-                nextDate,
-                grounds,
-                landSchedules,
-                applicants,
-                respondents
-              });
-            }}
-            className="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
-          >
-            <Sparkles className="w-4 h-4" /> AI Drafting
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => handleSave(false)}
-          className="px-5 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
-        >
-          <Save className="w-4 h-4" /> Save Case
-        </button>
-        <button
-          type="button"
-          onClick={() => handleSave(true)}
-          className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
-        >
-          <Share2 className="w-4 h-4" /> Save & Launch WhatsApp
-        </button>
-      </div>
 
-      {/* Sticky Mobile Bottom Bar: "please make fitable or adjustable according to device. which will show all the options of the device." */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3 py-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 shadow-2xl">
-        <button
-          type="button"
-          onClick={onBack}
-          className="py-2 px-2.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold"
-        >
-          Back
-        </button>
-        {type !== 'mutation' && onOpenAiDraft && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Requirement 5: AI Drafting Option in Misc Case entry form */}
+          {type !== 'mutation' && onOpenAiDraft && (
+            <button
+              type="button"
+              onClick={handleTriggerAiDraft}
+              className="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 cursor-pointer transition-colors"
+              title="Open AI Drafting Studio for this Case"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>AI Drafting Studio</span>
+            </button>
+          )}
+
           <button
             type="button"
-            onClick={() => {
-              onOpenAiDraft(type, {
-                type,
-                caseNo: caseNo || 'New Case',
-                subType,
-                party,
-                opp,
-                forum,
-                filingDate,
-                nextDate,
-                grounds,
-                landSchedules,
-                applicants,
-                respondents
-              });
-            }}
-            className="py-2 px-2.5 rounded-lg bg-violet-600 text-white text-xs font-bold flex items-center gap-1 shadow-sm shrink-0"
+            onClick={handleOpenChainDeedDirectly}
+            className="px-3.5 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
           >
-            <Sparkles className="w-3.5 h-3.5" /> AI Draft
+            <Scroll className="w-4 h-4 text-indigo-600" />
+            <span>Make Chain Deed</span>
           </button>
-        )}
-        <button
-          type="button"
-          onClick={() => handleSave(false)}
-          className="flex-1 py-2 px-3 rounded-lg bg-blue-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md"
-        >
-          <Save className="w-4 h-4" /> Save Case
-        </button>
+
+          <button
+            type="button"
+            onClick={handlePrintDossier}
+            className="px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+          >
+            <Printer className="w-4 h-4" />
+            <span>Print Dossier</span>
+          </button>
+
+          {isEditingExisting && (
+            <button
+              type="button"
+              onClick={() => handleSaveOrUpdate(true, false)}
+              className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 cursor-pointer"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Update {isMisc ? 'Misc Case' : isMutation ? 'Mutation Case' : 'Case'}</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => handleSaveOrUpdate(false, false)}
+            className="px-5 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold shadow-md flex items-center gap-1.5 cursor-pointer"
+          >
+            <Save className="w-4 h-4" />
+            <span>Save {isMisc ? 'Misc Case' : isMutation ? 'Mutation Case' : 'Case'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleSaveOrUpdate(false, true)}
+            className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 cursor-pointer"
+            title="Save and launch WhatsApp client update"
+          >
+            <Share2 className="w-4 h-4" />
+            <span>Save &amp; Alert WhatsApp</span>
+          </button>
+        </div>
       </div>
     </div>
   );

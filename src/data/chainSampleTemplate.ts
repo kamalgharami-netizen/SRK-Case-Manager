@@ -73,15 +73,19 @@ export function generateChainDeedText(
     return new Date(a.deedDate).getTime() - new Date(b.deedDate).getTime();
   });
 
-  // Build markdown/text table for chain deeds
+  // Build markdown/text table for chain deeds & warish transitions
   let deedsTable = '';
   if (chainLinks.length > 0) {
-    deedsTable = `| Sl. | Deed No. | Date | Sub-Registry (SRO) | Vendor (দাতা) | Purchaser (গ্রহীতা) | Area | Consideration |\n|---|---|---|---|---|---|---|---|\n`;
+    deedsTable = `| Sl. | Transition Type | Deed / Certificate | Year / Date | SRO / Issuing Authority | Predecessor / Vendor | Successor / Chain Buyer | Area / Share |\n|---|---|---|---|---|---|---|---|\n`;
     chainLinks.forEach((link, idx) => {
-      deedsTable += `| ${idx + 1} | ${link.deedNo || '—'} | ${link.deedDate || '—'} | ${link.registrationOffice || 'SRO'} | ${link.vendor || '—'} | ${link.purchaser || '—'} | ${link.area || '—'} | ${link.consideration || '—'} |\n`;
+      const typeLabel = link.linkType === 'warish' ? 'Warish (ওয়ারিশান)' : (link.deedType || 'Deed (দলিল)');
+      const docLabel = link.linkType === 'warish' ? (link.certificateRef || 'Warishan Cert.') : `Deed No. ${link.deedNo || '—'}`;
+      const yearDate = link.deedYear ? `${link.deedYear} (${link.deedDate || '—'})` : (link.deedDate || '—');
+      const office = link.registrationOffice || '—';
+      deedsTable += `| ${idx + 1} | ${typeLabel} | ${docLabel} | ${yearDate} | ${office} | ${link.vendor || '—'} | ${link.purchaser || '—'} | ${link.area || '—'} |\n`;
     });
   } else {
-    deedsTable = `(No registered via deeds entered yet. Use the Deed Editor below to add deeds to this case's chain.)`;
+    deedsTable = `(No chronological title links recorded yet. Add Recorded Owner, Warish, and Chain Buyer deeds.)`;
   }
 
   // Build narrative paragraphs
@@ -89,11 +93,17 @@ export function generateChainDeedText(
   if (chainLinks.length > 0) {
     narrative = chainLinks
       .map((link, idx) => {
-        return `Step ${idx + 1}: By Registered Deed No. ${link.deedNo || '—'} dated ${link.deedDate || '—'} registered at ${link.registrationOffice || 'concerned SRO'}, the vendor ${link.vendor || '—'} sold, transferred, and conveyed land measuring ${link.area || '—'} for a consideration of ${link.consideration || 'valuable consideration'} unto the purchaser ${link.purchaser || '—'} with delivery of possession.`;
+        if (link.linkType === 'warish') {
+          return `Step ${idx + 1} [Succession / ওয়ারিশান সূত্রে প্রাপ্ত]: Upon the demise of the prior owner ${link.vendor || 'predecessor'}, their right, title, and possession over the schedule land lawfully devolved upon the surviving legal heirs (Warishan) namely ${link.purchaser || 'legal heirs'} ${link.warishDetails ? `(${link.warishDetails})` : ''}, as confirmed under ${link.certificateRef || 'competent Legal Heir / Warishan Certificate'}.`;
+        } else {
+          const deedTypeDesc = link.deedType || 'Registered Deed';
+          const yearStr = link.deedYear ? ` of the year ${link.deedYear}` : '';
+          return `Step ${idx + 1} [Conveyance by ${deedTypeDesc} / দলিলমূলে হস্তান্তর]: By ${deedTypeDesc} bearing Deed No. ${link.deedNo || '—'}${yearStr} executed on ${link.deedDate || '—'} and registered at ${link.registrationOffice || 'concerned Registration Office'}, the transferor/vendor ${link.vendor || '—'} lawfully sold, conveyed, and transferred land measuring ${link.area || '—'} for a consideration of ${link.consideration || 'valuable consideration'} unto the chain purchaser/buyer ${link.purchaser || '—'}, and delivered peaceful, physical possession thereof.`;
+        }
       })
       .join('\n\n');
   } else {
-    narrative = `The title has devolved through consecutive registered deeds and continuous possession from the vendor unto the present purchaser.`;
+    narrative = `The title has devolved through consecutive registered deeds and warishan succession from the recorded owner unto the present applicant.`;
   }
 
   const todayStr = new Date().toLocaleDateString('en-IN', {

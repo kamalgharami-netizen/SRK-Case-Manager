@@ -221,6 +221,9 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
             <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
               {caseItem.party}
             </div>
+            {caseItem.applicants[0]?.father && (
+              <div className="text-slate-500 text-[11px]">C/O: {caseItem.applicants[0].father}</div>
+            )}
             {caseItem.applicants[0]?.address && (
               <div className="text-slate-500 text-[11px]">{caseItem.applicants[0].address}</div>
             )}
@@ -229,24 +232,38 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
             )}
           </div>
 
-          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-1">
-            <div className="text-[10px] font-bold uppercase text-slate-400">
-              Opposite Party / Respondent
+          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase text-slate-400">
+                Opposite Party / Respondent(s) {caseItem.respondents?.length ? `(${caseItem.respondents.length})` : ''}
+              </span>
             </div>
-            <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-              {caseItem.opp || '—'}
-            </div>
-            {caseItem.respondents[0]?.address && (
-              <div className="text-slate-500 text-[11px]">{caseItem.respondents[0].address}</div>
+            {caseItem.respondents && caseItem.respondents.length > 0 ? (
+              <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                {caseItem.respondents.map((r, i) => (
+                  <div key={r.id || i} className="text-xs border-b last:border-0 border-slate-200/50 dark:border-slate-700/50 pb-1">
+                    <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center justify-between">
+                      <span>{i + 1}. {r.name}</span>
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-200 dark:bg-slate-700 font-normal">{r.type}</span>
+                    </div>
+                    {r.address && <div className="text-slate-500 text-[11px] mt-0.5">{r.address}</div>}
+                    {r.phone && <div className="font-mono text-slate-400 text-[10px]">{r.phone}</div>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                {caseItem.opp || '— (No opposite party / Uncontested)'}
+              </div>
             )}
           </div>
         </div>
 
-        {/* Land Schedules */}
+        {/* Land Schedules (সম্পত্তির তপশীল বিবরণ) */}
         {caseItem.landSchedules.length > 0 && (
           <div className="space-y-2">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-              Land Schedule ({caseItem.landSchedules.length})
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+              <span>সম্পত্তির তপশীল বিবরণ ({caseItem.landSchedules.length})</span>
             </div>
             <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-lg">
               <table className="w-full text-left text-xs">
@@ -277,33 +294,53 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
           </div>
         )}
 
-        {/* Chain Deeds */}
+        {/* Chain Deeds & Warish Transitions */}
         {caseItem.chainLinks && caseItem.chainLinks.length > 0 && (
           <div className="space-y-2">
-            <div className="text-xs font-bold uppercase tracking-wider text-amber-600">
-              Chain of Title Chronology ({caseItem.chainLinks.length} Deeds)
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1.5">
+                <LinkIcon className="w-3.5 h-3.5" />
+                <span>Chain of Title Chronology ({caseItem.chainLinks.length} Steps)</span>
+              </div>
+              {caseItem.recordedOwner && (
+                <div className="text-[11px] text-amber-800 dark:text-amber-300 font-medium">
+                  Original Rayat: <strong>{caseItem.recordedOwner}</strong> (Khatian: {caseItem.recordedKhatian || '—'}, Dag: {caseItem.recordedDag || '—'})
+                </div>
+              )}
             </div>
             <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-lg">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 uppercase text-[10px]">
                   <tr>
-                    <th className="p-2.5">Deed No</th>
-                    <th className="p-2.5">Date</th>
-                    <th className="p-2.5">Vendor</th>
-                    <th className="p-2.5">Purchaser</th>
-                    <th className="p-2.5">Area</th>
-                    <th className="p-2.5">Value</th>
+                    <th className="p-2.5">Step / Type</th>
+                    <th className="p-2.5">Deed / Cert No</th>
+                    <th className="p-2.5">Year / Date</th>
+                    <th className="p-2.5">Vendor / Deceased</th>
+                    <th className="p-2.5">Buyer / Successor</th>
+                    <th className="p-2.5">Area & Value</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {caseItem.chainLinks.map((cl, i) => (
-                    <tr key={i}>
-                      <td className="p-2.5 font-mono font-bold">{cl.deedNo}</td>
-                      <td className="p-2.5 font-mono">{cl.deedDate}</td>
+                    <tr key={i} className={cl.linkType === 'warish' ? 'bg-purple-50/30 dark:bg-purple-950/20' : ''}>
+                      <td className="p-2.5">
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                          cl.linkType === 'warish'
+                            ? 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300'
+                            : 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300'
+                        }`}>
+                          {cl.linkType === 'warish' ? 'Warish' : (cl.deedType || 'Deed')}
+                        </span>
+                      </td>
+                      <td className="p-2.5 font-mono font-bold">
+                        {cl.linkType === 'warish' ? (cl.certificateRef || 'Warishan Cert.') : (cl.deedNo || '—')}
+                      </td>
+                      <td className="p-2.5 font-mono">{cl.deedYear || cl.deedDate || '—'}</td>
                       <td className="p-2.5">{cl.vendor}</td>
-                      <td className="p-2.5 font-semibold">{cl.purchaser}</td>
-                      <td className="p-2.5">{cl.area}</td>
-                      <td className="p-2.5 font-mono">{cl.consideration}</td>
+                      <td className="p-2.5 font-semibold text-blue-600 dark:text-blue-400">{cl.purchaser}</td>
+                      <td className="p-2.5 font-mono text-[11px]">
+                        {cl.area ? `${cl.area}` : ''} {cl.consideration ? `(${cl.consideration})` : ''}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

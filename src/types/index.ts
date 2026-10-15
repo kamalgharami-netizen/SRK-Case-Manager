@@ -51,6 +51,12 @@ export interface Respondent {
   phone?: string;
 }
 
+export interface HearingDateItem {
+  id: string;
+  date: string;
+  stage?: string;
+}
+
 export interface AddressItem {
   id: string;
   label: string;
@@ -63,14 +69,34 @@ export interface AddressItem {
 
 export interface ChainLink {
   id: string;
-  deedNo: string;
-  deedDate: string;
+  linkType?: 'deed' | 'warish';
+  deedNo?: string;
+  deedDate?: string;
+  deedYear?: string;
+  deedType?: string;
   vendor: string;
   purchaser: string;
-  area: string;
-  consideration: string;
+  vendors?: string[];
+  purchasers?: string[];
+  warishNames?: string[];
+  area?: string;
+  consideration?: string;
   registrationOffice?: string;
+  warishDetails?: string;
+  certificateRef?: string;
+  notes?: string;
 }
+
+export const WB_DEED_TYPES = [
+  'সাফ কোবালা (Sale / Kobala)',
+  'হেবা বিল এওয়াজ (Heba-bil-Ewaz)',
+  'দানপত্র (Gift Deed)',
+  'বণ্টননামা (Partition Deed)',
+  'এওয়াজ বদল (Exchange Deed)',
+  'উইল / অছিয়তনামা (Will / Probate)',
+  'ডিক্রি / নিলাম সার্টিফিকেট (Court Decree / Auction Certificate)',
+  'অন্যান্য দলিল (Other Deed)'
+] as const;
 
 export interface CaseAttachment {
   id: string;
@@ -92,6 +118,8 @@ export interface CaseItem {
   forum: string;
   filingDate: string;
   nextDate: string;
+  hearingDates?: string[];
+  hearingList?: HearingDateItem[];
   priority?: 'Normal' | 'High' | 'Urgent';
   appNo?: string;
   grnNo?: string;
@@ -102,6 +130,17 @@ export interface CaseItem {
   bench?: string;
   targetOfficer?: string;
   notes?: string;
+  // Applicant Deed Particulars
+  applicantDeedNo?: string;
+  applicantDeedYear?: string;
+  applicantDeedType?: string;
+  applicantAdsr?: string;
+  // Broker / Muhuri (Omitted from client/court prints; shown only in report & entry)
+  brokerName?: string;
+  brokerPhone?: string;
+  recordedOwner?: string;
+  recordedKhatian?: string;
+  recordedDag?: string;
   landSchedules: LandSchedule[];
   applicants: Applicant[];
   respondents: Respondent[];

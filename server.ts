@@ -449,6 +449,205 @@ IMPORTANT INSTRUCTIONS:
   }
 });
 
+// Server-side AI Chain of Title Deed generator & translator
+app.post('/api/ai/chain-deed', async (req, res) => {
+  const { caseItem, targetLang = 'bn', vaultSamples = [] } = req.body;
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  const isBengali = targetLang === 'bn';
+  const schedule = caseItem?.landSchedules?.[0] || {};
+  const chainLinks = caseItem?.chainLinks || [];
+
+  // Build markdown representation of intermediate steps
+  const stepsDescription = chainLinks.map((l: any, i: number) => {
+    if (l.linkType === 'warish') {
+      const heirs = l.warishNames && l.warishNames.length > 0 ? l.warishNames.join(', ') : (l.purchaser || 'Legal Heirs');
+      return `Step ${i + 1} [WARISHAN SUCCESSION]: Deceased Owner: ${l.vendor}, Successors/Warishes: ${heirs}, Year/Date: ${l.deedYear || l.deedDate || '—'}, Certificate Ref: ${l.certificateRef || '—'}, Issuing Authority: ${l.registrationOffice || 'Gram Panchayat / Municipality'}, Details: ${l.warishDetails || '—'}`;
+    } else {
+      const sellers = l.vendors && l.vendors.length > 0 ? l.vendors.join(', ') : (l.vendor || '—');
+      const buyers = l.purchasers && l.purchasers.length > 0 ? l.purchasers.join(', ') : (l.purchaser || '—');
+      return `Step ${i + 1} [DEED CONVEYANCE]: Deed No: ${l.deedNo || '—'}, Year: ${l.deedYear || '—'}, Type of Deed: ${l.deedType || 'Sale Deed / কোবালা'}, Transferors/Vendors/Donors: ${sellers}, Transferees/Buyers: ${buyers}, SRO/ADSR: ${l.registrationOffice || '—'}, Date: ${l.deedDate || '—'}, Area: ${l.area || '—'}, Value: ${l.consideration || '—'}`;
+    }
+  }).join('\n');
+
+  // Vault sample excerpts for guidance
+  const sampleExcerpts = vaultSamples
+    .filter((s: any) => s.category === 'chain' || s.title?.toLowerCase().includes('chain') || s.title?.toLowerCase().includes('দলিল'))
+    .slice(0, 2)
+    .map((s: any) => `[VAULT SAMPLE REFERENCE - ${s.title}]:\n${s.templateText}`)
+    .join('\n\n');
+
+  const prompt = `You are a West Bengal Land Revenue & Title Expert preparing a formal, case-specific "Chronological Chain of Title & Deed Statement" (ধারাবাহিক স্বত্ব ও হস্তান্তরের প্রামাণ্য বিবরণী).
+
+CASE DATA:
+- Case Reference No: ${caseItem?.caseNo || 'MN/Draft'}
+- Application No: ${caseItem?.appNo || 'MUTE/Draft'}
+- Competent Forum: ${caseItem?.forum || 'Before the Ld. Block Land & Land Reforms Officer (BL&LRO)'}
+- Sub-Type: ${caseItem?.subType || 'Purchase Mutation'}
+- Applicant (বর্তমান আবেদনকারী): ${caseItem?.party || 'Applicant'}
+- Father / Husband: ${caseItem?.applicants?.[0]?.father || '—'}
+- Address: ${caseItem?.applicants?.[0]?.address || '—'}
+- Opposite Party / Co-sharers: ${caseItem?.opp || '—'}
+- Applicant Latest Acquisition: Deed No ${caseItem?.applicantDeedNo || '—'}, Year ${caseItem?.applicantDeedYear || '—'}, Type: ${caseItem?.applicantDeedType || '—'}, Office: ${caseItem?.applicantAdsr || '—'}
+- Property Schedule (সম্পত্তির তপশীল বিবরণ): District ${schedule.district || '—'}, Block ${schedule.block || '—'}, Mouza ${schedule.mouza || '—'} (JL ${schedule.jl || '—'}), Khatian ${schedule.khatian || '—'}, Dag ${schedule.dag || '—'}, Area ${schedule.area || '—'} ${schedule.unit || ''}, Classification ${schedule.classification || '—'}
+
+INTERMEDIATE CHRONOLOGICAL DEEDS & SUCCESSIONS (RECORD OWNER TO APPLICANT):
+${stepsDescription || 'Direct acquisition without intermediate transfers recorded.'}
+
+${sampleExcerpts ? `SAMPLES FROM CHAMBER DATA VAULT TO ADOPT STYLE FROM:\n${sampleExcerpts}\n` : ''}
+
+TARGET LANGUAGE: ${isBengali ? 'BENGALI (বাংলা)' : 'ENGLISH'}
+
+CRITICAL INSTRUCTIONS:
+1. STRICT ANONYMITY: Do NOT include ANY firm name, law chamber, advocate name, bar council registration, or logo. ONLY output purely case-related title data suitable for filing before revenue authorities.
+2. TERMINOLOGY: In Bengali, always use "সম্পত্তির তপশীল বিবরণ" for property schedule. Never use "জমির তফসিল".
+3. CHRONOLOGY: Formulate the continuous history from original recorded title / earliest deed, through each registered deed and warish succession, leading directly to the present applicant ${caseItem?.party}.
+4. STRUCTURE:
+   - Header with Forum and Subject
+   - Case & Application Particulars
+   - Schedule of Property (সম্পত্তির তপশীল বিবরণ)
+   - Chronological Table of Title Transitions (Sl, Type, Deed/Cert No, Year/Date, Transferor/Deceased, Transferee/Heirs, SRO/Authority, Area)
+   - Detailed Narrative Recitals for each step
+   - Concluding Statement of Unbroken Possession & Title
+5. FORMAT: Return plain text / clean markdown formatted document with clear headers and dividers. Do not wrap in json or markdown code fences (\`\`\`).`;
+
+  if (!apiKey) {
+    const fallbackText = generateLocalChainDeedDraft(caseItem, isBengali);
+    return res.status(200).json({ success: true, draftText: fallbackText, source: 'local-engine' });
+  }
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.8-flash',
+      contents: prompt
+    });
+    const output = response.text?.trim() || generateLocalChainDeedDraft(caseItem, isBengali);
+    const cleaned = output.replace(/^```(markdown|text|html)?\s*/i, '').replace(/```$/i, '').trim();
+    return res.status(200).json({ success: true, draftText: cleaned, source: 'gemini' });
+  } catch (err) {
+    console.warn('AI chain deed generation failed, using local engine:', err);
+    const fallbackText = generateLocalChainDeedDraft(caseItem, isBengali);
+    return res.status(200).json({ success: true, draftText: fallbackText, source: 'local-engine' });
+  }
+});
+
+function generateLocalChainDeedDraft(caseItem: any, isBengali: boolean): string {
+  const s = caseItem?.landSchedules?.[0] || {};
+  const party = caseItem?.party || 'Applicant';
+  const caseNo = caseItem?.caseNo || 'MN/Draft';
+  const appNo = caseItem?.appNo || 'MUTE/Draft';
+  const forum = caseItem?.forum || 'BL&LRO';
+  const links: any[] = caseItem?.chainLinks || [];
+
+  if (isBengali) {
+    let stepsTable = `| ক্রমিক | হস্তান্তরের ধরন | দলিল / সনদপত্র নং | সাল / তারিখ | হস্তান্তরকারী / পূর্বসূরী | গ্রহীতা / ওয়ারিশান | রেজিস্ট্রি / ইস্যুকারী অফিস |\n|---|---|---|---|---|---|---|\n`;
+    links.forEach((l, idx) => {
+      const type = l.linkType === 'warish' ? 'ওয়ারিশান সূত্রে' : (l.deedType || 'রেজিস্টার্ড কোবালা');
+      const docNo = l.linkType === 'warish' ? (l.certificateRef || 'ওয়ারিশান সনদ') : (l.deedNo || '—');
+      const yr = l.deedYear || l.deedDate || '—';
+      const from = l.vendors && l.vendors.length > 0 ? l.vendors.join(', ') : (l.vendor || '—');
+      const to = l.linkType === 'warish' 
+        ? (l.warishNames && l.warishNames.length > 0 ? l.warishNames.join(', ') : l.purchaser)
+        : (l.purchasers && l.purchasers.length > 0 ? l.purchasers.join(', ') : l.purchaser);
+      const office = l.registrationOffice || '—';
+      stepsTable += `| ${idx + 1} | ${type} | ${docNo} | ${yr} | ${from} | ${to} | ${office} |\n`;
+    });
+
+    let recitals = '';
+    links.forEach((l, idx) => {
+      if (l.linkType === 'warish') {
+        const heirs = l.warishNames && l.warishNames.length > 0 ? l.warishNames.join(', ') : l.purchaser;
+        recitals += `\n(${idx + 1}) পূর্ববর্তী স্বত্বাধিকারী ${l.vendor} পরলোকগমন করিলে তাহার ওয়ারিশান হিসাবে ${heirs} স্থানীয় পঞ্চায়েত / পৌরসভা কর্তৃক প্রদত্ত সনদপত্র (স্মারক নং: ${l.certificateRef || '—'}) মূলে উক্ত স্বত্ব ও ভোগদখল প্রাপ্ত হন।\n`;
+      } else {
+        const sellers = l.vendors && l.vendors.length > 0 ? l.vendors.join(', ') : l.vendor;
+        const buyers = l.purchasers && l.purchasers.length > 0 ? l.purchasers.join(', ') : l.purchaser;
+        recitals += `\n(${idx + 1}) তৎপর ${sellers} হইতে ${buyers} ${l.registrationOffice || 'রেজিস্ট্রি অফিস'}-এ রেজিস্ট্রিকৃত ${l.deedType || 'সাফ কোবালা'} দলিল (দলিল নং ${l.deedNo || '—'}, সাল ${l.deedYear || '—'}) মূলে মূল্য বাবদ পণ গ্রহণান্তে হস্তান্তর ও দখল প্রদান করেন।\n`;
+      }
+    });
+
+    return `ধারাবাহিক স্বত্ব ও হস্তান্তরের প্রামাণ্য বিবরণী
+(CHRONOLOGICAL CHAIN OF TITLE STATEMENT)
+
+বিজ্ঞ সমক্ষে: ${forum}
+মিউটেশন কেস নং: ${caseNo}
+মিউটেশন আবেদন নং: ${appNo}
+বিষয়: মূল রায়ত হইতে বর্তমান আবেদনকারী পর্যন্ত ধারাবাহিক দলিল ও ওয়ারিশান সূত্রে স্বত্ব পরীক্ষার বিবরণী।
+
+১. মামলার সংক্ষিপ্ত বিবরণ:
+• মিউটেশন কেস নং: ${caseNo}
+• মিউটেশন আবেদন নং: ${appNo}
+• বর্তমান আবেদনকারী (Transferee): ${party}
+• আবেদনকারীর পিতার / স্বামীর নাম: ${caseItem?.applicants?.[0]?.father || '—'}
+• আবেদনকারীর ঠিকানা: ${caseItem?.applicants?.[0]?.address || '—'}
+• আবেদনকারীর দলিল নং: ${caseItem?.applicantDeedNo || '—'} (সাল: ${caseItem?.applicantDeedYear || '—'}, ধরন: ${caseItem?.applicantDeedType || '—'}, অফিস: ${caseItem?.applicantAdsr || '—'})
+• প্রতিপক্ষ / সহ-অংশীদার: ${caseItem?.opp || '—'}
+
+২. সম্পত্তির তপশীল বিবরণ:
+• জেলা: ${s.district || '—'} | ব্লক: ${s.block || '—'}
+• মৌজা: ${s.mouza || '—'} (জে.এল. নং: ${s.jl || '—'})
+• খতিয়ান নং: ${s.khatian || '—'} | দাগ নং: ${s.dag || '—'}
+• জমির শ্রেণি: ${s.classification || '—'} | পরিমাণ: ${s.area || '—'} ${s.unit || 'Acre'}
+
+৩. ধারাবাহিক চেইন দলিল ও ওয়ারিশান হস্তান্তরের সূচি:
+${stepsTable}
+
+৪. পর্যায়ক্রমিক স্বত্ব হস্তান্তরের ধারাবাহিক ইতিহাস:
+(ক) মূল স্বত্ব: উপরোক্ত তপশীলভুক্ত সম্পত্তিটি পশ্চিমবঙ্গ সরকারের আওতাধীন সি.এস./আর.এস./এল.আর. রেকর্ড অনুযায়ী আদি রেকর্ডীয় মালিকের নামে বৈধভাবে স্বত্ব ও দখলে ছিল।
+${recitals}
+(খ) বর্তমান আবেদনকারী ${party}-এর বৈধ স্বত্ব ও দখল:
+উক্ত ধারাবাহিক রেজিস্টার্ড দলিলসমূহ ও ওয়ারিশান পরম্পরায় হস্তান্তর সূত্রে বর্তমান আবেদনকারী ${party} তফসিল বর্ণিত ভূমির নিরঙ্কুশ, বৈধ স্বত্বাধিকারী ও প্রত্যক্ষ দখলদার হইয়াছেন। উক্ত জমি সরকারের নিকট কোনো প্রকার খাস বা ১২(২)/১৪জেড সিলিং লঙ্ঘিত নহে এবং কোনো আদালতে বাটোয়ারা বা ডিক্রি স্থগিতাদেশ নাই।
+
+অতএব, উপরোক্ত অবিচ্ছিন্ন ধারাবাহিক স্বত্ব বিবেচনায় বিজ্ঞ আদালত/রাজস্ব আধিকারিক সমীপে আবেদনকারীর নামে এল.আর. খতিয়ানে নির্ভুল মিউটেশন রেকর্ড মঞ্জুরের প্রার্থনা জানানো যাইতেছে।
+
+তারিখ: ${new Date().toLocaleDateString('bn-BD')}`;
+  } else {
+    let stepsTable = `| Sl. | Transition Type | Deed / Certificate | Year / Date | Predecessor / Vendor | Successor / Buyer | SRO / Authority |\n|---|---|---|---|---|---|---|\n`;
+    links.forEach((l, idx) => {
+      const type = l.linkType === 'warish' ? 'Warishan Succession' : (l.deedType || 'Registered Deed');
+      const docNo = l.linkType === 'warish' ? (l.certificateRef || 'Warishan Cert.') : (l.deedNo || '—');
+      const yr = l.deedYear || l.deedDate || '—';
+      const from = l.vendors && l.vendors.length > 0 ? l.vendors.join(', ') : (l.vendor || '—');
+      const to = l.linkType === 'warish'
+        ? (l.warishNames && l.warishNames.length > 0 ? l.warishNames.join(', ') : l.purchaser)
+        : (l.purchasers && l.purchasers.length > 0 ? l.purchasers.join(', ') : l.purchaser);
+      const office = l.registrationOffice || '—';
+      stepsTable += `| ${idx + 1} | ${type} | ${docNo} | ${yr} | ${from} | ${to} | ${office} |\n`;
+    });
+
+    return `CHRONOLOGICAL CHAIN OF TITLE STATEMENT
+(Exclusively Case-Specific Statement)
+
+Before the Competent Revenue Authority: ${forum}
+Mutation Case No: ${caseNo}
+Mutation Application No: ${appNo}
+Subject: Unbroken Chain of Title & Flow of Conveyances down to Present Applicant
+
+1. CASE PARTICULARS:
+• Case Number: ${caseNo}
+• Application Number: ${appNo}
+• Present Applicant: ${party} (C/O: ${caseItem?.applicants?.[0]?.father || '—'})
+• Address: ${caseItem?.applicants?.[0]?.address || '—'}
+• Applicant Deed Particulars: Deed No ${caseItem?.applicantDeedNo || '—'} of ${caseItem?.applicantDeedYear || '—'} (${caseItem?.applicantDeedType || 'Conveyance'}), ADSR: ${caseItem?.applicantAdsr || '—'}
+• Opposite Party / Co-sharers: ${caseItem?.opp || '—'}
+
+2. SCHEDULE OF SUBJECT PROPERTY (সম্পত্তির তপশীল বিবরণ):
+• District: ${s.district || '—'} | Sub-Division/Block: ${s.block || '—'}
+• Mouza: ${s.mouza || '—'} (J.L. No: ${s.jl || '—'})
+• Khatian No: ${s.khatian || '—'} | Dag No: ${s.dag || '—'}
+• Classification: ${s.classification || '—'} | Quantum: ${s.area || '—'} ${s.unit || 'Acre'}
+
+3. CHRONOLOGICAL SUMMARY OF INTERMEDIATE CONVEYANCES & WARISH SUCCESSIONS:
+${stepsTable}
+
+4. RECITAL OF SUCCESSION & TITLE FLOW:
+Originally, the schedule land was duly recorded with peaceful possession under the Government of West Bengal. Through consecutive intermediate conveyances and legal heir successions as detailed above, the title flowed without interruption. The petitioner ${party} is now in exclusive, lawful physical possession of the scheduled property. There are no pending attachments, injunctions, or vesting under the West Bengal Land Reforms Act, 1955.
+
+Verified and submitted for formal Mutation recording.
+Date: ${new Date().toISOString().slice(0, 10)}`;
+  }
+}
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: Date.now() });
