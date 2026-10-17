@@ -6,10 +6,16 @@ import { INITIAL_SAMPLE_DRAFTS } from '../data/sampleDraftTemplates';
 
 const STORAGE_KEY = 'srk_case_manager_v4';
 
-interface ToastState {
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
+export interface ToastState {
   id: number;
   message: string;
-  type: 'success' | 'error' | 'info';
+  type: 'success' | 'error' | 'info' | 'warning';
+  action?: ToastAction;
 }
 
 export type ViewDensity = 'comfortable' | 'compact';
@@ -28,7 +34,13 @@ interface AppContextType {
   toggleLanguage: () => void;
   t: Translations;
   toast: ToastState | null;
-  showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
+  showToast: (
+    message: string,
+    type?: 'success' | 'error' | 'info' | 'warning',
+    action?: ToastAction,
+    durationMs?: number
+  ) => void;
+  hideToast: () => void;
 
   // Viewing & Display Options
   viewDensity: ViewDensity;
@@ -90,6 +102,8 @@ interface AppContextType {
   addCase: (caseData: Omit<CaseItem, 'id' | 'createdAt' | 'createdBy'>) => CaseItem;
   updateCase: (caseId: string, updates: Partial<CaseItem>) => void;
   deleteCase: (caseId: string) => void;
+  batchUpdateCaseStatus: (caseIds: string[], status: string) => void;
+  batchDeleteCases: (caseIds: string[]) => void;
 
   // Party Actions
   addParty: (partyData: Omit<Party, 'id' | 'createdAt' | 'createdBy'>) => void;
@@ -357,12 +371,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setThemeState(t);
   };
 
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+  const showToast = (
+    message: string,
+    type: 'success' | 'error' | 'info' | 'warning' = 'success',
+    action?: ToastAction,
+    durationMs: number = 3200
+  ) => {
     const id = Date.now();
-    setToast({ id, message, type });
+    setToast({ id, message, type, action });
     setTimeout(() => {
       setToast(prev => (prev?.id === id ? null : prev));
-    }, 3200);
+    }, durationMs);
+  };
+
+  const hideToast = () => {
+    setToast(null);
   };
 
   const activeCompany = companies.find(c => c.id === activeCompanyId) || (companies.length > 0 ? companies[0] : null);
@@ -561,7 +584,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const exportCompanyJson = () => {
     if (!activeCompany) return;
-    const jsonStr = JSON.stringify(activeCompany, null, 2);
+    const now = Date.now();
+    const updatedCompany: Company = {
+      ...activeCompany,
+      lastBackupDate: now
+    };
+
+    setCompanies(prev =>
+      prev.map(c => (c.id === activeCompany.id ? { ...c, lastBackupDate: now } : c))
+    );
+
+    try {
+      localStorage.setItem(`srk_last_backup_${activeCompany.id}`, String(now));
+      sessionStorage.removeItem(`srk_backup_notified_${activeCompany.id}`);
+      localStorage.removeItem(`srk_backup_banner_dismissed_${activeCompany.id}`);
+    } catch {}
+
+    const jsonStr = JSON.stringify(updatedCompany, null, 2);
     const blob = new Blob([jsonStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -570,7 +609,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     a.click();
     URL.revokeObjectURL(url);
     logActivity('Exported complete chamber workspace data');
-    showToast('Workspace backup exported');
+    showToast('Workspace backup exported successfully');
   };
 
   // Case Actions
@@ -623,6 +662,38 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     );
     logActivity(`Deleted Case: ${cs?.caseNo || caseId}`);
     showToast('Case deleted', 'info');
+  };
+
+  const batchUpdateCaseStatus = (caseIds: string[], status: string) => {
+    if (caseIds.length === 0) return;
+    const idSet = new Set(caseIds);
+    setCompanies(prev =>
+      prev.map(c => {
+        if (c.id !== activeCompanyId) return c;
+        return {
+          ...c,
+          cases: (c.cases || []).map(cs => (idSet.has(cs.id) ? { ...cs, status } : cs))
+        };
+      })
+    );
+    logActivity(`Batch updated status to "${status}" for ${caseIds.length} cases`);
+    showToast(`Updated ${caseIds.length} cases to "${status}"`);
+  };
+
+  const batchDeleteCases = (caseIds: string[]) => {
+    if (caseIds.length === 0) return;
+    const idSet = new Set(caseIds);
+    setCompanies(prev =>
+      prev.map(c => {
+        if (c.id !== activeCompanyId) return c;
+        return {
+          ...c,
+          cases: (c.cases || []).filter(item => !idSet.has(item.id))
+        };
+      })
+    );
+    logActivity(`Batch deleted ${caseIds.length} cases`);
+    showToast(`Deleted ${caseIds.length} cases`, 'info');
   };
 
   // Party Actions
@@ -923,6 +994,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         t,
         toast,
         showToast,
+        hideToast,
         viewDensity,
         setViewDensity,
         toggleViewDensity,
@@ -954,6 +1026,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         addCase,
         updateCase,
         deleteCase,
+        batchUpdateCaseStatus,
+        batchDeleteCases,
         addParty,
         deleteParty,
         addUser,

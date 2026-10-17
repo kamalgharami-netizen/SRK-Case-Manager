@@ -20,7 +20,7 @@ import { BackupModal } from './components/BackupModal';
 import { ViewingOptionsModal } from './components/ViewingOptionsModal';
 import { ChainDeedModal } from './components/ChainDeedModal';
 import { Toast } from './components/Toast';
-import { CaseType, CaseItem } from './types';
+import { CaseType, CaseItem, getBackupStatus } from './types';
 import {
   Plus,
   FileText,
@@ -47,7 +47,7 @@ interface AiStudioReturnContext {
 }
 
 const MainAppContent: React.FC = () => {
-  const { activeUser, activeCompany, companies, isChamberSetupOpen, setIsChamberSetupOpen, language } = useApp();
+  const { activeUser, activeCompany, companies, isChamberSetupOpen, setIsChamberSetupOpen, language, showToast } = useApp();
 
   const [currentPage, setCurrentPage] = useState<NavPage>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(() => {
@@ -248,6 +248,35 @@ const MainAppContent: React.FC = () => {
     setSettingsOpen(true);
     pushHistoryState({ modal: 'settings', tab });
   };
+
+  // Automated gentle toast reminder if manual data backup has not been performed in over 7 days
+  useEffect(() => {
+    if (!activeCompany) return;
+    const backupStatus = getBackupStatus(activeCompany);
+    if (backupStatus.isOverdue) {
+      const sessionKey = `srk_backup_notified_${activeCompany.id}`;
+      const alreadyNotified = sessionStorage.getItem(sessionKey);
+      if (!alreadyNotified) {
+        const timer = setTimeout(() => {
+          showToast(
+            language === 'bn'
+              ? `সতর্কতা: চেম্বার তথ্যের কোনো ম্যানুয়াল ব্যাকআপ ${backupStatus.daysSinceBackup} দিন ধরে নেওয়া হয়নি।`
+              : `Reminder: You haven't performed a manual chamber data backup in ${backupStatus.daysSinceBackup} days.`,
+            'warning',
+            {
+              label: language === 'bn' ? 'ব্যাকআপ খুলুন' : 'Open Backup',
+              onClick: () => handleOpenSettings('backup')
+            },
+            8500
+          );
+          try {
+            sessionStorage.setItem(sessionKey, 'true');
+          } catch {}
+        }, 1500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [activeCompany?.id, language]);
 
   const handleOpenNewCase = (type: CaseType) => {
     setEditingCase(null);

@@ -391,11 +391,11 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
               </div>
             </div>
 
-            {/* 3. Dynamic Logo & Insignia Branding (Vyapar Style) */}
+            {/* 3. Dynamic Logo & Insignia Branding */}
             <div className="border-b border-slate-200 dark:border-slate-800 pt-2 pb-1">
               <span className="text-xs font-bold text-blue-600 uppercase tracking-wider flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>3. Chamber Dynamic Logo & Branding (Vyapar Style)</span>
+                <span>3. Chamber Legal Insignia & Branding</span>
               </span>
             </div>
 

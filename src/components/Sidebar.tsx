@@ -141,7 +141,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="text-xs font-extrabold text-slate-900 dark:text-slate-100 tracking-tight leading-snug truncate">
                 SRK Case Manager
               </div>
-              <div className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold truncate">
+              <div className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold truncate">
                 {activeCompany?.name || 'Legal Chamber'}
               </div>
             </div>

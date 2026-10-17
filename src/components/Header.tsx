@@ -1,12 +1,13 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Menu, Sun, Moon, Search, Building2, Languages, Scale, SlidersHorizontal, ArrowLeft } from 'lucide-react';
+import { Menu, Sun, Moon, Search, Building2, Languages, Scale, SlidersHorizontal, ArrowLeft, HardDrive } from 'lucide-react';
 import { CompanyLogo } from './CompanyLogo';
+import { getBackupStatus } from '../types';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
   isSidebarOpen?: boolean;
-  onOpenSettings: () => void;
+  onOpenSettings: (tab?: 'branding' | 'vault' | 'chainSample' | 'backup') => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
   canGoBack?: boolean;
@@ -25,6 +26,8 @@ export const Header: React.FC<HeaderProps> = ({
   currentPageTitle
 }) => {
   const { activeCompany, activeUser, theme, setTheme, switchCompany, language, toggleLanguage, openViewModal, t } = useApp();
+
+  const backupStatus = getBackupStatus(activeCompany);
 
   const roleBadgeColor = {
     Admin: 'bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300',
@@ -61,14 +64,14 @@ export const Header: React.FC<HeaderProps> = ({
           <Menu className="w-5 h-5" />
         </button>
 
-        {/* Distinctive dynamic logo emblem and typography like Vyapar App */}
+        {/* Dynamic legal logo emblem and chamber branding */}
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
           <CompanyLogo company={activeCompany} size="sm" />
           <div className="text-left leading-tight hidden xs:block sm:block">
             <div className="text-xs sm:text-sm font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
               SRK Case Manager
             </div>
-            <div className="text-[9px] sm:text-[10px] font-medium text-amber-600 dark:text-amber-400 truncate max-w-[130px] sm:max-w-[170px]">
+            <div className="text-[9px] sm:text-[10px] font-semibold text-blue-600 dark:text-blue-400 truncate max-w-[130px] sm:max-w-[170px]">
               {activeCompany?.name || 'Legal Chamber'}
             </div>
           </div>
@@ -141,8 +144,27 @@ export const Header: React.FC<HeaderProps> = ({
           </span>
         </button>
 
+        {/* Visual Backup Indicator / Button: Overdue > 7 days */}
+        {backupStatus.isOverdue && (
+          <button
+            type="button"
+            onClick={() => onOpenSettings('backup')}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition-all cursor-pointer shadow-2xs group shrink-0"
+            title={`Manual Data Backup Overdue (${backupStatus.daysSinceBackup} days). Click to open Backup Modal.`}
+          >
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+            </span>
+            <HardDrive className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform" />
+            <span className="text-[11px] font-bold hidden sm:inline">
+              {language === 'bn' ? `ব্যাকআপ (${backupStatus.daysSinceBackup} দিন)` : `Backup Due (${backupStatus.daysSinceBackup}d)`}
+            </span>
+          </button>
+        )}
+
         <div
-          onClick={onOpenSettings}
+          onClick={() => onOpenSettings('branding')}
           className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800 cursor-pointer group"
           title="User Account & Chamber Settings"
         >

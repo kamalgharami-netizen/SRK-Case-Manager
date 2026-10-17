@@ -249,10 +249,96 @@ export interface Company {
   activityLog: ActivityLogItem[];
   chainSampleTemplate?: string;
   sampleDrafts?: SampleDraftItem[];
+  lastBackupDate?: number;
+}
+
+export interface BackupStatusInfo {
+  lastBackupDate: number | null;
+  daysSinceBackup: number;
+  isOverdue: boolean;
+  statusText: string;
+}
+
+export function getBackupStatus(company?: Company | null): BackupStatusInfo {
+  if (!company) {
+    return { lastBackupDate: null, daysSinceBackup: 0, isOverdue: false, statusText: 'No chamber loaded' };
+  }
+  let ts = company.lastBackupDate;
+  if (!ts && typeof window !== 'undefined') {
+    const stored = localStorage.getItem(`srk_last_backup_${company.id}`);
+    if (stored) {
+      ts = parseInt(stored, 10);
+    }
+  }
+
+  if (!ts) {
+    const createdAgoDays = Math.floor((Date.now() - (company.createdAt || Date.now())) / (1000 * 60 * 60 * 24));
+    const effectiveDays = Math.max(createdAgoDays, 8);
+    return {
+      lastBackupDate: null,
+      daysSinceBackup: effectiveDays,
+      isOverdue: true,
+      statusText: 'Never backed up'
+    };
+  }
+
+  const daysSinceBackup = Math.floor((Date.now() - ts) / (1000 * 60 * 60 * 24));
+  const isOverdue = daysSinceBackup >= 7;
+
+  return {
+    lastBackupDate: ts,
+    daysSinceBackup,
+    isOverdue,
+    statusText: daysSinceBackup === 0 ? 'Backed up today' : `${daysSinceBackup} days ago`
+  };
 }
 
 export interface AppData {
   companies: Company[];
   activeCompanyId: string | null;
   activeUserId: string | null;
+}
+
+export interface StatusTrackingInfo {
+  category: 'Pending' | 'In Progress' | 'Disposed';
+  badgeClass: string;
+  dotClass: string;
+  label: string;
+}
+
+export function getStatusTrackingInfo(status?: string): StatusTrackingInfo {
+  const norm = (status || '').toLowerCase().trim();
+
+  if (['allowed', 'disposed', 'dismissed', 'rejected', 'order passed', 'complete', 'inquiry complete'].includes(norm)) {
+    if (['rejected', 'dismissed'].includes(norm)) {
+      return {
+        category: 'Disposed',
+        badgeClass: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800',
+        dotClass: 'bg-rose-500',
+        label: status || 'Disposed'
+      };
+    }
+    return {
+      category: 'Disposed',
+      badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
+      dotClass: 'bg-emerald-500',
+      label: status || 'Disposed'
+    };
+  }
+
+  if (['hearing', 'notice issued', 'stay granted', 'admitted', 'inquiry pending', 'in progress'].includes(norm)) {
+    return {
+      category: 'In Progress',
+      badgeClass: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800',
+      dotClass: 'bg-blue-500',
+      label: status || 'In Progress'
+    };
+  }
+
+  return {
+    category: 'Pending',
+    badgeClass: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
+    dotClass: 'bg-amber-500',
+    label: status || 'Pending'
+  };
 }

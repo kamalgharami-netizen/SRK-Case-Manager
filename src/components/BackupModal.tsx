@@ -435,7 +435,7 @@ Date: {{TODAY_DATE}}`;
                 <div className="flex items-center justify-between">
                   <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                     <ImageIcon className="w-4 h-4 text-blue-600" />
-                    <span>Upload Custom Chamber Logo Image (Vyapar App Style)</span>
+                    <span>Upload Custom Chamber Logo Image</span>
                   </div>
                   {activeCompany.logoUrl && (
                     <button

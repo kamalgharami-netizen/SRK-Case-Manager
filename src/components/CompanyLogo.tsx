@@ -91,11 +91,6 @@ export const CompanyLogo: React.FC<CompanyLogoProps> = ({
       title={company?.name || 'Chamber Logo'}
     >
       <BadgeIcon className={`${sizeMap.icon} ${matchedColor.text}`} />
-      
-      {/* Vyapar style small golden corner accent */}
-      {size !== 'xs' && (
-        <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-amber-400 ring-1 ring-white/50" />
-      )}
     </div>
   );
 };
