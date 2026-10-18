@@ -139,26 +139,22 @@ const MODULE_META: Record<
   },
   firstappeal: {
     title: 'First Appeal',
-    bengali: 'প্রথম আপিল (Statutory First Appeal)',
+    bengali: 'প্রথম আপিল (u/s 19(1) of RTI Act 2005)',
     icon: Gavel,
     color: 'text-indigo-600',
     bgBadge: 'bg-indigo-600',
     subTypes: [
-      'First Appeal u/s 54 WBLR Act',
-      'First Appeal u/s 51A(5)',
-      'Bargadar Hearing Appeal',
-      'Civil Court First Appeal',
-      'RTI First Appeal u/s 19(1)'
+      'u/s 19(1) of RTI Act 2005'
     ],
     statuses: ['Filed', 'Admitted', 'Notice Issued', 'Stay Granted', 'Hearing', 'Allowed', 'Dismissed'],
-    lawRef: 'Section 54 WBLR Act / Section 96 Code of Civil Procedure 1908',
-    forum: 'District Collector / District Judge / Appellate Authority',
-    limitation: '30 Days for Revenue Appeals; 30/90 Days for Civil First Appeals',
+    lawRef: 'Section 19(1) of the Right to Information Act, 2005',
+    forum: 'First Appellate Authority (FAA) / DL&LRO / SDL&LRO',
+    limitation: '30 Days from expiry of SPIO reply period or receipt of reply',
     checklist: [
-      'Certified copy of Judgment / Impugned Order',
-      'Formal Decree Sheet / Order Sheet copy',
-      'Lower Court Record (LCR) requisition',
-      'Caveat Search Report'
+      'Copy of original RTI Application u/s 6(1)',
+      'Postal / Speed Post Tracking Receipt',
+      'Copy of SPIO reply (if any received)',
+      'Grounds of First Appeal u/s 19(1) of RTI Act 2005'
     ]
   },
   rti: {
@@ -1691,7 +1687,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                           )}
                           <div className="min-w-0">
                             <span className="font-mono text-sm font-extrabold text-blue-700 dark:text-blue-400 block truncate">
-                              {c.caseNo}
+                              {c.caseNo || c.docketNo || 'RTI Application'}
                             </span>
                             <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block truncate">
                               {c.subType}
@@ -1898,7 +1894,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                           </td>
                         )}
                         <td className="py-3 px-4 font-mono font-bold text-blue-700 dark:text-blue-400 whitespace-nowrap">
-                          {c.caseNo}
+                          {c.caseNo || c.docketNo || 'RTI Application'}
                         </td>
                         <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
                           {c.subType}

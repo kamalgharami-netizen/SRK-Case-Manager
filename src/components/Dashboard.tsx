@@ -45,8 +45,46 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onOpenSettings
 }) => {
   const { activeCompany, language, t, showToast } = useApp();
-  const [backupDismissed, setBackupDismissed] = React.useState(false);
   const backupStatus = getBackupStatus(activeCompany);
+
+  const nowDate = new Date();
+  const todayDateStr = `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, '0')}-${String(nowDate.getDate()).padStart(2, '0')}`;
+  const dailyBackupReminderKey = 'srk_daily_dashboard_backup_reminder_date';
+
+  // Show Data Backup Reminder strictly ONE TIME ONLY per calendar day in Dashboard
+  const [showDailyBackupReminder, setShowDailyBackupReminder] = React.useState<boolean>(() => {
+    try {
+      const alreadyShownDate = localStorage.getItem(dailyBackupReminderKey);
+      return alreadyShownDate !== todayDateStr;
+    } catch {
+      return false;
+    }
+  });
+
+  const dismissDailyBackupReminder = React.useCallback(() => {
+    try {
+      localStorage.setItem(dailyBackupReminderKey, todayDateStr);
+    } catch {
+      // ignore storage errors
+    }
+    setShowDailyBackupReminder(false);
+  }, [dailyBackupReminderKey, todayDateStr]);
+
+  React.useEffect(() => {
+    if (backupStatus.isOverdue && showDailyBackupReminder) {
+      try {
+        // Immediately mark today's reminder as shown so navigating back or reloading today never shows it a second time
+        localStorage.setItem(dailyBackupReminderKey, todayDateStr);
+      } catch {
+        // ignore storage errors
+      }
+      // Automatically hide after 10 seconds if not manually dismissed so it doesn't stay on Dashboard all day
+      const timer = window.setTimeout(() => {
+        setShowDailyBackupReminder(false);
+      }, 10000);
+      return () => window.clearTimeout(timer);
+    }
+  }, [backupStatus.isOverdue, showDailyBackupReminder, dailyBackupReminderKey, todayDateStr]);
 
   const todayHearings = activeCompany?.causeList?.length || 0;
   const vaultFiles = activeCompany?.vaultFiles?.length || 0;
@@ -255,22 +293,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Visual Backup Reminder Banner: if manual backup is overdue > 7 days */}
-      {backupStatus.isOverdue && !backupDismissed && (
+      {/* Visual Data Backup Reminder Banner: displayed strictly ONE TIME ONLY in a day on Dashboard */}
+      {backupStatus.isOverdue && showDailyBackupReminder && (
         <div className="flex items-center justify-between gap-3 p-3 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 shadow-xs animate-in fade-in duration-200">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
               <ShieldAlert className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <div className="text-xs font-bold flex items-center gap-2">
+              <div className="text-xs font-bold flex items-center gap-2 flex-wrap">
                 <span>
                   {language === 'bn'
-                    ? `সতর্কতা: চেম্বার তথ্যের কোনো ম্যানুয়াল ব্যাকআপ ${backupStatus.daysSinceBackup} দিন ধরে নেওয়া হয়নি`
+                    ? `দৈনিক ব্যাকআপ রিমাইন্ডার: ${backupStatus.daysSinceBackup} দিন ধরে কোনো ম্যানুয়াল ব্যাকআপ নেওয়া হয়নি`
                     : `Data Backup Reminder: No manual backup performed in ${backupStatus.daysSinceBackup} days`}
                 </span>
                 <span className="text-[10px] uppercase font-mono px-1.5 py-0.2 bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200 rounded font-bold">
-                  {language === 'bn' ? 'সতর্কতা' : 'Overdue'}
+                  {language === 'bn' ? 'দিনে ১ বার' : 'Once a Day'}
                 </span>
               </div>
               <div className="text-[11px] text-amber-700 dark:text-amber-400 truncate mt-0.5">
@@ -283,7 +321,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
-              onClick={() => (onOpenSettings ? onOpenSettings('backup') : onNavigate('vault'))}
+              onClick={() => {
+                dismissDailyBackupReminder();
+                if (onOpenSettings) {
+                  onOpenSettings('backup');
+                } else {
+                  onNavigate('vault');
+                }
+              }}
               className="px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
             >
               <HardDrive className="w-3.5 h-3.5" />
@@ -291,9 +336,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => setBackupDismissed(true)}
+              onClick={dismissDailyBackupReminder}
               className="p-1 rounded-lg text-amber-700 dark:text-amber-400 hover:bg-amber-200/60 dark:hover:bg-amber-900/50 transition-colors cursor-pointer"
-              title="Dismiss reminder for this session"
+              title="Dismiss daily backup reminder"
             >
               <X className="w-4 h-4" />
             </button>

@@ -1,0 +1,20 @@
+{
+  "id": "/",
+  "name": "SRK Legal Case Manager — West Bengal Land & Court Practice",
+  "short_name": "SRK Case Manager",
+  "description": "West Bengal Land Revenue & Court Case Management System with 10,000 Share Calculator & Legal AI Drafting",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

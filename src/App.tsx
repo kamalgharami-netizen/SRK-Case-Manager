@@ -37,7 +37,8 @@ import {
   Building,
   Settings,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  Calculator
 } from 'lucide-react';
 
 interface AiStudioReturnContext {
@@ -249,34 +250,7 @@ const MainAppContent: React.FC = () => {
     pushHistoryState({ modal: 'settings', tab });
   };
 
-  // Automated gentle toast reminder if manual data backup has not been performed in over 7 days
-  useEffect(() => {
-    if (!activeCompany) return;
-    const backupStatus = getBackupStatus(activeCompany);
-    if (backupStatus.isOverdue) {
-      const sessionKey = `srk_backup_notified_${activeCompany.id}`;
-      const alreadyNotified = sessionStorage.getItem(sessionKey);
-      if (!alreadyNotified) {
-        const timer = setTimeout(() => {
-          showToast(
-            language === 'bn'
-              ? `সতর্কতা: চেম্বার তথ্যের কোনো ম্যানুয়াল ব্যাকআপ ${backupStatus.daysSinceBackup} দিন ধরে নেওয়া হয়নি।`
-              : `Reminder: You haven't performed a manual chamber data backup in ${backupStatus.daysSinceBackup} days.`,
-            'warning',
-            {
-              label: language === 'bn' ? 'ব্যাকআপ খুলুন' : 'Open Backup',
-              onClick: () => handleOpenSettings('backup')
-            },
-            8500
-          );
-          try {
-            sessionStorage.setItem(sessionKey, 'true');
-          } catch {}
-        }, 1500);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [activeCompany?.id, language]);
+  // Backup alert is handled strictly once per day in Dashboard.tsx (not all the time)
 
   const handleOpenNewCase = (type: CaseType) => {
     setEditingCase(null);
@@ -376,9 +350,10 @@ const MainAppContent: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-hidden font-sans">
-      {/* Toast Notification Container */}
-      <Toast />
+    <div className="h-[100dvh] w-full flex flex-col justify-center bg-white dark:bg-slate-950 overflow-hidden font-sans app-shell-bg">
+      <div className="relative flex h-[90dvh] my-[5dvh] sm:h-screen sm:my-0 w-full bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-hidden border-y border-slate-200/80 dark:border-slate-800 sm:border-y-0 app-shell-bg">
+        {/* Toast Notification Container */}
+        <Toast />
 
       {/* Case Dossier Detail Modal */}
       <CaseDetailModal
@@ -798,8 +773,8 @@ const MainAppContent: React.FC = () => {
         </div>
       )}
 
-      {/* Dedicated Thumb-Friendly Bottom Navigation Bar for Mobile: "fitable or adjustable according to device" */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 h-16 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-2 flex items-center justify-around shadow-2xl">
+      {/* Dedicated Thumb-Friendly Bottom Navigation Bar for Mobile inside 90% screen container */}
+      <nav className="lg:hidden absolute bottom-0 left-0 right-0 z-30 h-16 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-2 flex items-center justify-around shadow-2xl">
         <button
           type="button"
           onClick={() => handleNavigatePage('dashboard')}
@@ -828,18 +803,15 @@ const MainAppContent: React.FC = () => {
 
         <button
           type="button"
-          onClick={() => {
-            setAiStudioConfig({ caseType: 'all', locked: false, prefill: null });
-            handleNavigatePage('aistudio');
-          }}
+          onClick={() => handleNavigatePage('sharecalculator')}
           className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
-            currentPage === 'aistudio'
-              ? 'text-violet-600 dark:text-violet-400 font-bold'
+            currentPage === 'sharecalculator'
+              ? 'text-emerald-600 dark:text-emerald-400 font-bold'
               : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
-          <Brain className="w-5 h-5 text-violet-600" />
-          <span className="text-[10px]">AI Draft</span>
+          <Calculator className="w-5 h-5 text-emerald-600" />
+          <span className="text-[10px]">Share Calc</span>
         </button>
 
         <button
@@ -870,7 +842,7 @@ const MainAppContent: React.FC = () => {
       </nav>
 
       {/* Floating Action Button (FAB) Menu - positioned cleanly above mobile nav */}
-      <div className="fixed bottom-20 lg:bottom-6 right-4 sm:right-6 z-40">
+      <div className="absolute bottom-20 lg:bottom-6 right-4 sm:right-6 z-40">
         {fabOpen && (
           <div className="absolute bottom-16 right-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-2 shadow-2xl space-y-1 w-52 animate-in fade-in slide-in-from-bottom-2 duration-150">
             <button
@@ -942,13 +914,12 @@ const MainAppContent: React.FC = () => {
             <button
               onClick={() => {
                 setFabOpen(false);
-                setAiStudioConfig({ caseType: 'all', locked: false, prefill: null });
-                handleNavigatePage('aistudio');
+                handleNavigatePage('sharecalculator');
               }}
               className="w-full px-3 py-2 text-xs font-semibold rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-left flex items-center gap-2 cursor-pointer"
             >
-              <Brain className="w-4 h-4 text-violet-600" />
-              <span>AI Drafting Studio</span>
+              <Calculator className="w-4 h-4 text-emerald-600" />
+              <span>10,000 Share Calculator</span>
             </button>
           </div>
         )}
@@ -960,6 +931,7 @@ const MainAppContent: React.FC = () => {
         >
           {fabOpen ? <X className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
         </button>
+      </div>
       </div>
     </div>
   );

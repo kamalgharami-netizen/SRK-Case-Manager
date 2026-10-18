@@ -21,13 +21,14 @@ export interface ToastState {
 export type ViewDensity = 'comfortable' | 'compact';
 export type ViewMode = 'grid' | 'table';
 export type FontSize = 'normal' | 'large';
+export type AppTheme = 'white' | 'light' | 'dark';
 
 interface AppContextType {
   companies: Company[];
   activeCompany: Company | null;
   activeUser: User | null;
-  theme: 'light' | 'dark';
-  setTheme: (t: 'light' | 'dark') => void;
+  theme: AppTheme;
+  setTheme: (t: AppTheme) => void;
   toggleTheme: () => void;
   language: AppLanguage;
   setLanguage: (lang: AppLanguage) => void;
@@ -205,12 +206,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return null;
   });
 
-  const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
+  const [theme, setThemeState] = useState<AppTheme>(() => {
     try {
-      const savedTheme = localStorage.getItem('srk_theme');
-      if (savedTheme === 'dark') return 'dark';
+      const savedTheme = localStorage.getItem('srk_theme_v2');
+      if (savedTheme === 'white' || savedTheme === 'light' || savedTheme === 'dark') {
+        return savedTheme;
+      }
     } catch {}
-    return 'light';
+    return 'white';
   });
 
   const [language, setLanguageState] = useState<AppLanguage>(() => {
@@ -272,14 +275,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const setHighContrast = (hc: boolean) => setHighContrastState(hc);
   const toggleHighContrast = () => setHighContrastState(prev => !prev);
 
-  const toggleTheme = () => setThemeState(prev => (prev === 'light' ? 'dark' : 'light'));
+  const toggleTheme = () =>
+    setThemeState(prev => (prev === 'white' ? 'light' : prev === 'light' ? 'dark' : 'white'));
 
   const resetViewPreferences = () => {
     setViewDensityState('comfortable');
     setViewModeState('grid');
     setFontSizeState('normal');
     setHighContrastState(false);
-    setThemeState('light');
+    setThemeState('white');
     showToast(language === 'bn' ? 'ডিসপ্লে সেটিংস ডিফল্ট করা হয়েছে' : 'Display preferences reset to default', 'info');
   };
 
@@ -358,16 +362,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Apply theme to document
   useEffect(() => {
     try {
-      localStorage.setItem('srk_theme', theme);
+      localStorage.setItem('srk_theme_v2', theme);
+      localStorage.setItem('srk_theme', theme === 'dark' ? 'dark' : 'light');
+      const root = document.documentElement;
       if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
+        root.classList.add('dark');
+        root.classList.remove('theme-white');
+        root.style.colorScheme = 'dark';
+      } else if (theme === 'white') {
+        root.classList.remove('dark');
+        root.classList.add('theme-white');
+        root.style.colorScheme = 'light';
       } else {
-        document.documentElement.classList.remove('dark');
+        root.classList.remove('dark');
+        root.classList.remove('theme-white');
+        root.style.colorScheme = 'light';
+      }
+      const metaTheme = document.querySelector('meta[name="theme-color"]');
+      if (metaTheme) {
+        metaTheme.setAttribute(
+          'content',
+          theme === 'dark' ? '#020617' : theme === 'white' ? '#ffffff' : '#f8fafc'
+        );
       }
     } catch {}
   }, [theme]);
 
-  const setTheme = (t: 'light' | 'dark') => {
+  const setTheme = (t: AppTheme) => {
     setThemeState(t);
   };
 

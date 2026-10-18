@@ -66,8 +66,28 @@ const FORUMS_BY_TYPE: Record<CaseType, string[]> = {
   mutation: ['BL&LRO', 'SDL&LRO', 'DL&LRO'],
   misc: ['BL&LRO', 'SDL&LRO', 'DL&LRO'],
   lrappeal: ['DL&LRO', 'Additional District Magistrate (L&LR)', 'WBLRTT'],
-  firstappeal: ['DL&LRO', 'Additional District Magistrate (L&LR)', 'Divisional Commissioner', 'Appellate Authority'],
-  rti: ['SPIO / BL&LRO', 'SPIO / DL&LRO', 'First Appellate Authority (FAA)', 'State Information Commission (SIC)'],
+  firstappeal: [
+    'First Appellate Authority (FAA) / DL&LRO',
+    'First Appellate Authority (FAA) / SDL&LRO',
+    'First Appellate Authority (FAA) / BL&LRO',
+    'Additional District Magistrate (L&LR)',
+    'Divisional Commissioner',
+    'Appellate Authority'
+  ],
+  rti: [
+    'Police Station (SPIO / Officer-in-Charge)',
+    'Block Development Officer (BDO)',
+    'Gram Panchayat (Prodhan / Secretary)',
+    'Municipality / Municipal Corporation',
+    'SPIO / BL&LRO',
+    'SPIO / SDL&LRO',
+    'SPIO / DL&LRO',
+    'Sub-Divisional Officer (SDO)',
+    'District Magistrate (DM) Office',
+    'ADSR / Sub-Registry Office',
+    'First Appellate Authority (FAA)',
+    'State Information Commission (SIC)'
+  ],
   lrtt: ['Division Bench - I, WBLRTT', 'Division Bench - II, WBLRTT'],
   conversion: ['DL&LRO', 'SDL&LRO']
 };
@@ -93,11 +113,7 @@ const SUBTYPES_BY_TYPE: Record<CaseType, string[]> = {
   ],
   lrappeal: ['Section 54 Appeal', 'Section 51A(5) Appeal', 'Delay Condonation'],
   firstappeal: [
-    'First Appeal u/s 54 WBLR Act',
-    'First Appeal u/s 51A(5)',
-    'Bargadar Hearing Appeal',
-    'Civil Court First Appeal',
-    'RTI First Appeal u/s 19(1)'
+    'u/s 19(1) of RTI Act 2005'
   ],
   rti: [
     'RTI Application u/s 6(1)',
@@ -156,6 +172,12 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   const [activeEditingCase, setActiveEditingCase] = useState<CaseItem | null>(editingCase || null);
 
   const isMisc = type === 'misc';
+  const isLrAppeal = type === 'lrappeal';
+  const isFirstAppeal = type === 'firstappeal';
+  const isRti = type === 'rti';
+  const isDocketBased = isMisc || isLrAppeal || isFirstAppeal || isRti;
+  const isGrnOmitted = isMisc || isLrAppeal || isRti;
+  const isChainDeedHidden = isRti || isFirstAppeal;
   const isMutation = type === 'mutation';
 
   // Search box for updating existing data through deed no, app no / docket no, applicant name, case no
@@ -171,6 +193,12 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     if (type === 'misc') {
       return `MISC/${new Date().getFullYear()}/${Math.floor(100 + Math.random() * 900)}`;
     }
+    if (type === 'lrappeal') {
+      return `LRA/${new Date().getFullYear()}/${Math.floor(100 + Math.random() * 900)}`;
+    }
+    if (type === 'firstappeal') {
+      return `FA/${new Date().getFullYear()}/${Math.floor(100 + Math.random() * 900)}`;
+    }
     return '';
   };
 
@@ -183,10 +211,10 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     return '';
   };
 
-  // Requirement 1 for Misc: Docket No starts with DOC
+  // Requirement 1 for Misc, LR Appeal & First Appeal: Docket No starts with DOC
   const defaultDocketNo = () => {
     if (editingCase?.docketNo) return editingCase.docketNo;
-    if (type === 'misc') {
+    if (type === 'misc' || type === 'lrappeal' || type === 'firstappeal') {
       return `DOC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
     }
     return '';
@@ -201,9 +229,13 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     editingCase?.status || STATUSES_BY_TYPE[type][0] || ''
   );
   const [party, setParty] = useState(editingCase?.party || '');
-  const [opp, setOpp] = useState(editingCase?.opp || '');
+  const [opp, setOpp] = useState(type === 'rti' ? '' : (editingCase?.opp || ''));
   const [forum, setForum] = useState(
-    editingCase?.forum || FORUMS_BY_TYPE[type][0] || ''
+    editingCase?.forum !== undefined
+      ? editingCase.forum
+      : type === 'rti'
+      ? ''
+      : FORUMS_BY_TYPE[type][0] || ''
   );
   const [filingDate, setFilingDate] = useState(
     editingCase?.filingDate || new Date().toISOString().slice(0, 10)
@@ -328,6 +360,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   const isMutationOrMisc = type === 'mutation' || type === 'misc';
 
   const [respondents, setRespondents] = useState<Respondent[]>(() => {
+    if (type === 'rti') {
+      return [];
+    }
     if (editingCase?.respondents && editingCase.respondents.length > 0) {
       return editingCase.respondents;
     }
@@ -481,10 +516,18 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         ? `MN/${new Date().getFullYear()}/${Math.floor(100 + Math.random() * 900)}`
         : type === 'misc'
         ? `MISC/${new Date().getFullYear()}/${Math.floor(100 + Math.random() * 900)}`
+        : type === 'lrappeal'
+        ? `LRA/${new Date().getFullYear()}/${Math.floor(100 + Math.random() * 900)}`
+        : type === 'firstappeal'
+        ? `FA/${new Date().getFullYear()}/${Math.floor(100 + Math.random() * 900)}`
         : ''
     );
     setAppNo(type === 'mutation' ? `MUTE-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}` : '');
-    setDocketNo(type === 'misc' ? `DOC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}` : '');
+    setDocketNo(
+      type === 'misc' || type === 'lrappeal' || type === 'firstappeal'
+        ? `DOC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
+        : ''
+    );
     setParty('');
     setOpp('');
     setGrnNo('');
@@ -512,11 +555,12 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     const matchCaseNo = c.caseNo?.toLowerCase().includes(q);
     const matchAppNo = c.appNo?.toLowerCase().includes(q);
     const matchDocketNo = c.docketNo?.toLowerCase().includes(q);
+    const matchGrnOrTracking = c.grnNo?.toLowerCase().includes(q);
     const matchParty = c.party?.toLowerCase().includes(q);
     const matchDeed =
       c.applicantDeedNo?.toLowerCase().includes(q) ||
       c.chainLinks?.some(l => l.deedNo?.toLowerCase().includes(q));
-    return matchCaseNo || matchAppNo || matchDocketNo || matchParty || matchDeed;
+    return matchCaseNo || matchAppNo || matchDocketNo || matchGrnOrTracking || matchParty || matchDeed;
   });
 
   // Handle party name typing and suggestions (Requirement 8)
@@ -840,8 +884,8 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       nextDate: primaryNextDate,
       hearingDates: allHearingDates,
       hearingList,
-      appNo: isMisc ? '' : appNo.trim(),
-      grnNo: isMisc ? '' : grnNo.trim(),
+      appNo: isDocketBased ? '' : appNo.trim(),
+      grnNo: isGrnOmitted ? '' : grnNo.trim(),
       docketNo: docketNo.trim(),
       applicantDeedNo: applicantDeedNo.trim(),
       applicantDeedYear: applicantDeedYear.trim(),
@@ -861,7 +905,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
 
   // Requirement 16 & 18: Save and Update handlers
   const handleSaveOrUpdate = (isUpdate = false, andSendWhatsApp = false) => {
-    if (!caseNo.trim()) {
+    if (!caseNo.trim() && !isRti) {
       showToast('Case Number is required', 'error');
       return;
     }
@@ -896,15 +940,15 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       subType,
       status,
       party: trimmedParty,
-      opp: opp.trim(),
-      forum,
+      opp: isRti ? '' : opp.trim(),
+      forum: forum.trim(),
       filingDate,
       nextDate: primaryNextDate,
       hearingDates: allHearingDates,
       hearingList,
       priority,
-      appNo: isMisc ? '' : appNo.trim(),
-      grnNo: isMisc ? '' : grnNo.trim(),
+      appNo: isDocketBased ? '' : appNo.trim(),
+      grnNo: isGrnOmitted ? '' : grnNo.trim(),
       docketNo: docketNo.trim(),
       impugnedOrderNo,
       impugnedOrderDate,
@@ -923,7 +967,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       recordedDag: recordedDag.trim(),
       landSchedules,
       applicants,
-      respondents,
+      respondents: isRti ? [] : respondents,
       addresses,
       chainLinks,
       attachments
@@ -964,8 +1008,8 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   const handlePrintDossier = () => {
     const printWin = window.open('', '_blank');
     if (!printWin) return;
-    const docTitle = isMisc ? 'MISC CASE REGISTRY DOSSIER' : isMutation ? 'MUTATION CASE REGISTRY DOSSIER' : `${type.toUpperCase()} CASE REGISTRY DOSSIER`;
-    const subIdentifier = isMisc ? `Docket No: ${docketNo || '—'}` : `App No: ${appNo || '—'}`;
+    const docTitle = isMisc ? 'MISC CASE REGISTRY DOSSIER' : isLrAppeal ? 'LR APPEAL CASE REGISTRY DOSSIER' : isMutation ? 'MUTATION CASE REGISTRY DOSSIER' : `${type.toUpperCase()} CASE REGISTRY DOSSIER`;
+    const subIdentifier = isDocketBased ? `Docket No: ${docketNo || '—'}` : `App No: ${appNo || '—'}`;
     const allHearingDatesText = hearingList.filter(h => h.date).map((h, i) => `${i + 1}. ${h.date} (${h.stage || 'Hearing'})`).join(', ');
 
     printWin.document.write(`
@@ -989,12 +1033,12 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
           
           <div class="section-title">1. CASE PARTICULARS (মামলার বিবরণ)</div>
           <div class="grid-info">
-            <div><strong>Case Number:</strong> ${caseNo}</div>
-            <div><strong>${isMisc ? 'Docket Number' : 'Application Number'}:</strong> ${isMisc ? (docketNo || '—') : (appNo || '—')}</div>
+            <div><strong>Case Number:</strong> ${caseNo || '—'}</div>
+            <div><strong>${isRti ? 'Docket No / Tracking ID' : isDocketBased ? 'Docket Number' : 'Application Number'}:</strong> ${isDocketBased ? (docketNo || '—') : (appNo || '—')}</div>
             <div><strong>Sub-Type / Matter:</strong> ${subType}</div>
-            ${!isMisc ? `<div><strong>GRN Fee Challan:</strong> ${grnNo || '—'}</div>` : ''}
+            ${!isGrnOmitted ? `<div><strong>${isFirstAppeal ? 'Tracking Number' : 'GRN Fee Challan'}:</strong> ${grnNo || '—'}</div>` : ''}
             <div><strong>Case Status:</strong> ${status}</div>
-            <div><strong>Adjudicating Forum:</strong> ${forum}</div>
+            <div><strong>${isRti ? 'Public Authority / Forum' : 'Adjudicating Forum'}:</strong> ${forum || '—'}</div>
             <div><strong>Filing Date:</strong> ${filingDate}</div>
             <div><strong>Hearing Date(s):</strong> ${allHearingDatesText || nextDate || '—'}</div>
           </div>
@@ -1009,6 +1053,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             <div><strong>Deed Type & ADSR:</strong> ${applicantDeedType || '—'} (${applicantAdsr || '—'})</div>
           </div>
 
+          ${!isRti ? `
           <div class="section-title">3. OPPOSITE PARTY / RESPONDENT(S) (প্রতিপক্ষ / নোটিশ প্রাপক)</div>
           ${respondents.length > 0 ? `
             <table>
@@ -1018,6 +1063,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
               </tbody>
             </table>
           ` : '<div>Uncontested / No Opposite Party recorded.</div>'}
+          ` : ''}
 
           <div class="section-title">4. সম্পত্তির তপশীল বিবরণ (PROPERTY SCHEDULE)</div>
           <table>
@@ -1027,6 +1073,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             </tbody>
           </table>
 
+          ${!isChainDeedHidden ? `
           <div class="section-title">5. CHRONOLOGICAL CHAIN OF TITLE (ধারাবাহিক চেইন দলিল)</div>
           ${chainLinks.length > 0 ? `
             <table>
@@ -1051,6 +1098,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
               </tbody>
             </table>
           ` : '<div>No intermediate chain deeds recorded.</div>'}
+          ` : ''}
 
           <div style="margin-top: 40px; display: flex; justify-content: space-between;">
             <div>Verified &amp; Submitted by: __________________</div>
@@ -1117,7 +1165,6 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       )}
 
       {/* Post-Save / Post-Update Forwarding Modal (Requirement 16 & 20) */}
-      {/* Post-Save / Post-Update Forwarding Modal (Requirement 16 & 20) */}
       {postSaveCase && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
@@ -1126,50 +1173,62 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             </div>
             <div className="text-center">
               <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
-                {postSaveCase.type === 'misc' ? 'Misc Case Saved Successfully!' : 'Mutation Case Saved Successfully!'}
+                {postSaveCase.type === 'misc'
+                  ? 'Misc Case Saved Successfully!'
+                  : postSaveCase.type === 'firstappeal'
+                  ? 'First Appeal Saved Successfully!'
+                  : postSaveCase.type === 'rti'
+                  ? 'RTI Application Saved Successfully!'
+                  : postSaveCase.type === 'lrappeal'
+                  ? 'LR Appeal Saved Successfully!'
+                  : 'Mutation Case Saved Successfully!'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Case No: <strong className="text-blue-600 dark:text-blue-400 font-mono">{postSaveCase.caseNo}</strong> · {postSaveCase.type === 'misc' ? 'Docket No: ' : 'App No: '}
-                <strong className="font-mono">{(postSaveCase.type === 'misc' ? postSaveCase.docketNo : postSaveCase.appNo) || '—'}</strong>
+                Case No: <strong className="text-blue-600 dark:text-blue-400 font-mono">{postSaveCase.caseNo || '—'}</strong> · {isDocketBased ? 'Docket / Tracking: ' : 'App No: '}
+                <strong className="font-mono">{(isDocketBased ? postSaveCase.docketNo : postSaveCase.appNo) || '—'}</strong>
               </p>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs text-blue-900 dark:text-blue-200 space-y-1">
-              <div className="font-bold flex items-center gap-1.5 text-blue-800 dark:text-blue-300">
-                <LinkIcon className="w-4 h-4 text-blue-600" />
-                <span>Make &amp; Print Chain Deed (ধারাবাহিক চেইন দলিল তৈরি)</span>
+            {!isChainDeedHidden && (
+              <div className="p-3.5 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs text-blue-900 dark:text-blue-200 space-y-1">
+                <div className="font-bold flex items-center gap-1.5 text-blue-800 dark:text-blue-300">
+                  <LinkIcon className="w-4 h-4 text-blue-600" />
+                  <span>Make &amp; Print Chain Deed (ধারাবাহিক চেইন দলিল তৈরি)</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-blue-800/80 dark:text-blue-200/80">
+                  Generate and print the complete, case-specific title statement chronologically from record owner to applicant using AI and Data Vault samples.
+                </p>
               </div>
-              <p className="text-[11px] leading-relaxed text-blue-800/80 dark:text-blue-200/80">
-                Generate and print the complete, case-specific title statement chronologically from record owner to applicant using AI and Data Vault samples.
-              </p>
-            </div>
+            )}
 
             <div className="space-y-2 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  const saved = postSaveCase;
-                  setPostSaveCase(null);
-                  setActiveChainDeedModalCase(saved);
-                }}
-                className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-colors"
-              >
-                <LinkIcon className="w-4 h-4" />
-                <span>Proceed to Make &amp; Print Chain Deed</span>
-              </button>
-
-              {postSaveCase.type === 'misc' && onOpenAiDraft && (
+              {!isChainDeedHidden && (
                 <button
                   type="button"
                   onClick={() => {
                     const saved = postSaveCase;
                     setPostSaveCase(null);
-                    onOpenAiDraft('misc', saved);
+                    setActiveChainDeedModalCase(saved);
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-colors"
+                >
+                  <LinkIcon className="w-4 h-4" />
+                  <span>Proceed to Make &amp; Print Chain Deed</span>
+                </button>
+              )}
+
+              {postSaveCase.type !== 'mutation' && onOpenAiDraft && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const saved = postSaveCase;
+                    setPostSaveCase(null);
+                    onOpenAiDraft(saved.type, saved);
                   }}
                   className="w-full py-2.5 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-colors"
                 >
                   <Sparkles className="w-4 h-4" />
-                  <span>Proceed to AI Drafting Studio (মিস কেস ড্রাফটিং)</span>
+                  <span>Proceed to AI Drafting Studio</span>
                 </button>
               )}
 
@@ -1178,7 +1237,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                 onClick={() => onSaved(postSaveCase, false)}
                 className="w-full py-2 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
               >
-                <span>Return to {postSaveCase.type === 'misc' ? 'Misc Case' : 'Mutation'} Dashboard</span>
+                <span>Return to Case Dashboard</span>
               </button>
             </div>
           </div>
@@ -1229,16 +1288,18 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             </button>
           )}
 
-          {/* Requirement 20: Make Chain Deed direct button */}
-          <button
-            type="button"
-            onClick={handleOpenChainDeedDirectly}
-            className="px-3 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 text-xs font-bold shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer"
-            title="Make and print case-only Chain of Title statement"
-          >
-            <Scroll className="w-4 h-4 text-indigo-600" />
-            <span>Make Chain Deed</span>
-          </button>
+          {/* Requirement 20: Make Chain Deed direct button (Removed for RTI & First Appeal) */}
+          {!isChainDeedHidden && (
+            <button
+              type="button"
+              onClick={handleOpenChainDeedDirectly}
+              className="px-3 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 text-xs font-bold shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Make and print case-only Chain of Title statement"
+            >
+              <Scroll className="w-4 h-4 text-indigo-600" />
+              <span>Make Chain Deed</span>
+            </button>
+          )}
 
           {/* Requirement 19: Print Dossier button */}
           <button
@@ -1314,6 +1375,12 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             placeholder={
               isMisc
                 ? "Type Deed No, Docket No (DOC..), Applicant Name, or Misc Case No (MISC/..) to search & edit..."
+                : isLrAppeal
+                ? "Type Deed No, Docket No (DOC..), Applicant Name, or LR Appeal Case No (LRA/..) to search & edit..."
+                : isFirstAppeal
+                ? "Type Docket No (DOC..), Tracking No, Applicant Name, or First Appeal Case No (FA/..) to search & edit..."
+                : isRti
+                ? "Type Docket No / Tracking ID, Applicant Name, Authority, or Case No to search & edit..."
                 : "Type Deed No, Application No (MUTE..), Applicant Name, or Case No (MN/..) to search & edit..."
             }
             className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-600"
@@ -1405,33 +1472,55 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
           <span className="text-[11px] font-normal text-slate-400">Fields marked * are mandatory</span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Requirement 3: Mutation Case No starts with MN/, Misc Case No starts with MISC/ */}
+        <div className={`grid grid-cols-1 sm:grid-cols-2 ${isGrnOmitted ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-3`}>
+          {/* Requirement 3: Mutation Case No starts with MN/, Misc Case No starts with MISC/, RTI Case No is optional */}
           <div>
             <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-              {isMisc ? 'Misc Case No (Starts with MISC/) *' : isMutation ? 'Case No (Starts with MN/) *' : 'Case Number *'}
+              {isMisc
+                ? 'Misc Case No (Starts with MISC/) *'
+                : isLrAppeal
+                ? 'LR Appeal Case No *'
+                : isFirstAppeal
+                ? 'First Appeal Case No *'
+                : isRti
+                ? 'Case No (Optional)'
+                : isMutation
+                ? 'Case No (Starts with MN/) *'
+                : 'Case Number *'}
             </label>
             <input
               type="text"
-              required
+              required={!isRti}
               value={caseNo}
               onChange={e => setCaseNo(e.target.value)}
-              placeholder={isMisc ? 'MISC/2026/0418' : isMutation ? 'MN/2026/0418' : 'Case/2026/001'}
+              placeholder={
+                isMisc
+                  ? 'MISC/2026/0418'
+                  : isLrAppeal
+                  ? 'LRA/2026/0418'
+                  : isFirstAppeal
+                  ? 'FA/2026/0418'
+                  : isRti
+                  ? 'Optional (Not compulsory)'
+                  : isMutation
+                  ? 'MN/2026/0418'
+                  : 'Case/2026/001'
+              }
               className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold text-blue-700 dark:text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
             />
           </div>
 
-          {/* Requirement 1: Mutation app no replaced with docket no for misc case */}
-          {isMisc ? (
+          {/* Application No replaced with Docket No for Misc, LR Appeal, First Appeal, and Docket No/Tracking ID for RTI */}
+          {isDocketBased ? (
             <div>
               <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                Docket No (ডকেট নং) *
+                {isRti ? 'Docket No / Tracking ID (ডকেট নং / ট্র্যাকিং আইডি)' : 'Docket No (ডকেট নং) *'}
               </label>
               <input
                 type="text"
                 value={docketNo}
                 onChange={e => setDocketNo(e.target.value)}
-                placeholder="DOC-2026-XXXX"
+                placeholder={isRti ? 'e.g. DOC-2026-XXXX / Tracking ID' : 'DOC-2026-XXXX'}
                 className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-600"
               />
             </div>
@@ -1468,17 +1557,17 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             </select>
           </div>
 
-          {/* Requirement 2: GRN No completely removed for Misc case */}
-          {!isMisc && (
+          {/* GRN No omitted for Misc, LR Appeal & RTI; replaced with Tracking No for First Appeal */}
+          {!isGrnOmitted && (
             <div>
               <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                GRN Fee Challan No
+                {isFirstAppeal ? 'Tracking No (ট্র্যাকিং নং)' : 'GRN Fee Challan No'}
               </label>
               <input
                 type="text"
                 value={grnNo}
                 onChange={e => setGrnNo(e.target.value)}
-                placeholder="19202600XXXXXX"
+                placeholder={isFirstAppeal ? 'EW123456789IN / Tracking No' : '19202600XXXXXX'}
                 className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
               />
             </div>
@@ -1504,22 +1593,40 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             </select>
           </div>
 
-          {/* Adjudicating Forum */}
+          {/* Adjudicating Forum / Authority (Optional & editable for RTI: Police Station, BDO, Panchayat, Municipality, etc.) */}
           <div>
             <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-              Adjudicating Forum
+              {isRti ? 'Adjudicating Forum / Authority (Optional)' : 'Adjudicating Forum'}
             </label>
-            <select
-              value={forum}
-              onChange={e => setForum(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
-            >
-              {FORUMS_BY_TYPE[type].map(f => (
-                <option key={f} value={f}>
-                  {f}
-                </option>
-              ))}
-            </select>
+            {isRti ? (
+              <>
+                <input
+                  type="text"
+                  list="rti-forum-authorities"
+                  value={forum}
+                  onChange={e => setForum(e.target.value)}
+                  placeholder="Police Station / BDO / Panchayat / Municipality / BL&LRO (Optional)"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                />
+                <datalist id="rti-forum-authorities">
+                  {FORUMS_BY_TYPE.rti.map(f => (
+                    <option key={f} value={f} />
+                  ))}
+                </datalist>
+              </>
+            ) : (
+              <select
+                value={forum}
+                onChange={e => setForum(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
+              >
+                {FORUMS_BY_TYPE[type].map(f => (
+                  <option key={f} value={f}>
+                    {f}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div>
@@ -1790,7 +1897,8 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             </div>
           </div>
 
-          {/* Requirement 11: Opposite Party / Respondent Section with + option */}
+          {/* Requirement 11: Opposite Party / Respondent Section with + option (Removed for RTI entry page) */}
+          {!isRti && (
           <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 space-y-2.5">
             <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
               <div>
@@ -1898,6 +2006,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
 
@@ -2087,7 +2196,8 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         </div>
       </div>
 
-      {/* 4. Complete Chronological Chain of Title Builder */}
+      {/* 4. Complete Chronological Chain of Title Builder (Removed for RTI and First Appeal entry forms) */}
+      {!isChainDeedHidden && (
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 gap-2">
           <div>
@@ -2576,6 +2686,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
           </div>
         )}
       </div>
+      )}
 
       {/* Bottom Sticky Actions Bar */}
       <div className="flex flex-wrap items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800 gap-3">
@@ -2588,27 +2699,16 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         </button>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Requirement 5: AI Drafting Option in Misc Case entry form */}
-          {type !== 'mutation' && onOpenAiDraft && (
+          {!isChainDeedHidden && (
             <button
               type="button"
-              onClick={handleTriggerAiDraft}
-              className="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 cursor-pointer transition-colors"
-              title="Open AI Drafting Studio for this Case"
+              onClick={handleOpenChainDeedDirectly}
+              className="px-3.5 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
             >
-              <Sparkles className="w-4 h-4" />
-              <span>AI Drafting Studio</span>
+              <Scroll className="w-4 h-4 text-indigo-600" />
+              <span>Make Chain Deed</span>
             </button>
           )}
-
-          <button
-            type="button"
-            onClick={handleOpenChainDeedDirectly}
-            className="px-3.5 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-          >
-            <Scroll className="w-4 h-4 text-indigo-600" />
-            <span>Make Chain Deed</span>
-          </button>
 
           <button
             type="button"

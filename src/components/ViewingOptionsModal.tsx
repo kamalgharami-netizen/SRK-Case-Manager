@@ -91,12 +91,46 @@ export const ViewingOptionsModal: React.FC = () => {
                 <span>{t.themeMode}</span>
               </label>
               <span className="text-[11px] text-slate-400">
-                {theme === 'light' ? t.lightTheme : t.darkTheme}
+                {theme === 'white'
+                  ? language === 'bn'
+                    ? 'পিওর সাদা (Pure White)'
+                    : 'Pure White (#FFFFFF)'
+                  : theme === 'light'
+                  ? t.lightTheme
+                  : t.darkTheme}
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              {/* Light Theme Card */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Pure White Theme Card */}
+              <button
+                type="button"
+                onClick={() => setTheme('white')}
+                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
+                  theme === 'white'
+                    ? 'border-blue-600 bg-white text-slate-900 ring-2 ring-blue-500/30 shadow-xs'
+                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/50 hover:border-slate-300'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-white border border-slate-300 text-slate-900 flex items-center justify-center font-bold shadow-2xs">
+                    <Sun className="w-4 h-4 text-amber-500" />
+                  </div>
+                  {theme === 'white' && (
+                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center">
+                      <Check className="w-3 h-3 stroke-[3]" />
+                    </span>
+                  )}
+                </div>
+                <div className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm">
+                  {language === 'bn' ? 'সাদা থিম (Pure White)' : 'White Theme'}
+                </div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Pure #FFFFFF paper background for mobile &amp; desktop
+                </div>
+              </button>
+
+              {/* Soft Light Theme Card */}
               <button
                 type="button"
                 onClick={() => setTheme('light')}
@@ -120,7 +154,7 @@ export const ViewingOptionsModal: React.FC = () => {
                   {t.lightTheme}
                 </div>
                 <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                  Classic legal ivory, high daylight contrast
+                  Soft daylight slate, high contrast
                 </div>
               </button>
 

@@ -300,7 +300,26 @@ export const AiStudio: React.FC<AiStudioProps> = ({
         setShowCaseRef(true);
       }
       if (prefilledCase.filingDate) setCaseDate(prefilledCase.filingDate);
-      if (prefilledCase.grounds) setCustomFacts(prefilledCase.grounds);
+      if (prefilledCase.grounds) {
+        setCustomFacts(prefilledCase.grounds);
+      } else if (prefilledCase.subType) {
+        const st = prefilledCase.subType;
+        if (st.includes('10000')) {
+          setCustomFacts(
+            'The total recorded shares in the scheduled Dag do not aggregate to 10,000 parts on the Banglarbhumi portal, causing a mathematical lock. Rectification of share allotment u/s 50/50A WBLR Act is required.'
+          );
+        } else if (st.includes('Record') || st.includes('Name') || st.includes('RS to LR') || st.includes('Erroneous')) {
+          setCustomFacts(
+            `Application for ${st} under Section 50/51A of the West Bengal Land Reforms Act, 1955 to rectify clerical/recording error in the computerized L.R. Khatian on the basis of registered title deeds and RS-LR trace verification.`
+          );
+        } else if (st.includes('Boundary')) {
+          setCustomFacts(
+            'Application for demarcation and boundary verification through official Amin/Revenue Inspector survey to resolve plot boundary discrepancy.'
+          );
+        } else if (st.toLowerCase().includes('first appeal') && prefilledCase.type === 'rti') {
+          setTemplate('rtifirstappeal');
+        }
+      }
       if (prefilledCase.landSchedules && prefilledCase.landSchedules.length > 0) {
         const s = prefilledCase.landSchedules[0];
         setMouzaJl(s.mouza ? `Mouza - ${s.mouza}, J.L. No. - ${s.jl || ''}` : '');
@@ -311,7 +330,10 @@ export const AiStudio: React.FC<AiStudioProps> = ({
       if (prefilledCase.chainLinks && prefilledCase.chainLinks.length > 0) {
         setDeedNoDate(`Deed No. ${prefilledCase.chainLinks[0].deedNo} dated ${prefilledCase.chainLinks[0].deedDate}`);
       }
-      showToast(`AI Studio loaded with ${prefilledCase.caseNo || 'Case'} data`, 'info');
+      showToast(
+        `AI Studio adjusted for ${prefilledCase.subType || prefilledCase.caseNo || prefilledCase.type?.toUpperCase() || 'Case'}`,
+        'info'
+      );
     }
   }, [prefilledCase, showToast]);
 
@@ -1247,10 +1269,10 @@ export const AiStudio: React.FC<AiStudioProps> = ({
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-violet-600 animate-pulse" />
                 <span className="text-xs font-bold text-violet-900 dark:text-violet-200">
-                  Drafting Form Locked to: {initialCaseType.toUpperCase()} Case
+                  Drafting Form Adjusted to: {initialCaseType.toUpperCase()} {prefilledCase?.subType ? `· ${prefilledCase.subType}` : 'Case'}
                 </span>
                 <span className="text-[11px] text-violet-700 dark:text-violet-400">
-                  (Showing only {initialCaseType.toUpperCase()} petition formats)
+                  (Tailored to {prefilledCase?.subType || initialCaseType.toUpperCase()} menu &amp; sub-menu)
                 </span>
               </div>
               {onBack && (
@@ -1405,19 +1427,6 @@ export const AiStudio: React.FC<AiStudioProps> = ({
                       );
                     })}
                   </div>
-
-                  <select
-                    value={template}
-                    onChange={e => setTemplate(e.target.value as TemplateType)}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-violet-600"
-                    aria-label="Select drafting format"
-                  >
-                    {allowedTemplates.map(t => (
-                      <option key={t.id} value={t.id}>
-                        {language === 'bn' ? t.labelBn : t.labelEn}
-                      </option>
-                    ))}
-                  </select>
                 </div>
 
                 {/* SECTION: Authority / SPIO fields */}

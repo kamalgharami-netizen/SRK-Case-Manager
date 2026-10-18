@@ -1,10 +1,32 @@
 @import "tailwindcss";
 
+/* Enforce class-driven dark mode so mobile OS dark mode never overrides White or Light theme */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     -webkit-tap-highlight-color: transparent;
   }
+}
+
+/* Pure White Theme Option (#FFFFFF) */
+html.theme-white,
+html.theme-white body {
+  background-color: #ffffff !important;
+  color: #0f172a;
+  color-scheme: light !important;
+}
+
+html.theme-white main,
+html.theme-white .app-shell-bg {
+  background-color: #ffffff !important;
 }
 
 /* Viewing & Display Options Modes */
