@@ -7,7 +7,9 @@ export type CaseType =
   | 'firstappeal'
   | 'rti'
   | 'lrtt'
-  | 'conversion';
+  | 'conversion'
+  | 'certcopy'
+  | 'rorpi';
 
 export interface User {
   id: string;

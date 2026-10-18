@@ -27,7 +27,9 @@ import {
   HardDrive,
   AlertTriangle,
   ShieldAlert,
-  X
+  X,
+  Scroll,
+  FileSpreadsheet
 } from 'lucide-react';
 import { CaseType, CaseItem, getStatusTrackingInfo, getBackupStatus } from '../types';
 
@@ -41,10 +43,11 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = ({
   onNavigate,
+  onOpenNewCase,
   onViewCaseDetail,
   onOpenSettings
 }) => {
-  const { activeCompany, language, t, showToast } = useApp();
+  const { activeCompany, activeUser, language, t, showToast } = useApp();
   const backupStatus = getBackupStatus(activeCompany);
 
   const nowDate = new Date();
@@ -86,7 +89,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [backupStatus.isOverdue, showDailyBackupReminder, dailyBackupReminderKey, todayDateStr]);
 
+  const totalCases = activeCompany?.cases?.length || 0;
   const todayHearings = activeCompany?.causeList?.length || 0;
+  const pendingCases =
+    activeCompany?.cases?.filter(
+      c => !['Disposed', 'Allowed', 'Dismissed', 'Rejected', 'Order Passed'].includes(c.status)
+    ).length || 0;
   const vaultFiles = activeCompany?.vaultFiles?.length || 0;
 
   const getCaseCount = (type: CaseType) => {
@@ -291,8 +299,201 @@ export const Dashboard: React.FC<DashboardProps> = ({
     printHtmlContent(html);
   };
 
+  const landCaseCards: {
+    type: CaseType;
+    page: NavPage;
+    title: string;
+    desc: string;
+    icon: React.ElementType;
+    color: string;
+    bg: string;
+    borderHover: string;
+  }[] = [
+    {
+      type: 'mutation',
+      page: 'case-mutation',
+      title: t.mutationCase,
+      desc: t.mutationDesc,
+      icon: FileText,
+      color: 'text-blue-600 dark:text-blue-400',
+      bg: 'bg-blue-50 dark:bg-blue-950/60',
+      borderHover: 'hover:border-blue-500'
+    },
+    {
+      type: 'misc',
+      page: 'case-misc',
+      title: t.miscCase,
+      desc: t.miscDesc,
+      icon: FolderGit2,
+      color: 'text-purple-600 dark:text-purple-400',
+      bg: 'bg-purple-50 dark:bg-purple-950/60',
+      borderHover: 'hover:border-purple-500'
+    },
+    {
+      type: 'lrappeal',
+      page: 'case-lrappeal',
+      title: t.lrAppeal,
+      desc: t.lrAppealDesc,
+      icon: Send,
+      color: 'text-emerald-600 dark:text-emerald-400',
+      bg: 'bg-emerald-50 dark:bg-emerald-950/60',
+      borderHover: 'hover:border-emerald-500'
+    },
+    {
+      type: 'firstappeal',
+      page: 'case-firstappeal',
+      title: t.firstAppeal,
+      desc: t.firstAppealDesc,
+      icon: Gavel,
+      color: 'text-indigo-600 dark:text-indigo-400',
+      bg: 'bg-indigo-50 dark:bg-indigo-950/60',
+      borderHover: 'hover:border-indigo-500'
+    },
+    {
+      type: 'rti',
+      page: 'case-rti',
+      title: t.rtiMatter,
+      desc: t.rtiDesc,
+      icon: FileSearch,
+      color: 'text-teal-600 dark:text-teal-400',
+      bg: 'bg-teal-50 dark:bg-teal-950/60',
+      borderHover: 'hover:border-teal-500'
+    },
+    {
+      type: 'lrtt',
+      page: 'case-lrtt',
+      title: t.lrttTribunal,
+      desc: t.lrttDesc,
+      icon: Building,
+      color: 'text-cyan-600 dark:text-cyan-400',
+      bg: 'bg-cyan-50 dark:bg-cyan-950/60',
+      borderHover: 'hover:border-cyan-500'
+    },
+    {
+      type: 'conversion',
+      page: 'case-conversion',
+      title: t.conversionCase,
+      desc: t.conversionDesc,
+      icon: RefreshCw,
+      color: 'text-amber-600 dark:text-amber-400',
+      bg: 'bg-amber-50 dark:bg-amber-950/60',
+      borderHover: 'hover:border-amber-500'
+    },
+    {
+      type: 'certcopy',
+      page: 'case-certcopy',
+      title: t.certCopyCase,
+      desc: t.certCopyDesc,
+      icon: Scroll,
+      color: 'text-rose-600 dark:text-rose-400',
+      bg: 'bg-rose-50 dark:bg-rose-950/60',
+      borderHover: 'hover:border-rose-500'
+    },
+    {
+      type: 'rorpi',
+      page: 'case-rorpi',
+      title: t.rorPiCase,
+      desc: t.rorPiDesc,
+      icon: FileSpreadsheet,
+      color: 'text-orange-600 dark:text-orange-400',
+      bg: 'bg-orange-50 dark:bg-orange-950/60',
+      borderHover: 'hover:border-orange-500'
+    }
+  ];
+
+  const toolCards: {
+    page: NavPage;
+    title: string;
+    desc: string;
+    icon: React.ElementType;
+    color: string;
+    bg: string;
+    badge?: string | number;
+    onClick?: () => void;
+  }[] = [
+    {
+      page: 'causelist',
+      title: t.dailyCauseList,
+      desc: t.causeListDesc,
+      icon: Calendar,
+      color: 'text-rose-600 dark:text-rose-400',
+      bg: 'bg-rose-50 dark:bg-rose-950/60',
+      badge: todayHearings
+    },
+    {
+      page: 'sharecalculator',
+      title: t.shareCalc,
+      desc: t.shareCalcDesc,
+      icon: Calculator,
+      color: 'text-emerald-600 dark:text-emerald-400',
+      bg: 'bg-emerald-50 dark:bg-emerald-950/60',
+      badge: 'Share'
+    },
+    {
+      page: 'aistudio',
+      title: t.aiLegalDrafting,
+      desc: t.aiDraftingDesc,
+      icon: Brain,
+      color: 'text-violet-600 dark:text-violet-400',
+      bg: 'bg-violet-50 dark:bg-violet-950/60',
+      badge: 'AI'
+    },
+    {
+      page: 'timeline',
+      title: t.caseDiary,
+      desc: t.diaryDesc,
+      icon: BookMarked,
+      color: 'text-sky-600 dark:text-sky-400',
+      bg: 'bg-sky-50 dark:bg-sky-950/60'
+    },
+    {
+      page: 'parties',
+      title: t.clientRegistry,
+      desc: t.clientDesc,
+      icon: Users,
+      color: 'text-pink-600 dark:text-pink-400',
+      bg: 'bg-pink-50 dark:bg-pink-950/60',
+      badge: activeCompany?.parties?.length || 0
+    },
+    {
+      page: 'wblract',
+      title: t.statutoryWblr,
+      desc: t.statutoryDesc,
+      icon: BookOpen,
+      color: 'text-indigo-600 dark:text-indigo-400',
+      bg: 'bg-indigo-50 dark:bg-indigo-950/60'
+    },
+    {
+      page: 'messages',
+      title: t.clientMessaging,
+      desc: t.messageDesc,
+      icon: MessageSquare,
+      color: 'text-green-600 dark:text-green-400',
+      bg: 'bg-green-50 dark:bg-green-950/60'
+    },
+    {
+      page: 'users',
+      title: t.advocateTeam,
+      desc: t.teamDesc,
+      icon: UserCheck,
+      color: 'text-amber-600 dark:text-amber-400',
+      bg: 'bg-amber-50 dark:bg-amber-950/60',
+      badge: activeCompany?.users?.length || 1
+    },
+    {
+      page: 'vault',
+      title: t.documentVault,
+      desc: t.vaultDesc,
+      icon: Archive,
+      color: 'text-slate-700 dark:text-slate-300',
+      bg: 'bg-slate-100 dark:bg-slate-800',
+      badge: vaultFiles,
+      onClick: () => (onOpenSettings ? onOpenSettings('vault') : onNavigate('vault'))
+    }
+  ];
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Visual Data Backup Reminder Banner: displayed strictly ONE TIME ONLY in a day on Dashboard */}
       {backupStatus.isOverdue && showDailyBackupReminder && (
         <div className="flex items-center justify-between gap-3 p-3 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 shadow-xs animate-in fade-in duration-200">
@@ -346,473 +547,252 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       )}
 
-      {/* 1. Group 1: Revenue & Land Case Portfolios (7 Iconic Tiles Only — First Appeal & RTI Included) */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <h2 className="text-xs font-extrabold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
-              {language === 'bn' ? 'রাজস্ব ও ভূমি কেস মডিউল' : 'Revenue & Land Case Portfolios'}
-            </h2>
-            <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">
-              ({language === 'bn' ? '৭টি কেস পোর্টফোলিও' : '7 Legal Case Modules'})
-            </span>
+      {/* Top Row: 4 Compact KPI Summary Stat Cards (2x Smaller) — Total Cases, Today's Hearings, Active Pending, Vault Files */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+        <div
+          onClick={() => onNavigate('case-mutation')}
+          className="bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-blue-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group"
+          title="Click to browse all registered cases"
+        >
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+            <span className="truncate">{t.totalCases}</span>
+            <div className="w-5 h-5 rounded-md bg-blue-50 dark:bg-blue-950/80 border border-blue-200/70 dark:border-blue-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+              <Gavel className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+            </div>
           </div>
-          <span className="text-[10px] text-slate-400">
-            {language === 'bn' ? 'যেকোনো মডিউলে ক্লিক করে কেস পরিচালনা করুন' : 'Click any module to open register'}
-          </span>
+          <div className="text-sm sm:text-base font-extrabold font-mono text-slate-900 dark:text-slate-100 leading-tight">
+            {totalCases}
+          </div>
+          <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+            Mutation ({getCaseCount('mutation')}) • Misc ({getCaseCount('misc')}) • Appeal ({getCaseCount('lrappeal')})
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
-          {/* 1. Mutation Case */}
-          <div
-            onClick={() => onNavigate('case-mutation')}
-            className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-600 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between h-28"
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <FileText className="w-4 h-4" />
-              </div>
-              <span className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950 px-1.5 py-0.5 rounded">
-                {getCaseCount('mutation')}
-              </span>
-            </div>
-            <div>
-              <div className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
-                {language === 'bn' ? 'মিউটেশন কেস' : 'Mutation Case'}
-              </div>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                {language === 'bn' ? 'নামজারি (ধারা ৫০)' : 'Sec 50 WBLR'}
-              </div>
+        <div
+          onClick={() => onNavigate('causelist')}
+          className="bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-amber-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group"
+          title="Click to view Today's Cause List"
+        >
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+            <span className="truncate">{t.todaysHearings}</span>
+            <div className="w-5 h-5 rounded-md bg-amber-50 dark:bg-amber-950/80 border border-amber-200/70 dark:border-amber-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+              <Calendar className="w-3 h-3 text-amber-500" />
             </div>
           </div>
+          <div className="text-sm sm:text-base font-extrabold font-mono text-slate-900 dark:text-slate-100 leading-tight">
+            {todayHearings}
+          </div>
+          <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+            {(activeCompany?.causeList?.filter(i => i.status === 'READY').length || 0)} Ready • {Math.max(0, todayHearings - (activeCompany?.causeList?.filter(i => i.status === 'READY').length || 0))} Hearing
+          </div>
+        </div>
 
-          {/* 2. Misc Case */}
-          <div
-            onClick={() => onNavigate('case-misc')}
-            className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-purple-600 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between h-28"
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <FolderGit2 className="w-4 h-4" />
-              </div>
-              <span className="text-xs font-mono font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950 px-1.5 py-0.5 rounded">
-                {getCaseCount('misc')}
-              </span>
-            </div>
-            <div>
-              <div className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
-                {language === 'bn' ? 'মিস কেস' : 'Misc Case'}
-              </div>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                {language === 'bn' ? '১০০০০ হিস্যা (৫০এ)' : '10000 Share (50A)'}
-              </div>
+        <div
+          onClick={() => onNavigate('case-misc')}
+          className="bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-purple-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group"
+          title="Click to view Active Pending cases"
+        >
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+            <span className="truncate">{t.pendingCases}</span>
+            <div className="w-5 h-5 rounded-md bg-purple-50 dark:bg-purple-950/80 border border-purple-200/70 dark:border-purple-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+              <Clock className="w-3 h-3 text-purple-600 dark:text-purple-400" />
             </div>
           </div>
+          <div className="text-sm sm:text-base font-extrabold font-mono text-slate-900 dark:text-slate-100 leading-tight">
+            {pendingCases}
+          </div>
+          <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+            Requires follow-up &amp; dates
+          </div>
+        </div>
 
-          {/* 3. LR Appeal */}
-          <div
-            onClick={() => onNavigate('case-lrappeal')}
-            className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-600 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between h-28"
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Send className="w-4 h-4" />
-              </div>
-              <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 px-1.5 py-0.5 rounded">
-                {getCaseCount('lrappeal')}
-              </span>
-            </div>
-            <div>
-              <div className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
-                {language === 'bn' ? 'এল.আর. আপিল' : 'LR Appeal'}
-              </div>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                {language === 'bn' ? 'ধারা ৫৪ আপিল' : 'Sec 54 Appeal'}
-              </div>
+        <div
+          onClick={() => (onOpenSettings ? onOpenSettings('vault') : onNavigate('vault'))}
+          className="bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-emerald-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group"
+          title="Open Document Vault"
+        >
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+            <span className="truncate">{t.vaultFilesTitle}</span>
+            <div className="w-5 h-5 rounded-md bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200/70 dark:border-emerald-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+              <Archive className="w-3 h-3 text-emerald-500" />
             </div>
           </div>
-
-          {/* 4. First Appeal (Iconic menu tile only — big descriptive banner removed) */}
-          <div
-            onClick={() => onNavigate('case-firstappeal')}
-            className="p-3 rounded-xl border border-indigo-200 dark:border-indigo-800/80 bg-white dark:bg-slate-900 hover:border-indigo-600 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between h-28"
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Gavel className="w-4 h-4" />
-              </div>
-              <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-1.5 py-0.5 rounded">
-                {getCaseCount('firstappeal')}
-              </span>
-            </div>
-            <div>
-              <div className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
-                {language === 'bn' ? '১ম আপিল' : 'First Appeal'}
-              </div>
-              <div className="text-[10px] text-indigo-600 dark:text-indigo-400 truncate mt-0.5 font-medium">
-                {language === 'bn' ? 'বিধিবদ্ধ প্রথম আপিল' : 'Statutory 1st Appeal'}
-              </div>
-            </div>
+          <div className="text-sm sm:text-base font-extrabold font-mono text-slate-900 dark:text-slate-100 leading-tight">
+            {vaultFiles}
           </div>
-
-          {/* 5. RTI Matter (Iconic menu tile only — big descriptive banner removed) */}
-          <div
-            onClick={() => onNavigate('case-rti')}
-            className="p-3 rounded-xl border border-teal-200 dark:border-teal-800/80 bg-white dark:bg-slate-900 hover:border-teal-600 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between h-28"
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-300 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <FileSearch className="w-4 h-4" />
-              </div>
-              <span className="text-xs font-mono font-bold text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950 px-1.5 py-0.5 rounded">
-                {getCaseCount('rti')}
-              </span>
-            </div>
-            <div>
-              <div className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
-                {language === 'bn' ? 'তথ্য অধিকার (RTI)' : 'RTI Matter'}
-              </div>
-              <div className="text-[10px] text-teal-600 dark:text-teal-400 truncate mt-0.5 font-medium">
-                {language === 'bn' ? 'ধারা ৬(১) ও ১৯(১)' : 'Sec 6(1) & 19(1)'}
-              </div>
-            </div>
-          </div>
-
-          {/* 6. WBLRTT Tribunal */}
-          <div
-            onClick={() => onNavigate('case-lrtt')}
-            className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-cyan-600 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between h-28"
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-8 h-8 rounded-lg bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Building className="w-4 h-4" />
-              </div>
-              <span className="text-xs font-mono font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950 px-1.5 py-0.5 rounded">
-                {getCaseCount('lrtt')}
-              </span>
-            </div>
-            <div>
-              <div className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
-                {language === 'bn' ? 'ভূমি ট্রাইব্যুনাল' : 'WBLRTT'}
-              </div>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                {language === 'bn' ? 'সল্টলেক ও.এ.' : 'Tribunal O.A.'}
-              </div>
-            </div>
-          </div>
-
-          {/* 7. Conversion 4C */}
-          <div
-            onClick={() => onNavigate('case-conversion')}
-            className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-amber-600 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between h-28"
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <RefreshCw className="w-4 h-4" />
-              </div>
-              <span className="text-xs font-mono font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 px-1.5 py-0.5 rounded">
-                {getCaseCount('conversion')}
-              </span>
-            </div>
-            <div>
-              <div className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
-                {language === 'bn' ? 'কনভার্সন' : 'Conversion'}
-              </div>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                {language === 'bn' ? 'বাস্তু রূপান্তর (৪সি)' : 'Sec 4C Bastu'}
-              </div>
-            </div>
+          <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+            Saved deeds, orders &amp; ROR
           </div>
         </div>
       </div>
 
-      {/* 3. Group 2: Chamber Practice Workspaces & Legal Utilities (9 Menus — Accommodate All Menus in Single Screen) */}
+      {/* 1. Land Case Modules (ভূমি মামলার বিভাগসমূহ) — Matching Image 4 Layout with 3D Visuals */}
       <div>
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <h2 className="text-xs font-extrabold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
-              {language === 'bn' ? 'চেম্বার প্র্যাকটিস টুলস ও ওয়ার্কস্পেস' : 'Chamber Practice Workspaces & Tools'}
-            </h2>
-            <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">
-              ({language === 'bn' ? '৯টি টুলস ও রেজিস্ট্রি' : '9 Legal Utilities & Workspaces'})
-            </span>
-          </div>
-          <span className="text-[10px] text-slate-400">
-            {language === 'bn' ? 'সকল টুলস এক স্ক্রিনে সজ্জিত' : 'All workspaces accessible in 1 click'}
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-extrabold text-slate-800 dark:text-slate-200 tracking-tight">
+            {t.landCaseModulesTitle}
+          </h2>
+          <span className="text-xs text-slate-500 dark:text-slate-400">
+            {t.clickModuleSubtitle}
           </span>
         </div>
 
-        <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2.5">
-          {/* 1. AI Legal Studio */}
-          <div
-            onClick={() => onNavigate('aistudio')}
-            className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-violet-600 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between h-24"
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-7 h-7 rounded-lg bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Brain className="w-3.5 h-3.5" />
-              </div>
-              <span className="text-[9px] font-bold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950 px-1 py-0.2 rounded">
-                AI
-              </span>
-            </div>
-            <div>
-              <div className="text-[11px] font-bold text-slate-900 dark:text-slate-100 truncate">
-                {language === 'bn' ? 'এআই স্টুডিও' : 'AI Studio'}
-              </div>
-              <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate">
-                {language === 'bn' ? 'ড্রাফট ও লার্নিং' : 'Smart Drafts'}
-              </div>
-            </div>
-          </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-3">
+          {landCaseCards.map(card => {
+            const Icon = card.icon;
+            const count = getCaseCount(card.type);
+            return (
+              <div
+                key={card.type}
+                onClick={() => onNavigate(card.page)}
+                className={`p-3.5 rounded-xl bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 ${card.borderHover} shadow-[0_8px_18px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_8px_18px_rgba(0,0,0,0.45)] hover:-translate-y-1 hover:shadow-[0_14px_24px_rgba(37,99,235,0.15)] active:translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between gap-2.5`}
+              >
+                <div className="flex items-center justify-between gap-1">
+                  <div
+                    className={`w-10 h-10 rounded-xl ${card.bg} ${card.color} flex items-center justify-center shadow-[0_4px_10px_rgba(15,23,42,0.12),inset_0_2px_2px_rgba(255,255,255,0.8),inset_0_-2px_3px_rgba(0,0,0,0.12)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.5)] border border-white/80 dark:border-white/10 group-hover:scale-105 transition-transform shrink-0`}
+                  >
+                    <Icon className="w-5 h-5 drop-shadow-2xs stroke-[2.2]" />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs font-mono font-extrabold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 shadow-2xs">
+                      {count}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={e => {
+                        e.stopPropagation();
+                        onOpenNewCase(card.type);
+                      }}
+                      className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-blue-600 hover:text-white text-slate-600 dark:text-slate-300 text-[10px] font-bold border border-slate-200/80 dark:border-slate-700 border-b-2 border-b-slate-300 dark:border-b-slate-950 transition-colors cursor-pointer"
+                      title={`Create new ${card.title}`}
+                    >
+                      + New
+                    </button>
+                  </div>
+                </div>
 
-          {/* 2. 10,000 Share Calculator */}
-          <div
-            onClick={() => onNavigate('sharecalculator')}
-            className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-600 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between h-24"
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Calculator className="w-3.5 h-3.5" />
+                <div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-snug">
+                    {card.title}
+                  </div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                    {card.desc}
+                  </div>
+                </div>
               </div>
-              <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 px-1 py-0.2 rounded">
-                10k
-              </span>
-            </div>
-            <div>
-              <div className="text-[11px] font-bold text-slate-900 dark:text-slate-100 truncate">
-                {language === 'bn' ? 'হিস্যা ক্যালক' : 'Share Calc'}
-              </div>
-              <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate">
-                {language === 'bn' ? '১০০০০ অংশ ও শতক' : '10,000 Hisya'}
-              </div>
-            </div>
-          </div>
-
-          {/* 3. Daily Cause List */}
-          <div
-            onClick={() => onNavigate('causelist')}
-            className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-600 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between h-24"
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Calendar className="w-3.5 h-3.5" />
-              </div>
-              <span className="text-[9px] font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950 px-1 py-0.2 rounded">
-                {todayHearings}
-              </span>
-            </div>
-            <div>
-              <div className="text-[11px] font-bold text-slate-900 dark:text-slate-100 truncate">
-                {language === 'bn' ? 'কজ লিস্ট' : 'Cause List'}
-              </div>
-              <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate">
-                {language === 'bn' ? 'দৈনিক শুনানি তালিকা' : 'Daily Hearings'}
-              </div>
-            </div>
-          </div>
-
-          {/* 4. Case Diary */}
-          <div
-            onClick={() => onNavigate('timeline')}
-            className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-sky-600 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between h-24"
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-7 h-7 rounded-lg bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <BookMarked className="w-3.5 h-3.5" />
-              </div>
-              <span className="text-[9px] font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950 px-1 py-0.2 rounded">
-                Notes
-              </span>
-            </div>
-            <div>
-              <div className="text-[11px] font-bold text-slate-900 dark:text-slate-100 truncate">
-                {language === 'bn' ? 'কেস ডায়েরি' : 'Case Diary'}
-              </div>
-              <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate">
-                {language === 'bn' ? 'অর্ডার ও শুনানি নোট' : 'Court Orders'}
-              </div>
-            </div>
-          </div>
-
-          {/* 5. Party Directory */}
-          <div
-            onClick={() => onNavigate('parties')}
-            className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-rose-600 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between h-24"
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-7 h-7 rounded-lg bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Users className="w-3.5 h-3.5" />
-              </div>
-              <span className="text-[9px] font-mono font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950 px-1 py-0.2 rounded">
-                {activeCompany?.parties?.length || 0}
-              </span>
-            </div>
-            <div>
-              <div className="text-[11px] font-bold text-slate-900 dark:text-slate-100 truncate">
-                {language === 'bn' ? 'পক্ষ রেজিস্ট্রি' : 'Parties'}
-              </div>
-              <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate">
-                {language === 'bn' ? 'মক্কেল ও বিপক্ষ' : 'Clients & Ops'}
-              </div>
-            </div>
-          </div>
-
-          {/* 6. Statutory Library */}
-          <div
-            onClick={() => onNavigate('wblract')}
-            className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-600 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between h-24"
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <BookOpen className="w-3.5 h-3.5" />
-              </div>
-              <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-1 py-0.2 rounded">
-                WBLR
-              </span>
-            </div>
-            <div>
-              <div className="text-[11px] font-bold text-slate-900 dark:text-slate-100 truncate">
-                {language === 'bn' ? 'আইন লাইব্রেরি' : 'Law Acts'}
-              </div>
-              <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate">
-                {language === 'bn' ? '১৯৫৫ অ্যাক্ট ও রুলস' : 'Act & Manual'}
-              </div>
-            </div>
-          </div>
-
-          {/* 7. Client Communication */}
-          <div
-            onClick={() => onNavigate('messages')}
-            className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-green-600 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between h-24"
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-7 h-7 rounded-lg bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <MessageSquare className="w-3.5 h-3.5" />
-              </div>
-              <span className="text-[9px] font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950 px-1 py-0.2 rounded">
-                Chat
-              </span>
-            </div>
-            <div>
-              <div className="text-[11px] font-bold text-slate-900 dark:text-slate-100 truncate">
-                {language === 'bn' ? 'ক্লায়েন্ট মেসেজ' : 'Notices'}
-              </div>
-              <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate">
-                {language === 'bn' ? 'হোয়াটসঅ্যাপ ও এসএমএস' : 'WhatsApp Alerts'}
-              </div>
-            </div>
-          </div>
-
-          {/* 8. Chamber Team & Roles */}
-          <div
-            onClick={() => onNavigate('users')}
-            className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-amber-600 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between h-24"
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <UserCheck className="w-3.5 h-3.5" />
-              </div>
-              <span className="text-[9px] font-mono font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 px-1 py-0.2 rounded">
-                {activeCompany?.users?.length || 1}
-              </span>
-            </div>
-            <div>
-              <div className="text-[11px] font-bold text-slate-900 dark:text-slate-100 truncate">
-                {language === 'bn' ? 'টিম ও রোলস' : 'Team Roles'}
-              </div>
-              <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate">
-                {language === 'bn' ? 'অ্যাডভোকেট ও ক্লার্ক' : 'Staff & Access'}
-              </div>
-            </div>
-          </div>
-
-          {/* 9. Document Vault */}
-          <div
-            onClick={() => (onOpenSettings ? onOpenSettings('vault') : onNavigate('vault'))}
-            className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-600 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between h-24"
-          >
-            <div className="flex items-center justify-between">
-              <div className="w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 flex items-center justify-center group-hover:scale-105 transition-transform">
-                <Archive className="w-3.5 h-3.5" />
-              </div>
-              <span className="text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-1 py-0.2 rounded">
-                {vaultFiles}
-              </span>
-            </div>
-            <div>
-              <div className="text-[11px] font-bold text-slate-900 dark:text-slate-100 truncate">
-                {language === 'bn' ? 'ডকুমেন্ট ভল্ট' : 'Vault'}
-              </div>
-              <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate">
-                {language === 'bn' ? 'দলিল ও ড্রাফট নমুনা' : 'Samples & Files'}
-              </div>
-            </div>
-          </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* 4. Live Chamber Pulse: Today's Cause List + Active Case Cards with Visual Status Indicators */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
+      {/* 2. Tools & Library — Same Clean 3D Card Visual Style */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-extrabold text-slate-800 dark:text-slate-200 tracking-tight">
+            {t.toolsLibrary} ({language === 'bn' ? 'চেম্বার টুলস ও লাইব্রেরি' : 'Chamber Utilities & AI Studio'})
+          </h2>
+          <span className="text-xs text-slate-500 dark:text-slate-400">
+            {language === 'bn' ? 'টুল খুলতে কার্ডে ক্লিক করুন' : 'Click card to open tool or studio'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-3">
+          {toolCards.map(tool => {
+            const Icon = tool.icon;
+            return (
+              <div
+                key={tool.page}
+                onClick={() => (tool.onClick ? tool.onClick() : onNavigate(tool.page))}
+                className="p-3.5 rounded-xl bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 hover:border-blue-500 shadow-[0_8px_18px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_8px_18px_rgba(0,0,0,0.45)] hover:-translate-y-1 hover:shadow-[0_14px_24px_rgba(37,99,235,0.15)] active:translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between gap-2.5"
+              >
+                <div className="flex items-center justify-between gap-1">
+                  <div
+                    className={`w-10 h-10 rounded-xl ${tool.bg} ${tool.color} flex items-center justify-center shadow-[0_4px_10px_rgba(15,23,42,0.12),inset_0_2px_2px_rgba(255,255,255,0.8),inset_0_-2px_3px_rgba(0,0,0,0.12)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.5)] border border-white/80 dark:border-white/10 group-hover:scale-105 transition-transform shrink-0`}
+                  >
+                    <Icon className="w-5 h-5 drop-shadow-2xs stroke-[2.2]" />
+                  </div>
+                  {tool.badge !== undefined && (
+                    <span className="text-xs font-mono font-extrabold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 shadow-2xs">
+                      {tool.badge}
+                    </span>
+                  )}
+                </div>
+
+                <div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-snug">
+                    {tool.title}
+                  </div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                    {tool.desc}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Bottom Section: Today's Cause List + Active Case Tracker — Matching Image 4 with 3D Visuals */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Left: Today's Cause List Preview (7 cols) */}
-        <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden flex flex-col justify-between">
+        <div className="lg:col-span-7 bg-gradient-to-b from-white to-slate-50/80 dark:from-slate-900 dark:to-slate-950 rounded-xl border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 shadow-[0_10px_25px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] overflow-hidden flex flex-col justify-between">
           <div>
-            <div className="p-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/60 dark:bg-slate-850/40">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                <h3 className="text-xs font-extrabold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
-                  {t.todaysCauseListTitle} ({todayHearings})
+                <h3 className="text-sm font-extrabold text-slate-900 dark:text-slate-100">
+                  {t.todaysCauseListTitle}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => onNavigate('causelist')}
-                className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <span>{t.openFullList}</span>
-                <ArrowRight className="w-3 h-3" />
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
 
             {activeCompany?.causeList && activeCompany.causeList.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+                  <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
                     <tr>
-                      <th className="py-2 px-3">{t.tableTime}</th>
-                      <th className="py-2 px-3">{t.tableCaseNo}</th>
-                      <th className="py-2 px-3">{t.tablePartyForum}</th>
-                      <th className="py-2 px-3 text-right">{t.tableStatus}</th>
+                      <th className="py-2.5 px-4">{t.tableTime}</th>
+                      <th className="py-2.5 px-4">{t.tableCaseNo}</th>
+                      <th className="py-2.5 px-4">{t.tablePartyForum}</th>
+                      <th className="py-2.5 px-4 text-right">{t.tableStatus}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {activeCompany.causeList.slice(0, 4).map(item => (
+                    {activeCompany.causeList.slice(0, 5).map(item => (
                       <tr
                         key={item.id}
                         className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors"
                       >
-                        <td className="py-2 px-3 font-mono text-[11px] font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                        <td className="py-3 px-4 font-mono text-[11px] font-semibold text-slate-600 dark:text-slate-400 whitespace-nowrap">
                           {item.time}
                         </td>
-                        <td className="py-2 px-3 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap text-xs">
+                        <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap text-xs">
                           {item.caseNo}
                         </td>
-                        <td className="py-2 px-3">
-                          <div className="font-semibold text-slate-900 dark:text-slate-100 truncate max-w-[200px]">
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-slate-900 dark:text-slate-100 truncate max-w-[220px]">
                             {item.party}
                           </div>
-                          <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[200px]">
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[220px]">
                             {item.forum} {item.benchRoom ? `(${item.benchRoom})` : ''}
                           </div>
                         </td>
-                        <td className="py-2 px-3 text-right">
+                        <td className="py-3 px-4 text-right">
                           <span
-                            className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
+                            className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold shadow-2xs ${
                               item.status === 'READY'
-                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300'
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
                                 : item.status === 'DISPOSED'
-                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300'
-                                : 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300'
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                                : 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
                             }`}
                           >
                             {item.status}
@@ -824,36 +804,36 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </table>
               </div>
             ) : (
-              <div className="p-6 text-center text-slate-500 text-xs">
+              <div className="p-8 text-center text-slate-500 text-xs">
                 {t.noHearingsScheduled}
               </div>
             )}
           </div>
 
-          <div className="p-2 border-t border-slate-100 dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400 bg-slate-50/30 dark:bg-slate-850/20 flex items-center justify-between">
+          <div className="p-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 bg-slate-50/40 dark:bg-slate-850/20 flex items-center justify-between">
             <span>West Bengal Revenue Cause List</span>
             <button
               onClick={() => onNavigate('causelist')}
-              className="text-blue-600 hover:underline font-semibold cursor-pointer"
+              className="text-blue-600 hover:underline font-bold cursor-pointer"
             >
               Add Hearing to Today's List
             </button>
           </div>
         </div>
 
-        {/* Right: Active Case Cards with Visual Color-Coded Status Badges (5 cols) */}
-        <div className="lg:col-span-5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs p-3 flex flex-col justify-between">
+        {/* Right: Active Case Tracker & Quick Tools (5 cols) */}
+        <div className="lg:col-span-5 bg-gradient-to-b from-white to-slate-50/80 dark:from-slate-900 dark:to-slate-950 rounded-xl border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 shadow-[0_10px_25px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] p-4 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800 mb-2">
-              <h3 className="text-xs font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5 uppercase tracking-wider">
-                <Clock className="w-3.5 h-3.5 text-amber-600" />
-                <span>Active Case Tracker</span>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 mb-3">
+              <h3 className="text-sm font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-500" />
+                <span>{t.upcomingHearingsTitle}</span>
               </h3>
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={exportTrackedCasesCSV}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 hover:text-blue-600 transition-colors shadow-2xs cursor-pointer"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded border border-slate-200 dark:border-slate-700 border-b-2 border-b-slate-300 dark:border-b-slate-950 bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 hover:text-blue-600 transition-colors shadow-2xs cursor-pointer"
                   title="Export cases to CSV spreadsheet"
                 >
                   <Download className="w-3 h-3 text-blue-600 dark:text-blue-400" />
@@ -862,7 +842,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <button
                   type="button"
                   onClick={exportTrackedCasesPDF}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 hover:text-emerald-600 transition-colors shadow-2xs cursor-pointer"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded border border-slate-200 dark:border-slate-700 border-b-2 border-b-slate-300 dark:border-b-slate-950 bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 hover:text-emerald-600 transition-colors shadow-2xs cursor-pointer"
                   title="Print active case list or Save as PDF"
                 >
                   <Printer className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
@@ -871,8 +851,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </div>
 
-            {/* Case Cards with Color-Coded Status Badges */}
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {trackedCases.map(c => {
                 const statusInfo = getStatusTrackingInfo(c.status);
 
@@ -880,41 +859,38 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <div
                     key={c.id}
                     onClick={() => onViewCaseDetail(c.id)}
-                    className="p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-blue-500 hover:bg-slate-50 dark:hover:bg-slate-850 cursor-pointer transition-all flex items-center justify-between gap-2"
+                    className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 border-b-2 border-b-slate-300 dark:border-b-slate-950 hover:border-blue-500 hover:bg-slate-50 dark:hover:bg-slate-850 cursor-pointer transition-all flex items-center justify-between gap-2 shadow-2xs"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-mono text-xs font-extrabold text-blue-700 dark:text-blue-400">
-                          {c.caseNo}
+                          {c.caseNo || c.docketNo || 'RTI Application'}
                         </span>
                         <span className="text-[10px] text-slate-400">· {c.subType}</span>
                       </div>
-                      <div className="text-[11px] text-slate-800 dark:text-slate-200 font-semibold truncate mt-0.5">
+                      <div className="text-xs text-slate-800 dark:text-slate-200 font-semibold truncate mt-0.5">
                         {c.party} {c.opp ? `vs ${c.opp}` : ''}
                       </div>
                       <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1 mt-0.5">
                         <MapPin className="w-2.5 h-2.5 text-amber-500 shrink-0" />
                         <span>{c.forum || 'Revenue Forum'}</span>
-                        {c.nextDate && (
-                          <>
-                            <span>·</span>
-                            <span className="font-mono text-blue-600 dark:text-blue-400 font-bold">
-                              {c.nextDate}
-                            </span>
-                          </>
-                        )}
                       </div>
                     </div>
 
-                    {/* Color-Coded Status Badge */}
-                    <div className="shrink-0 text-right">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border ${statusInfo.badgeClass}`}
-                        title={`Status: ${statusInfo.label} (${statusInfo.category})`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotClass}`} />
-                        <span>{statusInfo.category}</span>
-                      </span>
+                    <div className="shrink-0 text-right space-y-1">
+                      {c.nextDate && (
+                        <div className="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                          {c.nextDate}
+                        </div>
+                      )}
+                      <div>
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border ${statusInfo.badgeClass}`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotClass}`} />
+                          <span>{c.status}</span>
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );
@@ -928,11 +904,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
 
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 mt-2 flex items-center justify-between text-xs text-slate-500">
-            <span className="text-[10px]">Track all mutation, misc & appeal files</span>
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 mt-3 flex items-center justify-between text-xs text-slate-500">
+            <span className="text-[11px]">Track all mutation, misc &amp; appeal files</span>
             <button
               onClick={() => onNavigate('case-mutation')}
-              className="text-blue-600 dark:text-blue-400 font-bold hover:underline flex items-center gap-0.5 text-[11px] cursor-pointer"
+              className="text-blue-600 dark:text-blue-400 font-bold hover:underline flex items-center gap-0.5 text-xs cursor-pointer"
             >
               <span>View All Cases</span>
               <ChevronRight className="w-3.5 h-3.5" />

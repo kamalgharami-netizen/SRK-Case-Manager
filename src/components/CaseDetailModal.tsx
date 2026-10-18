@@ -147,19 +147,35 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
           <div className="flex items-start gap-3">
             <CompanyLogo company={activeCompany} size="md" className="shrink-0 mt-0.5" />
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-mono text-base font-bold text-blue-700 dark:text-blue-400">
-                  {caseItem.caseNo}
+                  {caseItem.caseNo || (caseItem.type === 'rti' ? caseItem.docketNo || caseItem.appNo || 'RTI Application' : '—')}
                 </span>
                 <span className="text-xs px-2 py-0.5 rounded font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300">
                   {caseItem.status}
                 </span>
+                {(caseItem.docketNo || caseItem.appNo) && (
+                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                    {caseItem.type === 'lrappeal' || caseItem.type === 'firstappeal' || caseItem.type === 'misc'
+                      ? `Docket No: ${caseItem.docketNo || caseItem.appNo}`
+                      : caseItem.type === 'rti'
+                      ? `Docket/Tracking: ${caseItem.docketNo || caseItem.appNo}`
+                      : `App No: ${caseItem.appNo || caseItem.docketNo}`}
+                  </span>
+                )}
+                {caseItem.grnNo && !['lrappeal', 'misc', 'rti'].includes(caseItem.type) && (
+                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                    {caseItem.type === 'firstappeal'
+                      ? `Tracking No: ${caseItem.grnNo}`
+                      : `GRN: ${caseItem.grnNo}`}
+                  </span>
+                )}
               </div>
               <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-1">
                 {caseItem.subType} ({caseItem.type.toUpperCase()})
               </h2>
               <div className="text-xs text-slate-500 mt-0.5">
-                {caseItem.forum} · Next Hearing: <strong>{caseItem.nextDate || 'Not fixed'}</strong>
+                {caseItem.forum || 'Not specified'} · Next Hearing: <strong>{caseItem.nextDate || 'Not fixed'}</strong>
               </div>
             </div>
           </div>
@@ -213,7 +229,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
         </div>
 
         {/* Litigants Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+        <div className={`grid grid-cols-1 ${caseItem.type === 'rti' ? '' : 'sm:grid-cols-2'} gap-4 text-xs`}>
           <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-1">
             <div className="text-[10px] font-bold uppercase text-slate-400">
               Petitioner / Applicant
@@ -232,31 +248,33 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
             )}
           </div>
 
-          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase text-slate-400">
-                Opposite Party / Respondent(s) {caseItem.respondents?.length ? `(${caseItem.respondents.length})` : ''}
-              </span>
-            </div>
-            {caseItem.respondents && caseItem.respondents.length > 0 ? (
-              <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                {caseItem.respondents.map((r, i) => (
-                  <div key={r.id || i} className="text-xs border-b last:border-0 border-slate-200/50 dark:border-slate-700/50 pb-1">
-                    <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center justify-between">
-                      <span>{i + 1}. {r.name}</span>
-                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-200 dark:bg-slate-700 font-normal">{r.type}</span>
+          {caseItem.type !== 'rti' && (
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase text-slate-400">
+                  Opposite Party / Respondent(s) {caseItem.respondents?.length ? `(${caseItem.respondents.length})` : ''}
+                </span>
+              </div>
+              {caseItem.respondents && caseItem.respondents.length > 0 ? (
+                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                  {caseItem.respondents.map((r, i) => (
+                    <div key={r.id || i} className="text-xs border-b last:border-0 border-slate-200/50 dark:border-slate-700/50 pb-1">
+                      <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center justify-between">
+                        <span>{i + 1}. {r.name}</span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-200 dark:bg-slate-700 font-normal">{r.type}</span>
+                      </div>
+                      {r.address && <div className="text-slate-500 text-[11px] mt-0.5">{r.address}</div>}
+                      {r.phone && <div className="font-mono text-slate-400 text-[10px]">{r.phone}</div>}
                     </div>
-                    {r.address && <div className="text-slate-500 text-[11px] mt-0.5">{r.address}</div>}
-                    {r.phone && <div className="font-mono text-slate-400 text-[10px]">{r.phone}</div>}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-                {caseItem.opp || '— (No opposite party / Uncontested)'}
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                  {caseItem.opp || '— (No opposite party / Uncontested)'}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Land Schedules (সম্পত্তির তপশীল বিবরণ) */}
@@ -295,7 +313,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
         )}
 
         {/* Chain Deeds & Warish Transitions */}
-        {caseItem.chainLinks && caseItem.chainLinks.length > 0 && (
+        {['mutation', 'misc', 'lrappeal', 'lrtt'].includes(caseItem.type) && caseItem.chainLinks && caseItem.chainLinks.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1.5">

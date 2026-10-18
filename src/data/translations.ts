@@ -27,6 +27,10 @@ export interface Translations {
   lrttDesc: string;
   conversionCase: string;
   conversionDesc: string;
+  certCopyCase: string;
+  certCopyDesc: string;
+  rorPiCase: string;
+  rorPiDesc: string;
 
   // Tools & Modules
   dailyCauseList: string;
@@ -144,17 +148,21 @@ export const translations: Record<AppLanguage, Translations> = {
     lrAppeal: 'LR Appeal (Sec 54)',
     lrAppealDesc: 'Sec 54 WBLR Act · জেলা সমাহর্তা আপিল',
     firstAppeal: 'First Appeal (প্রথম আপিল)',
-    firstAppealDesc: 'Statutory First Appeal · বিধিবদ্ধ ১ম আপিল',
+    firstAppealDesc: 'u/s 19(1) of RTI Act 2005 · প্রথম আপিল',
     rtiMatter: 'RTI Matter (তথ্য অধিকার)',
     rtiDesc: 'Right to Information · তথ্য জানার অধিকার',
     lrttTribunal: 'WBLRTT Tribunal',
     lrttDesc: 'Tribunal O.A. · ভূমি ট্রাইব্যুনাল',
     conversionCase: 'Conversion Case',
     conversionDesc: 'Sec 4C WBLR Act · বাস্তু রূপান্তর',
+    certCopyCase: 'Certified Copy of Deed',
+    certCopyDesc: 'ADSR / SRO Deed Copy · দলিলের সার্টিফায়েড কপি',
+    rorPiCase: 'ROR / PI Application',
+    rorPiDesc: 'Certified Porcha & Plot Info · পর্চা ও পি.আই ট্র্যাকিং',
 
     dailyCauseList: 'Daily Cause List',
     causeListDesc: 'Court & Hearing Board · দৈনিক কার্যতালিকা',
-    shareCalc: '10000-Share Calculator',
+    shareCalc: 'Share Calculator',
     shareCalcDesc: 'Hissya & Decimal Math · হিস্যা নির্ণয়',
     aiLegalDrafting: 'AI Drafting Studio',
     aiDraftingDesc: 'Smart Legal Petitions · আইনি খসড়া',
@@ -197,8 +205,8 @@ export const translations: Record<AppLanguage, Translations> = {
     switchToEnglish: 'Switch to English',
 
     firstAppealMenuTitle: 'FIRST APPEAL MENU (প্রথম আপিল)',
-    firstAppealHubTitle: 'Statutory First Appeal Hub',
-    firstAppealHubDesc: 'Manage statutory first appeals under Sec 54 & Sec 51A(5) of WBLR Act against Revenue Officer orders, stay petitions, and limitation countdowns.',
+    firstAppealHubTitle: 'First Appeal u/s 19(1) of RTI Act 2005',
+    firstAppealHubDesc: 'Manage First Appeals u/s 19(1) of the RTI Act 2005 with Docket No, Postal Tracking No, and appellate hearing schedules.',
     openFirstAppealDashboard: 'Open First Appeal Dashboard',
     fileNewFirstAppeal: 'File New Appeal',
     rtiMenuTitle: 'RTI APPLICATION & APPEAL (তথ্য অধিকার)',
@@ -262,17 +270,21 @@ export const translations: Record<AppLanguage, Translations> = {
     lrAppeal: 'এল.আর. আপিল (ধারা ৫৪)',
     lrAppealDesc: 'ধারা ৫৪ আপিল · জেলা সমাহর্তা/ডিএলঅ্যান্ডএলআরও',
     firstAppeal: 'প্রথম আপিল (First Appeal)',
-    firstAppealDesc: 'বিধিবদ্ধ প্রথম আপিল (Statutory First Appeal)',
+    firstAppealDesc: 'u/s 19(1) of RTI Act 2005 · প্রথম আপিল',
     rtiMatter: 'তথ্য জানার অধিকার (RTI)',
     rtiDesc: 'তথ্য জানার অধিকার আইন · আবেদন ও আপিল',
     lrttTribunal: 'ভূমি সংস্কার ট্রাইব্যুনাল (WBLRTT)',
     lrttDesc: 'ট্রাইব্যুনাল ও.এ. · সল্টলেক আদালত',
     conversionCase: 'কনভার্সন কেস (শ্রেণি পরিবর্তন)',
     conversionDesc: 'ধারা ৪সি ডব্লিউবিএলআর অ্যাক্ট · বাস্তু রূপান্তর',
+    certCopyCase: 'দলিলের সার্টিফায়েড কপি (Certified Copy of Deed)',
+    certCopyDesc: 'এডিএসআর / এসআরও নকল দলিল ট্র্যাকিং',
+    rorPiCase: 'আর.ও.আর / পি.আই আবেদন (ROR / PI)',
+    rorPiDesc: 'সার্টিফায়েড পর্চা ও প্লট ইনফরমেশন ট্র্যাকিং',
 
     dailyCauseList: 'দৈনিক কার্যতালিকা (Cause List)',
     causeListDesc: 'শুনানি বোর্ড ও দৈনন্দিন তালিকা',
-    shareCalc: '১০০০০-হিস্যা ক্যালকুলেটর',
+    shareCalc: 'হিস্যা ক্যালকুলেটর (Share Calculator)',
     shareCalcDesc: 'জমির হিস্যা ও শতক হিসাব',
     aiLegalDrafting: 'এআই লিগ্যাল ড্রাফটিং (AI Studio)',
     aiDraftingDesc: 'স্বয়ংক্রিয় আইনি পিটিশন খসড়া',

@@ -139,22 +139,24 @@ const MODULE_META: Record<
   },
   firstappeal: {
     title: 'First Appeal',
-    bengali: 'প্রথম আপিল (u/s 19(1) of RTI Act 2005)',
+    bengali: 'প্রথম আপিল (u/s 19(1) / 19(2) of RTI Act 2005)',
     icon: Gavel,
     color: 'text-indigo-600',
     bgBadge: 'bg-indigo-600',
     subTypes: [
-      'u/s 19(1) of RTI Act 2005'
+      'u/s 19(1) of RTI Act 2005',
+      'u/s 19(2) of RTI Act 2005',
+      'Other Applicable Section of RTI Act 2005'
     ],
     statuses: ['Filed', 'Admitted', 'Notice Issued', 'Stay Granted', 'Hearing', 'Allowed', 'Dismissed'],
-    lawRef: 'Section 19(1) of the Right to Information Act, 2005',
-    forum: 'First Appellate Authority (FAA) / DL&LRO / SDL&LRO',
+    lawRef: 'u/s 19(1), u/s 19(2) & applicable sections of the Right to Information Act, 2005',
+    forum: 'First Appellate Authority (FAA) under RTI Act 2005',
     limitation: '30 Days from expiry of SPIO reply period or receipt of reply',
     checklist: [
+      'Docket No & Postal Tracking No',
       'Copy of original RTI Application u/s 6(1)',
-      'Postal / Speed Post Tracking Receipt',
       'Copy of SPIO reply (if any received)',
-      'Grounds of First Appeal u/s 19(1) of RTI Act 2005'
+      'Grounds of First Appeal under RTI Act 2005'
     ]
   },
   rti: {
@@ -173,13 +175,13 @@ const MODULE_META: Record<
     ],
     statuses: ['Application Sent', 'PIO Replied', 'Info Provided', 'First Appeal Filed', 'Hearing', 'Disposed'],
     lawRef: 'Right to Information Act 2005 (Sec 6(1), Sec 19(1), Sec 19(3))',
-    forum: 'State Public Information Officer (SPIO) / First Appellate Authority (FAA)',
+    forum: 'Police Station, BDO, Gram Panchayat, Municipality, BL&LRO / SPIO (Optional)',
     limitation: '30 Days for PIO reply; 30 Days for First Appeal; 90 Days for State Info Commission',
     checklist: [
+      'Docket No / Tracking ID',
       '₹10 Court Fee Stamp or IPO for Sec 6(1)',
       'Proof of Indian Citizenship',
-      'Postal speed post tracking receipt',
-      'Copy of original unanswered RTI application for 1st Appeal'
+      'Postal speed post tracking receipt'
     ]
   },
   lrtt: {
@@ -252,7 +254,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
   const meta = MODULE_META[type];
   const Icon = meta.icon;
 
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
   const [categoryFilter, setCategoryFilter] = useState<'All' | 'Pending' | 'In Progress' | 'Disposed'>('All');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [subTypeFilter, setSubTypeFilter] = useState<string>('All');
@@ -973,344 +975,258 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Sub Menu Header: Clean, iconic, NO descriptive things, ONLY Case Entry + button on right top */}
-      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 sm:px-5 py-3.5 shadow-xs flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="flex items-center -space-x-2 shrink-0">
-            <CompanyLogo company={activeCompany} size="md" className="ring-2 ring-white dark:ring-slate-900 shadow-xs z-10" />
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-800 ${meta.color} ring-2 ring-white dark:ring-slate-900 shadow-xs`}>
-              <Icon className="w-5 h-5" />
+      {/* Sub-Dashboard Header & Statutory Overview Card — Matching Image 3 with 3D Visuals */}
+      <div className="w-full rounded-xl p-4 sm:p-5 bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 shadow-[0_10px_25px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_10px_25px_rgba(0,0,0,0.5)] space-y-4">
+        {/* Top Row: 3D Icon Badge + Title + Bengali Pill + Law Ref + 3D Action Buttons */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center bg-blue-50 dark:bg-slate-800 ${meta.color} border border-blue-200/60 dark:border-slate-700 shrink-0 shadow-[0_4px_10px_rgba(15,23,42,0.1),inset_0_2px_2px_rgba(255,255,255,0.8),inset_0_-2px_3px_rgba(0,0,0,0.1)]`}>
+              <Icon className="w-6 h-6 drop-shadow-2xs stroke-[2.2]" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
+                  {language === 'bn' ? meta.bengali : meta.title}
+                </h1>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700 shadow-2xs">
+                  {language === 'bn' ? meta.title : meta.bengali}
+                </span>
+              </div>
+              <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {meta.lawRef} • {meta.forum}
+              </div>
             </div>
           </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight truncate">
-                {language === 'bn' ? meta.bengali : meta.title}
-              </h1>
-              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 hidden sm:inline">
-                · {language === 'bn' ? meta.title : meta.bengali}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 dark:text-slate-400 font-medium truncate">
-              <span className="truncate">{meta.forum}</span>
-              <span>•</span>
-              <span className="font-mono text-slate-700 dark:text-slate-300 font-semibold">{allCases.length} Cases</span>
-            </div>
+
+          <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+            {type !== 'mutation' && onOpenAiDraft && (
+              <button
+                type="button"
+                onClick={() => onOpenAiDraft(type)}
+                className="px-3.5 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 border-b-3 border-b-violet-800 active:translate-y-0.5 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                title={`Open AI Drafting Studio for ${meta.title}`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{language === 'bn' ? 'এআই ড্রাফট' : 'AI Draft'}</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={printFullModuleReport}
+              className="px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 border-b-3 border-b-slate-300 dark:border-b-slate-950 active:translate-y-0.5 bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+              title="Print Case Registry Report"
+            >
+              <Printer className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
+              <span>Print Report</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onOpenNewCase(type)}
+              className="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 border-b-3 border-b-blue-950 active:translate-y-0.5 text-white text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+              title={`Enter new ${meta.title}`}
+            >
+              <Plus className="w-4 h-4 stroke-[2.5]" />
+              <span>{language === 'bn' ? '+ নতুন এন্ট্রি' : 'New Entry'}</span>
+            </button>
           </div>
         </div>
 
-        {/* ONLY Case Entry + button in right top according to case type */}
-        <button
-          type="button"
-          onClick={() => onOpenNewCase(type)}
-          className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs sm:text-sm font-bold shadow-md shadow-blue-600/20 flex items-center gap-2 transition-all cursor-pointer shrink-0"
-          title={`Enter new ${meta.title}`}
-        >
-          <Plus className="w-4 h-4 stroke-[2.5]" />
-          <span className="whitespace-nowrap font-bold">
-            {language === 'bn' ? `+ নতুন ${meta.title}` : `+ New ${meta.title}`}
-          </span>
-        </button>
-      </div>
-
-      {/* Iconic Options Bar: Total, Pending, Under Inquiry, Disposed, + Applicable Stages */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
-        {/* 1. Total */}
-        {(() => {
-          const isActive =
-            categoryFilter === 'All' &&
-            statusFilter === 'All' &&
-            subTypeFilter === 'All' &&
-            !underInquiryFilter;
-          return (
-            <div
-              onClick={() => {
-                setCategoryFilter('All');
-                setStatusFilter('All');
-                setSubTypeFilter('All');
-                setUnderInquiryFilter(false);
-              }}
-              className={`p-3 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between h-22 sm:h-24 ${
-                isActive
-                  ? 'border-blue-600 bg-blue-50/70 dark:bg-blue-950/40 ring-2 ring-blue-600/30 shadow-xs'
-                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-xs'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                  <Scale className="w-3.5 h-3.5" />
-                </div>
-                <span className={`text-xs font-mono font-extrabold ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'}`}>
-                  {allCases.length}
-                </span>
-              </div>
-              <div>
-                <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate">
-                  {language === 'bn' ? 'মোট কেস' : 'Total Cases'}
-                </div>
-                <div className="text-[9px] text-slate-400 dark:text-slate-500 truncate">
-                  {language === 'bn' ? 'সকল পোর্টফোলিও' : 'Full Register'}
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* 2. Pending */}
-        {(() => {
-          const isActive =
-            categoryFilter === 'Pending' &&
-            !underInquiryFilter &&
-            statusFilter === 'All' &&
-            subTypeFilter === 'All';
-          return (
-            <div
-              onClick={() => {
-                if (isActive) {
-                  setCategoryFilter('All');
-                } else {
-                  setCategoryFilter('Pending');
-                  setStatusFilter('All');
-                  setSubTypeFilter('All');
-                  setUnderInquiryFilter(false);
-                }
-              }}
-              className={`p-3 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between h-22 sm:h-24 ${
-                isActive
-                  ? 'border-amber-500 bg-amber-50/70 dark:bg-amber-950/40 ring-2 ring-amber-500/30 shadow-xs'
-                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-xs'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                  <Clock className="w-3.5 h-3.5" />
-                </div>
-                <span className={`text-xs font-mono font-extrabold ${isActive ? 'text-amber-600 dark:text-amber-400' : 'text-slate-800 dark:text-slate-200'}`}>
-                  {pendingCount}
-                </span>
-              </div>
-              <div>
-                <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate">
-                  {language === 'bn' ? 'পেন্ডিং' : 'Pending'}
-                </div>
-                <div className="text-[9px] text-amber-600 dark:text-amber-400 truncate font-medium">
-                  {language === 'bn' ? 'অপেক্ষমাণ' : 'Awaiting Action'}
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* 3. Under Inquiry */}
-        {(() => {
-          const isActive = underInquiryFilter;
-          return (
-            <div
-              onClick={() => {
-                if (isActive) {
-                  setUnderInquiryFilter(false);
-                } else {
-                  setUnderInquiryFilter(true);
+        {/* 4 Compact 3D KPI Stat Cards (2x Smaller) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+          {/* 1. Total Cases */}
+          {(() => {
+            const isActive =
+              categoryFilter === 'All' &&
+              statusFilter === 'All' &&
+              subTypeFilter === 'All' &&
+              !underInquiryFilter;
+            return (
+              <div
+                onClick={() => {
                   setCategoryFilter('All');
                   setStatusFilter('All');
                   setSubTypeFilter('All');
-                }
-              }}
-              className={`p-3 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between h-22 sm:h-24 ${
-                isActive
-                  ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 ring-2 ring-sky-500/30 shadow-xs'
-                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-xs'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-7 h-7 rounded-lg bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center">
-                  <FileSearch className="w-3.5 h-3.5" />
-                </div>
-                <span className={`text-xs font-mono font-extrabold ${isActive ? 'text-sky-600 dark:text-sky-400' : 'text-slate-800 dark:text-slate-200'}`}>
-                  {underInquiryCount}
-                </span>
-              </div>
-              <div>
-                <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate">
-                  {language === 'bn' ? 'তদন্তাধীন' : 'Under Inquiry'}
-                </div>
-                <div className="text-[9px] text-sky-600 dark:text-sky-400 truncate font-medium">
-                  {language === 'bn' ? 'শুনানি ও তদন্ত' : 'Hearing / Inq.'}
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* 4. Disposed */}
-        {(() => {
-          const isActive =
-            categoryFilter === 'Disposed' &&
-            !underInquiryFilter &&
-            statusFilter === 'All' &&
-            subTypeFilter === 'All';
-          return (
-            <div
-              onClick={() => {
-                if (isActive) {
-                  setCategoryFilter('All');
-                } else {
-                  setCategoryFilter('Disposed');
-                  setStatusFilter('All');
-                  setSubTypeFilter('All');
                   setUnderInquiryFilter(false);
-                }
-              }}
-              className={`p-3 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between h-22 sm:h-24 ${
-                isActive
-                  ? 'border-emerald-600 bg-emerald-50/70 dark:bg-emerald-950/40 ring-2 ring-emerald-600/30 shadow-xs'
-                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-xs'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                </div>
-                <span className={`text-xs font-mono font-extrabold ${isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-200'}`}>
-                  {disposedCount}
-                </span>
-              </div>
-              <div>
-                <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate">
-                  {language === 'bn' ? 'নিষ্পত্তি' : 'Disposed'}
-                </div>
-                <div className="text-[9px] text-emerald-600 dark:text-emerald-400 truncate font-medium">
-                  {language === 'bn' ? 'রায় ও সমাপ্ত' : 'Final Order'}
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* 5, 6, 7. Applicable Stage Options according to Case Type */}
-        {applicableStages.map(st => {
-          const StageIcon = st.icon;
-          const isActive =
-            st.filterMode === 'status'
-              ? statusFilter === st.value && !underInquiryFilter
-              : subTypeFilter === st.value && !underInquiryFilter;
-
-          return (
-            <div
-              key={st.id}
-              onClick={() => {
-                if (st.filterMode === 'status') {
-                  if (isActive) {
-                    setStatusFilter('All');
-                  } else {
-                    setStatusFilter(st.value);
-                    setCategoryFilter('All');
-                    setSubTypeFilter('All');
-                    setUnderInquiryFilter(false);
-                  }
-                } else if (st.filterMode === 'subtype') {
-                  if (isActive) {
-                    setSubTypeFilter('All');
-                  } else {
-                    setSubTypeFilter(st.value);
-                    setCategoryFilter('All');
-                    setStatusFilter('All');
-                    setUnderInquiryFilter(false);
-                  }
-                }
-              }}
-              className={`p-3 rounded-xl border transition-all cursor-pointer group flex flex-col justify-between h-22 sm:h-24 ${
-                isActive
-                  ? `${st.activeBorder} ${st.activeBg} ring-2 ${st.activeRing} shadow-xs`
-                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-xs'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div className={`w-7 h-7 rounded-lg ${st.iconBg} ${st.iconColor} flex items-center justify-center`}>
-                  <StageIcon className="w-3.5 h-3.5" />
-                </div>
-                <span className={`text-xs font-mono font-extrabold ${isActive ? st.badgeActiveText : 'text-slate-800 dark:text-slate-200'}`}>
-                  {st.count}
-                </span>
-              </div>
-              <div>
-                <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate">
-                  {st.label}
-                </div>
-                <div className="text-[9px] text-slate-400 dark:text-slate-500 truncate">
-                  {st.subLabel}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Filter and Case List / Grid Container */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-        {/* Controls header */}
-        <div className="p-4 border-b border-slate-200 dark:border-slate-800 space-y-3">
-          {/* Top Row: Search input + Sub-Type Dropdown + Status Filter Dropdown + Reset + Batch + View Mode */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            {/* Status Filter Dropdown & Quick Badges */}
-            <div className="flex flex-wrap items-center gap-2">
-              <label
-                htmlFor="case-status-filter-select"
-                className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 shrink-0"
+                }}
+                className={`px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 border-l-3 border-l-blue-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-2xs hover:-translate-y-0.5 transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-blue-50/70 dark:bg-blue-950/40 ring-1 ring-blue-500/30'
+                    : 'bg-white dark:bg-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/90'
+                }`}
               >
-                <Filter className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                <span>Filter by Status:</span>
-              </label>
-
-              {/* Status Filter Dropdown */}
-              <div className="relative">
-                <select
-                  id="case-status-filter-select"
-                  value={
-                    statusFilter !== 'All'
-                      ? `status:${statusFilter}`
-                      : categoryFilter !== 'All'
-                      ? `category:${categoryFilter}`
-                      : 'all'
-                  }
-                  onChange={e => {
-                    const val = e.target.value;
-                    if (val === 'all') {
-                      setCategoryFilter('All');
-                      setStatusFilter('All');
-                    } else if (val.startsWith('category:')) {
-                      setCategoryFilter(val.replace('category:', '') as any);
-                      setStatusFilter('All');
-                    } else if (val.startsWith('status:')) {
-                      setStatusFilter(val.replace('status:', ''));
-                      setCategoryFilter('All');
-                    }
-                  }}
-                  className="pl-3 pr-8 py-1.5 text-xs font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer shadow-xs appearance-none min-w-[170px]"
-                >
-                  <option value="all">All Statuses ({categoryCounts.All})</option>
-                  <optgroup label="Tracking Categories">
-                    <option value="category:Pending">🟡 Pending ({categoryCounts.Pending})</option>
-                    <option value="category:In Progress">🔵 In Progress ({categoryCounts['In Progress']})</option>
-                    <option value="category:Disposed">🟢 Disposed ({categoryCounts.Disposed})</option>
-                  </optgroup>
-                  <optgroup label="Specific Case Stages">
-                    {meta.statuses.map(s => (
-                      <option key={s} value={`status:${s}`}>
-                        {s} ({statusCounts[s] || 0})
-                      </option>
-                    ))}
-                  </optgroup>
-                </select>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
+                <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-tight truncate">
+                  {language === 'bn' ? 'মোট কেস (Total Cases)' : 'Total Cases'}
+                </div>
+                <div className="text-sm sm:text-base font-extrabold font-mono text-slate-900 dark:text-slate-100 leading-tight mt-0.5">
+                  {allCases.length}
+                </div>
               </div>
+            );
+          })()}
 
-              {/* Sub-type filter dropdown */}
+          {/* 2. Pending / Filed */}
+          {(() => {
+            const isActive =
+              categoryFilter === 'Pending' &&
+              !underInquiryFilter &&
+              statusFilter === 'All' &&
+              subTypeFilter === 'All';
+            return (
+              <div
+                onClick={() => {
+                  if (isActive) {
+                    setCategoryFilter('All');
+                  } else {
+                    setCategoryFilter('Pending');
+                    setStatusFilter('All');
+                    setSubTypeFilter('All');
+                    setUnderInquiryFilter(false);
+                  }
+                }}
+                className={`px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 border-l-3 border-l-amber-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-2xs hover:-translate-y-0.5 transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-amber-50/70 dark:bg-amber-950/40 ring-1 ring-amber-500/30'
+                    : 'bg-white dark:bg-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/90'
+                }`}
+              >
+                <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-tight truncate">
+                  {language === 'bn' ? 'পেন্ডিং / দাখিল (Pending)' : 'Pending / Filed'}
+                </div>
+                <div className="text-sm sm:text-base font-extrabold font-mono text-amber-600 dark:text-amber-400 leading-tight mt-0.5">
+                  {pendingCount}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* 3. Under Inquiry / Hearing */}
+          {(() => {
+            const isActive = underInquiryFilter;
+            return (
+              <div
+                onClick={() => {
+                  if (isActive) {
+                    setUnderInquiryFilter(false);
+                  } else {
+                    setUnderInquiryFilter(true);
+                    setCategoryFilter('All');
+                    setStatusFilter('All');
+                    setSubTypeFilter('All');
+                  }
+                }}
+                className={`px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 border-l-3 border-l-purple-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-2xs hover:-translate-y-0.5 transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-purple-50/70 dark:bg-purple-950/40 ring-1 ring-purple-500/30'
+                    : 'bg-white dark:bg-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/90'
+                }`}
+              >
+                <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-tight truncate">
+                  {language === 'bn' ? 'শুনানি / তদন্তাধীন (Under Inquiry)' : 'Under Inquiry / Hearing'}
+                </div>
+                <div className="text-sm sm:text-base font-extrabold font-mono text-purple-600 dark:text-purple-400 leading-tight mt-0.5">
+                  {underInquiryCount}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* 4. Disposed / Allowed */}
+          {(() => {
+            const isActive =
+              categoryFilter === 'Disposed' &&
+              !underInquiryFilter &&
+              statusFilter === 'All' &&
+              subTypeFilter === 'All';
+            return (
+              <div
+                onClick={() => {
+                  if (isActive) {
+                    setCategoryFilter('All');
+                  } else {
+                    setCategoryFilter('Disposed');
+                    setStatusFilter('All');
+                    setSubTypeFilter('All');
+                    setUnderInquiryFilter(false);
+                  }
+                }}
+                className={`px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 border-l-3 border-l-emerald-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-2xs hover:-translate-y-0.5 transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-emerald-50/70 dark:bg-emerald-950/40 ring-1 ring-emerald-500/30'
+                    : 'bg-white dark:bg-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/90'
+                }`}
+              >
+                <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-tight truncate">
+                  {language === 'bn' ? 'নিষ্পত্তি / মঞ্জুর (Disposed)' : 'Disposed / Allowed'}
+                </div>
+                <div className="text-sm sm:text-base font-extrabold font-mono text-emerald-600 dark:text-emerald-400 leading-tight mt-0.5">
+                  {disposedCount}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      </div>
+
+      {/* Filter and Case List / Table Container — Matching Image 3 with 3D Visuals */}
+      <div className="w-full rounded-xl bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 shadow-[0_10px_25px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_10px_25px_rgba(0,0,0,0.5)] overflow-hidden">
+        {/* Controls Header */}
+        <div className="p-4 border-b border-slate-200 dark:border-slate-800 space-y-3">
+          {/* Row 1 (Visual from Image 3): Status Filter Pills on Left + Sub-Type Dropdown & Search Input on Right */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            {/* Status Filter Pills (`All (N)`, `Filed (N)`, `Notice Issued (N)`, `Hearing (N)`, etc.) */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                type="button"
+                onClick={() => {
+                  setCategoryFilter('All');
+                  setStatusFilter('All');
+                  setUnderInquiryFilter(false);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border-b-2 ${
+                  categoryFilter === 'All' && statusFilter === 'All' && !underInquiryFilter
+                    ? 'bg-slate-900 text-white border-b-slate-950 dark:bg-blue-600 dark:text-white dark:border-b-blue-800 shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-b-slate-300 dark:border-b-slate-950 hover:bg-slate-200 dark:hover:bg-slate-700'
+                }`}
+              >
+                All ({allCases.length})
+              </button>
+
+              {meta.statuses.map(st => {
+                const isSelectedStatus = statusFilter === st && !underInquiryFilter;
+                return (
+                  <button
+                    key={st}
+                    type="button"
+                    onClick={() => {
+                      if (isSelectedStatus) {
+                        setStatusFilter('All');
+                      } else {
+                        setStatusFilter(st);
+                        setCategoryFilter('All');
+                        setUnderInquiryFilter(false);
+                      }
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border-b-2 ${
+                      isSelectedStatus
+                        ? 'bg-slate-900 text-white border-b-slate-950 dark:bg-blue-600 dark:text-white dark:border-b-blue-800 shadow-xs'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-b-slate-300 dark:border-b-slate-950 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {st} ({statusCounts[st] || 0})
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Right Side: Sub-Type Dropdown + Search Input (Visual from Image 3) */}
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
               <div className="relative">
                 <select
                   value={subTypeFilter}
                   onChange={e => setSubTypeFilter(e.target.value)}
-                  className="pl-2.5 pr-7 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer shadow-xs appearance-none max-w-[170px]"
+                  className="pl-3 pr-8 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 border-b-2 border-b-slate-300 dark:border-b-slate-950 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer appearance-none"
                   title="Filter by Case Sub-Type"
                 >
                   <option value="All">All Sub-Types</option>
@@ -1320,220 +1236,134 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 pointer-events-none absolute right-2 top-1/2 -translate-y-1/2" />
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
               </div>
 
-              {/* Quick Tracking Category Pills */}
-              <div className="hidden lg:flex items-center gap-1 pl-1 border-l border-slate-200 dark:border-slate-700">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCategoryFilter('All');
-                    setStatusFilter('All');
-                  }}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
-                    categoryFilter === 'All' && statusFilter === 'All'
-                      ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950 shadow-xs'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
-                  }`}
-                >
-                  All ({categoryCounts.All})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCategoryFilter('Pending');
-                    setStatusFilter('All');
-                  }}
-                  className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 border ${
-                    categoryFilter === 'Pending'
-                      ? 'bg-amber-500 text-slate-950 border-amber-600 shadow-xs'
-                      : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
-                  }`}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                  <span>Pending ({categoryCounts.Pending})</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCategoryFilter('In Progress');
-                    setStatusFilter('All');
-                  }}
-                  className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 border ${
-                    categoryFilter === 'In Progress'
-                      ? 'bg-blue-600 text-white border-blue-700 shadow-xs'
-                      : 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'
-                  }`}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                  <span>In Progress ({categoryCounts['In Progress']})</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCategoryFilter('Disposed');
-                    setStatusFilter('All');
-                  }}
-                  className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 border ${
-                    categoryFilter === 'Disposed'
-                      ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
-                      : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
-                  }`}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span>Disposed ({categoryCounts.Disposed})</span>
-                </button>
-              </div>
-
-              {/* Reset filter button if any active filter */}
-              {(categoryFilter !== 'All' || statusFilter !== 'All' || search) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCategoryFilter('All');
-                    setStatusFilter('All');
-                    setSearch('');
-                  }}
-                  className="px-2 py-1 text-xs font-semibold rounded-md text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1 transition-colors cursor-pointer"
-                  title="Reset all filters"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  <span className="text-[11px]">Clear</span>
-                </button>
-              )}
-            </div>
-
-            {/* View Mode Toggle and Batch Selection Mode Button */}
-            <div className="flex items-center gap-2 flex-wrap shrink-0">
-              {/* Batch Mode Toggle Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsBatchMode(prev => {
-                    if (prev) {
-                      setSelectedCaseIds([]);
-                    }
-                    return !prev;
-                  });
-                }}
-                className={`px-2.5 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs ${
-                  isBatchMode
-                    ? 'bg-blue-600 text-white border-blue-700 shadow-sm'
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750'
-                }`}
-                title="Toggle Batch Selection Mode to update status or delete multiple cases in one go"
-              >
-                <CheckSquare className="w-3.5 h-3.5" />
-                <span>{isBatchMode ? 'Exit Batch' : 'Batch Select'}</span>
-                {selectedCaseIds.length > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full bg-white text-blue-700 text-[10px] font-extrabold ml-0.5">
-                    {selectedCaseIds.length}
-                  </span>
-                )}
-              </button>
-
-              {/* View Mode Toggle: Grid Cards vs Table */}
-              <div className="flex items-center gap-1 p-0.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setViewMode('grid')}
-                  className={`px-2.5 py-1 text-xs font-bold rounded-md flex items-center gap-1 transition-all cursor-pointer ${
-                    viewMode === 'grid'
-                      ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-                  }`}
-                  title="View as Case Cards"
-                >
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Cards</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode('table')}
-                  className={`px-2.5 py-1 text-xs font-bold rounded-md flex items-center gap-1 transition-all cursor-pointer ${
-                    viewMode === 'table'
-                      ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-                  }`}
-                  title="View as Table"
-                >
-                  <List className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Table</span>
-                </button>
+              <div className="relative min-w-[230px] flex-1 sm:flex-initial">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Search case, party, Mouza, Dag..."
+                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 border-b-2 border-b-slate-300 dark:border-b-slate-950 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 font-medium"
+                />
               </div>
             </div>
           </div>
 
-          {/* Sub-status chips + search + count indicator */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                Showing <span className="font-bold font-mono text-slate-900 dark:text-slate-100">{filteredCases.length}</span> of {allCases.length} cases
-              </span>
-              {(categoryFilter !== 'All' || statusFilter !== 'All') && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                  Filtered by: {statusFilter !== 'All' ? statusFilter : categoryFilter}
+          {/* Row 2: Secondary Action & Utility Bar (shown when cases exist) */}
+          {filteredCases.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                  Showing <span className="font-bold font-mono text-slate-900 dark:text-slate-100">{filteredCases.length}</span> of {allCases.length} cases
                 </span>
-              )}
 
-              {/* Quick Export & Tool buttons for filtered list */}
-              <div className="flex items-center gap-1 sm:ml-2">
-                {type !== 'mutation' && onOpenAiDraft && (
+                {(categoryFilter !== 'All' || statusFilter !== 'All' || subTypeFilter !== 'All' || underInquiryFilter || search) && (
                   <button
                     type="button"
-                    onClick={() => onOpenAiDraft(type)}
-                    className="inline-flex items-center gap-1 px-2.5 py-0.8 text-[11px] font-bold rounded-md bg-violet-600 hover:bg-violet-700 text-white shadow-2xs transition-colors cursor-pointer"
-                    title={`Open AI Drafting Studio for ${meta.title}`}
+                    onClick={() => {
+                      setCategoryFilter('All');
+                      setStatusFilter('All');
+                      setSubTypeFilter('All');
+                      setUnderInquiryFilter(false);
+                      setSearch('');
+                    }}
+                    className="px-2 py-0.5 text-[11px] font-semibold rounded-md text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-1 transition-colors cursor-pointer"
+                    title="Reset all filters"
                   >
-                    <Sparkles className="w-3 h-3" />
-                    <span>{language === 'bn' ? 'এআই ড্রাফট' : 'AI Draft'}</span>
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Clear Filters</span>
                   </button>
                 )}
+
                 <button
                   type="button"
                   onClick={exportFilteredCasesCSV}
-                  className="inline-flex items-center gap-1 px-2 py-0.8 text-[11px] font-bold rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 hover:text-blue-600 transition-colors shadow-2xs cursor-pointer"
+                  className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-bold rounded-md border border-slate-200 dark:border-slate-700 border-b-2 border-b-slate-300 dark:border-b-slate-950 bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                   title="Export filtered case list to CSV spreadsheet"
                 >
                   <Download className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                   <span>CSV</span>
                 </button>
+
                 <button
                   type="button"
                   onClick={exportFilteredCasesPDF}
-                  className="inline-flex items-center gap-1 px-2 py-0.8 text-[11px] font-bold rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 hover:text-emerald-600 transition-colors shadow-2xs cursor-pointer"
+                  className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-bold rounded-md border border-slate-200 dark:border-slate-700 border-b-2 border-b-slate-300 dark:border-b-slate-950 bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                   title="Print filtered case list or Save as PDF"
                 >
                   <Printer className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                   <span>PDF</span>
                 </button>
               </div>
-            </div>
 
-            {/* Quick search input */}
-            <div className="relative min-w-[220px]">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search case, party, Mouza, Dag..."
-                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600 font-medium"
-              />
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsBatchMode(prev => {
+                      if (prev) setSelectedCaseIds([]);
+                      return !prev;
+                    });
+                  }}
+                  className={`px-2.5 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 ${
+                    isBatchMode
+                      ? 'bg-blue-600 text-white border-blue-700 shadow-xs'
+                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  <CheckSquare className="w-3.5 h-3.5" />
+                  <span>{isBatchMode ? 'Exit Batch' : 'Batch Select'}</span>
+                  {selectedCaseIds.length > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full bg-white text-blue-700 text-[10px] font-extrabold">
+                      {selectedCaseIds.length}
+                    </span>
+                  )}
+                </button>
+
+                <div className="flex items-center gap-1 p-0.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('table')}
+                    className={`px-2.5 py-1 text-xs font-bold rounded-md flex items-center gap-1 transition-all cursor-pointer ${
+                      viewMode === 'table'
+                        ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                    }`}
+                    title="View as Table"
+                  >
+                    <List className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Table</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('grid')}
+                    className={`px-2.5 py-1 text-xs font-bold rounded-md flex items-center gap-1 transition-all cursor-pointer ${
+                      viewMode === 'grid'
+                        ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                    }`}
+                    title="View as Cards"
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Cards</span>
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Dynamic Batch Actions Toolbar (Visible when isBatchMode is true) */}
+        {/* Dynamic Batch Actions Toolbar */}
         {isBatchMode && (
           <div className="p-3 bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 dark:from-blue-950/80 dark:via-indigo-950/70 dark:to-blue-950/80 border-b border-blue-200 dark:border-blue-900 flex flex-wrap items-center justify-between gap-3 animate-in fade-in duration-150">
             <div className="flex items-center gap-3 flex-wrap">
-              {/* Select / Deselect All Button */}
               <button
                 type="button"
                 onClick={toggleSelectAll}
-                className="px-2.5 py-1 text-xs font-bold rounded-md bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/40 flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                className="px-2.5 py-1 text-xs font-bold rounded-md bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-50 flex items-center gap-1.5 shadow-2xs cursor-pointer"
               >
                 {selectedCaseIds.length === filteredCases.length && filteredCases.length > 0 ? (
                   <CheckSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -1552,9 +1382,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
               </span>
             </div>
 
-            {/* Batch Action Controls */}
             <div className="flex items-center gap-2 flex-wrap">
-              {/* Batch Status Update */}
               <div className="flex items-center gap-1 bg-white dark:bg-slate-900 px-2 py-1 rounded-lg border border-blue-200 dark:border-blue-800 shadow-2xs">
                 <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
                   Status:
@@ -1576,57 +1404,48 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                   disabled={!batchTargetStatus || selectedCaseIds.length === 0}
                   onClick={handleApplyBatchStatus}
                   className="px-2.5 py-1 text-xs font-bold rounded bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 dark:disabled:bg-slate-800 text-white disabled:text-slate-400 transition-colors cursor-pointer shadow-2xs"
-                  title="Update status for selected cases"
                 >
                   Apply Status
                 </button>
               </div>
 
-              {/* Batch Export CSV */}
               <button
                 type="button"
                 disabled={selectedCaseIds.length === 0}
                 onClick={exportFilteredCasesCSV}
-                className="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 disabled:opacity-40 flex items-center gap-1 cursor-pointer shadow-2xs"
-                title="Export selected cases to CSV spreadsheet"
+                className="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 disabled:opacity-40 flex items-center gap-1 cursor-pointer"
               >
-                <Download className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                <Download className="w-3.5 h-3.5 text-blue-600" />
                 <span>CSV ({selectedCaseIds.length})</span>
               </button>
 
-              {/* Batch Export PDF */}
               <button
                 type="button"
                 disabled={selectedCaseIds.length === 0}
                 onClick={exportFilteredCasesPDF}
-                className="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 disabled:opacity-40 flex items-center gap-1 cursor-pointer shadow-2xs"
-                title="Print selected cases as PDF report"
+                className="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 disabled:opacity-40 flex items-center gap-1 cursor-pointer"
               >
-                <Printer className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <Printer className="w-3.5 h-3.5 text-emerald-600" />
                 <span>PDF ({selectedCaseIds.length})</span>
               </button>
 
-              {/* Batch Delete */}
               <button
                 type="button"
                 disabled={selectedCaseIds.length === 0}
                 onClick={() => setBatchDeleteModalOpen(true)}
-                className="px-3 py-1 text-xs font-bold rounded-lg bg-rose-600 hover:bg-rose-700 disabled:bg-slate-200 dark:disabled:bg-slate-800 text-white disabled:text-slate-400 transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
-                title="Delete all selected cases"
+                className="px-3 py-1 text-xs font-bold rounded-lg bg-rose-600 hover:bg-rose-700 disabled:bg-slate-200 dark:disabled:bg-slate-800 text-white disabled:text-slate-400 transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Delete ({selectedCaseIds.length})</span>
               </button>
 
-              {/* Exit Batch Mode */}
               <button
                 type="button"
                 onClick={() => {
                   setIsBatchMode(false);
                   setSelectedCaseIds([]);
                 }}
-                className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 rounded-md hover:bg-slate-200/60 dark:hover:bg-slate-800 cursor-pointer"
-                title="Exit Batch Mode"
+                className="p-1.5 text-slate-500 hover:text-slate-800 rounded-md hover:bg-slate-200/60 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1634,10 +1453,9 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
           </div>
         )}
 
-        {/* View Mode: Cards Grid vs Table */}
+        {/* View Mode: Table (Visual from Image 2) vs Cards Grid */}
         {filteredCases.length > 0 ? (
           viewMode === 'grid' ? (
-            /* Cards View with Color-Coded Status Badges & Batch Selection */
             <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {filteredCases.map(c => {
                 const statusInfo = getStatusTrackingInfo(c.status);
@@ -1664,10 +1482,8 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                     }`}
                   >
                     <div>
-                      {/* Top Header of Card: Case No & Visual Status Indicator Badge */}
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="flex items-center gap-2 min-w-0">
-                          {/* Batch Checkbox */}
                           {isBatchMode && (
                             <button
                               type="button"
@@ -1680,7 +1496,6 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                                   ? 'bg-blue-600 text-white'
                                   : 'border border-slate-300 dark:border-slate-600 hover:border-blue-500 bg-white dark:bg-slate-800'
                               }`}
-                              title={isSelected ? 'Deselect case' : 'Select case'}
                             >
                               {isSelected ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : null}
                             </button>
@@ -1695,21 +1510,14 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                           </div>
                         </div>
 
-                        {/* Visual Status Indicator with Color-Coded Badge */}
                         <div
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold border shrink-0 ${statusInfo.badgeClass}`}
-                          title={`Status: ${statusInfo.label} (${statusInfo.category})`}
                         >
                           <span className={`w-2 h-2 rounded-full ${statusInfo.dotClass}`} />
-                          <span className="uppercase text-[9px] font-extrabold tracking-wider">
-                            {statusInfo.category}
-                          </span>
-                          <span>·</span>
-                          <span className="truncate max-w-[90px]">{statusInfo.label}</span>
+                          <span>{c.status}</span>
                         </div>
                       </div>
 
-                      {/* Party Info */}
                       <div className="space-y-1.5 py-2.5 border-y border-slate-100 dark:border-slate-800 text-xs">
                         <div className="flex items-start gap-1.5">
                           <User className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
@@ -1717,28 +1525,25 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                             <span className="font-bold text-slate-900 dark:text-slate-100 truncate block">
                               {c.party}
                             </span>
-                            {c.opp && (
+                            {type !== 'rti' && c.opp && (
                               <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate block">
-                                vs {c.opp}
+                                vs. {c.opp}
                               </span>
                             )}
                           </div>
                         </div>
 
-                        {/* Forum */}
                         <div className="flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-400">
                           <Gavel className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span className="truncate">{c.forum || 'West Bengal Revenue Forum'}</span>
+                          <span className="truncate">{c.forum || (type === 'rti' ? 'Public Authority (Optional)' : 'West Bengal Revenue Forum')}</span>
                         </div>
 
-                        {/* Land Schedule */}
                         <div className="flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-400">
                           <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                           <span className="truncate">{scheduleSummary}</span>
                         </div>
                       </div>
 
-                      {/* Dates Strip */}
                       <div className="flex items-center justify-between text-[11px] py-2 text-slate-500 dark:text-slate-400">
                         <span className="truncate">
                           Filed: <span className="font-mono font-medium">{c.filingDate || '—'}</span>
@@ -1750,7 +1555,6 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       </div>
                     </div>
 
-                    {/* Card Actions Footer */}
                     <div
                       className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-1"
                       onClick={e => e.stopPropagation()}
@@ -1765,17 +1569,6 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                           >
                             <LinkIcon className="w-3 h-3" />
                             <span>Chain Deed</span>
-                          </button>
-                        )}
-                        {c.type !== 'mutation' && onOpenAiDraft && (
-                          <button
-                            type="button"
-                            onClick={() => onOpenAiDraft(c.type, c)}
-                            className="px-2 py-1 rounded bg-violet-50 hover:bg-violet-600 text-violet-700 hover:text-white dark:bg-violet-950/60 dark:text-violet-300 dark:hover:bg-violet-600 text-[11px] font-bold transition-colors cursor-pointer flex items-center gap-1"
-                            title="Draft with AI"
-                          >
-                            <Sparkles className="w-3 h-3" />
-                            <span>AI Draft</span>
                           </button>
                         )}
                       </div>
@@ -1820,10 +1613,10 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
               })}
             </div>
           ) : (
-            /* Table View with Status Indicators & Batch Checkbox Column */
+            /* Table View matching Image 2 */
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
+                <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
                   <tr>
                     {isBatchMode && (
                       <th className="py-3 px-3 w-10 text-center">
@@ -1831,7 +1624,6 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                           type="button"
                           onClick={toggleSelectAll}
                           className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 flex items-center justify-center transition-colors cursor-pointer mx-auto bg-white dark:bg-slate-800"
-                          title="Toggle Select All Filtered Cases"
                         >
                           {selectedCaseIds.length === filteredCases.length && filteredCases.length > 0 ? (
                             <CheckSquare className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
@@ -1841,23 +1633,30 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                         </button>
                       </th>
                     )}
-                    <th className="py-3 px-4">Case No</th>
-                    <th className="py-3 px-4">Sub-Type</th>
-                    <th className="py-3 px-4">Petitioner / Opposite</th>
-                    <th className="py-3 px-4">Forum</th>
-                    <th className="py-3 px-4">Land Mouza / Dag</th>
-                    <th className="py-3 px-4">Next Hearing</th>
-                    <th className="py-3 px-4">Tracking Status</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
+                    <th className="py-3.5 px-4">
+                      {type === 'rti'
+                        ? 'Docket / Tracking ID & Case No'
+                        : type === 'firstappeal'
+                        ? 'Case No, Docket & Tracking No'
+                        : type === 'lrappeal' || type === 'misc'
+                        ? 'Case No & Docket No'
+                        : 'Case No & App No'}
+                    </th>
+                    <th className="py-3.5 px-4">Sub-Type</th>
+                    <th className="py-3.5 px-4">
+                      {type === 'rti' ? 'Applicant & Authority / Forum' : 'Petitioner & Opp. Party'}
+                    </th>
+                    <th className="py-3.5 px-4">Land Schedule (Mouza/Dag)</th>
+                    <th className="py-3.5 px-4">Hearing Date</th>
+                    <th className="py-3.5 px-4">Status</th>
+                    <th className="py-3.5 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {filteredCases.map(c => {
                     const statusInfo = getStatusTrackingInfo(c.status);
-                    const scheduleSummary =
-                      c.landSchedules.length > 0
-                        ? `${c.landSchedules[0].mouza} (Dag ${c.landSchedules[0].dag})`
-                        : '—';
+                    const s0 = c.landSchedules?.[0];
+                    const extraPlots = (c.landSchedules?.length || 0) - 1;
                     const isSelected = selectedCaseIds.includes(c.id);
 
                     return (
@@ -1876,7 +1675,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       >
                         {isBatchMode && (
                           <td
-                            className="py-3 px-3 text-center whitespace-nowrap"
+                            className="py-3.5 px-3 text-center whitespace-nowrap"
                             onClick={e => e.stopPropagation()}
                           >
                             <button
@@ -1887,92 +1686,132 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                                   ? 'bg-blue-600 text-white'
                                   : 'border border-slate-300 dark:border-slate-600 hover:border-blue-500 bg-white dark:bg-slate-800'
                               }`}
-                              title={isSelected ? 'Deselect case' : 'Select case'}
                             >
                               {isSelected ? <Check className="w-3 h-3 stroke-[3]" /> : null}
                             </button>
                           </td>
                         )}
-                        <td className="py-3 px-4 font-mono font-bold text-blue-700 dark:text-blue-400 whitespace-nowrap">
-                          {c.caseNo || c.docketNo || 'RTI Application'}
-                        </td>
-                        <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                          {c.subType}
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="font-bold text-slate-900 dark:text-slate-100">{c.party}</div>
-                          {c.opp && (
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[200px]">
-                              vs {c.opp}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <div className="font-mono font-extrabold text-blue-700 dark:text-blue-400 text-xs">
+                            {c.caseNo || c.docketNo || 'RTI Application'}
+                          </div>
+                          {(c.appNo || c.docketNo) && (
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">
+                              {c.type === 'rti'
+                                ? `Docket/Track: ${c.docketNo}`
+                                : c.docketNo
+                                ? `Docket: ${c.docketNo}`
+                                : `App: ${c.appNo}`}
+                            </div>
+                          )}
+                          {c.grnNo && !['misc', 'lrappeal', 'rti'].includes(c.type) && (
+                            <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-semibold">
+                              {c.type === 'firstappeal' ? `Tracking: ${c.grnNo}` : `GRN: ${c.grnNo}`}
                             </div>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                          {c.forum || '—'}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <span className="inline-block px-2.5 py-1 rounded-md text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                            {c.subType}
+                          </span>
                         </td>
-                        <td className="py-3 px-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                          {scheduleSummary}
+                        <td className="py-3.5 px-4">
+                          <div className="font-bold text-slate-900 dark:text-slate-100">{c.party}</div>
+                          {c.type === 'rti' ? (
+                            <div className="text-[11px] text-teal-600 dark:text-teal-400 truncate max-w-[220px]">
+                              {c.forum ? `To: ${c.forum}` : 'Authority: Optional / Not specified'}
+                            </div>
+                          ) : (
+                            c.opp && (
+                              <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[220px]">
+                                vs. {c.opp}
+                              </div>
+                            )
+                          )}
                         </td>
-                        <td className="py-3 px-4 font-mono text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                          {c.nextDate || '—'}
+                        <td className="py-3.5 px-4">
+                          {s0 ? (
+                            <div>
+                              <div className="font-bold text-slate-800 dark:text-slate-200">
+                                {s0.mouza} {s0.jl ? `(JL: ${s0.jl})` : ''}
+                              </div>
+                              <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                                Kh: {s0.khatian || '—'} • Dag: {s0.dag || '—'} ({s0.area} {s0.unit})
+                              </div>
+                              {extraPlots > 0 && (
+                                <span className="inline-block mt-0.5 text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                                  +{extraPlots} more plot{extraPlots > 1 ? 's' : ''}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-slate-400">—</span>
+                          )}
                         </td>
-                        <td className="py-3 px-4 whitespace-nowrap">
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          {c.nextDate ? (
+                            <div>
+                              <div className="flex items-center gap-1 font-mono font-bold text-blue-700 dark:text-blue-400">
+                                <Calendar className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                                <span>{c.nextDate}</span>
+                              </div>
+                              {c.filingDate && (
+                                <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                                  Filed: {c.filingDate}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-[11px] text-slate-400">
+                              {c.filingDate ? `Filed: ${c.filingDate}` : '—'}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4 whitespace-nowrap">
                           <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[10px] font-bold border ${statusInfo.badgeClass}`}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${statusInfo.badgeClass}`}
                           >
-                            <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotClass}`} />
-                            <span className="uppercase text-[9px] opacity-80">{statusInfo.category}</span>
-                            <span>·</span>
-                            <span>{statusInfo.label}</span>
+                            <span>{c.status}</span>
                           </span>
                         </td>
                         <td
-                          className="py-3 px-4 text-right whitespace-nowrap"
+                          className="py-3.5 px-4 text-right whitespace-nowrap"
                           onClick={e => e.stopPropagation()}
                         >
                           <div className="flex items-center justify-end gap-1">
                             {['mutation', 'misc', 'lrappeal', 'lrtt'].includes(c.type) && onOpenChainDeed && (
                               <button
                                 onClick={() => onOpenChainDeed(c)}
-                                className="p-1 rounded text-blue-600 hover:text-white hover:bg-blue-600 transition-colors cursor-pointer"
+                                className="p-1.5 rounded-lg text-blue-600 hover:text-white hover:bg-blue-600 transition-colors cursor-pointer"
                                 title="Make / View Chain Deed Statement"
                               >
                                 <LinkIcon className="w-4 h-4" />
                               </button>
                             )}
-                            {c.type !== 'mutation' && onOpenAiDraft && (
-                              <button
-                                onClick={() => onOpenAiDraft(c.type, c)}
-                                className="p-1 rounded text-violet-600 hover:text-white hover:bg-violet-600 transition-colors cursor-pointer"
-                                title="Draft Petition with AI for this case"
-                              >
-                                <Sparkles className="w-4 h-4" />
-                              </button>
-                            )}
                             <button
                               onClick={() => onViewCaseDetail(c.id)}
-                              className="p-1 rounded text-slate-600 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors cursor-pointer"
+                              className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors cursor-pointer"
                               title="View Full Case File"
                             >
                               <Eye className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => onEditCase(c)}
-                              className="p-1 rounded text-slate-600 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950 transition-colors cursor-pointer"
+                              className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950 transition-colors cursor-pointer"
                               title="Edit Case"
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => printCaseSummary(c)}
-                              className="p-1 rounded text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950 transition-colors cursor-pointer"
+                              className="p-1.5 rounded-lg text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950 transition-colors cursor-pointer"
                               title="Print Case File Sheet"
                             >
                               <Printer className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => setSingleCaseToDelete(c)}
-                              className="p-1 rounded text-slate-600 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950 transition-colors cursor-pointer"
+                              className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950 transition-colors cursor-pointer"
                               title="Delete Case"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -1988,7 +1827,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
           )
         ) : (
           <div className="p-12 text-center space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 mx-auto flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 mx-auto flex items-center justify-center shadow-[0_4px_10px_rgba(15,23,42,0.08),inset_0_2px_2px_rgba(255,255,255,0.8)] border border-slate-200/80 dark:border-slate-700">
               <Icon className="w-6 h-6" />
             </div>
             <div className="text-sm font-bold text-slate-800 dark:text-slate-200">
@@ -1999,7 +1838,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
             </p>
             <button
               onClick={() => onOpenNewCase(type)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold shadow-sm cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 border-b-3 border-b-blue-950 active:translate-y-0.5 text-white text-xs font-semibold shadow-sm cursor-pointer transition-all"
             >
               <Plus className="w-4 h-4" /> Add New {meta.title}
             </button>

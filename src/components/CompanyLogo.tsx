@@ -50,12 +50,12 @@ export const CompanyLogo: React.FC<CompanyLogoProps> = ({
   showBorder = true
 }) => {
   const sizeMap = {
-    xs: { box: 'w-6 h-6', icon: 'w-3.5 h-3.5', text: 'text-[9px]', radius: 'rounded-md' },
-    sm: { box: 'w-8 h-8', icon: 'w-4 h-4', text: 'text-xs', radius: 'rounded-lg' },
-    md: { box: 'w-10 h-10', icon: 'w-5 h-5', text: 'text-sm', radius: 'rounded-xl' },
-    lg: { box: 'w-12 h-12', icon: 'w-6 h-6', text: 'text-base', radius: 'rounded-xl' },
-    xl: { box: 'w-16 h-16', icon: 'w-8 h-8', text: 'text-xl', radius: 'rounded-2xl' },
-    '2xl': { box: 'w-20 h-20', icon: 'w-10 h-10', text: 'text-2xl', radius: 'rounded-2xl' }
+    xs: { box: 'w-6 h-6', icon: 'w-3 h-3', text: 'text-[9px]', radius: 'rounded-md' },
+    sm: { box: 'w-7 h-7', icon: 'w-3.5 h-3.5', text: 'text-[10px]', radius: 'rounded-lg' },
+    md: { box: 'w-8 h-8', icon: 'w-4 h-4', text: 'text-xs', radius: 'rounded-lg' },
+    lg: { box: 'w-10 h-10', icon: 'w-5 h-5', text: 'text-sm', radius: 'rounded-xl' },
+    xl: { box: 'w-12 h-12', icon: 'w-6 h-6', text: 'text-base', radius: 'rounded-xl' },
+    '2xl': { box: 'w-14 h-14', icon: 'w-7 h-7', text: 'text-lg', radius: 'rounded-2xl' }
   }[size];
 
   // If company has uploaded a custom image logo (like Vyapar app)

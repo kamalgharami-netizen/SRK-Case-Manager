@@ -598,18 +598,18 @@ const MainAppContent: React.FC = () => {
         </main>
       </div>
 
-      {/* Mobile Bottom Sheet for Case Categories */}
+      {/* Mobile Sub-Menu Sheet for Case Categories with 3D Design & 2x Bigger Icons */}
       {mobileCasesSheetOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end">
           <div
             className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
             onClick={() => setMobileCasesSheetOpen(false)}
           />
-          <div className="relative bg-white dark:bg-slate-900 rounded-t-3xl border-t border-slate-200 dark:border-slate-800 p-4 shadow-2xl space-y-3 max-h-[80vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
+          <div className="relative bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 rounded-t-3xl border-t-2 border-slate-200 dark:border-slate-700 p-4 shadow-[0_-20px_50px_rgba(15,23,42,0.25)] space-y-3 max-h-[82vh] overflow-y-auto animate-in slide-in-from-bottom duration-200">
             <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto" />
             <div className="flex items-center justify-between px-1">
               <h3 className="text-sm font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <FolderGit2 className="w-4 h-4 text-blue-600" />
+                <FolderGit2 className="w-5 h-5 text-blue-600" />
                 <span>Land Case Menus (মামলার মেনুসমূহ)</span>
               </h3>
               <button
@@ -621,26 +621,28 @@ const MainAppContent: React.FC = () => {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="grid grid-cols-2 gap-2.5 text-xs">
               <button
                 type="button"
                 onClick={() => {
                   setMobileCasesSheetOpen(false);
                   handleNavigatePage('case-mutation');
                 }}
-                className={`p-3 rounded-xl border text-left flex items-center justify-between transition-colors ${
+                className={`p-3 rounded-2xl border border-b-4 text-center flex flex-col items-center justify-between gap-1.5 shadow-sm transition-all ${
                   currentPage === 'case-mutation'
-                    ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 font-bold'
-                    : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                    ? 'border-blue-600 border-b-blue-800 bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 font-bold'
+                    : 'border-slate-200 dark:border-slate-800 border-b-slate-300 dark:border-b-slate-950 bg-white dark:bg-slate-800/80'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-blue-500" />
-                  <span>Mutation</span>
+                <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-inner">
+                  <FileText className="w-8 h-8" />
                 </div>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
-                  {getCaseCount('mutation')}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold">Mutation</span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
+                    {getCaseCount('mutation')}
+                  </span>
+                </div>
               </button>
 
               <button
@@ -649,19 +651,21 @@ const MainAppContent: React.FC = () => {
                   setMobileCasesSheetOpen(false);
                   handleNavigatePage('case-misc');
                 }}
-                className={`p-3 rounded-xl border text-left flex items-center justify-between transition-colors ${
+                className={`p-3 rounded-2xl border border-b-4 text-center flex flex-col items-center justify-between gap-1.5 shadow-sm transition-all ${
                   currentPage === 'case-misc'
-                    ? 'border-purple-600 bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 font-bold'
-                    : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                    ? 'border-purple-600 border-b-purple-800 bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 font-bold'
+                    : 'border-slate-200 dark:border-slate-800 border-b-slate-300 dark:border-b-slate-950 bg-white dark:bg-slate-800/80'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <FolderGit2 className="w-4 h-4 text-purple-500" />
-                  <span>Misc Case</span>
+                <div className="w-14 h-14 rounded-2xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center shadow-inner">
+                  <FolderGit2 className="w-8 h-8" />
                 </div>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
-                  {getCaseCount('misc')}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold">Misc Case</span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
+                    {getCaseCount('misc')}
+                  </span>
+                </div>
               </button>
 
               <button
@@ -670,19 +674,21 @@ const MainAppContent: React.FC = () => {
                   setMobileCasesSheetOpen(false);
                   handleNavigatePage('case-lrappeal');
                 }}
-                className={`p-3 rounded-xl border text-left flex items-center justify-between transition-colors ${
+                className={`p-3 rounded-2xl border border-b-4 text-center flex flex-col items-center justify-between gap-1.5 shadow-sm transition-all ${
                   currentPage === 'case-lrappeal'
-                    ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold'
-                    : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                    ? 'border-emerald-600 border-b-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold'
+                    : 'border-slate-200 dark:border-slate-800 border-b-slate-300 dark:border-b-slate-950 bg-white dark:bg-slate-800/80'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <Send className="w-4 h-4 text-emerald-500" />
-                  <span>LR Appeal</span>
+                <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-inner">
+                  <Send className="w-8 h-8" />
                 </div>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
-                  {getCaseCount('lrappeal')}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold">LR Appeal</span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
+                    {getCaseCount('lrappeal')}
+                  </span>
+                </div>
               </button>
 
               <button
@@ -691,19 +697,21 @@ const MainAppContent: React.FC = () => {
                   setMobileCasesSheetOpen(false);
                   handleNavigatePage('case-firstappeal');
                 }}
-                className={`p-3 rounded-xl border text-left flex items-center justify-between transition-colors ${
+                className={`p-3 rounded-2xl border border-b-4 text-center flex flex-col items-center justify-between gap-1.5 shadow-sm transition-all ${
                   currentPage === 'case-firstappeal'
-                    ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 font-bold'
-                    : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                    ? 'border-indigo-600 border-b-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 font-bold'
+                    : 'border-slate-200 dark:border-slate-800 border-b-slate-300 dark:border-b-slate-950 bg-white dark:bg-slate-800/80'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <Gavel className="w-4 h-4 text-indigo-500" />
-                  <span>First Appeal</span>
+                <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-inner">
+                  <Gavel className="w-8 h-8" />
                 </div>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
-                  {getCaseCount('firstappeal')}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold">First Appeal</span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
+                    {getCaseCount('firstappeal')}
+                  </span>
+                </div>
               </button>
 
               <button
@@ -712,19 +720,21 @@ const MainAppContent: React.FC = () => {
                   setMobileCasesSheetOpen(false);
                   handleNavigatePage('case-rti');
                 }}
-                className={`p-3 rounded-xl border text-left flex items-center justify-between transition-colors ${
+                className={`p-3 rounded-2xl border border-b-4 text-center flex flex-col items-center justify-between gap-1.5 shadow-sm transition-all ${
                   currentPage === 'case-rti'
-                    ? 'border-teal-600 bg-teal-50 dark:bg-teal-950/40 text-teal-800 dark:text-teal-300 font-bold'
-                    : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                    ? 'border-teal-600 border-b-teal-800 bg-teal-50 dark:bg-teal-950/40 text-teal-800 dark:text-teal-300 font-bold'
+                    : 'border-slate-200 dark:border-slate-800 border-b-slate-300 dark:border-b-slate-950 bg-white dark:bg-slate-800/80'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <FileSearch className="w-4 h-4 text-teal-500" />
-                  <span>RTI Query</span>
+                <div className="w-14 h-14 rounded-2xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center shadow-inner">
+                  <FileSearch className="w-8 h-8" />
                 </div>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
-                  {getCaseCount('rti')}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold">RTI Query</span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
+                    {getCaseCount('rti')}
+                  </span>
+                </div>
               </button>
 
               <button
@@ -733,19 +743,21 @@ const MainAppContent: React.FC = () => {
                   setMobileCasesSheetOpen(false);
                   handleNavigatePage('case-conversion');
                 }}
-                className={`p-3 rounded-xl border text-left flex items-center justify-between transition-colors ${
+                className={`p-3 rounded-2xl border border-b-4 text-center flex flex-col items-center justify-between gap-1.5 shadow-sm transition-all ${
                   currentPage === 'case-conversion'
-                    ? 'border-amber-600 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 font-bold'
-                    : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                    ? 'border-amber-600 border-b-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 font-bold'
+                    : 'border-slate-200 dark:border-slate-800 border-b-slate-300 dark:border-b-slate-950 bg-white dark:bg-slate-800/80'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <RefreshCw className="w-4 h-4 text-amber-500" />
-                  <span>Conversion</span>
+                <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-inner">
+                  <RefreshCw className="w-8 h-8" />
                 </div>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
-                  {getCaseCount('conversion')}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold">Conversion</span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
+                    {getCaseCount('conversion')}
+                  </span>
+                </div>
               </button>
 
               <button
@@ -754,19 +766,21 @@ const MainAppContent: React.FC = () => {
                   setMobileCasesSheetOpen(false);
                   handleNavigatePage('case-lrtt');
                 }}
-                className={`col-span-2 p-3 rounded-xl border text-left flex items-center justify-between transition-colors ${
+                className={`col-span-2 p-3 rounded-2xl border border-b-4 text-center flex flex-col items-center justify-between gap-1.5 shadow-sm transition-all ${
                   currentPage === 'case-lrtt'
-                    ? 'border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-bold'
-                    : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                    ? 'border-cyan-600 border-b-cyan-800 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-800 dark:text-cyan-300 font-bold'
+                    : 'border-slate-200 dark:border-slate-800 border-b-slate-300 dark:border-b-slate-950 bg-white dark:bg-slate-800/80'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <Building className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                  <span>WBLRTT Land Tribunal</span>
+                <div className="w-14 h-14 rounded-2xl bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 flex items-center justify-center shadow-inner">
+                  <Building className="w-8 h-8" />
                 </div>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
-                  {getCaseCount('lrtt')}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold">WBLRTT Land Tribunal</span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
+                    {getCaseCount('lrtt')}
+                  </span>
+                </div>
               </button>
             </div>
           </div>

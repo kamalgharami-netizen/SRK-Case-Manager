@@ -1,22 +1,61 @@
 import React, { useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { Scale, Building2, FolderOpen, RotateCcw, ArrowRight, UserPlus, Trash2, CheckCircle2, AlertCircle, X, Upload, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { Scale, Building2, FolderOpen, RotateCcw, ArrowRight, UserPlus, Trash2, CheckCircle2, AlertCircle, X, Upload, Sparkles, LogIn, KeyRound, Mail, UserCheck, Eye, EyeOff } from 'lucide-react';
 import { wbDistricts } from '../data/wbDistricts';
 import { CompanyLogo, BADGE_OPTIONS, COLOR_OPTIONS } from './CompanyLogo';
+import { Toast } from './Toast';
 
 interface LaunchScreenProps {
   onClose?: () => void;
 }
 
 export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
-  const { companies, selectCompany, createCompany, deleteCompany, restoreCompany, showToast, t } = useApp();
+  const { companies, activeCompany, selectCompany, createCompany, deleteCompany, restoreCompany, loginUser, showToast } = useApp();
   const logoFileRef = useRef<HTMLInputElement>(null);
-  
+
+  const isFirstLaunch = companies.length === 0;
+
   // When no companies exist (First-Time Launch), default to 'create'.
-  // If companies exist, default to 'select'.
-  const [view, setView] = useState<'create' | 'restore' | 'select'>(
-    companies.length === 0 ? 'create' : 'create'
+  // When companies exist (e.g. after Logout), default to 'login'.
+  const [view, setView] = useState<'login' | 'create' | 'restore' | 'select'>(
+    companies.length === 0 ? 'create' : 'login'
   );
+
+  // Login states
+  const [selectedLoginCompanyId, setSelectedLoginCompanyId] = useState<string>(
+    activeCompany?.id || companies[0]?.id || ''
+  );
+  const targetLoginCompany =
+    companies.find(c => c.id === selectedLoginCompanyId) || activeCompany || companies[0] || null;
+
+  const [loginEmail, setLoginEmail] = useState<string>(
+    targetLoginCompany?.users?.[0]?.email || ''
+  );
+  const [loginPassword, setLoginPassword] = useState<string>('');
+  const [showLoginPassword, setShowLoginPassword] = useState<boolean>(false);
+
+  // Sync login email when selected company changes
+  const handleSelectLoginCompany = (compId: string) => {
+    setSelectedLoginCompanyId(compId);
+    const comp = companies.find(c => c.id === compId);
+    if (comp && comp.users.length > 0) {
+      setLoginEmail(comp.users[0].email);
+      setLoginPassword('');
+    }
+  };
+
+  const handleLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!targetLoginCompany) {
+      showToast('Please create or restore a chamber workspace first', 'error');
+      return;
+    }
+    if (!loginEmail.trim()) {
+      showToast('Please enter your registered email address', 'error');
+      return;
+    }
+    loginUser(loginEmail.trim(), loginPassword, targetLoginCompany.id);
+  };
 
   // Form states for creation
   const [name, setName] = useState('');
@@ -78,7 +117,7 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
         name: adminName.trim(),
         email: adminEmail.trim(),
         phone: adminPhone.trim(),
-        password: adminPassword || 'admin123'
+        password: adminPassword.trim()
       }
     );
   };
@@ -102,7 +141,7 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = evt => {
       try {
         const parsed = JSON.parse(evt.target?.result as string);
         restoreCompany(parsed);
@@ -113,16 +152,15 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
     reader.readAsText(file);
   };
 
-  const isFirstLaunch = companies.length === 0;
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4 sm:p-6 text-slate-100">
+      <Toast />
       <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 max-h-[94vh] overflow-y-auto">
         {/* Optional Close button if launched as modal inside existing session */}
         {onClose && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="absolute top-4 right-4 p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             title="Close"
           >
             <X className="w-5 h-5" />
@@ -138,7 +176,7 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
             SRK Case Manager
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            West Bengal Legal Chamber & Land Case Management Platform
+            West Bengal Legal Chamber &amp; Land Case Management Platform
           </p>
 
           {isFirstLaunch && (
@@ -156,49 +194,199 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
           )}
         </div>
 
-        {/* Mode switcher tabs (First time: Create or Restore) */}
-        <div className="flex border-b border-slate-200 dark:border-slate-800 mb-6">
-          <button
-            type="button"
-            onClick={() => setView('create')}
-            className={`flex-1 pb-3 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition-colors cursor-pointer ${
-              view === 'create'
-                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            <Building2 className="w-4 h-4" />
-            {isFirstLaunch ? '1. Create Chamber / Firm' : 'Register New Chamber'}
-          </button>
-          
-          <button
-            type="button"
-            onClick={() => setView('restore')}
-            className={`flex-1 pb-3 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition-colors cursor-pointer ${
-              view === 'restore'
-                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            <RotateCcw className="w-4 h-4" />
-            {isFirstLaunch ? '2. Restore Backup Data' : 'Restore from JSON'}
-          </button>
+        {/* Mode switcher tabs */}
+        <div className="flex flex-wrap border-b border-slate-200 dark:border-slate-800 mb-6 gap-1">
+          {!isFirstLaunch && (
+            <button
+              type="button"
+              onClick={() => setView('login')}
+              className={`flex-1 pb-3 px-2 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 border-b-2 transition-colors cursor-pointer ${
+                view === 'login'
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <LogIn className="w-4 h-4" />
+              <span>Sign In</span>
+            </button>
+          )}
 
           {!isFirstLaunch && (
             <button
               type="button"
               onClick={() => setView('select')}
-              className={`flex-1 pb-3 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition-colors cursor-pointer ${
+              className={`flex-1 pb-3 px-2 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 border-b-2 transition-colors cursor-pointer ${
                 view === 'select'
                   ? 'border-blue-600 text-blue-600 dark:text-blue-400'
                   : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
               <FolderOpen className="w-4 h-4" />
-              Existing Chambers ({companies.length})
+              <span>Chambers ({companies.length})</span>
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={() => setView('create')}
+            className={`flex-1 pb-3 px-2 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 border-b-2 transition-colors cursor-pointer ${
+              view === 'create'
+                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <Building2 className="w-4 h-4" />
+            <span>{isFirstLaunch ? '1. Create Chamber / Firm' : 'New Chamber'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setView('restore')}
+            className={`flex-1 pb-3 px-2 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 border-b-2 transition-colors cursor-pointer ${
+              view === 'restore'
+                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <RotateCcw className="w-4 h-4" />
+            <span>{isFirstLaunch ? '2. Restore Backup Data' : 'Restore JSON'}</span>
+          </button>
         </div>
+
+        {/* VIEW 0: Sign In to Existing Chamber */}
+        {view === 'login' && !isFirstLaunch && targetLoginCompany && (
+          <form onSubmit={handleLoginSubmit} className="space-y-4">
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <CompanyLogo company={targetLoginCompany} size="md" />
+                <div className="min-w-0">
+                  <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100 truncate">
+                    {targetLoginCompany.name}
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                    {targetLoginCompany.type} · {targetLoginCompany.city} · {targetLoginCompany.cases?.length || 0} Cases
+                  </div>
+                </div>
+              </div>
+              {companies.length > 1 && (
+                <select
+                  value={targetLoginCompany.id}
+                  onChange={e => handleSelectLoginCompany(e.target.value)}
+                  className="px-2.5 py-1.5 text-xs font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 cursor-pointer"
+                  title="Switch Chamber Workspace"
+                >
+                  {companies.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {/* Quick Select Registered Advocate / Team Member Profile */}
+            {targetLoginCompany.users && targetLoginCompany.users.length > 0 && (
+              <div>
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase mb-2">
+                  Select Chamber Account (অ্যাডভোকেট / স্টাফ প্রোফাইল)
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {targetLoginCompany.users.map(u => {
+                    const isSelectedUser = loginEmail.toLowerCase() === u.email.toLowerCase();
+                    const requiresCustomPass = Boolean(u.password && u.password !== 'admin123');
+                    return (
+                      <div
+                        key={u.id}
+                        onClick={() => {
+                          setLoginEmail(u.email);
+                          if (!requiresCustomPass) {
+                            loginUser(u.email, '', targetLoginCompany.id);
+                          }
+                        }}
+                        className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                          isSelectedUser
+                            ? 'border-blue-600 bg-blue-50/70 dark:bg-blue-950/50 ring-1 ring-blue-500/30'
+                            : 'border-slate-200 dark:border-slate-800 hover:border-blue-400 bg-white dark:bg-slate-800/40'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-9 h-9 rounded-full bg-blue-700 text-white text-xs font-bold flex items-center justify-center shrink-0">
+                            {u.name.slice(0, 2).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-extrabold text-slate-900 dark:text-slate-100 truncate">
+                              {u.name}
+                            </div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                              {u.email}
+                            </div>
+                            <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300">
+                              {u.role}
+                            </span>
+                          </div>
+                        </div>
+                        <UserCheck className={`w-4 h-4 shrink-0 ${isSelectedUser ? 'text-blue-600' : 'text-slate-400'}`} />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                  Registered Email *
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="email"
+                    required
+                    value={loginEmail}
+                    onChange={e => setLoginEmail(e.target.value)}
+                    placeholder="advocate@chamber.in"
+                    className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                  Password (If configured)
+                </label>
+                <div className="relative">
+                  <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type={showLoginPassword ? 'text' : 'password'}
+                    value={loginPassword}
+                    onChange={e => setLoginPassword(e.target.value)}
+                    placeholder="Enter password (or leave blank)"
+                    className="w-full pl-9 pr-9 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginPassword(prev => !prev)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="submit"
+                className="w-full py-3 px-4 text-sm font-bold rounded-xl bg-blue-700 hover:bg-blue-800 border-b-4 border-b-blue-950 active:translate-y-0.5 text-white shadow-lg shadow-blue-700/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Sign In &amp; Enter Chamber Workspace</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </form>
+        )}
 
         {/* VIEW 1: Create Chamber / Firm (First time setup) */}
         {view === 'create' && (

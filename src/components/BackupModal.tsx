@@ -24,7 +24,8 @@ import {
   FileCode,
   Brain,
   Filter,
-  Check
+  Check,
+  LogOut
 } from 'lucide-react';
 import { CompanyLogo, BADGE_OPTIONS, COLOR_OPTIONS } from './CompanyLogo';
 import { DEFAULT_CHAIN_SAMPLE_TEMPLATE } from '../data/chainSampleTemplate';
@@ -53,7 +54,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     deleteSampleDraft,
     resetSampleDrafts,
     addVaultFile,
-    deleteVaultFile
+    deleteVaultFile,
+    logoutUser
   } = useApp();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -341,6 +343,18 @@ Date: {{TODAY_DATE}}`;
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                logoutUser();
+              }}
+              className="px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-600 hover:text-white text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+              title="Logout from Chamber Session"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Logout</span>
+            </button>
             <CompanyLogo company={activeCompany} size="sm" />
             <button
               onClick={onClose}
@@ -1102,16 +1116,30 @@ Date: {{TODAY_DATE}}`;
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 flex items-center justify-between shrink-0">
+        <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 flex items-center justify-between gap-2 flex-wrap shrink-0">
           <div className="text-[11px] text-slate-500 font-mono">
             Chamber: {activeCompany.name} · {activeCompany.city}
           </div>
-          <button
-            onClick={onClose}
-            className="px-5 py-2 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-900 text-white cursor-pointer transition-colors shadow-xs"
-          >
-            Close Settings
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                logoutUser();
+              }}
+              className="px-4 py-2 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-700 text-white cursor-pointer transition-colors shadow-xs flex items-center gap-1.5"
+              title="Logout from Current Session"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Logout</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="px-5 py-2 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-900 text-white cursor-pointer transition-colors shadow-xs"
+            >
+              Close Settings
+            </button>
+          </div>
         </div>
       </div>
     </div>

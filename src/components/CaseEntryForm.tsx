@@ -113,7 +113,9 @@ const SUBTYPES_BY_TYPE: Record<CaseType, string[]> = {
   ],
   lrappeal: ['Section 54 Appeal', 'Section 51A(5) Appeal', 'Delay Condonation'],
   firstappeal: [
-    'u/s 19(1) of RTI Act 2005'
+    'u/s 19(1) of RTI Act 2005',
+    'u/s 19(2) of RTI Act 2005',
+    'Other Applicable Section of RTI Act 2005'
   ],
   rti: [
     'RTI Application u/s 6(1)',
@@ -965,11 +967,15 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       recordedOwner: recordedOwner.trim(),
       recordedKhatian: recordedKhatian.trim(),
       recordedDag: recordedDag.trim(),
-      landSchedules,
+      landSchedules: isRti
+        ? landSchedules.filter(
+            s => s.mouza.trim() !== '' || s.khatian.trim() !== '' || s.dag.trim() !== '' || s.area.trim() !== ''
+          )
+        : landSchedules,
       applicants,
       respondents: isRti ? [] : respondents,
       addresses,
-      chainLinks,
+      chainLinks: isChainDeedHidden ? [] : chainLinks,
       attachments
     };
 
@@ -1542,19 +1548,37 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
           {/* Sub-type / Matter */}
           <div>
             <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-              Sub-Type / Matter
+              {isFirstAppeal ? 'Sub-Type / Section (RTI Act 2005)' : 'Sub-Type / Matter'}
             </label>
-            <select
-              value={subType}
-              onChange={e => setSubType(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
-            >
-              {SUBTYPES_BY_TYPE[type].map(st => (
-                <option key={st} value={st}>
-                  {st}
-                </option>
-              ))}
-            </select>
+            {isFirstAppeal ? (
+              <>
+                <input
+                  type="text"
+                  list="firstappeal-subtypes"
+                  value={subType}
+                  onChange={e => setSubType(e.target.value)}
+                  placeholder="u/s 19(1) or u/s 19(2) of RTI Act 2005"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-blue-600"
+                />
+                <datalist id="firstappeal-subtypes">
+                  {SUBTYPES_BY_TYPE.firstappeal.map(st => (
+                    <option key={st} value={st} />
+                  ))}
+                </datalist>
+              </>
+            ) : (
+              <select
+                value={subType}
+                onChange={e => setSubType(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
+              >
+                {SUBTYPES_BY_TYPE[type].map(st => (
+                  <option key={st} value={st}>
+                    {st}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           {/* GRN No omitted for Misc, LR Appeal & RTI; replaced with Tracking No for First Appeal */}
@@ -1800,7 +1824,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
-                    Applicant Deed No (দলিল নং) *
+                    {isRti || isFirstAppeal ? 'Applicant Deed No (Optional)' : 'Applicant Deed No (দলিল নং) *'}
                   </label>
                   <input
                     type="text"
@@ -1813,7 +1837,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
-                    Deed Year (দলিল বছর) *
+                    {isRti || isFirstAppeal ? 'Deed Year (Optional)' : 'Deed Year (দলিল বছর) *'}
                   </label>
                   <input
                     type="text"
@@ -1826,7 +1850,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
-                    Type of Deed (দলিলের ধরন) *
+                    {isRti || isFirstAppeal ? 'Type of Deed (Optional)' : 'Type of Deed (দলিলের ধরন) *'}
                   </label>
                   <select
                     value={applicantDeedType}
@@ -2010,16 +2034,23 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         </div>
       </div>
 
-      {/* Requirement 12: 2. Land Schedule(s) with + option to add more schedule */}
+      {/* Requirement 12: 2. Land Schedule(s) with + option to add more schedule (Optional / Not Compulsory for RTI) */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 flex-wrap gap-2">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-              2. সম্পত্তির তপশীল বিবরণ (Property Schedule Details)
+              {isRti
+                ? '2. সম্পত্তির তপশীল বিবরণ (Schedule of Land — Optional / Not Compulsory)'
+                : '2. সম্পত্তির তপশীল বিবরণ (Property Schedule Details)'}
             </span>
             <span className="text-[11px] text-slate-400 ml-2">
-              ({landSchedules.length} Schedule{landSchedules.length > 1 ? 's' : ''})
+              ({landSchedules.length} Schedule{landSchedules.length !== 1 ? 's' : ''})
             </span>
+            {isRti && (
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Schedule of Land is optional for RTI applications (e.g. Police Station, BDO, Panchayat, Municipality queries). Leave blank or remove if not applicable.
+              </p>
+            )}
           </div>
           <button
             type="button"
@@ -2032,6 +2063,11 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         </div>
 
         <div className="space-y-3">
+          {landSchedules.length === 0 && isRti && (
+            <div className="p-3.5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-center text-xs text-slate-500 dark:text-slate-400">
+              No land schedule attached (Not compulsory for RTI). Click <strong>+ Add Schedule</strong> above only if this RTI relates to a specific land plot.
+            </div>
+          )}
           {landSchedules.map((sched, idx) => (
             <div
               key={sched.id}
@@ -2039,9 +2075,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             >
               <div className="flex items-center justify-between">
                 <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Schedule #{idx + 1}
+                  Schedule #{idx + 1} {isRti ? '(Optional)' : ''}
                 </div>
-                {landSchedules.length > 1 && (
+                {(landSchedules.length > 1 || isRti) && (
                   <button
                     type="button"
                     onClick={() => removeLandSchedule(idx)}

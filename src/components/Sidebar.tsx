@@ -31,7 +31,9 @@ import {
   Sun,
   Moon,
   SlidersHorizontal,
-  Plus
+  Plus,
+  Scroll,
+  FileSpreadsheet
 } from 'lucide-react';
 import { CaseType } from '../types';
 
@@ -44,6 +46,8 @@ export type NavPage =
   | 'case-rti'
   | 'case-lrtt'
   | 'case-conversion'
+  | 'case-certcopy'
+  | 'case-rorpi'
   | 'causelist'
   | 'sharecalculator'
   | 'aistudio'
@@ -94,10 +98,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const navItemClass = (page: NavPage) => {
     const isActive = currentPage === page;
-    return `flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+    return `w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
       isActive
-        ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/30'
-        : 'text-slate-700 dark:text-slate-300 hover:text-blue-700 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-800/70'
+        ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/30 font-bold'
+        : 'text-slate-700 dark:text-slate-300 hover:text-blue-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80'
+    }`;
+  };
+
+  const countBadgeClass = (page: NavPage) => {
+    const isActive = currentPage === page;
+    return `text-[10px] font-mono px-1.5 py-0.5 rounded font-bold ${
+      isActive
+        ? 'bg-blue-500 text-white'
+        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/70 dark:border-slate-700'
     }`;
   };
 
@@ -108,47 +121,53 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
+  const sidebarSurfaceClass =
+    theme === 'white'
+      ? 'bg-white text-slate-800 border-slate-200'
+      : theme === 'light'
+      ? 'bg-slate-50 text-slate-800 border-slate-200'
+      : 'bg-slate-900 text-slate-200 border-slate-800';
+
+  const sidebarHeaderFooterClass =
+    theme === 'white'
+      ? 'bg-white border-slate-200'
+      : theme === 'light'
+      ? 'bg-slate-100/80 border-slate-200'
+      : 'bg-slate-950/80 border-slate-800';
+
   return (
     <>
       {/* Backdrop for mobile */}
       {isOpen && (
         <div
           onClick={onClose}
-          className="lg:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-xs transition-opacity cursor-pointer"
+          className="lg:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-xs transition-opacity cursor-pointer"
           title="Click to close sidebar"
         />
       )}
 
-      {/* Sidebar drawer: Crisp, no dark black, light/dark adaptive */}
+      {/* Theme-aware Sidebar drawer */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 lg:z-30 w-64 sm:w-72 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-r border-slate-200 dark:border-slate-800 flex flex-col shadow-xl lg:shadow-none transition-all duration-300 ease-in-out shrink-0 ${
+        className={`fixed lg:static inset-y-0 left-0 z-50 lg:z-30 w-64 sm:w-68 ${sidebarSurfaceClass} border-r flex flex-col shadow-xl lg:shadow-none transition-all duration-300 ease-in-out shrink-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:hidden'
         }`}
       >
-        {/* Header: Exact aligned 3-line toggle at top-left + Brand Logo */}
-        <div className="h-16 px-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2.5 bg-slate-100/70 dark:bg-slate-900/80">
+        {/* Brand Header */}
+        <div className={`h-16 px-4 border-b flex items-center justify-between gap-2.5 ${sidebarHeaderFooterClass}`}>
           <div className="flex items-center gap-2.5 min-w-0">
-            <button
-              onClick={onClose}
-              className="p-2 -ml-1 rounded-lg text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-white bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer flex items-center justify-center shrink-0 shadow-xs"
-              title="Close sidebar (3-line)"
-              aria-label="Close sidebar"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
             <CompanyLogo company={activeCompany} size="sm" />
             <div className="min-w-0">
-              <div className="text-xs font-extrabold text-slate-900 dark:text-slate-100 tracking-tight leading-snug truncate">
+              <div className="text-xs font-extrabold text-slate-900 dark:text-white tracking-tight leading-snug truncate">
                 SRK Case Manager
               </div>
-              <div className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold truncate">
+              <div className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold truncate">
                 {activeCompany?.name || 'Legal Chamber'}
               </div>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+            className="lg:hidden p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
             title="Close sidebar"
             aria-label="Close sidebar"
           >
@@ -158,8 +177,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Scrollable navigation menu */}
         <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4 text-xs">
-          {/* Main */}
+          {/* MAIN */}
           <div className="space-y-1">
+            <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              MAIN
+            </div>
             <button
               onClick={() => handleNav('dashboard')}
               className={navItemClass('dashboard')}
@@ -171,27 +193,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </div>
 
-          {/* Land Case Categories */}
+          {/* LAND CASE CATEGORIES */}
           <div className="space-y-1">
             <button
               onClick={() => setCasesOpen(!casesOpen)}
-              className="w-full flex items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+              className="w-full flex items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer"
             >
               <span>{t.landCases}</span>
               {casesOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
             </button>
 
             {casesOpen && (
-              <div className="space-y-1 pl-1">
+              <div className="space-y-1">
                 <button
                   onClick={() => handleNav('case-mutation')}
                   className={navItemClass('case-mutation')}
                 >
                   <div className="flex items-center gap-2.5">
-                    <FileText className="w-4 h-4 text-blue-500" />
+                    <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                     <span>{t.mutationCase}</span>
                   </div>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                  <span className={countBadgeClass('case-mutation')}>
                     {getCaseCount('mutation')}
                   </span>
                 </button>
@@ -201,10 +223,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className={navItemClass('case-misc')}
                 >
                   <div className="flex items-center gap-2.5">
-                    <FolderGit2 className="w-4 h-4 text-purple-500" />
+                    <FolderGit2 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                     <span>{t.miscCase}</span>
                   </div>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                  <span className={countBadgeClass('case-misc')}>
                     {getCaseCount('misc')}
                   </span>
                 </button>
@@ -214,10 +236,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className={navItemClass('case-lrappeal')}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Send className="w-4 h-4 text-emerald-500" />
+                    <Send className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     <span>{t.lrAppeal}</span>
                   </div>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                  <span className={countBadgeClass('case-lrappeal')}>
                     {getCaseCount('lrappeal')}
                   </span>
                 </button>
@@ -227,10 +249,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className={navItemClass('case-firstappeal')}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Gavel className="w-4 h-4 text-indigo-500" />
+                    <Gavel className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                     <span>{t.firstAppeal}</span>
                   </div>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                  <span className={countBadgeClass('case-firstappeal')}>
                     {getCaseCount('firstappeal')}
                   </span>
                 </button>
@@ -240,10 +262,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className={navItemClass('case-rti')}
                 >
                   <div className="flex items-center gap-2.5">
-                    <FileSearch className="w-4 h-4 text-teal-500" />
+                    <FileSearch className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                     <span>{t.rtiMatter}</span>
                   </div>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                  <span className={countBadgeClass('case-rti')}>
                     {getCaseCount('rti')}
                   </span>
                 </button>
@@ -253,10 +275,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className={navItemClass('case-lrtt')}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Building className="w-4 h-4 text-cyan-500" />
+                    <Building className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                     <span>{t.lrttTribunal}</span>
                   </div>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                  <span className={countBadgeClass('case-lrtt')}>
                     {getCaseCount('lrtt')}
                   </span>
                 </button>
@@ -266,38 +288,64 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className={navItemClass('case-conversion')}
                 >
                   <div className="flex items-center gap-2.5">
-                    <RefreshCw className="w-4 h-4 text-amber-500" />
+                    <RefreshCw className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                     <span>{t.conversionCase}</span>
                   </div>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                  <span className={countBadgeClass('case-conversion')}>
                     {getCaseCount('conversion')}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => handleNav('case-certcopy')}
+                  className={navItemClass('case-certcopy')}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Scroll className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                    <span>{t.certCopyCase}</span>
+                  </div>
+                  <span className={countBadgeClass('case-certcopy')}>
+                    {getCaseCount('certcopy')}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => handleNav('case-rorpi')}
+                  className={navItemClass('case-rorpi')}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <FileSpreadsheet className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                    <span>{t.rorPiCase}</span>
+                  </div>
+                  <span className={countBadgeClass('case-rorpi')}>
+                    {getCaseCount('rorpi')}
                   </span>
                 </button>
               </div>
             )}
           </div>
 
-          {/* Chamber Tools */}
+          {/* CHAMBER TOOLS */}
           <div className="space-y-1">
             <button
               onClick={() => setToolsOpen(!toolsOpen)}
-              className="w-full flex items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+              className="w-full flex items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer"
             >
               <span>{t.toolsLibrary}</span>
               {toolsOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
             </button>
 
             {toolsOpen && (
-              <div className="space-y-1 pl-1">
+              <div className="space-y-1">
                 <button
                   onClick={() => handleNav('causelist')}
                   className={navItemClass('causelist')}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Calendar className="w-4 h-4 text-amber-500" />
+                    <Calendar className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                     <span>{t.dailyCauseList}</span>
                   </div>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                  <span className={countBadgeClass('causelist')}>
                     {activeCompany?.causeList?.length || 0}
                   </span>
                 </button>
@@ -307,7 +355,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className={navItemClass('sharecalculator')}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Calculator className="w-4 h-4 text-rose-500" />
+                    <Calculator className="w-4 h-4 text-rose-600 dark:text-rose-400" />
                     <span>{t.shareCalc}</span>
                   </div>
                 </button>
@@ -317,7 +365,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className={navItemClass('aistudio')}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Brain className="w-4 h-4 text-violet-500" />
+                    <Brain className="w-4 h-4 text-violet-600 dark:text-violet-400" />
                     <span>{t.aiLegalDrafting}</span>
                   </div>
                 </button>
@@ -329,15 +377,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       onClose();
                     }
                   }}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-indigo-700 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-800/70 transition-all cursor-pointer"
-                  title="Document Vault shifted to Settings: stores all samples & formats"
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-blue-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all cursor-pointer"
+                  title="Document Vault"
                 >
                   <div className="flex items-center gap-2.5">
-                    <Archive className="w-4 h-4 text-indigo-500" />
-                    <span>{t.documentVault} (Settings)</span>
+                    <Archive className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    <span>{t.documentVault}</span>
                   </div>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
-                    Vault
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/70 dark:border-slate-700 font-bold">
+                    {activeCompany?.vaultFiles?.length || 0}
                   </span>
                 </button>
 
@@ -346,7 +394,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className={navItemClass('timeline')}
                 >
                   <div className="flex items-center gap-2.5">
-                    <BookMarked className="w-4 h-4 text-sky-500" />
+                    <BookMarked className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                     <span>{t.caseDiary}</span>
                   </div>
                 </button>
@@ -354,27 +402,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </div>
 
-          {/* Chamber & Statutory Library */}
+          {/* CHAMBER & STATUTORY LIBRARY */}
           <div className="space-y-1">
             <button
               onClick={() => setChamberOpen(!chamberOpen)}
-              className="w-full flex items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+              className="w-full flex items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer"
             >
               <span>{t.chamberOffice}</span>
               {chamberOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
             </button>
 
             {chamberOpen && (
-              <div className="space-y-1 pl-1">
+              <div className="space-y-1">
                 <button
                   onClick={() => handleNav('parties')}
                   className={navItemClass('parties')}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Users className="w-4 h-4 text-emerald-500" />
+                    <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     <span>{t.clientRegistry}</span>
                   </div>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                  <span className={countBadgeClass('parties')}>
                     {activeCompany?.parties?.length || 0}
                   </span>
                 </button>
@@ -385,7 +433,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     className={navItemClass('users')}
                   >
                     <div className="flex items-center gap-2.5">
-                      <ShieldAlert className="w-4 h-4 text-blue-500" />
+                      <ShieldAlert className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                       <span>{t.advocateTeam}</span>
                     </div>
                   </button>
@@ -396,7 +444,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className={navItemClass('wblract')}
                 >
                   <div className="flex items-center gap-2.5">
-                    <BookOpen className="w-4 h-4 text-teal-500" />
+                    <BookOpen className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                     <span>{t.statutoryWblr}</span>
                   </div>
                 </button>
@@ -406,7 +454,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className={navItemClass('messages')}
                 >
                   <div className="flex items-center gap-2.5">
-                    <MessageSquare className="w-4 h-4 text-green-500" />
+                    <MessageSquare className="w-4 h-4 text-green-600 dark:text-green-400" />
                     <span>{t.clientMessaging}</span>
                   </div>
                 </button>
@@ -414,7 +462,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </div>
 
-          {/* Attractive Display & Viewing Menu Section */}
+          {/* Display & Theme Preferences */}
           <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2">
             <div className="flex items-center justify-between px-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               <span className="flex items-center gap-1.5">
@@ -424,20 +472,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 type="button"
                 onClick={openViewModal}
-                className="text-[10px] text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold cursor-pointer"
+                className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline font-semibold cursor-pointer"
               >
                 Configure
               </button>
             </div>
 
             {/* White / Light / Dark Theme Segmented Toggle */}
-            <div className="grid grid-cols-3 gap-1 bg-slate-200/70 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700/60">
+            <div className="grid grid-cols-3 gap-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-lg border border-slate-200 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setTheme('white')}
                 className={`flex items-center justify-center gap-1 py-1.5 px-1.5 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
                   theme === 'white'
-                    ? 'bg-white text-slate-950 font-bold shadow-xs border border-slate-300'
+                    ? 'bg-white text-slate-950 font-bold shadow-xs border border-slate-200/80'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                 }`}
                 title="Switch to Pure White Background Theme"
@@ -474,54 +522,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span>Dark</span>
               </button>
             </div>
-
-            {/* Viewing Options Button with Density badge */}
-            <button
-              type="button"
-              onClick={openViewModal}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer group shadow-xs"
-            >
-              <div className="flex items-center gap-2">
-                <SlidersHorizontal className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 group-hover:rotate-45 transition-transform" />
-                <span>{t.viewOptions}</span>
-              </div>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 capitalize">
-                {viewDensity}
-              </span>
-            </button>
-
-            {/* Quick density pills */}
-            <div className="grid grid-cols-2 gap-1 text-[10px]">
-              <button
-                type="button"
-                onClick={() => setViewDensity('comfortable')}
-                className={`py-1 px-1.5 rounded text-center transition-colors cursor-pointer border ${
-                  viewDensity === 'comfortable'
-                    ? 'bg-blue-50 dark:bg-blue-900/40 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 font-bold'
-                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
-                }`}
-              >
-                {t.comfortable}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setViewDensity('compact')}
-                className={`py-1 px-1.5 rounded text-center transition-colors cursor-pointer border ${
-                  viewDensity === 'compact'
-                    ? 'bg-blue-50 dark:bg-blue-900/40 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 font-bold'
-                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
-                }`}
-              >
-                {t.compact}
-              </button>
-            </div>
           </div>
         </div>
 
-        {/* Footer: Database Status, Switch, Logout (No dark black) */}
-        <div className="p-3 bg-slate-100/90 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 space-y-2">
-          <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400 px-1">
+        {/* Theme-aware Footer with Logout Option */}
+        <div className={`p-3 border-t space-y-2 ${sidebarHeaderFooterClass}`}>
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 px-1">
             <div className="flex items-center gap-1.5">
               <Database className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>Offline Local Storage</span>
@@ -529,10 +535,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
           </div>
 
-          <div className="grid grid-cols-3 gap-1.5 pt-1">
+          <div className="grid grid-cols-2 gap-1.5 pt-1">
             <button
               onClick={openChamberSetup}
-              className="flex items-center justify-center gap-1 py-1.5 px-1.5 text-[11px] font-semibold rounded-md bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 transition-colors cursor-pointer shadow-xs"
+              className="flex items-center justify-center gap-1 py-1.5 px-2 text-[11px] font-semibold rounded-lg bg-white dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-300 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shadow-2xs"
               title="Register New Chamber"
             >
               <Plus className="w-3 h-3 text-blue-600 dark:text-blue-400" />
@@ -541,7 +547,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             <button
               onClick={switchCompany}
-              className="flex items-center justify-center gap-1 py-1.5 px-1.5 text-[11px] font-semibold rounded-md bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shadow-xs"
+              className="flex items-center justify-center gap-1 py-1.5 px-2 text-[11px] font-semibold rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shadow-2xs"
               title="Switch Firm Workspace"
             >
               <Building2 className="w-3 h-3 text-amber-500" />
@@ -550,25 +556,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             <button
               onClick={() => onOpenSettings('branding')}
-              className="flex items-center justify-center gap-1 py-1.5 px-1.5 text-[11px] font-semibold rounded-md bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shadow-xs"
+              className="flex items-center justify-center gap-1 py-1.5 px-2 text-[11px] font-semibold rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shadow-2xs"
               title="Chamber Settings & Preferences"
             >
               <Settings className="w-3 h-3 text-blue-600 dark:text-blue-400" />
               <span>Settings</span>
             </button>
-          </div>
 
-          <button
-            onClick={() => onOpenSettings('vault')}
-            className="w-full flex items-center justify-between py-1.5 px-2.5 text-[11px] font-semibold rounded-md border border-indigo-200 dark:border-indigo-900 bg-indigo-50/60 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900 text-indigo-800 dark:text-indigo-300 transition-colors cursor-pointer shadow-xs"
-            title="Open Document Vault & Legal Sample Formats in Settings"
-          >
-            <div className="flex items-center gap-1.5">
-              <Archive className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span>Document Vault &amp; Samples</span>
-            </div>
-            <span className="text-[10px] text-indigo-600 dark:text-indigo-400">Settings</span>
-          </button>
+            <button
+              onClick={logoutUser}
+              className="flex items-center justify-center gap-1 py-1.5 px-2 text-[11px] font-bold rounded-lg bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-600 hover:text-white text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/80 transition-colors cursor-pointer shadow-2xs"
+              title="Logout from Current Session"
+            >
+              <LogOut className="w-3 h-3" />
+              <span>Logout</span>
+            </button>
+          </div>
         </div>
       </aside>
     </>

@@ -93,7 +93,7 @@ interface AppContextType {
   updateCompanyDetails: (details: Partial<Company>) => boolean;
   selectCompany: (companyId: string) => void;
   deleteCompany: (companyId: string) => void;
-  loginUser: (email: string, password?: string) => boolean;
+  loginUser: (email: string, password?: string, companyId?: string) => boolean;
   logoutUser: () => void;
   switchCompany: () => void;
   restoreCompany: (company: Company) => boolean;
@@ -195,7 +195,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const isSetupDone = localStorage.getItem('srk_first_time_setup_done') === 'true';
       if (saved && isSetupDone) {
         const parsed = JSON.parse(saved);
-        if (parsed.activeUserId) {
+        if ('activeUserId' in parsed) {
           return parsed.activeUserId;
         }
         if (parsed.companies && parsed.companies.length > 0 && parsed.companies[0].users?.length > 0) {
@@ -410,7 +410,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const activeCompany = companies.find(c => c.id === activeCompanyId) || (companies.length > 0 ? companies[0] : null);
-  const activeUser = activeCompany ? (activeCompany.users.find(u => u.id === activeUserId) || activeCompany.users[0] || null) : null;
+  const activeUser =
+    activeCompany && activeUserId
+      ? activeCompany.users.find(u => u.id === activeUserId) || null
+      : null;
 
   const logActivity = (text: string) => {
     if (!activeCompanyId) return;
@@ -517,6 +520,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
     setActiveCompanyId(companyId);
     setActiveUserId(company.users[0]?.id || null);
+    setIsChamberSetupOpen(false);
     showToast(`Switched to "${company.name}"`);
   };
 
@@ -537,29 +541,54 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     showToast(`Deleted workspace "${c.name}"`, 'info');
   };
 
-  const loginUser = (email: string, password?: string): boolean => {
-    if (!activeCompany) {
-      showToast('Please select a company first', 'error');
+  const loginUser = (email: string, password?: string, companyId?: string): boolean => {
+    const targetCompany = companyId
+      ? companies.find(c => c.id === companyId) || activeCompany
+      : activeCompany || companies[0] || null;
+
+    if (!targetCompany) {
+      showToast('Please select or create a chamber workspace first', 'error');
       return false;
     }
-    const user = activeCompany.users.find(
-      u => u.email.toLowerCase() === email.trim().toLowerCase()
-    );
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const user =
+      targetCompany.users.find(u => u.email.toLowerCase() === normalizedEmail) ||
+      targetCompany.users.find(u => u.name.toLowerCase() === normalizedEmail);
+
     if (!user) {
-      showToast('No user found with this email', 'error');
+      showToast('No advocate or team member found with this email', 'error');
       return false;
     }
-    if (user.password && password && user.password !== password) {
-      showToast('Incorrect password', 'error');
+
+    // Validate password if the user has a custom password configured
+    const storedPassword = (user.password || '').trim();
+    const enteredPassword = (password || '').trim();
+    if (storedPassword && storedPassword !== 'admin123') {
+      if (enteredPassword !== storedPassword) {
+        showToast('Incorrect password. Please try again.', 'error');
+        return false;
+      }
+    } else if (storedPassword === 'admin123' && enteredPassword && enteredPassword !== 'admin123') {
+      showToast('Incorrect password. Leave blank or enter your chamber password.', 'error');
       return false;
     }
+
+    setActiveCompanyId(targetCompany.id);
     setActiveUserId(user.id);
-    showToast(`Welcome back, ${user.name}`);
+    setIsChamberSetupOpen(false);
+    showToast(`Welcome back, ${user.name}!`, 'success');
     return true;
   };
 
   const logoutUser = () => {
-    showToast(`Current active advocate: ${activeUser?.name || 'Admin'}`, 'info');
+    const prevName = activeUser?.name || 'Advocate';
+    if (activeCompanyId && activeUser) {
+      logActivity(`${prevName} logged out of chamber workspace`);
+    }
+    setActiveUserId(null);
+    setIsChamberSetupOpen(false);
+    showToast(`Logged out (${prevName}). Please sign in to continue.`, 'info');
   };
 
   const switchCompany = () => {
