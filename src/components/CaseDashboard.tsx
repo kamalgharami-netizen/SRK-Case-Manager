@@ -42,9 +42,14 @@ import {
   MessageSquare,
   Calculator,
   ShieldAlert,
-  FileCheck
+  FileCheck,
+  Scroll,
+  FileSpreadsheet,
+  Archive,
+  PackageCheck
 } from 'lucide-react';
 import { getStatusTrackingInfo } from '../types';
+import { wbDistricts } from '../data/wbDistricts';
 
 interface CaseDashboardProps {
   type: CaseType;
@@ -232,6 +237,56 @@ const MODULE_META: Record<
       'NOC from local Gram Panchayat / Municipality',
       'Conversion Fee Challan as per government circle rate'
     ]
+  },
+  certcopy: {
+    title: 'Certified Copy of Deed',
+    bengali: 'সার্টিফাইড কপি (Certified Copy of Deed)',
+    icon: Scroll,
+    color: 'text-rose-600',
+    bgBadge: 'bg-rose-600',
+    subTypes: [
+      'Registered Deed Copy (দলিলের নকল)',
+      'Deed Index Search (তল্লাশ ও ইন্ডেক্স)',
+      'Judgement / Decree Certified Copy',
+      'Order Sheet Copy',
+      'Field Survey Trace Map Copy',
+      'Other Certified Copy'
+    ],
+    statuses: ['Applied', 'Challan Paid', 'Search In Progress', 'Comparing & Stamp Verification', 'Ready for Delivery', 'Delivered', 'Rejected / Objection'],
+    lawRef: 'Registration Act 1908 (Sec 57) / Indian Stamp Act',
+    forum: 'ADSR / Sub-Registry Office / DR Record Room',
+    limitation: 'Statutory delivery period 7-15 working days',
+    checklist: [
+      'Deed Number, Year & Volume particulars',
+      'GRN Search Fee & Copying Challan receipt',
+      'Applicant identity verification',
+      'Index-II property schedule details'
+    ]
+  },
+  rorpi: {
+    title: 'ROR / PI Tracking',
+    bengali: 'খতিয়ান / পরচা ও পি.আই (ROR/PI Tracking)',
+    icon: FileSpreadsheet,
+    color: 'text-orange-600',
+    bgBadge: 'bg-orange-600',
+    subTypes: [
+      'Certified ROR (খতিয়ান নকল / পরচা)',
+      'Plot Information (PI / দাগের তথ্য)',
+      'RS Porcha (আর.এস পরচা)',
+      'LR Khatian Porcha (এল.আর খতিয়ান)',
+      'Field Inspection Report Copy',
+      'Other ROR/PI'
+    ],
+    statuses: ['Applied', 'Fee Paid (Application Generated)', 'RI Verification / Processing', 'Signed & Digitally Sealed', 'Delivered / Downloaded', 'Rejected / Mismatch'],
+    lawRef: 'West Bengal Land Reforms Act 1955 (Sec 50 / Rule 103)',
+    forum: 'BL&LRO Office / Banglarbhumi Online Portal',
+    limitation: 'Statutory delivery period 7-15 working days',
+    checklist: [
+      'Banglarbhumi Application Number & GRN Challan',
+      'Mouza, JL Number, Khatian & Dag No verification',
+      'Application fee receipt',
+      'Applicant photo ID / self-declaration'
+    ]
   }
 };
 
@@ -258,7 +313,10 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
   const [categoryFilter, setCategoryFilter] = useState<'All' | 'Pending' | 'In Progress' | 'Disposed'>('All');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [subTypeFilter, setSubTypeFilter] = useState<string>('All');
+  const [districtFilter, setDistrictFilter] = useState<string>('All');
   const [underInquiryFilter, setUnderInquiryFilter] = useState<boolean>(false);
+  const [todayHearingsFilter, setTodayHearingsFilter] = useState<boolean>(false);
+  const [attachmentFilter, setAttachmentFilter] = useState<boolean>(false);
   const [search, setSearch] = useState('');
 
   // Reset filters when case sub menu / type changes
@@ -266,7 +324,10 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
     setCategoryFilter('All');
     setStatusFilter('All');
     setSubTypeFilter('All');
+    setDistrictFilter('All');
     setUnderInquiryFilter(false);
+    setTodayHearingsFilter(false);
+    setAttachmentFilter(false);
     setSearch('');
     setSelectedCaseIds([]);
     setIsBatchMode(false);
@@ -296,6 +357,26 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
     );
   };
 
+  const nowDate = new Date();
+  const todayDateStr = `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, '0')}-${String(nowDate.getDate()).padStart(2, '0')}`;
+
+  const todayHearingCount = allCases.filter(
+    c =>
+      c.nextDate === todayDateStr ||
+      (c.hearingDates && c.hearingDates.includes(todayDateStr)) ||
+      (c.hearingList && c.hearingList.some(h => h.date === todayDateStr))
+  ).length;
+
+  const activePendingCount = allCases.filter(
+    c => !['Disposed', 'Allowed', 'Dismissed', 'Rejected', 'Order Passed', 'Delivered'].includes(c.status)
+  ).length;
+
+  const moduleVaultCount = (activeCompany?.vaultFiles || []).filter(
+    f => f.category === type || f.category.toLowerCase().includes(type)
+  ).length;
+  const totalAttachments = allCases.reduce((acc, c) => acc + (c.attachments?.length || 0), 0);
+  const vaultDisplayCount = moduleVaultCount > 0 ? moduleVaultCount : (totalAttachments > 0 ? totalAttachments : (activeCompany?.vaultFiles?.length || 0));
+
   // Status & Category counts
   const statusCounts: Record<string, number> = { All: allCases.length };
   meta.statuses.forEach(s => {
@@ -313,27 +394,78 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
   const underInquiryCount = allCases.filter(c => isUnderInquiry(c.status)).length;
   const disposedCount = categoryCounts.Disposed;
 
+  const isCertOrRorPi = type === 'certcopy' || type === 'rorpi';
+
   // Filtered cases
   const filteredCases = allCases.filter(c => {
     const statusInfo = getStatusTrackingInfo(c.status);
     const matchCategory = categoryFilter === 'All' || statusInfo.category === categoryFilter;
     const matchStatus = statusFilter === 'All' || c.status === statusFilter;
-    const matchSubType = subTypeFilter === 'All' || c.subType === subTypeFilter;
+    const matchSubType = isCertOrRorPi ? true : (subTypeFilter === 'All' || c.subType === subTypeFilter);
+    const matchDistrict = !isCertOrRorPi || districtFilter === 'All' || c.district === districtFilter;
     const matchUnderInquiry = !underInquiryFilter || isUnderInquiry(c.status);
+    const matchToday =
+      !todayHearingsFilter ||
+      c.nextDate === todayDateStr ||
+      (c.hearingDates && c.hearingDates.includes(todayDateStr)) ||
+      (c.hearingList && c.hearingList.some(h => h.date === todayDateStr));
+    const matchAttachment = !attachmentFilter || (c.attachments && c.attachments.length > 0);
     const q = search.toLowerCase().trim();
-    const matchSearch =
-      !q ||
-      c.caseNo.toLowerCase().includes(q) ||
-      c.party.toLowerCase().includes(q) ||
-      c.opp.toLowerCase().includes(q) ||
-      c.forum.toLowerCase().includes(q) ||
-      c.landSchedules.some(
-        s =>
-          s.mouza.toLowerCase().includes(q) ||
-          s.dag.toLowerCase().includes(q) ||
-          s.khatian.toLowerCase().includes(q)
-      );
-    return matchCategory && matchStatus && matchSubType && matchUnderInquiry && matchSearch;
+
+    let matchSearch = !q;
+    if (q) {
+      if (isCertOrRorPi) {
+        // Scoped to particular deed entry fields: deed no, deed year, applicant name, broker name, AIN, GRN, district, office
+        matchSearch =
+          Boolean(c.applicantDeedNo && c.applicantDeedNo.toLowerCase().includes(q)) ||
+          Boolean(c.applicantDeedYear && c.applicantDeedYear.toLowerCase().includes(q)) ||
+          Boolean(c.deedNo && c.deedNo.toLowerCase().includes(q)) ||
+          Boolean(c.deedYear && c.deedYear.toLowerCase().includes(q)) ||
+          Boolean(c.party && c.party.toLowerCase().includes(q)) ||
+          Boolean(c.applicants?.some(a => a.name && a.name.toLowerCase().includes(q))) ||
+          Boolean(c.brokerName && c.brokerName.toLowerCase().includes(q)) ||
+          Boolean(c.appNo && c.appNo.toLowerCase().includes(q)) ||
+          Boolean(c.ainNo && c.ainNo.toLowerCase().includes(q)) ||
+          Boolean(c.grnNo && c.grnNo.toLowerCase().includes(q)) ||
+          Boolean(c.district && c.district.toLowerCase().includes(q)) ||
+          Boolean(c.applicantAdsr && c.applicantAdsr.toLowerCase().includes(q)) ||
+          Boolean(c.adsr && c.adsr.toLowerCase().includes(q));
+      } else if (type === 'rti') {
+        matchSearch =
+          Boolean(c.docketNo && c.docketNo.toLowerCase().includes(q)) ||
+          Boolean(c.caseNo && c.caseNo.toLowerCase().includes(q)) ||
+          Boolean(c.party && c.party.toLowerCase().includes(q)) ||
+          Boolean(c.forum && c.forum.toLowerCase().includes(q)) ||
+          Boolean(c.subType && c.subType.toLowerCase().includes(q));
+      } else if (type === 'firstappeal') {
+        matchSearch =
+          Boolean(c.caseNo && c.caseNo.toLowerCase().includes(q)) ||
+          Boolean(c.docketNo && c.docketNo.toLowerCase().includes(q)) ||
+          Boolean(c.grnNo && c.grnNo.toLowerCase().includes(q)) ||
+          Boolean(c.party && c.party.toLowerCase().includes(q)) ||
+          Boolean(c.opp && c.opp.toLowerCase().includes(q)) ||
+          Boolean(c.forum && c.forum.toLowerCase().includes(q)) ||
+          Boolean(c.subType && c.subType.toLowerCase().includes(q));
+      } else {
+        matchSearch =
+          Boolean(c.caseNo && c.caseNo.toLowerCase().includes(q)) ||
+          Boolean(c.appNo && c.appNo.toLowerCase().includes(q)) ||
+          Boolean(c.docketNo && c.docketNo.toLowerCase().includes(q)) ||
+          Boolean(c.grnNo && c.grnNo.toLowerCase().includes(q)) ||
+          Boolean(c.party && c.party.toLowerCase().includes(q)) ||
+          Boolean(c.opp && c.opp.toLowerCase().includes(q)) ||
+          Boolean(c.forum && c.forum.toLowerCase().includes(q)) ||
+          Boolean(c.applicantDeedNo && c.applicantDeedNo.toLowerCase().includes(q)) ||
+          Boolean(c.brokerName && c.brokerName.toLowerCase().includes(q)) ||
+          Boolean(c.landSchedules?.some(
+            s =>
+              s.mouza.toLowerCase().includes(q) ||
+              s.dag.toLowerCase().includes(q) ||
+              s.khatian.toLowerCase().includes(q)
+          ));
+      }
+    }
+    return matchCategory && matchStatus && matchSubType && matchDistrict && matchUnderInquiry && matchToday && matchAttachment && matchSearch;
   });
 
   // Applicable iconic stage options according to case type
@@ -628,6 +760,102 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
             value: 'Order Passed'
           }
         ];
+      case 'certcopy':
+        return [
+          {
+            id: 'search',
+            label: language === 'bn' ? 'তল্লাশ ও রেকর্ড যাচাই' : 'Search in Progress',
+            subLabel: 'ADSR Record',
+            count: allCases.filter(c => c.status === 'Search In Progress').length,
+            icon: Search,
+            iconBg: 'bg-indigo-100 dark:bg-indigo-950/60',
+            iconColor: 'text-indigo-600 dark:text-indigo-400',
+            activeBorder: 'border-indigo-600',
+            activeRing: 'ring-indigo-600/30',
+            activeBg: 'bg-indigo-50/70 dark:bg-indigo-950/40',
+            badgeActiveText: 'text-indigo-600 dark:text-indigo-400',
+            filterMode: 'status' as const,
+            value: 'Search In Progress'
+          },
+          {
+            id: 'ready',
+            label: language === 'bn' ? 'ডেলিভারি প্রস্তুত' : 'Ready for Delivery',
+            subLabel: 'Stamp Verified',
+            count: allCases.filter(c => c.status === 'Ready for Delivery').length,
+            icon: PackageCheck,
+            iconBg: 'bg-emerald-100 dark:bg-emerald-950/60',
+            iconColor: 'text-emerald-600 dark:text-emerald-400',
+            activeBorder: 'border-emerald-600',
+            activeRing: 'ring-emerald-600/30',
+            activeBg: 'bg-emerald-50/70 dark:bg-emerald-950/40',
+            badgeActiveText: 'text-emerald-600 dark:text-emerald-400',
+            filterMode: 'status' as const,
+            value: 'Ready for Delivery'
+          },
+          {
+            id: 'delivered',
+            label: language === 'bn' ? 'সরবরাহ সম্পন্ন' : 'Delivered',
+            subLabel: 'Handed to Party',
+            count: allCases.filter(c => c.status === 'Delivered').length,
+            icon: Check,
+            iconBg: 'bg-blue-100 dark:bg-blue-950/60',
+            iconColor: 'text-blue-600 dark:text-blue-400',
+            activeBorder: 'border-blue-600',
+            activeRing: 'ring-blue-600/30',
+            activeBg: 'bg-blue-50/70 dark:bg-blue-950/40',
+            badgeActiveText: 'text-blue-600 dark:text-blue-400',
+            filterMode: 'status' as const,
+            value: 'Delivered'
+          }
+        ];
+      case 'rorpi':
+        return [
+          {
+            id: 'feepaid',
+            label: language === 'bn' ? 'আবেদন ও ফি দাখিল' : 'Fee Paid',
+            subLabel: 'AIN Active',
+            count: allCases.filter(c => c.status === 'Fee Paid (Application Generated)').length,
+            icon: FileText,
+            iconBg: 'bg-orange-100 dark:bg-orange-950/60',
+            iconColor: 'text-orange-600 dark:text-orange-400',
+            activeBorder: 'border-orange-600',
+            activeRing: 'ring-orange-600/30',
+            activeBg: 'bg-orange-50/70 dark:bg-orange-950/40',
+            badgeActiveText: 'text-orange-600 dark:text-orange-400',
+            filterMode: 'status' as const,
+            value: 'Fee Paid (Application Generated)'
+          },
+          {
+            id: 'sealed',
+            label: language === 'bn' ? 'ডিজিটাল সিলমোহর' : 'Digitally Sealed',
+            subLabel: 'BL&LRO Approved',
+            count: allCases.filter(c => c.status === 'Signed & Digitally Sealed').length,
+            icon: PackageCheck,
+            iconBg: 'bg-emerald-100 dark:bg-emerald-950/60',
+            iconColor: 'text-emerald-600 dark:text-emerald-400',
+            activeBorder: 'border-emerald-600',
+            activeRing: 'ring-emerald-600/30',
+            activeBg: 'bg-emerald-50/70 dark:bg-emerald-950/40',
+            badgeActiveText: 'text-emerald-600 dark:text-emerald-400',
+            filterMode: 'status' as const,
+            value: 'Signed & Digitally Sealed'
+          },
+          {
+            id: 'downloaded',
+            label: language === 'bn' ? 'পরচা ডাউনলোড' : 'Delivered / Downloaded',
+            subLabel: 'Delivered to Party',
+            count: allCases.filter(c => c.status === 'Delivered / Downloaded').length,
+            icon: Download,
+            iconBg: 'bg-blue-100 dark:bg-blue-950/60',
+            iconColor: 'text-blue-600 dark:text-blue-400',
+            activeBorder: 'border-blue-600',
+            activeRing: 'ring-blue-600/30',
+            activeBg: 'bg-blue-50/70 dark:bg-blue-950/40',
+            badgeActiveText: 'text-blue-600 dark:text-blue-400',
+            filterMode: 'status' as const,
+            value: 'Delivered / Downloaded'
+          }
+        ];
     }
   })();
 
@@ -699,11 +927,12 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
   };
 
   const printCaseSummary = (c: CaseItem) => {
+    const isDeedOrRor = c.type === 'certcopy' || c.type === 'rorpi';
     const html = `
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Case File: ${c.caseNo}</title>
+          <title>${isDeedOrRor ? (c.type === 'rorpi' ? 'ROR/PI Application' : 'Certified Copy') : 'Case File'}: ${isDeedOrRor ? (c.appNo || c.ainNo || c.caseNo) : c.caseNo}</title>
           <style>
             body { font-family: 'Times New Roman', serif; padding: 40px; color: #111; line-height: 1.6; }
             h1, h2, h3 { margin: 0 0 8px 0; color: #1E3A8A; }
@@ -711,7 +940,8 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
             table { width: 100%; border-collapse: collapse; margin-top: 12px; }
             th, td { border: 1px solid #999; padding: 8px; text-align: left; font-size: 13px; }
             th { background: #F1F5F9; font-weight: bold; }
-            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; font-size: 13px; }
+            .highlight-box { background: #F8FAFC; border: 1px solid #CBD5E1; padding: 12px; border-radius: 6px; margin-bottom: 14px; }
           </style>
         </head>
         <body>
@@ -721,49 +951,74 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
             <div style="font-size: 12px; color: #555;">Bar Council Reg: ${activeCompany?.barCouncil || ''} · Phone: ${activeCompany?.phone || ''}</div>
           </div>
           <hr />
-          <h3>CASE SUMMARY SHEET: ${c.caseNo}</h3>
-          <div class="grid">
-            <div><strong>Case Module:</strong> ${meta.title} (${c.subType})</div>
-            <div><strong>Forum:</strong> ${c.forum || '—'}</div>
-            <div><strong>Current Status:</strong> ${c.status}</div>
-            <div><strong>Priority:</strong> ${c.priority || 'Normal'}</div>
-            <div><strong>Filing Date:</strong> ${c.filingDate || '—'}</div>
-            <div><strong>Next Hearing:</strong> ${c.nextDate || '—'}</div>
-            <div><strong>Petitioner/Applicant:</strong> ${c.party}</div>
-            <div><strong>Opposite Party:</strong> ${c.opp || '—'}</div>
-          </div>
+          <h3>${isDeedOrRor ? (c.type === 'rorpi' ? 'ROR / PLOT INFORMATION (PI) APPLICATION SHEET' : 'CERTIFIED COPY OF DEED APPLICATION SHEET') : `CASE SUMMARY SHEET: ${c.caseNo}`}</h3>
+          
+          ${isDeedOrRor ? `
+            <div class="highlight-box">
+              <div class="grid">
+                <div><strong>AIN NO:</strong> ${c.appNo || c.ainNo || c.caseNo || '—'}</div>
+                <div><strong>GRN Fee Challan:</strong> ${c.grnNo || '—'}</div>
+                <div><strong>DEED NO:</strong> ${c.applicantDeedNo || c.deedNo || '—'}</div>
+                <div><strong>DEED YEAR:</strong> ${c.applicantDeedYear || c.deedYear || '—'}</div>
+                <div><strong>DISTRICT:</strong> ${c.district || 'West Bengal'}</div>
+                <div><strong>OFFICE:</strong> ${c.applicantAdsr || c.adsr || (c.type === 'rorpi' ? 'BL&LRO' : 'ADSR')}</div>
+                <div><strong>Current Status:</strong> ${c.status}</div>
+                <div><strong>Application Date:</strong> ${c.filingDate || '—'}</div>
+                <div><strong>Expected Delivery Date:</strong> ${c.nextDate || '—'}</div>
+              </div>
+            </div>
+            <h4>Applicant & Broker Reference</h4>
+            <div class="grid">
+              <div><strong>Applicant Full Name:</strong> ${c.party}</div>
+              <div><strong>Broker / Muhuri:</strong> ${c.brokerName || '—'} ${c.brokerPhone ? `(${c.brokerPhone})` : ''}</div>
+              ${c.applicants?.[0]?.father ? `<div><strong>Father / Husband:</strong> ${c.applicants[0].father}</div>` : ''}
+              ${c.applicants?.[0]?.phone ? `<div><strong>Applicant Contact:</strong> ${c.applicants[0].phone}</div>` : ''}
+              ${c.applicants?.[0]?.address ? `<div><strong>Address:</strong> ${c.applicants[0].address}</div>` : ''}
+            </div>
+          ` : `
+            <div class="grid">
+              <div><strong>Case Module:</strong> ${meta.title} (${c.subType})</div>
+              <div><strong>Forum:</strong> ${c.forum || '—'}</div>
+              <div><strong>Current Status:</strong> ${c.status}</div>
+              <div><strong>Priority:</strong> ${c.priority || 'Normal'}</div>
+              <div><strong>Filing Date:</strong> ${c.filingDate || '—'}</div>
+              <div><strong>Next Hearing:</strong> ${c.nextDate || '—'}</div>
+              <div><strong>Petitioner/Applicant:</strong> ${c.party}</div>
+              <div><strong>Opposite Party:</strong> ${c.opp || '—'}</div>
+            </div>
 
-          ${
-            c.landSchedules.length > 0
-              ? `<h4>Land Schedule</h4>
-                 <table>
-                   <thead>
-                     <tr>
-                       <th>District & Block</th>
-                       <th>Mouza & JL</th>
-                       <th>Khatian</th>
-                       <th>Dag</th>
-                       <th>Area</th>
-                       <th>Class</th>
-                     </tr>
-                   </thead>
-                   <tbody>
-                     ${c.landSchedules
-                       .map(
-                         s => `<tr>
-                       <td>${s.district} / ${s.block}</td>
-                       <td>${s.mouza} (JL ${s.jl})</td>
-                       <td>${s.khatian}</td>
-                       <td>${s.dag}</td>
-                       <td>${s.area} ${s.unit}</td>
-                       <td>${s.classification || '—'}</td>
-                     </tr>`
-                       )
-                       .join('')}
-                   </tbody>
-                 </table>`
-              : ''
-          }
+            ${
+              c.landSchedules.length > 0
+                ? `<h4>Land Schedule</h4>
+                   <table>
+                     <thead>
+                       <tr>
+                         <th>District & Block</th>
+                         <th>Mouza & JL</th>
+                         <th>Khatian</th>
+                         <th>Dag</th>
+                         <th>Area</th>
+                         <th>Class</th>
+                       </tr>
+                     </thead>
+                     <tbody>
+                       ${c.landSchedules
+                         .map(
+                           s => `<tr>
+                         <td>${s.district} / ${s.block}</td>
+                         <td>${s.mouza} (JL ${s.jl})</td>
+                         <td>${s.khatian}</td>
+                         <td>${s.dag}</td>
+                         <td>${s.area} ${s.unit}</td>
+                         <td>${s.classification || '—'}</td>
+                       </tr>`
+                         )
+                         .join('')}
+                     </tbody>
+                   </table>`
+                : ''
+            }
+          `}
           <div style="margin-top: 40px; text-align: right; font-size: 12px;">
             <strong>Chamber Copy · Printed on ${new Date().toLocaleDateString('en-IN')}</strong>
           </div>
@@ -784,51 +1039,84 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
       return;
     }
 
-    const headers = [
-      'Case No',
-      'Status Category',
-      'Stage / Status',
-      'Sub-Type',
-      'Petitioner / Applicant',
-      'Opposite Party / Respondent',
-      'Forum',
-      'Mouza',
-      'J.L. No',
-      'Khatian',
-      'Plot / Dag',
-      'Share / Area',
-      'Filing Date',
-      'Next Hearing Date',
-      'Application / Docket No'
-    ];
-
     const escapeCsv = (val: any) => {
       if (val === null || val === undefined) return '""';
       const str = String(val).replace(/"/g, '""');
       return `"${str}"`;
     };
 
-    const rows = targetList.map(c => {
-      const statusInfo = getStatusTrackingInfo(c.status);
-      const s0 = c.landSchedules?.[0];
-      return [
-        escapeCsv(c.caseNo),
-        escapeCsv(statusInfo.category),
-        escapeCsv(c.status),
-        escapeCsv(c.subType),
-        escapeCsv(c.party),
-        escapeCsv(c.opp || ''),
-        escapeCsv(c.forum || ''),
-        escapeCsv(s0?.mouza || ''),
-        escapeCsv(s0?.jl || ''),
-        escapeCsv(s0?.khatian || ''),
-        escapeCsv(s0?.dag || ''),
-        escapeCsv(s0?.area ? `${s0.area} ${s0.unit}` : ''),
+    let headers: string[];
+    let rows: string[];
+
+    if (isCertOrRorPi) {
+      headers = [
+        'SL',
+        'AIN NO',
+        'GRN Fee Challan',
+        'Deed No',
+        'Deed Year',
+        'District',
+        'Registry / BL&LRO Office',
+        'Applicant Name',
+        'Broker / Muhuri Name',
+        'Filing Date',
+        'Expected Delivery Date',
+        'Status'
+      ];
+      rows = targetList.map((c, idx) => [
+        escapeCsv(idx + 1),
+        escapeCsv(c.appNo || c.ainNo || c.caseNo || ''),
+        escapeCsv(c.grnNo || ''),
+        escapeCsv(c.applicantDeedNo || c.deedNo || ''),
+        escapeCsv(c.applicantDeedYear || c.deedYear || ''),
+        escapeCsv(c.district || ''),
+        escapeCsv(c.applicantAdsr || c.adsr || ''),
+        escapeCsv(c.party || ''),
+        escapeCsv(c.brokerName || ''),
         escapeCsv(c.filingDate || ''),
         escapeCsv(c.nextDate || ''),
-        escapeCsv(c.appNo || c.docketNo || '')
-      ].join(',');
-    });
+        escapeCsv(c.status || '')
+      ].join(','));
+    } else {
+      headers = [
+        'Case No',
+        'Status Category',
+        'Stage / Status',
+        'Sub-Type',
+        'Petitioner / Applicant',
+        'Opposite Party / Respondent',
+        'Forum',
+        'Mouza',
+        'J.L. No',
+        'Khatian',
+        'Plot / Dag',
+        'Share / Area',
+        'Filing Date',
+        'Next Hearing Date',
+        'Application / Docket No'
+      ];
+      rows = targetList.map(c => {
+        const statusInfo = getStatusTrackingInfo(c.status);
+        const s0 = c.landSchedules?.[0];
+        return [
+          escapeCsv(c.caseNo),
+          escapeCsv(statusInfo.category),
+          escapeCsv(c.status),
+          escapeCsv(c.subType),
+          escapeCsv(c.party),
+          escapeCsv(c.opp || ''),
+          escapeCsv(c.forum || ''),
+          escapeCsv(s0?.mouza || ''),
+          escapeCsv(s0?.jl || ''),
+          escapeCsv(s0?.khatian || ''),
+          escapeCsv(s0?.dag || ''),
+          escapeCsv(s0?.area ? `${s0.area} ${s0.unit}` : ''),
+          escapeCsv(c.filingDate || ''),
+          escapeCsv(c.nextDate || ''),
+          escapeCsv(c.appNo || c.docketNo || '')
+        ].join(',');
+      });
+    }
 
     const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -849,7 +1137,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    showToast(`Exported ${targetList.length} cases to CSV`);
+    showToast(`Exported ${targetList.length} ${isCertOrRorPi ? 'records' : 'cases'} to CSV`);
   };
 
   const exportFilteredCasesPDF = () => {
@@ -878,7 +1166,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
       <!DOCTYPE html>
       <html>
         <head>
-          <title>${meta.title} — ${selectedCaseIds.length > 0 ? 'Selected' : 'Filtered'} Case List (${targetList.length} Cases)</title>
+          <title>${meta.title} — ${selectedCaseIds.length > 0 ? 'Selected' : 'Filtered'} Case List (${targetList.length} ${isCertOrRorPi ? 'Records' : 'Cases'})</title>
           <style>
             @page { size: landscape; margin: 12mm; }
             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1e293b; line-height: 1.4; margin: 0; padding: 20px; font-size: 11px; }
@@ -901,7 +1189,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
           <div class="header">
             <div>
               <h1>${activeCompany?.name || 'Legal Chamber'}</h1>
-              <div class="subtitle">${meta.title} — ${selectedCaseIds.length > 0 ? 'Batch Selected' : 'Filtered'} Case Registry Report</div>
+              <div class="subtitle">${meta.title} — ${selectedCaseIds.length > 0 ? 'Batch Selected' : 'Filtered'} Registry Report</div>
             </div>
             <div style="text-align: right; font-size: 10px; color: #64748b;">
               <div>Chamber: ${activeCompany?.city || 'Kolkata'}, WB</div>
@@ -911,23 +1199,38 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
 
           <div class="meta-box">
             <div><strong>Report Scope:</strong> ${activeFilterLabel}${searchLabel}</div>
-            <div><strong>Exporting:</strong> ${targetList.length} of ${allCases.length} Total Cases</div>
+            <div><strong>Exporting:</strong> ${targetList.length} of ${allCases.length} Total ${isCertOrRorPi ? 'Applications' : 'Cases'}</div>
           </div>
 
           <table>
             <thead>
-              <tr>
-                <th style="width: 30px;">#</th>
-                <th>Case No</th>
-                <th>Sub-Type</th>
-                <th>Petitioner / Applicant</th>
-                <th>Opposite Party</th>
-                <th>Forum</th>
-                <th>Land Schedule</th>
-                <th>Filing Date</th>
-                <th>Next Date</th>
-                <th>Status</th>
-              </tr>
+              ${isCertOrRorPi ? `
+                <tr>
+                  <th style="width: 30px;">#</th>
+                  <th>AIN NO.</th>
+                  <th>GRN Challan</th>
+                  <th>Deed No & Year</th>
+                  <th>District & Office</th>
+                  <th>Applicant Name</th>
+                  <th>Broker / Muhuri</th>
+                  <th>Filing Date</th>
+                  <th>Expected Delivery</th>
+                  <th>Status</th>
+                </tr>
+              ` : `
+                <tr>
+                  <th style="width: 30px;">#</th>
+                  <th>Case No</th>
+                  <th>Sub-Type</th>
+                  <th>Petitioner / Applicant</th>
+                  <th>Opposite Party</th>
+                  <th>Forum</th>
+                  <th>Land Schedule</th>
+                  <th>Filing Date</th>
+                  <th>Next Date</th>
+                  <th>Status</th>
+                </tr>
+              `}
             </thead>
             <tbody>
               ${targetList
@@ -941,6 +1244,23 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       : 'badge-disposed';
                   const s0 = c.landSchedules?.[0];
                   const scheduleStr = s0 ? `${s0.mouza} (Dag ${s0.dag})` : '—';
+
+                  if (isCertOrRorPi) {
+                    return `<tr>
+                      <td style="color: #64748b; font-family: monospace; font-size: 10px;">${idx + 1}</td>
+                      <td><strong>${c.appNo || c.ainNo || c.caseNo || '—'}</strong></td>
+                      <td style="font-family: monospace;">${c.grnNo || '—'}</td>
+                      <td style="font-family: monospace;"><strong>${c.applicantDeedNo || c.deedNo || '—'}</strong> / ${c.applicantDeedYear || c.deedYear || '—'}</td>
+                      <td>${c.district || '—'} (${c.applicantAdsr || c.adsr || (type === 'rorpi' ? 'BL&LRO' : 'ADSR')})</td>
+                      <td><strong>${c.party}</strong></td>
+                      <td>${c.brokerName || '—'}</td>
+                      <td>${c.filingDate || '—'}</td>
+                      <td style="font-weight: 600; color: #1e40af;">${c.nextDate || '—'}</td>
+                      <td>
+                        <span class="badge ${badgeClass}">${c.status}</span>
+                      </td>
+                    </tr>`;
+                  }
 
                   return `<tr>
                     <td style="color: #64748b; font-family: monospace; font-size: 10px;">${idx + 1}</td>
@@ -999,7 +1319,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap shrink-0">
-            {type !== 'mutation' && onOpenAiDraft && (
+            {type !== 'mutation' && type !== 'certcopy' && type !== 'rorpi' && onOpenAiDraft && (
               <button
                 type="button"
                 onClick={() => onOpenAiDraft(type)}
@@ -1033,7 +1353,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
           </div>
         </div>
 
-        {/* 4 Compact 3D KPI Stat Cards (2x Smaller) */}
+        {/* 4 Compact 3D KPI Stat Cards (2x Smaller) — Total Cases, Today's Hearings, Active Pending, Vault Files */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
           {/* 1. Total Cases */}
           {(() => {
@@ -1041,7 +1361,9 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
               categoryFilter === 'All' &&
               statusFilter === 'All' &&
               subTypeFilter === 'All' &&
-              !underInquiryFilter;
+              !underInquiryFilter &&
+              !todayHearingsFilter &&
+              !attachmentFilter;
             return (
               <div
                 onClick={() => {
@@ -1049,119 +1371,172 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                   setStatusFilter('All');
                   setSubTypeFilter('All');
                   setUnderInquiryFilter(false);
+                  setTodayHearingsFilter(false);
+                  setAttachmentFilter(false);
                 }}
-                className={`px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 border-l-3 border-l-blue-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-2xs hover:-translate-y-0.5 transition-all cursor-pointer ${
-                  isActive
-                    ? 'bg-blue-50/70 dark:bg-blue-950/40 ring-1 ring-blue-500/30'
-                    : 'bg-white dark:bg-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/90'
+                className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-blue-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                  isActive ? 'ring-2 ring-blue-500/40 bg-blue-50/40 dark:bg-blue-950/30' : ''
                 }`}
+                title="Click to view all registered cases in this module"
               >
-                <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-tight truncate">
-                  {language === 'bn' ? 'মোট কেস (Total Cases)' : 'Total Cases'}
+                <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                  <span className="truncate">
+                    {isCertOrRorPi
+                      ? (language === 'bn' ? 'মোট আবেদন' : 'Total Applications')
+                      : (language === 'bn' ? 'মোট কেস (Total Cases)' : 'Total Cases')}
+                  </span>
+                  <div className="w-5 h-5 rounded-md bg-blue-50 dark:bg-blue-950/80 border border-blue-200/70 dark:border-blue-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                    <Icon className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                  </div>
                 </div>
-                <div className="text-sm sm:text-base font-extrabold font-mono text-slate-900 dark:text-slate-100 leading-tight mt-0.5">
+                <div className="text-sm sm:text-base font-extrabold font-mono text-slate-900 dark:text-slate-100 leading-tight">
                   {allCases.length}
+                </div>
+                <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                  {isCertOrRorPi
+                    ? `${pendingCount} Processing • ${disposedCount} Delivered`
+                    : `${pendingCount} Pending • ${disposedCount} Disposed`}
                 </div>
               </div>
             );
           })()}
 
-          {/* 2. Pending / Filed */}
+          {/* 2. Today's Hearings / Expected Delivery Today */}
+          {(() => {
+            const isActive = todayHearingsFilter;
+            return (
+              <div
+                onClick={() => {
+                  setTodayHearingsFilter(prev => !prev);
+                  if (!todayHearingsFilter) {
+                    setCategoryFilter('All');
+                    setStatusFilter('All');
+                    setSubTypeFilter('All');
+                    setDistrictFilter('All');
+                    setUnderInquiryFilter(false);
+                    setAttachmentFilter(false);
+                  }
+                }}
+                className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-amber-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                  isActive ? 'ring-2 ring-amber-500/50 bg-amber-50/50 dark:bg-amber-950/40' : ''
+                }`}
+                title={isCertOrRorPi ? "Filter by records with expected delivery scheduled today" : "Filter by cases with hearings scheduled today"}
+              >
+                <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                  <span className="truncate">
+                    {isCertOrRorPi
+                      ? (language === 'bn' ? 'আজকের সম্ভাব্য ডেলিভারি' : "Delivery Due Today")
+                      : (language === 'bn' ? 'আজকের শুনানি' : "Today's Hearings")}
+                  </span>
+                  <div className="w-5 h-5 rounded-md bg-amber-50 dark:bg-amber-950/80 border border-amber-200/70 dark:border-amber-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                    <Calendar className="w-3 h-3 text-amber-500" />
+                  </div>
+                </div>
+                <div className="text-sm sm:text-base font-extrabold font-mono text-amber-600 dark:text-amber-400 leading-tight">
+                  {todayHearingCount}
+                </div>
+                <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                  {isCertOrRorPi ? 'Due for delivery today' : 'Scheduled hearings today'}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* 3. Active Pending / In Progress */}
           {(() => {
             const isActive =
-              categoryFilter === 'Pending' &&
-              !underInquiryFilter &&
-              statusFilter === 'All' &&
-              subTypeFilter === 'All';
+              (categoryFilter === 'Pending' || underInquiryFilter) &&
+              !todayHearingsFilter &&
+              !attachmentFilter;
             return (
               <div
                 onClick={() => {
                   if (isActive) {
                     setCategoryFilter('All');
+                    setUnderInquiryFilter(false);
                   } else {
                     setCategoryFilter('Pending');
                     setStatusFilter('All');
                     setSubTypeFilter('All');
+                    setDistrictFilter('All');
                     setUnderInquiryFilter(false);
+                    setTodayHearingsFilter(false);
+                    setAttachmentFilter(false);
                   }
                 }}
-                className={`px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 border-l-3 border-l-amber-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-2xs hover:-translate-y-0.5 transition-all cursor-pointer ${
-                  isActive
-                    ? 'bg-amber-50/70 dark:bg-amber-950/40 ring-1 ring-amber-500/30'
-                    : 'bg-white dark:bg-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/90'
+                className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-purple-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                  isActive ? 'ring-2 ring-purple-500/50 bg-purple-50/50 dark:bg-purple-950/40' : ''
                 }`}
+                title={isCertOrRorPi ? "Filter by active in-progress applications" : "Filter by active pending & under inquiry cases"}
               >
-                <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-tight truncate">
-                  {language === 'bn' ? 'পেন্ডিং / দাখিল (Pending)' : 'Pending / Filed'}
+                <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                  <span className="truncate">
+                    {isCertOrRorPi
+                      ? (language === 'bn' ? 'চলমান আবেদন' : 'In Progress')
+                      : (language === 'bn' ? 'চলমান বিচারাধীন' : 'Active Pending')}
+                  </span>
+                  <div className="w-5 h-5 rounded-md bg-purple-50 dark:bg-purple-950/80 border border-purple-200/70 dark:border-purple-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                    <Clock className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                  </div>
                 </div>
-                <div className="text-sm sm:text-base font-extrabold font-mono text-amber-600 dark:text-amber-400 leading-tight mt-0.5">
-                  {pendingCount}
+                <div className="text-sm sm:text-base font-extrabold font-mono text-purple-600 dark:text-purple-400 leading-tight">
+                  {activePendingCount}
+                </div>
+                <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                  {isCertOrRorPi ? 'Under verification & processing' : 'Requires follow-up & dates'}
                 </div>
               </div>
             );
           })()}
 
-          {/* 3. Under Inquiry / Hearing */}
+          {/* 4. Vault Files or Delivered (for certcopy/rorpi) */}
           {(() => {
-            const isActive = underInquiryFilter;
+            const deliveredCount = allCases.filter(c => c.status.toLowerCase().includes('delivered')).length;
+            const isActive = isCertOrRorPi ? statusFilter.toLowerCase().includes('delivered') : attachmentFilter;
             return (
               <div
                 onClick={() => {
-                  if (isActive) {
-                    setUnderInquiryFilter(false);
+                  if (isCertOrRorPi) {
+                    const deliveredStatus = type === 'rorpi' ? 'Delivered / Downloaded' : 'Delivered';
+                    if (statusFilter === deliveredStatus) {
+                      setStatusFilter('All');
+                    } else {
+                      setStatusFilter(deliveredStatus);
+                      setCategoryFilter('All');
+                      setUnderInquiryFilter(false);
+                      setTodayHearingsFilter(false);
+                    }
                   } else {
-                    setUnderInquiryFilter(true);
-                    setCategoryFilter('All');
-                    setStatusFilter('All');
-                    setSubTypeFilter('All');
+                    setAttachmentFilter(prev => !prev);
+                    if (!attachmentFilter) {
+                      setTodayHearingsFilter(false);
+                    }
                   }
                 }}
-                className={`px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 border-l-3 border-l-purple-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-2xs hover:-translate-y-0.5 transition-all cursor-pointer ${
-                  isActive
-                    ? 'bg-purple-50/70 dark:bg-purple-950/40 ring-1 ring-purple-500/30'
-                    : 'bg-white dark:bg-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/90'
+                className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-emerald-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                  isActive ? 'ring-2 ring-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/40' : ''
                 }`}
+                title={isCertOrRorPi ? "Filter by delivered entries" : "Filter by cases with vault attachments or view stored documents"}
               >
-                <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-tight truncate">
-                  {language === 'bn' ? 'শুনানি / তদন্তাধীন (Under Inquiry)' : 'Under Inquiry / Hearing'}
+                <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                  <span className="truncate">
+                    {isCertOrRorPi
+                      ? (language === 'bn' ? 'সরবরাহ সম্পন্ন' : 'Delivered')
+                      : (language === 'bn' ? 'ভল্ট ফাইলসমূহ' : 'Vault Files')}
+                  </span>
+                  <div className="w-5 h-5 rounded-md bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200/70 dark:border-emerald-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                    {isCertOrRorPi ? (
+                      <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                    ) : (
+                      <Archive className="w-3 h-3 text-emerald-500" />
+                    )}
+                  </div>
                 </div>
-                <div className="text-sm sm:text-base font-extrabold font-mono text-purple-600 dark:text-purple-400 leading-tight mt-0.5">
-                  {underInquiryCount}
+                <div className="text-sm sm:text-base font-extrabold font-mono text-emerald-600 dark:text-emerald-400 leading-tight">
+                  {isCertOrRorPi ? deliveredCount : vaultDisplayCount}
                 </div>
-              </div>
-            );
-          })()}
-
-          {/* 4. Disposed / Allowed */}
-          {(() => {
-            const isActive =
-              categoryFilter === 'Disposed' &&
-              !underInquiryFilter &&
-              statusFilter === 'All' &&
-              subTypeFilter === 'All';
-            return (
-              <div
-                onClick={() => {
-                  if (isActive) {
-                    setCategoryFilter('All');
-                  } else {
-                    setCategoryFilter('Disposed');
-                    setStatusFilter('All');
-                    setSubTypeFilter('All');
-                    setUnderInquiryFilter(false);
-                  }
-                }}
-                className={`px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 border-l-3 border-l-emerald-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-2xs hover:-translate-y-0.5 transition-all cursor-pointer ${
-                  isActive
-                    ? 'bg-emerald-50/70 dark:bg-emerald-950/40 ring-1 ring-emerald-500/30'
-                    : 'bg-white dark:bg-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/90'
-                }`}
-              >
-                <div className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-tight truncate">
-                  {language === 'bn' ? 'নিষ্পত্তি / মঞ্জুর (Disposed)' : 'Disposed / Allowed'}
-                </div>
-                <div className="text-sm sm:text-base font-extrabold font-mono text-emerald-600 dark:text-emerald-400 leading-tight mt-0.5">
-                  {disposedCount}
+                <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                  {isCertOrRorPi ? 'Completed & handed to party' : 'Saved deeds, orders & ROR'}
                 </div>
               </div>
             );
@@ -1220,32 +1595,65 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
               })}
             </div>
 
-            {/* Right Side: Sub-Type Dropdown + Search Input (Visual from Image 3) */}
+            {/* Right Side: District or Sub-Type Dropdown + Search Input organized per entry form */}
             <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
-              <div className="relative">
-                <select
-                  value={subTypeFilter}
-                  onChange={e => setSubTypeFilter(e.target.value)}
-                  className="pl-3 pr-8 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 border-b-2 border-b-slate-300 dark:border-b-slate-950 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer appearance-none"
-                  title="Filter by Case Sub-Type"
-                >
-                  <option value="All">All Sub-Types</option>
-                  {meta.subTypes.map(st => (
-                    <option key={st} value={st}>
-                      {st} ({allCases.filter(c => c.subType === st).length})
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
-              </div>
+              {isCertOrRorPi ? (
+                <div className="relative">
+                  <select
+                    value={districtFilter}
+                    onChange={e => setDistrictFilter(e.target.value)}
+                    className="pl-3 pr-8 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 border-b-2 border-b-slate-300 dark:border-b-slate-950 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer appearance-none"
+                    title="Filter by District"
+                  >
+                    <option value="All">All Districts</option>
+                    {Object.keys(wbDistricts)
+                      .sort()
+                      .map(d => (
+                        <option key={d} value={d}>
+                          {d} ({allCases.filter(c => c.district === d).length})
+                        </option>
+                      ))}
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
+                </div>
+              ) : (
+                <div className="relative">
+                  <select
+                    value={subTypeFilter}
+                    onChange={e => setSubTypeFilter(e.target.value)}
+                    className="pl-3 pr-8 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 border-b-2 border-b-slate-300 dark:border-b-slate-950 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer appearance-none"
+                    title="Filter by Case Sub-Type"
+                  >
+                    <option value="All">All Sub-Types</option>
+                    {meta.subTypes.map(st => (
+                      <option key={st} value={st}>
+                        {st} ({allCases.filter(c => c.subType === st).length})
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
+                </div>
+              )}
 
-              <div className="relative min-w-[230px] flex-1 sm:flex-initial">
+              <div className="relative min-w-[240px] flex-1 sm:flex-initial">
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  placeholder="Search case, party, Mouza, Dag..."
+                  placeholder={
+                    isCertOrRorPi
+                      ? "Search by Deed No, Year, Applicant, Broker, AIN, GRN..."
+                      : type === 'rti'
+                      ? "Search Docket No, Tracking ID, Applicant, Public Authority..."
+                      : type === 'firstappeal'
+                      ? "Search FA Case No, Docket No, Tracking No, Appellant..."
+                      : type === 'misc'
+                      ? "Search Misc Case No, Docket No, Matter, Party, Mouza..."
+                      : type === 'lrappeal'
+                      ? "Search Appeal No, Docket No, Appellant, Forum, Mouza..."
+                      : "Search Case No, MUTE App No, Deed No, Party, Mouza, Dag..."
+                  }
                   className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 border-b-2 border-b-slate-300 dark:border-b-slate-950 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 font-medium"
                 />
               </div>
@@ -1257,16 +1665,17 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
             <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/80">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                  Showing <span className="font-bold font-mono text-slate-900 dark:text-slate-100">{filteredCases.length}</span> of {allCases.length} cases
+                  Showing <span className="font-bold font-mono text-slate-900 dark:text-slate-100">{filteredCases.length}</span> of {allCases.length} {isCertOrRorPi ? 'records' : 'cases'}
                 </span>
 
-                {(categoryFilter !== 'All' || statusFilter !== 'All' || subTypeFilter !== 'All' || underInquiryFilter || search) && (
+                {(categoryFilter !== 'All' || statusFilter !== 'All' || subTypeFilter !== 'All' || districtFilter !== 'All' || underInquiryFilter || search) && (
                   <button
                     type="button"
                     onClick={() => {
                       setCategoryFilter('All');
                       setStatusFilter('All');
                       setSubTypeFilter('All');
+                      setDistrictFilter('All');
                       setUnderInquiryFilter(false);
                       setSearch('');
                     }}
@@ -1482,77 +1891,171 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                     }`}
                   >
                     <div>
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          {isBatchMode && (
-                            <button
-                              type="button"
-                              onClick={e => {
-                                e.stopPropagation();
-                                toggleSelectCase(c.id);
-                              }}
-                              className={`w-5 h-5 rounded flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
-                                isSelected
-                                  ? 'bg-blue-600 text-white'
-                                  : 'border border-slate-300 dark:border-slate-600 hover:border-blue-500 bg-white dark:bg-slate-800'
-                              }`}
+                      {isCertOrRorPi ? (
+                        <div>
+                          {/* Card Top: AIN NO. & GRN + Status Badge */}
+                          <div className="flex items-start justify-between gap-2 mb-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                            <div className="flex items-center gap-2 min-w-0">
+                              {isBatchMode && (
+                                <button
+                                  type="button"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    toggleSelectCase(c.id);
+                                  }}
+                                  className={`w-5 h-5 rounded flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
+                                    isSelected
+                                      ? 'bg-blue-600 text-white'
+                                      : 'border border-slate-300 dark:border-slate-600 hover:border-blue-500 bg-white dark:bg-slate-800'
+                                  }`}
+                                >
+                                  {isSelected ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : null}
+                                </button>
+                              )}
+                              <div className="min-w-0">
+                                <span className="font-mono text-sm font-extrabold text-blue-700 dark:text-blue-400 block truncate">
+                                  {c.appNo || c.ainNo || c.caseNo || 'AIN Pending'}
+                                </span>
+                                {c.grnNo && (
+                                  <span className="text-[10px] font-mono font-semibold text-emerald-600 dark:text-emerald-400 block truncate">
+                                    GRN: {c.grnNo}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[10px] font-bold border shrink-0 ${statusInfo.badgeClass}`}
                             >
-                              {isSelected ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : null}
-                            </button>
-                          )}
-                          <div className="min-w-0">
-                            <span className="font-mono text-sm font-extrabold text-blue-700 dark:text-blue-400 block truncate">
-                              {c.caseNo || c.docketNo || 'RTI Application'}
-                            </span>
-                            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block truncate">
-                              {c.subType}
-                            </span>
+                              <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotClass}`} />
+                              <span>{c.status}</span>
+                            </div>
                           </div>
-                        </div>
 
-                        <div
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold border shrink-0 ${statusInfo.badgeClass}`}
-                        >
-                          <span className={`w-2 h-2 rounded-full ${statusInfo.dotClass}`} />
-                          <span>{c.status}</span>
-                        </div>
-                      </div>
+                          {/* Primary Registry Box matching entry form */}
+                          <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/70 grid grid-cols-2 gap-2 text-xs mb-2">
+                            <div>
+                              <div className="text-[9px] font-bold uppercase text-slate-400">Deed No & Year</div>
+                              <div className="font-mono font-bold text-slate-800 dark:text-slate-200 text-xs">
+                                {c.applicantDeedNo || c.deedNo || '—'} / {c.applicantDeedYear || c.deedYear || '—'}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-[9px] font-bold uppercase text-slate-400">District & Office</div>
+                              <div className="font-semibold text-slate-800 dark:text-slate-200 text-xs truncate" title={c.district}>
+                                {c.district || 'West Bengal'}
+                              </div>
+                              <div className="text-[10px] text-slate-500 truncate" title={c.applicantAdsr || c.adsr}>
+                                {c.applicantAdsr || c.adsr || (type === 'rorpi' ? 'BL&LRO' : 'ADSR')}
+                              </div>
+                            </div>
+                          </div>
 
-                      <div className="space-y-1.5 py-2.5 border-y border-slate-100 dark:border-slate-800 text-xs">
-                        <div className="flex items-start gap-1.5">
-                          <User className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-                          <div className="min-w-0">
-                            <span className="font-bold text-slate-900 dark:text-slate-100 truncate block">
-                              {c.party}
-                            </span>
-                            {type !== 'rti' && c.opp && (
-                              <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate block">
-                                vs. {c.opp}
+                          {/* Applicant & Broker Box */}
+                          <div className="space-y-1 py-1.5 text-xs">
+                            <div className="flex items-center gap-1.5">
+                              <User className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                              <span className="font-bold text-slate-900 dark:text-slate-100 truncate block">
+                                {c.party}
                               </span>
+                            </div>
+                            {c.brokerName && (
+                              <div className="text-[11px] text-amber-700 dark:text-amber-400 font-medium pl-5 truncate">
+                                Broker: {c.brokerName}
+                              </div>
                             )}
                           </div>
-                        </div>
 
-                        <div className="flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-400">
-                          <Gavel className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span className="truncate">{c.forum || (type === 'rti' ? 'Public Authority (Optional)' : 'West Bengal Revenue Forum')}</span>
+                          {/* Delivery & Filing */}
+                          <div className="flex items-center justify-between text-[11px] py-2 border-t border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+                            <span className="truncate">
+                              Filed: <span className="font-mono">{c.filingDate || '—'}</span>
+                            </span>
+                            <span className="flex items-center gap-1 font-mono font-bold text-blue-700 dark:text-blue-400">
+                              <Clock className="w-3 h-3 text-amber-500" />
+                              <span>Delivery: {c.nextDate || 'No date set'}</span>
+                            </span>
+                          </div>
                         </div>
+                      ) : (
+                        <div>
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              {isBatchMode && (
+                                <button
+                                  type="button"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    toggleSelectCase(c.id);
+                                  }}
+                                  className={`w-5 h-5 rounded flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
+                                    isSelected
+                                      ? 'bg-blue-600 text-white'
+                                      : 'border border-slate-300 dark:border-slate-600 hover:border-blue-500 bg-white dark:bg-slate-800'
+                                  }`}
+                                >
+                                  {isSelected ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : null}
+                                </button>
+                              )}
+                              <div className="min-w-0">
+                                <span className="font-mono text-sm font-extrabold text-blue-700 dark:text-blue-400 block truncate">
+                                  {c.caseNo || c.docketNo || 'RTI Application'}
+                                </span>
+                                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block truncate">
+                                  {c.subType}
+                                </span>
+                              </div>
+                            </div>
 
-                        <div className="flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-400">
-                          <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                          <span className="truncate">{scheduleSummary}</span>
+                            <div
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold border shrink-0 ${statusInfo.badgeClass}`}
+                            >
+                              <span className={`w-2 h-2 rounded-full ${statusInfo.dotClass}`} />
+                              <span>{c.status}</span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1.5 py-2.5 border-y border-slate-100 dark:border-slate-800 text-xs">
+                            <div className="flex items-start gap-1.5">
+                              <User className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 dark:text-slate-100 truncate block">
+                                  {c.party}
+                                </span>
+                                {type !== 'rti' && c.opp ? (
+                                  <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate block">
+                                    vs. {c.opp}
+                                  </span>
+                                ) : null}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-400">
+                              <Gavel className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span className="truncate">
+                                {c.forum || (type === 'rti' ? 'Public Authority (Optional)' : 'West Bengal Revenue Forum')}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-400">
+                              <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                              <span className="truncate">
+                                {scheduleSummary}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[11px] py-2 text-slate-500 dark:text-slate-400">
+                            <span className="truncate">
+                              Filed: <span className="font-mono font-medium">{c.filingDate || '—'}</span>
+                            </span>
+                            <span className="flex items-center gap-1 font-mono font-bold text-blue-600 dark:text-blue-400">
+                              <Clock className="w-3 h-3 text-amber-500" />
+                              <span>{c.nextDate || 'No date set'}</span>
+                            </span>
+                          </div>
                         </div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-[11px] py-2 text-slate-500 dark:text-slate-400">
-                        <span className="truncate">
-                          Filed: <span className="font-mono font-medium">{c.filingDate || '—'}</span>
-                        </span>
-                        <span className="flex items-center gap-1 font-mono font-bold text-blue-600 dark:text-blue-400">
-                          <Clock className="w-3 h-3 text-amber-500" />
-                          <span>{c.nextDate || 'No date set'}</span>
-                        </span>
-                      </div>
+                      )}
                     </div>
 
                     <div
@@ -1560,7 +2063,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       onClick={e => e.stopPropagation()}
                     >
                       <div className="flex items-center gap-1">
-                        {['mutation', 'misc', 'lrappeal', 'lrtt'].includes(c.type) && onOpenChainDeed && (
+                        {!isCertOrRorPi && ['mutation', 'misc', 'lrappeal', 'lrtt'].includes(c.type) && onOpenChainDeed && (
                           <button
                             type="button"
                             onClick={() => onOpenChainDeed(c)}
@@ -1634,7 +2137,9 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       </th>
                     )}
                     <th className="py-3.5 px-4">
-                      {type === 'rti'
+                      {isCertOrRorPi
+                        ? 'AIN NO. & GRN Fee Challan'
+                        : type === 'rti'
                         ? 'Docket / Tracking ID & Case No'
                         : type === 'firstappeal'
                         ? 'Case No, Docket & Tracking No'
@@ -1642,12 +2147,26 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                         ? 'Case No & Docket No'
                         : 'Case No & App No'}
                     </th>
-                    <th className="py-3.5 px-4">Sub-Type</th>
                     <th className="py-3.5 px-4">
-                      {type === 'rti' ? 'Applicant & Authority / Forum' : 'Petitioner & Opp. Party'}
+                      {isCertOrRorPi ? 'Deed No & Year' : type === 'rti' ? 'RTI Matter' : 'Sub-Type'}
                     </th>
-                    <th className="py-3.5 px-4">Land Schedule (Mouza/Dag)</th>
-                    <th className="py-3.5 px-4">Hearing Date</th>
+                    <th className="py-3.5 px-4">
+                      {isCertOrRorPi
+                        ? 'District & Office'
+                        : type === 'rti'
+                        ? 'Applicant & Authority / Forum'
+                        : 'Petitioner & Opp. Party'}
+                    </th>
+                    <th className="py-3.5 px-4">
+                      {isCertOrRorPi
+                        ? 'Applicant & Broker Name'
+                        : type === 'rti'
+                        ? 'Public Authority / SPIO'
+                        : 'Land Schedule (Mouza/Dag)'}
+                    </th>
+                    <th className="py-3.5 px-4">
+                      {isCertOrRorPi ? 'Expected Delivery' : 'Hearing Date'}
+                    </th>
                     <th className="py-3.5 px-4">Status</th>
                     <th className="py-3.5 px-4 text-right">Actions</th>
                   </tr>
@@ -1692,45 +2211,93 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                           </td>
                         )}
                         <td className="py-3.5 px-4 whitespace-nowrap">
-                          <div className="font-mono font-extrabold text-blue-700 dark:text-blue-400 text-xs">
-                            {c.caseNo || c.docketNo || 'RTI Application'}
-                          </div>
-                          {(c.appNo || c.docketNo) && (
-                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">
-                              {c.type === 'rti'
-                                ? `Docket/Track: ${c.docketNo}`
-                                : c.docketNo
-                                ? `Docket: ${c.docketNo}`
-                                : `App: ${c.appNo}`}
+                          {isCertOrRorPi ? (
+                            <div>
+                              <div className="font-mono font-extrabold text-blue-700 dark:text-blue-400 text-xs">
+                                {c.appNo || c.ainNo || c.caseNo || 'AIN Pending'}
+                              </div>
+                              {c.grnNo && (
+                                <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-semibold">
+                                  GRN: {c.grnNo}
+                                </div>
+                              )}
                             </div>
-                          )}
-                          {c.grnNo && !['misc', 'lrappeal', 'rti'].includes(c.type) && (
-                            <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-semibold">
-                              {c.type === 'firstappeal' ? `Tracking: ${c.grnNo}` : `GRN: ${c.grnNo}`}
+                          ) : (
+                            <div>
+                              <div className="font-mono font-extrabold text-blue-700 dark:text-blue-400 text-xs">
+                                {c.caseNo || c.docketNo || 'RTI Application'}
+                              </div>
+                              {(c.appNo || c.docketNo) && (
+                                <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">
+                                  {c.type === 'rti'
+                                    ? `Docket/Track: ${c.docketNo}`
+                                    : c.docketNo
+                                    ? `Docket: ${c.docketNo}`
+                                    : `App: ${c.appNo}`}
+                                </div>
+                              )}
+                              {c.grnNo && !['misc', 'lrappeal', 'rti'].includes(c.type) && (
+                                <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-semibold">
+                                  {c.type === 'firstappeal' ? `Tracking: ${c.grnNo}` : `GRN: ${c.grnNo}`}
+                                </div>
+                              )}
                             </div>
                           )}
                         </td>
                         <td className="py-3.5 px-4 whitespace-nowrap">
-                          <span className="inline-block px-2.5 py-1 rounded-md text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                            {c.subType}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <div className="font-bold text-slate-900 dark:text-slate-100">{c.party}</div>
-                          {c.type === 'rti' ? (
-                            <div className="text-[11px] text-teal-600 dark:text-teal-400 truncate max-w-[220px]">
-                              {c.forum ? `To: ${c.forum}` : 'Authority: Optional / Not specified'}
+                          {isCertOrRorPi ? (
+                            <div>
+                              <div className="font-bold text-slate-800 dark:text-slate-200 text-xs font-mono">
+                                Deed: {c.applicantDeedNo || c.deedNo || '—'}
+                              </div>
+                              <div className="text-[11px] text-slate-500 font-mono">
+                                Year: {c.applicantDeedYear || c.deedYear || '—'}
+                              </div>
                             </div>
                           ) : (
-                            c.opp && (
-                              <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[220px]">
-                                vs. {c.opp}
-                              </div>
-                            )
+                            <span className="inline-block px-2.5 py-1 rounded-md text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                              {c.subType}
+                            </span>
                           )}
                         </td>
                         <td className="py-3.5 px-4">
-                          {s0 ? (
+                          {isCertOrRorPi ? (
+                            <div>
+                              <div className="font-bold text-slate-800 dark:text-slate-200">
+                                {c.district || 'West Bengal'}
+                              </div>
+                              <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                {c.applicantAdsr || c.adsr || (type === 'rorpi' ? 'BL&LRO Office' : 'ADSR Office')}
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <div className="font-bold text-slate-900 dark:text-slate-100">{c.party}</div>
+                              {type === 'rti' ? (
+                                <div className="text-[11px] text-teal-600 dark:text-teal-400 truncate max-w-[220px]">
+                                  {c.forum ? `To: ${c.forum}` : 'Authority: Optional / Not specified'}
+                                </div>
+                              ) : (
+                                c.opp && (
+                                  <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[220px]">
+                                    vs. {c.opp}
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          {isCertOrRorPi ? (
+                            <div>
+                              <div className="font-bold text-slate-900 dark:text-slate-100">{c.party}</div>
+                              {c.brokerName && (
+                                <div className="text-[11px] text-amber-700 dark:text-amber-400 font-medium">
+                                  Broker: {c.brokerName}
+                                </div>
+                              )}
+                            </div>
+                          ) : s0 ? (
                             <div>
                               <div className="font-bold text-slate-800 dark:text-slate-200">
                                 {s0.mouza} {s0.jl ? `(JL: ${s0.jl})` : ''}

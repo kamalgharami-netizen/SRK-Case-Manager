@@ -13,7 +13,10 @@ import {
   FileCheck,
   Share2,
   Link as LinkIcon,
-  Sparkles
+  Sparkles,
+  User,
+  Phone,
+  Tag
 } from 'lucide-react';
 
 interface CaseDetailModalProps {
@@ -35,6 +38,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
   if (!caseItem) return null;
 
   const diaryEntries = activeCompany?.diaryData?.[caseItem.id] || [];
+  const isCertOrRorPi = caseItem.type === 'certcopy' || caseItem.type === 'rorpi';
 
   const printCaseSummary = () => {
     const printWin = window.open('', '_blank');
@@ -43,91 +47,118 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Case File - ${caseItem.caseNo}</title>
+          <title>${isCertOrRorPi ? (caseItem.type === 'rorpi' ? 'ROR/PI Application' : 'Certified Copy Application') : 'Case File'} - ${isCertOrRorPi ? (caseItem.appNo || caseItem.ainNo || caseItem.caseNo) : caseItem.caseNo}</title>
           <style>
             body { font-family: 'Times New Roman', serif; padding: 40px; color: #111; line-height: 1.5; }
-            h2, h3 { margin: 0 0 6px 0; color: #1E3A8A; }
+            h2, h3, h4 { margin: 0 0 6px 0; color: #1E3A8A; }
             hr { border: none; border-top: 1.5px solid #1E3A8A; margin: 12px 0 16px 0; }
             table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
             th, td { border: 1px solid #777; padding: 6px 8px; text-align: left; }
             th { background: #E2E8F0; font-weight: bold; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; font-size: 13px; }
+            .box { background: #F8FAFC; border: 1px solid #CBD5E1; padding: 12px; border-radius: 6px; margin-bottom: 12px; }
           </style>
         </head>
         <body>
           <div style="text-align: center;">
-            <h2>${activeCompany?.name || 'SRK Legal Chamber'}</h2>
+            <h2>${activeCompany?.name || 'Legal Chamber'}</h2>
             <div>${activeCompany?.address || ''}, ${activeCompany?.city || ''}</div>
             <div style="font-size: 12px; color: #555;">Bar Council Reg: ${activeCompany?.barCouncil || ''}</div>
           </div>
           <hr />
-          <h3>CASE DOSSIER: ${caseItem.caseNo}</h3>
-          <p><strong>Module:</strong> ${caseItem.type.toUpperCase()} · <strong>Sub-Type:</strong> ${caseItem.subType} · <strong>Status:</strong> ${caseItem.status}</p>
-          <p><strong>Forum:</strong> ${caseItem.forum || '—'} · <strong>Filing Date:</strong> ${caseItem.filingDate || '—'} · <strong>Next Date:</strong> ${caseItem.nextDate || '—'}</p>
-          <p><strong>Petitioner:</strong> ${caseItem.party} · <strong>Opposite Party:</strong> ${caseItem.opp || '—'}</p>
+          <h3>${isCertOrRorPi ? (caseItem.type === 'rorpi' ? 'ROR / PLOT INFORMATION (PI) APPLICATION SHEET' : 'CERTIFIED COPY OF DEED APPLICATION SHEET') : `CASE DOSSIER: ${caseItem.caseNo}`}</h3>
 
-          ${
-            caseItem.landSchedules.length > 0
-              ? `<h4>Land Schedule</h4>
-                 <table>
-                   <thead>
-                     <tr>
-                       <th>District / Block</th>
-                       <th>Mouza (JL)</th>
-                       <th>Khatian</th>
-                       <th>Dag</th>
-                       <th>Area</th>
-                       <th>Class</th>
-                     </tr>
-                   </thead>
-                   <tbody>
-                     ${caseItem.landSchedules
-                       .map(
-                         s => `<tr>
-                       <td>${s.district} / ${s.block}</td>
-                       <td>${s.mouza} (${s.jl})</td>
-                       <td>${s.khatian}</td>
-                       <td>${s.dag}</td>
-                       <td>${s.area} ${s.unit}</td>
-                       <td>${s.classification || '—'}</td>
-                     </tr>`
-                       )
-                       .join('')}
-                   </tbody>
-                 </table>`
-              : ''
-          }
+          ${isCertOrRorPi ? `
+            <div class="box">
+              <div class="grid">
+                <div><strong>AIN NO:</strong> ${caseItem.appNo || caseItem.ainNo || caseItem.caseNo || '—'}</div>
+                <div><strong>GRN Fee Challan No:</strong> ${caseItem.grnNo || '—'}</div>
+                <div><strong>DEED NO:</strong> ${caseItem.applicantDeedNo || caseItem.deedNo || '—'}</div>
+                <div><strong>DEED YEAR:</strong> ${caseItem.applicantDeedYear || caseItem.deedYear || '—'}</div>
+                <div><strong>DISTRICT:</strong> ${caseItem.district || 'West Bengal'}</div>
+                <div><strong>OFFICE:</strong> ${caseItem.applicantAdsr || caseItem.adsr || (caseItem.type === 'rorpi' ? 'BL&LRO Office' : 'ADSR Office')}</div>
+                <div><strong>Application Date:</strong> ${caseItem.filingDate || '—'}</div>
+                <div><strong>Expected Delivery Date:</strong> ${caseItem.nextDate || '—'}</div>
+                <div><strong>Current Status:</strong> ${caseItem.status}</div>
+              </div>
+            </div>
+            <h4>Applicant & Reference Information</h4>
+            <div class="grid">
+              <div><strong>Applicant Full Name:</strong> ${caseItem.party}</div>
+              <div><strong>Broker / Muhuri:</strong> ${caseItem.brokerName || '—'} ${caseItem.brokerPhone ? `(${caseItem.brokerPhone})` : ''}</div>
+              ${caseItem.applicants?.[0]?.father ? `<div><strong>Father / Husband:</strong> ${caseItem.applicants[0].father}</div>` : ''}
+              ${caseItem.applicants?.[0]?.phone ? `<div><strong>Phone:</strong> ${caseItem.applicants[0].phone}</div>` : ''}
+              ${caseItem.applicants?.[0]?.address ? `<div><strong>Address:</strong> ${caseItem.applicants[0].address}</div>` : ''}
+            </div>
+          ` : `
+            <p><strong>Module:</strong> ${caseItem.type.toUpperCase()} · <strong>Sub-Type:</strong> ${caseItem.subType} · <strong>Status:</strong> ${caseItem.status}</p>
+            <p><strong>Forum:</strong> ${caseItem.forum || '—'} · <strong>Filing Date:</strong> ${caseItem.filingDate || '—'} · <strong>Next Date:</strong> ${caseItem.nextDate || '—'}</p>
+            <p><strong>Petitioner:</strong> ${caseItem.party} · <strong>Opposite Party:</strong> ${caseItem.opp || '—'}</p>
 
-          ${
-            caseItem.chainLinks.length > 0
-              ? `<h4>Chain of Title</h4>
-                 <table>
-                   <thead>
-                     <tr>
-                       <th>Deed No</th>
-                       <th>Date</th>
-                       <th>Vendor</th>
-                       <th>Purchaser</th>
-                       <th>Area</th>
-                       <th>Consideration</th>
-                     </tr>
-                   </thead>
-                   <tbody>
-                     ${caseItem.chainLinks
-                       .map(
-                         cl => `<tr>
-                       <td>${cl.deedNo}</td>
-                       <td>${cl.deedDate}</td>
-                       <td>${cl.vendor}</td>
-                       <td>${cl.purchaser}</td>
-                       <td>${cl.area}</td>
-                       <td>${cl.consideration}</td>
-                     </tr>`
-                       )
-                       .join('')}
-                   </tbody>
-                 </table>`
-              : ''
-          }
+            ${
+              caseItem.landSchedules.length > 0
+                ? `<h4>Land Schedule</h4>
+                   <table>
+                     <thead>
+                       <tr>
+                         <th>District / Block</th>
+                         <th>Mouza (JL)</th>
+                         <th>Khatian</th>
+                         <th>Dag</th>
+                         <th>Area</th>
+                         <th>Class</th>
+                       </tr>
+                     </thead>
+                     <tbody>
+                       ${caseItem.landSchedules
+                         .map(
+                           s => `<tr>
+                         <td>${s.district} / ${s.block}</td>
+                         <td>${s.mouza} (${s.jl})</td>
+                         <td>${s.khatian}</td>
+                         <td>${s.dag}</td>
+                         <td>${s.area} ${s.unit}</td>
+                         <td>${s.classification || '—'}</td>
+                       </tr>`
+                         )
+                         .join('')}
+                     </tbody>
+                   </table>`
+                : ''
+            }
+
+            ${
+              caseItem.chainLinks && caseItem.chainLinks.length > 0
+                ? `<h4>Chain of Title</h4>
+                   <table>
+                     <thead>
+                       <tr>
+                         <th>Deed No</th>
+                         <th>Date</th>
+                         <th>Vendor</th>
+                         <th>Purchaser</th>
+                         <th>Area</th>
+                         <th>Consideration</th>
+                       </tr>
+                     </thead>
+                     <tbody>
+                       ${caseItem.chainLinks
+                         .map(
+                           cl => `<tr>
+                         <td>${cl.deedNo}</td>
+                         <td>${cl.deedDate}</td>
+                         <td>${cl.vendor}</td>
+                         <td>${cl.purchaser}</td>
+                         <td>${cl.area}</td>
+                         <td>${cl.consideration}</td>
+                       </tr>`
+                         )
+                         .join('')}
+                     </tbody>
+                   </table>`
+                : ''
+            }
+          `}
 
           <div style="margin-top: 30px; text-align: right; font-size: 11px;">
             Printed from SRK Case Manager
@@ -149,49 +180,71 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-mono text-base font-bold text-blue-700 dark:text-blue-400">
-                  {caseItem.caseNo || (caseItem.type === 'rti' ? caseItem.docketNo || caseItem.appNo || 'RTI Application' : '—')}
+                  {isCertOrRorPi
+                    ? (caseItem.appNo || caseItem.ainNo || caseItem.caseNo || 'AIN Pending')
+                    : (caseItem.caseNo || (caseItem.type === 'rti' ? caseItem.docketNo || caseItem.appNo || 'RTI Application' : '—'))}
                 </span>
                 <span className="text-xs px-2 py-0.5 rounded font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300">
                   {caseItem.status}
                 </span>
-                {(caseItem.docketNo || caseItem.appNo) && (
-                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                    {caseItem.type === 'lrappeal' || caseItem.type === 'firstappeal' || caseItem.type === 'misc'
-                      ? `Docket No: ${caseItem.docketNo || caseItem.appNo}`
-                      : caseItem.type === 'rti'
-                      ? `Docket/Tracking: ${caseItem.docketNo || caseItem.appNo}`
-                      : `App No: ${caseItem.appNo || caseItem.docketNo}`}
-                  </span>
-                )}
-                {caseItem.grnNo && !['lrappeal', 'misc', 'rti'].includes(caseItem.type) && (
-                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                    {caseItem.type === 'firstappeal'
-                      ? `Tracking No: ${caseItem.grnNo}`
-                      : `GRN: ${caseItem.grnNo}`}
-                  </span>
+                {isCertOrRorPi ? (
+                  caseItem.grnNo ? (
+                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-200 dark:border-emerald-800">
+                      GRN Fee Challan: {caseItem.grnNo}
+                    </span>
+                  ) : null
+                ) : (
+                  <>
+                    {(caseItem.docketNo || caseItem.appNo) && (
+                      <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                        {caseItem.type === 'lrappeal' || caseItem.type === 'firstappeal' || caseItem.type === 'misc'
+                          ? `Docket No: ${caseItem.docketNo || caseItem.appNo}`
+                          : caseItem.type === 'rti'
+                          ? `Docket/Tracking: ${caseItem.docketNo || caseItem.appNo}`
+                          : `App No: ${caseItem.appNo || caseItem.docketNo}`}
+                      </span>
+                    )}
+                    {caseItem.grnNo && !['lrappeal', 'misc', 'rti'].includes(caseItem.type) && (
+                      <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                        {caseItem.type === 'firstappeal'
+                          ? `Tracking No: ${caseItem.grnNo}`
+                          : `GRN: ${caseItem.grnNo}`}
+                      </span>
+                    )}
+                  </>
                 )}
               </div>
               <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-1">
-                {caseItem.subType} ({caseItem.type.toUpperCase()})
+                {isCertOrRorPi
+                  ? (caseItem.type === 'rorpi' ? 'ROR / Plot Information (PI) Application' : 'Certified Copy of Deed Application')
+                  : `${caseItem.subType} (${caseItem.type.toUpperCase()})`}
               </h2>
               <div className="text-xs text-slate-500 mt-0.5">
-                {caseItem.forum || 'Not specified'} · Next Hearing: <strong>{caseItem.nextDate || 'Not fixed'}</strong>
+                {isCertOrRorPi ? (
+                  <span>
+                    {caseItem.district || 'West Bengal'} · {caseItem.applicantAdsr || caseItem.adsr || (caseItem.type === 'rorpi' ? 'BL&LRO Office' : 'ADSR Office')} · Expected Delivery: <strong>{caseItem.nextDate || 'Not fixed'}</strong>
+                  </span>
+                ) : (
+                  <span>
+                    {caseItem.forum || 'Not specified'} · Next Hearing: <strong>{caseItem.nextDate || 'Not fixed'}</strong>
+                  </span>
+                )}
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {['mutation', 'misc', 'lrappeal', 'lrtt'].includes(caseItem.type) && (
+            {!isCertOrRorPi && ['mutation', 'misc', 'lrappeal', 'lrtt'].includes(caseItem.type) && (
               <button
                 onClick={() => onOpenChainDeed && onOpenChainDeed(caseItem)}
                 className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
-                title="Make or View Chain Deed Statement (sourced from Settings > Chain Sample)"
+                title="Make or View Chain Deed Statement"
               >
                 <LinkIcon className="w-3.5 h-3.5" />
                 <span>Chain Deed</span>
               </button>
             )}
-            {caseItem.type !== 'mutation' && onOpenAiDraft && (
+            {!isCertOrRorPi && caseItem.type !== 'mutation' && onOpenAiDraft && (
               <button
                 onClick={() => {
                   onClose();
@@ -207,8 +260,9 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
             <button
               onClick={printCaseSummary}
               className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold flex items-center gap-1 cursor-pointer"
+              title={isCertOrRorPi ? 'Print Application / Delivery Slip' : 'Print Case Dossier'}
             >
-              <Printer className="w-4 h-4" /> Print Dossier
+              <Printer className="w-4 h-4" /> {isCertOrRorPi ? 'Print Slip' : 'Print Dossier'}
             </button>
             <button
               onClick={() => {
@@ -221,64 +275,172 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-slate-600 font-bold text-sm"
+              className="p-1.5 text-slate-400 hover:text-slate-600 font-bold text-sm cursor-pointer"
             >
               ✕
             </button>
           </div>
         </div>
 
-        {/* Litigants Row */}
-        <div className={`grid grid-cols-1 ${caseItem.type === 'rti' ? '' : 'sm:grid-cols-2'} gap-4 text-xs`}>
-          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-1">
-            <div className="text-[10px] font-bold uppercase text-slate-400">
-              Petitioner / Applicant
-            </div>
-            <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-              {caseItem.party}
-            </div>
-            {caseItem.applicants[0]?.father && (
-              <div className="text-slate-500 text-[11px]">C/O: {caseItem.applicants[0].father}</div>
-            )}
-            {caseItem.applicants[0]?.address && (
-              <div className="text-slate-500 text-[11px]">{caseItem.applicants[0].address}</div>
-            )}
-            {caseItem.applicants[0]?.phone && (
-              <div className="font-mono text-slate-500">{caseItem.applicants[0].phone}</div>
-            )}
-          </div>
-
-          {caseItem.type !== 'rti' && (
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase text-slate-400">
-                  Opposite Party / Respondent(s) {caseItem.respondents?.length ? `(${caseItem.respondents.length})` : ''}
-                </span>
+        {/* Modal Body - Organized Strictly Per Entry Form */}
+        {isCertOrRorPi ? (
+          <div className="space-y-4">
+            {/* Primary Registry Information matching entry form */}
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-3">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                <FileCheck className="w-3.5 h-3.5" />
+                <span>Primary Registry Details (Entry Form Layout)</span>
               </div>
-              {caseItem.respondents && caseItem.respondents.length > 0 ? (
-                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                  {caseItem.respondents.map((r, i) => (
-                    <div key={r.id || i} className="text-xs border-b last:border-0 border-slate-200/50 dark:border-slate-700/50 pb-1">
-                      <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center justify-between">
-                        <span>{i + 1}. {r.name}</span>
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-200 dark:bg-slate-700 font-normal">{r.type}</span>
-                      </div>
-                      {r.address && <div className="text-slate-500 text-[11px] mt-0.5">{r.address}</div>}
-                      {r.phone && <div className="font-mono text-slate-400 text-[10px]">{r.phone}</div>}
-                    </div>
-                  ))}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                <div>
+                  <div className="text-[10px] font-bold uppercase text-slate-400">AIN NO.</div>
+                  <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-sm">
+                    {caseItem.appNo || caseItem.ainNo || caseItem.caseNo || '—'}
+                  </div>
                 </div>
-              ) : (
+                <div>
+                  <div className="text-[10px] font-bold uppercase text-slate-400">GRN Fee Challan No</div>
+                  <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                    {caseItem.grnNo || '—'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase text-slate-400">DEED NO.</div>
+                  <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-sm">
+                    {caseItem.applicantDeedNo || caseItem.deedNo || '—'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase text-slate-400">DEED YEAR</div>
+                  <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-sm">
+                    {caseItem.applicantDeedYear || caseItem.deedYear || '—'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase text-slate-400">DISTRICT</div>
+                  <div className="font-bold text-slate-900 dark:text-slate-100">
+                    {caseItem.district || 'West Bengal'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase text-slate-400">
+                    {caseItem.type === 'rorpi' ? 'BL&LRO / ADSR OFFICE' : 'ADSR OFFICE'}
+                  </div>
+                  <div className="font-bold text-slate-900 dark:text-slate-100">
+                    {caseItem.applicantAdsr || caseItem.adsr || (caseItem.type === 'rorpi' ? 'BL&LRO Office' : 'ADSR Office')}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Applicant & Broker Details matching entry form */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-1.5">
+                <div className="text-[10px] font-bold uppercase text-slate-400 flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Applicant Information</span>
+                </div>
                 <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-                  {caseItem.opp || '— (No opposite party / Uncontested)'}
+                  {caseItem.party}
+                </div>
+                {caseItem.applicants?.[0]?.father && (
+                  <div className="text-slate-500 text-[11px]">
+                    Father / Husband: <strong>{caseItem.applicants[0].father}</strong>
+                  </div>
+                )}
+                {caseItem.applicants?.[0]?.phone && (
+                  <div className="font-mono text-slate-600 dark:text-slate-400 text-xs flex items-center gap-1">
+                    <Phone className="w-3 h-3 text-slate-400" />
+                    <span>{caseItem.applicants[0].phone}</span>
+                  </div>
+                )}
+                {caseItem.applicants?.[0]?.address && (
+                  <div className="text-slate-500 text-[11px] leading-relaxed">
+                    {caseItem.applicants[0].address}
+                  </div>
+                )}
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-1.5">
+                <div className="text-[10px] font-bold uppercase text-slate-400 flex items-center gap-1.5">
+                  <Tag className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Broker / Muhuri Reference</span>
+                </div>
+                <div className="font-bold text-amber-800 dark:text-amber-300 text-sm">
+                  {caseItem.brokerName || 'Direct Applicant (No Broker)'}
+                </div>
+                {caseItem.brokerPhone && (
+                  <div className="font-mono text-slate-600 dark:text-slate-400 text-xs flex items-center gap-1">
+                    <Phone className="w-3 h-3 text-slate-400" />
+                    <span>{caseItem.brokerPhone}</span>
+                  </div>
+                )}
+                <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400">Application Date:</span>
+                  <span className="font-mono font-semibold">{caseItem.filingDate || '—'}</span>
+                </div>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400">Expected Delivery:</span>
+                  <span className="font-mono font-bold text-blue-600 dark:text-blue-400">{caseItem.nextDate || '—'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div>
+            {/* Litigants Row */}
+            <div className={`grid grid-cols-1 ${caseItem.type === 'rti' ? '' : 'sm:grid-cols-2'} gap-4 text-xs`}>
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-1">
+                <div className="text-[10px] font-bold uppercase text-slate-400">
+                  {caseItem.type === 'firstappeal' ? 'Appellant' : caseItem.type === 'rti' ? 'RTI Applicant' : 'Petitioner / Applicant'}
+                </div>
+                <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                  {caseItem.party}
+                </div>
+                {caseItem.applicants[0]?.father && (
+                  <div className="text-slate-500 text-[11px]">C/O: {caseItem.applicants[0].father}</div>
+                )}
+                {caseItem.applicants[0]?.address && (
+                  <div className="text-slate-500 text-[11px]">{caseItem.applicants[0].address}</div>
+                )}
+                {caseItem.applicants[0]?.phone && (
+                  <div className="font-mono text-slate-500">{caseItem.applicants[0].phone}</div>
+                )}
+              </div>
+
+              {caseItem.type !== 'rti' && (
+                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase text-slate-400">
+                      Opposite Party / Respondent(s) {caseItem.respondents?.length ? `(${caseItem.respondents.length})` : ''}
+                    </span>
+                  </div>
+                  {caseItem.respondents && caseItem.respondents.length > 0 ? (
+                    <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                      {caseItem.respondents.map((r, i) => (
+                        <div key={r.id || i} className="text-xs border-b last:border-0 border-slate-200/50 dark:border-slate-700/50 pb-1">
+                          <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center justify-between">
+                            <span>{i + 1}. {r.name}</span>
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-200 dark:bg-slate-700 font-normal">{r.type}</span>
+                          </div>
+                          {r.address && <div className="text-slate-500 text-[11px] mt-0.5">{r.address}</div>}
+                          {r.phone && <div className="font-mono text-slate-400 text-[10px]">{r.phone}</div>}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                      {caseItem.opp || '— (No opposite party / Uncontested)'}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Land Schedules (সম্পত্তির তপশীল বিবরণ) */}
-        {caseItem.landSchedules.length > 0 && (
+        {/* Land Schedules (সম্পত্তির তপশীল বিবরণ) - Only for property/litigation cases, not certcopy/rorpi */}
+        {!isCertOrRorPi && caseItem.landSchedules.length > 0 && (
           <div className="space-y-2">
             <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
               <span>সম্পত্তির তপশীল বিবরণ ({caseItem.landSchedules.length})</span>

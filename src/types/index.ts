@@ -132,11 +132,16 @@ export interface CaseItem {
   bench?: string;
   targetOfficer?: string;
   notes?: string;
-  // Applicant Deed Particulars
+  // Applicant Deed Particulars & Certified Copy specific fields
   applicantDeedNo?: string;
   applicantDeedYear?: string;
   applicantDeedType?: string;
   applicantAdsr?: string;
+  district?: string;
+  ainNo?: string;
+  deedNo?: string;
+  deedYear?: string;
+  adsr?: string;
   // Broker / Muhuri (Omitted from client/court prints; shown only in report & entry)
   brokerName?: string;
   brokerPhone?: string;

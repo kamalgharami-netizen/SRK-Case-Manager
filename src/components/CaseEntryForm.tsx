@@ -89,7 +89,20 @@ const FORUMS_BY_TYPE: Record<CaseType, string[]> = {
     'State Information Commission (SIC)'
   ],
   lrtt: ['Division Bench - I, WBLRTT', 'Division Bench - II, WBLRTT'],
-  conversion: ['DL&LRO', 'SDL&LRO']
+  conversion: ['DL&LRO', 'SDL&LRO'],
+  certcopy: [
+    'Sub-Registrar (ADSR / ARA / RA)',
+    'District Registrar (DR) Office',
+    'Record Room (Collectorate / DM Office)',
+    'Civil Court Copying Section',
+    'DL&LRO Copying Section'
+  ],
+  rorpi: [
+    'BL&LRO Certified Copy Section',
+    'Banglarbhumi Online Portal',
+    'SDL&LRO Office',
+    'DL&LRO Record Section'
+  ]
 };
 
 const SUBTYPES_BY_TYPE: Record<CaseType, string[]> = {
@@ -138,6 +151,22 @@ const SUBTYPES_BY_TYPE: Record<CaseType, string[]> = {
     'Pond to Bastu',
     'Agricultural to Commercial',
     'Other'
+  ],
+  certcopy: [
+    'Registered Deed Copy (দলিলের নকল)',
+    'Deed Index Search (তল্লাশ ও ইন্ডেক্স)',
+    'Judgement / Decree Certified Copy',
+    'Order Sheet Copy',
+    'Field Survey Trace Map Copy',
+    'Other Certified Copy'
+  ],
+  rorpi: [
+    'Certified ROR (খতিয়ান নকল / পরচা)',
+    'Plot Information (PI / দাগের তথ্য)',
+    'RS Porcha (আর.এস পরচা)',
+    'LR Khatian Porcha (এল.আর খতিয়ান)',
+    'Field Inspection Report Copy',
+    'Other ROR/PI'
   ]
 };
 
@@ -158,7 +187,9 @@ const STATUSES_BY_TYPE: Record<CaseType, string[]> = {
   firstappeal: ['Filed', 'Admitted', 'Stay Granted', 'Hearing', 'Allowed', 'Dismissed'],
   rti: ['Application Sent', 'PIO Replied', 'Info Provided', 'First Appeal Filed', 'Hearing', 'Disposed'],
   lrtt: ['OA Filed', 'Notice Issued', 'Hearing', 'Order Reserved', 'Allowed', 'Dismissed'],
-  conversion: ['Applied', 'Site Verified', 'Report Submitted', 'Order Passed', 'Rejected']
+  conversion: ['Applied', 'Site Verified', 'Report Submitted', 'Order Passed', 'Rejected'],
+  certcopy: ['Applied', 'Challan Paid', 'Search In Progress', 'Comparing & Stamp Verification', 'Ready for Delivery', 'Delivered', 'Rejected / Objection'],
+  rorpi: ['Applied', 'Fee Paid (Application Generated)', 'RI Verification / Processing', 'Signed & Digitally Sealed', 'Delivered / Downloaded', 'Rejected / Mismatch']
 };
 
 export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
@@ -177,9 +208,12 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   const isLrAppeal = type === 'lrappeal';
   const isFirstAppeal = type === 'firstappeal';
   const isRti = type === 'rti';
+  const isCertCopy = type === 'certcopy';
+  const isRorPi = type === 'rorpi';
+  const isCertOrRorPi = isCertCopy || isRorPi;
   const isDocketBased = isMisc || isLrAppeal || isFirstAppeal || isRti;
   const isGrnOmitted = isMisc || isLrAppeal || isRti;
-  const isChainDeedHidden = isRti || isFirstAppeal;
+  const isChainDeedHidden = isRti || isFirstAppeal || isCertCopy || isRorPi;
   const isMutation = type === 'mutation';
 
   // Search box for updating existing data through deed no, app no / docket no, applicant name, case no
@@ -201,14 +235,23 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     if (type === 'firstappeal') {
       return `FA/${new Date().getFullYear()}/${Math.floor(100 + Math.random() * 900)}`;
     }
+    if (type === 'certcopy') {
+      return `CC/${new Date().getFullYear()}/${Math.floor(100 + Math.random() * 900)}`;
+    }
+    if (type === 'rorpi') {
+      return `ROR/${new Date().getFullYear()}/${Math.floor(100 + Math.random() * 900)}`;
+    }
     return '';
   };
 
-  // Requirement 2: mutation application no starts with MUTE
+  // Requirement 2: mutation application no starts with MUTE, certcopy & rorpi use AIN
   const defaultAppNo = () => {
     if (editingCase?.appNo) return editingCase.appNo;
     if (type === 'mutation') {
       return `MUTE-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    }
+    if (type === 'certcopy' || type === 'rorpi') {
+      return `AIN-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
     }
     return '';
   };
@@ -318,7 +361,10 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   const [applicantDeedType, setApplicantDeedType] = useState(
     editingCase?.applicantDeedType || 'সাফ কোবালা (Sale / Kobala)'
   );
-  const [applicantAdsr, setApplicantAdsr] = useState(editingCase?.applicantAdsr || '');
+  const [applicantAdsr, setApplicantAdsr] = useState(editingCase?.applicantAdsr || editingCase?.adsr || '');
+  const [district, setDistrict] = useState(
+    editingCase?.district || editingCase?.landSchedules?.[0]?.district || 'North 24 Parganas'
+  );
 
   // Requirement 10: Broker / Muhuri Name & Phone (Omitted from client/court prints; shown only in report & entry)
   const [brokerName, setBrokerName] = useState(editingCase?.brokerName || '');
@@ -458,10 +504,11 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     setTargetOfficer(targetCase.targetOfficer || '');
     setNotes(targetCase.notes || '');
 
-    setApplicantDeedNo(targetCase.applicantDeedNo || '');
-    setApplicantDeedYear(targetCase.applicantDeedYear || '');
+    setApplicantDeedNo(targetCase.applicantDeedNo || targetCase.deedNo || '');
+    setApplicantDeedYear(targetCase.applicantDeedYear || targetCase.deedYear || '');
     setApplicantDeedType(targetCase.applicantDeedType || 'সাফ কোবালা (Sale / Kobala)');
-    setApplicantAdsr(targetCase.applicantAdsr || '');
+    setApplicantAdsr(targetCase.applicantAdsr || targetCase.adsr || '');
+    setDistrict(targetCase.district || targetCase.landSchedules?.[0]?.district || 'North 24 Parganas');
     setBrokerName(targetCase.brokerName || '');
     setBrokerPhone(targetCase.brokerPhone || '');
 
@@ -508,7 +555,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     }
     setSearchQuery('');
     setShowSearchResults(false);
-    showToast(`Loaded Case ${targetCase.caseNo} for updating`);
+    showToast(isCertCopy ? `Loaded Certified Copy entry (${targetCase.appNo || targetCase.applicantDeedNo || targetCase.caseNo})` : isRorPi ? `Loaded ROR / PI Application (${targetCase.appNo || targetCase.applicantDeedNo || targetCase.caseNo})` : `Loaded Case ${targetCase.caseNo} for updating`);
   };
 
   const handleClearFormToNew = () => {
@@ -522,9 +569,19 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         ? `LRA/${new Date().getFullYear()}/${Math.floor(100 + Math.random() * 900)}`
         : type === 'firstappeal'
         ? `FA/${new Date().getFullYear()}/${Math.floor(100 + Math.random() * 900)}`
+        : type === 'certcopy'
+        ? `CC/${new Date().getFullYear()}/${Math.floor(100 + Math.random() * 900)}`
+        : type === 'rorpi'
+        ? `ROR/${new Date().getFullYear()}/${Math.floor(100 + Math.random() * 900)}`
         : ''
     );
-    setAppNo(type === 'mutation' ? `MUTE-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}` : '');
+    setAppNo(
+      type === 'mutation'
+        ? `MUTE-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
+        : type === 'certcopy' || type === 'rorpi'
+        ? `AIN-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`
+        : ''
+    );
     setDocketNo(
       type === 'misc' || type === 'lrappeal' || type === 'firstappeal'
         ? `DOC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
@@ -533,6 +590,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     setParty('');
     setOpp('');
     setGrnNo('');
+    setDistrict('North 24 Parganas');
     setHearingList([{ id: 'hd_init', date: '', stage: 'Hearing / Inquiry' }]);
     setNextDate('');
     setApplicantDeedNo('');
@@ -546,7 +604,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       { id: 'app_' + Date.now(), name: '', father: '', age: '', address: '', phone: '' }
     ]);
     setRespondents([]);
-    showToast('Switched to New Case Entry mode');
+    showToast(isCertCopy ? 'Switched to New Certified Copy Entry mode' : isRorPi ? 'Switched to New ROR / PI Entry mode' : 'Switched to New Case Entry mode');
   };
 
   // Filter existing cases for Search Box
@@ -554,6 +612,24 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     if (!searchQuery.trim()) return false;
     if (c.type !== type) return false;
     const q = searchQuery.toLowerCase().trim();
+
+    if (isCertOrRorPi) {
+      // In search box the user can search by deed no, deed year, applicant name, broker name. and it would only search in particular entry of that type
+      const matchDeedNo =
+        Boolean(c.applicantDeedNo && c.applicantDeedNo.toLowerCase().includes(q)) ||
+        Boolean(c.deedNo && c.deedNo.toLowerCase().includes(q));
+      const matchDeedYear =
+        Boolean(c.applicantDeedYear && c.applicantDeedYear.toLowerCase().includes(q)) ||
+        Boolean(c.deedYear && c.deedYear.toLowerCase().includes(q));
+      const matchApplicant =
+        Boolean(c.party && c.party.toLowerCase().includes(q)) ||
+        Boolean(c.applicants?.some(a => a.name && a.name.toLowerCase().includes(q)));
+      const matchBroker = Boolean(c.brokerName && c.brokerName.toLowerCase().includes(q));
+      const matchAin = Boolean((c.appNo && c.appNo.toLowerCase().includes(q)) || (c.ainNo && c.ainNo.toLowerCase().includes(q)));
+
+      return matchDeedNo || matchDeedYear || matchApplicant || matchBroker || matchAin;
+    }
+
     const matchCaseNo = c.caseNo?.toLowerCase().includes(q);
     const matchAppNo = c.appNo?.toLowerCase().includes(q);
     const matchDocketNo = c.docketNo?.toLowerCase().includes(q);
@@ -907,7 +983,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
 
   // Requirement 16 & 18: Save and Update handlers
   const handleSaveOrUpdate = (isUpdate = false, andSendWhatsApp = false) => {
-    if (!caseNo.trim() && !isRti) {
+    if (!caseNo.trim() && !isRti && !isCertOrRorPi) {
       showToast('Case Number is required', 'error');
       return;
     }
@@ -928,26 +1004,37 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         phone: applicants[0]?.phone || '',
         email: '',
         address: applicants[0]?.address || '',
-        notes: applicants[0]?.father ? `Father/Husband: ${applicants[0].father}` : `Created from ${isMisc ? 'Misc' : 'Mutation'} entry`
+        notes: applicants[0]?.father ? `Father/Husband: ${applicants[0].father}` : `Created from ${isMisc ? 'Misc' : isCertCopy ? 'Certified Copy' : isRorPi ? 'ROR / PI' : 'Mutation'} entry`
       });
       showToast(`Added ${trimmedParty} to Party Ledger automatically`);
     }
 
     const primaryNextDate = hearingList.find(h => h.date)?.date || nextDate;
     const allHearingDates = hearingList.map(h => h.date).filter(Boolean);
+    const finalCaseNo = isCertOrRorPi
+      ? (caseNo.trim() || appNo.trim() || defaultCaseNo())
+      : caseNo.trim();
 
     const casePayload = {
       type,
-      caseNo: caseNo.trim(),
-      subType,
+      caseNo: finalCaseNo,
+      subType: isCertCopy
+        ? (subType || 'Registered Deed Copy (দলিলের নকল)')
+        : isRorPi
+        ? (subType || 'Certified ROR (খতিয়ান নকল / পরচা)')
+        : subType,
       status,
       party: trimmedParty,
-      opp: isRti ? '' : opp.trim(),
-      forum: forum.trim(),
+      opp: (isRti || isCertOrRorPi) ? '' : opp.trim(),
+      forum: isCertCopy
+        ? (forum || 'Sub-Registrar (ADSR / ARA / RA)')
+        : isRorPi
+        ? (forum || 'BL&LRO Certified Copy Section')
+        : forum.trim(),
       filingDate,
       nextDate: primaryNextDate,
-      hearingDates: allHearingDates,
-      hearingList,
+      hearingDates: isCertOrRorPi ? [] : allHearingDates,
+      hearingList: isCertOrRorPi ? [] : hearingList,
       priority,
       appNo: isDocketBased ? '' : appNo.trim(),
       grnNo: isGrnOmitted ? '' : grnNo.trim(),
@@ -959,21 +1046,28 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       targetOfficer,
       notes,
       applicantDeedNo: applicantDeedNo.trim(),
+      deedNo: applicantDeedNo.trim(),
       applicantDeedYear: applicantDeedYear.trim(),
+      deedYear: applicantDeedYear.trim(),
       applicantDeedType,
       applicantAdsr: applicantAdsr.trim(),
+      adsr: applicantAdsr.trim(),
+      district: district.trim(),
+      ainNo: isCertOrRorPi ? appNo.trim() : undefined,
       brokerName: brokerName.trim(),
       brokerPhone: brokerPhone.trim(),
-      recordedOwner: recordedOwner.trim(),
-      recordedKhatian: recordedKhatian.trim(),
-      recordedDag: recordedDag.trim(),
-      landSchedules: isRti
+      recordedOwner: isCertOrRorPi ? '' : recordedOwner.trim(),
+      recordedKhatian: isCertOrRorPi ? '' : recordedKhatian.trim(),
+      recordedDag: isCertOrRorPi ? '' : recordedDag.trim(),
+      landSchedules: isCertOrRorPi
+        ? []
+        : isRti
         ? landSchedules.filter(
             s => s.mouza.trim() !== '' || s.khatian.trim() !== '' || s.dag.trim() !== '' || s.area.trim() !== ''
           )
         : landSchedules,
       applicants,
-      respondents: isRti ? [] : respondents,
+      respondents: (isRti || isCertOrRorPi) ? [] : respondents,
       addresses,
       chainLinks: isChainDeedHidden ? [] : chainLinks,
       attachments
@@ -985,10 +1079,10 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     if (isUpdate && targetCaseId) {
       updateCase(targetCaseId, casePayload);
       resultCase = { ...(activeEditingCase || editingCase)!, ...casePayload };
-      showToast(`Case ${caseNo} updated successfully!`);
+      showToast(`${isCertOrRorPi ? (isCertCopy ? 'Certified Copy' : 'ROR / PI Entry') : 'Case'} ${isCertOrRorPi ? (appNo || finalCaseNo) : caseNo} updated successfully!`);
     } else {
       resultCase = addCase(casePayload);
-      showToast(`New case ${caseNo} created and registered!`);
+      showToast(`New ${isCertOrRorPi ? (isCertCopy ? 'certified copy entry' : 'ROR / PI entry') : 'case'} ${isCertOrRorPi ? (appNo || finalCaseNo) : caseNo} created and registered!`);
     }
 
     if (andSendWhatsApp) {
@@ -1187,11 +1281,24 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                   ? 'RTI Application Saved Successfully!'
                   : postSaveCase.type === 'lrappeal'
                   ? 'LR Appeal Saved Successfully!'
+                  : postSaveCase.type === 'certcopy'
+                  ? 'Certified Copy Entry Saved Successfully!'
+                  : postSaveCase.type === 'rorpi'
+                  ? 'ROR / PI Application Saved Successfully!'
                   : 'Mutation Case Saved Successfully!'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Case No: <strong className="text-blue-600 dark:text-blue-400 font-mono">{postSaveCase.caseNo || '—'}</strong> · {isDocketBased ? 'Docket / Tracking: ' : 'App No: '}
-                <strong className="font-mono">{(isDocketBased ? postSaveCase.docketNo : postSaveCase.appNo) || '—'}</strong>
+                {postSaveCase.type === 'certcopy' || postSaveCase.type === 'rorpi' ? (
+                  <>
+                    AIN NO: <strong className="text-blue-600 dark:text-blue-400 font-mono">{postSaveCase.appNo || postSaveCase.caseNo || '—'}</strong>
+                    {postSaveCase.grnNo ? <> · GRN: <strong className="font-mono">{postSaveCase.grnNo}</strong></> : null}
+                  </>
+                ) : (
+                  <>
+                    Case No: <strong className="text-blue-600 dark:text-blue-400 font-mono">{postSaveCase.caseNo || '—'}</strong> · {isDocketBased ? 'Docket / Tracking: ' : 'App No: '}
+                    <strong className="font-mono">{(isDocketBased ? postSaveCase.docketNo : postSaveCase.appNo) || '—'}</strong>
+                  </>
+                )}
               </p>
             </div>
 
@@ -1223,7 +1330,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                 </button>
               )}
 
-              {postSaveCase.type !== 'mutation' && onOpenAiDraft && (
+              {postSaveCase.type !== 'mutation' && postSaveCase.type !== 'certcopy' && postSaveCase.type !== 'rorpi' && onOpenAiDraft && (
                 <button
                   type="button"
                   onClick={() => {
@@ -1263,9 +1370,21 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-extrabold text-slate-900 dark:text-slate-100">
-                {isEditingExisting
-                  ? `Edit ${caseNo || (isMisc ? 'Misc Case' : isMutation ? 'Mutation Case' : type)}`
-                  : `New ${isMisc ? 'Misc Case' : isMutation ? 'Mutation Case' : type} Entry`}
+                {(() => {
+                  const label =
+                    type === 'mutation' ? 'Mutation Case' :
+                    type === 'misc' ? 'Misc Case' :
+                    type === 'lrappeal' ? 'LR Appeal Case' :
+                    type === 'firstappeal' ? 'First Appeal' :
+                    type === 'rti' ? 'RTI Query' :
+                    type === 'lrtt' ? 'WBLRTT Case' :
+                    type === 'conversion' ? 'Conversion Case' :
+                    type === 'certcopy' ? 'Certified Copy of Deed' :
+                    type === 'rorpi' ? 'ROR / PI Tracking' : type;
+                  return isEditingExisting
+                    ? `Edit ${caseNo || label}`
+                    : `New ${label} Entry`;
+                })()}
               </h1>
               {isEditingExisting && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
@@ -1281,8 +1400,8 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
 
         {/* Action Buttons: Save, Update, Cancel, Print, Make Chain Deed, AI Drafting */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Requirement 5: AI Drafting Option in Misc Case entry form */}
-          {type !== 'mutation' && onOpenAiDraft && (
+          {/* Requirement 5: AI Drafting Option (Removed for Mutation, Certified Copy and ROR/PI) */}
+          {type !== 'mutation' && !isCertOrRorPi && onOpenAiDraft && (
             <button
               type="button"
               onClick={handleTriggerAiDraft}
@@ -1294,7 +1413,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             </button>
           )}
 
-          {/* Requirement 20: Make Chain Deed direct button (Removed for RTI & First Appeal) */}
+          {/* Requirement 20: Make Chain Deed direct button (Removed for RTI, First Appeal, Certified Copy, and ROR/PI) */}
           {!isChainDeedHidden && (
             <button
               type="button"
@@ -1307,16 +1426,18 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             </button>
           )}
 
-          {/* Requirement 19: Print Dossier button */}
-          <button
-            type="button"
-            onClick={handlePrintDossier}
-            className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold shadow-2xs flex items-center gap-1.5 cursor-pointer"
-            title="Print Case Dossier (Excluding broker/muhuri)"
-          >
-            <Printer className="w-4 h-4" />
-            <span>Print Dossier</span>
-          </button>
+          {/* Requirement 19: Print Dossier button (Removed for Certified Copy and ROR/PI) */}
+          {!isCertOrRorPi && (
+            <button
+              type="button"
+              onClick={handlePrintDossier}
+              className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold shadow-2xs flex items-center gap-1.5 cursor-pointer"
+              title="Print Case Dossier (Excluding broker/muhuri)"
+            >
+              <Printer className="w-4 h-4" />
+              <span>Print Dossier</span>
+            </button>
+          )}
 
           {/* Requirement 18: Update Button */}
           {isEditingExisting && (
@@ -1326,7 +1447,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
               className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>Update {isMisc ? 'Misc Case' : isMutation ? 'Mutation' : 'Case'}</span>
+              <span>Update {isMisc ? 'Misc Case' : isMutation ? 'Mutation' : isCertCopy ? 'Certified Copy' : isRorPi ? 'ROR / PI Entry' : 'Case'}</span>
             </button>
           )}
 
@@ -1337,7 +1458,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             className="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <Save className="w-4 h-4" />
-            <span>Save {isMisc ? 'Misc Case' : isMutation ? 'Case File' : 'Case'}</span>
+            <span>Save {isMisc ? 'Misc Case' : isMutation ? 'Case File' : isCertCopy ? 'Certified Copy' : isRorPi ? 'ROR / PI Entry' : 'Case'}</span>
           </button>
 
           {/* Requirement 17: Cancel Button */}
@@ -1356,7 +1477,13 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <label className="text-xs font-bold text-blue-900 dark:text-blue-200 uppercase tracking-wide flex items-center gap-1.5">
             <Search className="w-4 h-4 text-blue-600" />
-            <span>Search Existing {isMisc ? 'Misc' : isMutation ? 'Mutation' : type} Case to Load &amp; Update (বিদ্যমান কেস অনুসন্ধান ও আপডেট)</span>
+            <span>
+              {isCertCopy
+                ? "Search Existing Certified Copy of Deed Entry to Load & Update (বিদ্যমান সার্টিফাইড কপি অনুসন্ধান ও আপডেট)"
+                : isRorPi
+                ? "Search Existing ROR / PI Application to Load & Update (বিদ্যমান আর.ও.আর/পি.আই অনুসন্ধান ও আপডেট)"
+                : `Search Existing ${isMisc ? 'Misc' : isMutation ? 'Mutation' : type} Case to Load & Update (বিদ্যমান কেস অনুসন্ধান ও আপডেট)`}
+            </span>
           </label>
           {isEditingExisting && (
             <button
@@ -1364,7 +1491,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
               onClick={handleClearFormToNew}
               className="text-xs font-bold text-rose-600 hover:text-rose-700 underline flex items-center gap-1 cursor-pointer"
             >
-              <X className="w-3.5 h-3.5" /> Clear / Start New {isMisc ? 'Misc Case' : 'Mutation'}
+              <X className="w-3.5 h-3.5" /> Clear / Start New {isMisc ? 'Misc Case' : isCertCopy ? 'Certified Copy Entry' : isRorPi ? 'ROR / PI Entry' : 'Mutation'}
             </button>
           )}
         </div>
@@ -1379,7 +1506,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             }}
             onFocus={() => setShowSearchResults(searchQuery.trim().length > 0)}
             placeholder={
-              isMisc
+              isCertOrRorPi
+                ? "Search by Deed No, Deed Year, Applicant Name, or Broker Name..."
+                : isMisc
                 ? "Type Deed No, Docket No (DOC..), Applicant Name, or Misc Case No (MISC/..) to search & edit..."
                 : isLrAppeal
                 ? "Type Deed No, Docket No (DOC..), Applicant Name, or LR Appeal Case No (LRA/..) to search & edit..."
@@ -1402,18 +1531,45 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                   className="p-2.5 hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer flex items-center justify-between text-xs transition-colors"
                 >
                   <div>
-                    <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                      <span className="font-mono text-blue-600 dark:text-blue-400">{c.caseNo}</span>
-                      {c.docketNo && <span className="font-mono text-purple-600 text-[11px]">({c.docketNo})</span>}
-                      {c.appNo && <span className="font-mono text-slate-500 text-[11px]">({c.appNo})</span>}
-                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                        {c.status}
-                      </span>
-                    </div>
-                    <div className="text-slate-500 text-[11px]">
-                      Applicant: <strong>{c.party}</strong> · Forum: {c.forum}
-                      {c.applicantDeedNo ? ` · Deed: ${c.applicantDeedNo}` : ''}
-                    </div>
+                    {isCertOrRorPi ? (
+                      <div>
+                        <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                          <span className="font-mono text-rose-600 dark:text-rose-400 font-extrabold">
+                            Deed: {c.applicantDeedNo || c.deedNo || '—'} / {c.applicantDeedYear || c.deedYear || '—'}
+                          </span>
+                          {(c.appNo || c.ainNo) && (
+                            <span className="font-mono text-blue-600 dark:text-blue-400 text-[11px] font-bold">
+                              AIN: {c.appNo || c.ainNo}
+                            </span>
+                          )}
+                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold">
+                            {c.status}
+                          </span>
+                        </div>
+                        <div className="text-slate-500 text-[11px] mt-0.5">
+                          Applicant: <strong>{c.party}</strong>
+                          {c.brokerName ? <> · Broker: <strong className="text-amber-700 dark:text-amber-400">{c.brokerName}</strong></> : null}
+                          {(c.applicantAdsr || c.adsr || c.district) ? (
+                            <> · Office: {c.applicantAdsr || c.adsr || ''} {c.district ? `(${c.district})` : ''}</>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                          <span className="font-mono text-blue-600 dark:text-blue-400">{c.caseNo}</span>
+                          {c.docketNo && <span className="font-mono text-purple-600 text-[11px]">({c.docketNo})</span>}
+                          {c.appNo && <span className="font-mono text-slate-500 text-[11px]">({c.appNo})</span>}
+                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                            {c.status}
+                          </span>
+                        </div>
+                        <div className="text-slate-500 text-[11px]">
+                          Applicant: <strong>{c.party}</strong> · Forum: {c.forum}
+                          {c.applicantDeedNo ? ` · Deed: ${c.applicantDeedNo}` : ''}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1">
                     Load &amp; Edit <ArrowRight className="w-3 h-3" />
@@ -1433,9 +1589,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         {isEditingExisting && (
           <div className="text-[11px] text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-1 pt-0.5">
             <span>● Currently Editing:</span>
-            <strong className="font-mono">{caseNo}</strong>
+            <strong className="font-mono">{isCertOrRorPi ? (applicantDeedNo ? `Deed: ${applicantDeedNo}/${applicantDeedYear || '—'}` : appNo) : caseNo}</strong>
             <span>({party || 'Applicant'})</span>
-            <span className="text-slate-500">— Click "Update {isMisc ? 'Misc Case' : isMutation ? 'Mutation' : 'Case'}" when done.</span>
+            <span className="text-slate-500">— Click "Update {isMisc ? 'Misc Case' : isMutation ? 'Mutation' : isCertCopy ? 'Certified Copy' : isRorPi ? 'ROR / PI Entry' : 'Case'}" when done.</span>
           </div>
         )}
       </div>
@@ -1478,252 +1634,402 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
           <span className="text-[11px] font-normal text-slate-400">Fields marked * are mandatory</span>
         </div>
 
-        <div className={`grid grid-cols-1 sm:grid-cols-2 ${isGrnOmitted ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-3`}>
-          {/* Requirement 3: Mutation Case No starts with MN/, Misc Case No starts with MISC/, RTI Case No is optional */}
-          <div>
-            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-              {isMisc
-                ? 'Misc Case No (Starts with MISC/) *'
-                : isLrAppeal
-                ? 'LR Appeal Case No *'
-                : isFirstAppeal
-                ? 'First Appeal Case No *'
-                : isRti
-                ? 'Case No (Optional)'
-                : isMutation
-                ? 'Case No (Starts with MN/) *'
-                : 'Case Number *'}
-            </label>
-            <input
-              type="text"
-              required={!isRti}
-              value={caseNo}
-              onChange={e => setCaseNo(e.target.value)}
-              placeholder={
-                isMisc
-                  ? 'MISC/2026/0418'
-                  : isLrAppeal
-                  ? 'LRA/2026/0418'
-                  : isFirstAppeal
-                  ? 'FA/2026/0418'
-                  : isRti
-                  ? 'Optional (Not compulsory)'
-                  : isMutation
-                  ? 'MN/2026/0418'
-                  : 'Case/2026/001'
-              }
-              className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold text-blue-700 dark:text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
-            />
-          </div>
-
-          {/* Application No replaced with Docket No for Misc, LR Appeal, First Appeal, and Docket No/Tracking ID for RTI */}
-          {isDocketBased ? (
-            <div>
-              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                {isRti ? 'Docket No / Tracking ID (ডকেট নং / ট্র্যাকিং আইডি)' : 'Docket No (ডকেট নং) *'}
-              </label>
-              <input
-                type="text"
-                value={docketNo}
-                onChange={e => setDocketNo(e.target.value)}
-                placeholder={isRti ? 'e.g. DOC-2026-XXXX / Tracking ID' : 'DOC-2026-XXXX'}
-                className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-600"
-              />
-            </div>
-          ) : (
-            <div>
-              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                Mutation App No (Starts with MUTE) *
-              </label>
-              <input
-                type="text"
-                value={appNo}
-                onChange={e => setAppNo(e.target.value)}
-                placeholder="MUTE-2026-XXXX"
-                className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-600"
-              />
-            </div>
-          )}
-
-          {/* Sub-type / Matter */}
-          <div>
-            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-              {isFirstAppeal ? 'Sub-Type / Section (RTI Act 2005)' : 'Sub-Type / Matter'}
-            </label>
-            {isFirstAppeal ? (
-              <>
+        {isCertOrRorPi ? (
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+              {/* 2) Mutation App No replaced with AIN NO. */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                  AIN NO. *
+                </label>
                 <input
                   type="text"
-                  list="firstappeal-subtypes"
-                  value={subType}
-                  onChange={e => setSubType(e.target.value)}
-                  placeholder="u/s 19(1) or u/s 19(2) of RTI Act 2005"
+                  required
+                  value={appNo}
+                  onChange={e => setAppNo(e.target.value)}
+                  placeholder="AIN-2026-XXXXXX"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                />
+              </div>
+
+              {/* 3) GRN Fee Challan No */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                  GRN Fee Challan No
+                </label>
+                <input
+                  type="text"
+                  value={grnNo}
+                  onChange={e => setGrnNo(e.target.value)}
+                  placeholder="19202600XXXXXX"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-medium focus:outline-none focus:ring-1 focus:ring-blue-600"
+                />
+              </div>
+
+              {/* DEED NO. */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                  DEED NO. *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={applicantDeedNo}
+                  onChange={e => setApplicantDeedNo(e.target.value)}
+                  placeholder="e.g. 1045 / I-240"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold text-blue-700 dark:text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                />
+              </div>
+
+              {/* DEED YEAR */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                  DEED YEAR *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={applicantDeedYear}
+                  onChange={e => setApplicantDeedYear(e.target.value)}
+                  placeholder="e.g. 2024"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold text-indigo-700 dark:text-indigo-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                />
+              </div>
+
+              {/* DISTRICT */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                  DISTRICT *
+                </label>
+                <select
+                  value={district}
+                  onChange={e => setDistrict(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-blue-600"
+                >
+                  {Object.keys(wbDistricts)
+                    .sort()
+                    .map(d => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              {/* ADSR / BL&LRO OFFICE */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                  {isRorPi ? 'BL&LRO / ADSR OFFICE' : 'ADSR OFFICE'}
+                </label>
+                <input
+                  type="text"
+                  value={applicantAdsr}
+                  onChange={e => setApplicantAdsr(e.target.value)}
+                  placeholder={isRorPi ? 'e.g. BL&LRO Patharghata / ADSR Rajarhat' : 'e.g. ADSR Rajarhat / Bidhannagar'}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-blue-600"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+              {/* Current Status */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                  Current Status *
+                </label>
+                <select
+                  value={status}
+                  onChange={e => setStatus(e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-blue-600"
-                />
-                <datalist id="firstappeal-subtypes">
-                  {SUBTYPES_BY_TYPE.firstappeal.map(st => (
-                    <option key={st} value={st} />
+                >
+                  {STATUSES_BY_TYPE[type].map(st => (
+                    <option key={st} value={st}>
+                      {st}
+                    </option>
                   ))}
-                </datalist>
-              </>
-            ) : (
-              <select
-                value={subType}
-                onChange={e => setSubType(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
-              >
-                {SUBTYPES_BY_TYPE[type].map(st => (
-                  <option key={st} value={st}>
-                    {st}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
+                </select>
+              </div>
 
-          {/* GRN No omitted for Misc, LR Appeal & RTI; replaced with Tracking No for First Appeal */}
-          {!isGrnOmitted && (
-            <div>
-              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                {isFirstAppeal ? 'Tracking No (ট্র্যাকিং নং)' : 'GRN Fee Challan No'}
-              </label>
-              <input
-                type="text"
-                value={grnNo}
-                onChange={e => setGrnNo(e.target.value)}
-                placeholder={isFirstAppeal ? 'EW123456789IN / Tracking No' : '19202600XXXXXX'}
-                className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
-              />
+              {/* Filing / Application Date */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                  Filing / Application Date
+                </label>
+                <input
+                  type="date"
+                  value={filingDate}
+                  onChange={e => setFilingDate(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
+                />
+              </div>
+
+              {/* Expected Delivery Date */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                  Expected Delivery Date (সম্ভাব্য সরবরাহের তারিখ)
+                </label>
+                <input
+                  type="date"
+                  value={nextDate}
+                  onChange={e => setNextDate(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono text-emerald-700 dark:text-emerald-400 font-bold"
+                />
+              </div>
             </div>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-          {/* Current Case Status with Inquiry Pending & Inquiry Complete */}
-          <div>
-            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-              Current Case Status *
-            </label>
-            <select
-              value={status}
-              onChange={e => setStatus(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-blue-600"
-            >
-              {STATUSES_BY_TYPE[type].map(st => (
-                <option key={st} value={st}>
-                  {st}
-                </option>
-              ))}
-            </select>
           </div>
-
-          {/* Adjudicating Forum / Authority (Optional & editable for RTI: Police Station, BDO, Panchayat, Municipality, etc.) */}
-          <div>
-            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-              {isRti ? 'Adjudicating Forum / Authority (Optional)' : 'Adjudicating Forum'}
-            </label>
-            {isRti ? (
-              <>
+        ) : (
+          <div className="space-y-3">
+            <div className={`grid grid-cols-1 sm:grid-cols-2 ${isGrnOmitted ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-3`}>
+              {/* Requirement 3: Case Number */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                  {isMisc
+                    ? 'Misc Case No (Starts with MISC/) *'
+                    : isLrAppeal
+                    ? 'LR Appeal Case No *'
+                    : isFirstAppeal
+                    ? 'First Appeal Case No *'
+                    : isRti
+                    ? 'Case No (Optional)'
+                    : isMutation
+                    ? 'Case No (Starts with MN/) *'
+                    : 'Case Number *'}
+                </label>
                 <input
                   type="text"
-                  list="rti-forum-authorities"
-                  value={forum}
-                  onChange={e => setForum(e.target.value)}
-                  placeholder="Police Station / BDO / Panchayat / Municipality / BL&LRO (Optional)"
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                  required={!isRti}
+                  value={caseNo}
+                  onChange={e => setCaseNo(e.target.value)}
+                  placeholder={
+                    isMisc
+                      ? 'MISC/2026/0418'
+                      : isLrAppeal
+                      ? 'LRA/2026/0418'
+                      : isFirstAppeal
+                      ? 'FA/2026/0418'
+                      : isRti
+                      ? 'Optional (Not compulsory)'
+                      : isMutation
+                      ? 'MN/2026/0418'
+                      : 'Case/2026/001'
+                  }
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold text-blue-700 dark:text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
                 />
-                <datalist id="rti-forum-authorities">
-                  {FORUMS_BY_TYPE.rti.map(f => (
-                    <option key={f} value={f} />
-                  ))}
-                </datalist>
-              </>
-            ) : (
-              <select
-                value={forum}
-                onChange={e => setForum(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
-              >
-                {FORUMS_BY_TYPE[type].map(f => (
-                  <option key={f} value={f}>
-                    {f}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
+              </div>
 
-          <div>
-            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-              Filing / Application Date
-            </label>
-            <input
-              type="date"
-              value={filingDate}
-              onChange={e => setFilingDate(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
-            />
-          </div>
-        </div>
-
-        {/* Requirement 6: More than one hearing date with + button for every entry form */}
-        <div className="p-3.5 rounded-xl border border-blue-200 dark:border-blue-800/60 bg-blue-50/30 dark:bg-blue-950/20 space-y-2.5">
-          <div className="flex items-center justify-between border-b border-blue-200/60 dark:border-blue-800/60 pb-1.5">
-            <div className="flex items-center gap-1.5">
-              <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <span className="text-xs font-bold uppercase tracking-wider text-blue-800 dark:text-blue-300">
-                Hearing / Inquiry Date(s) (শুনানি ও তদন্তের তারিখসমূহ)
-              </span>
-              <span className="text-[10px] text-slate-500 font-mono">({hearingList.length} date{hearingList.length > 1 ? 's' : ''})</span>
-            </div>
-            <button
-              type="button"
-              onClick={addHearingDate}
-              className="px-2.5 py-1 text-xs font-bold rounded-lg bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/60 dark:hover:bg-blue-800 text-blue-800 dark:text-blue-200 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>+ Add Hearing Date</span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-            {hearingList.map((h, hIdx) => (
-              <div
-                key={h.id}
-                className="p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center gap-2 shadow-2xs"
-              >
-                <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/80 text-blue-700 dark:text-blue-300 text-[10px] font-bold flex items-center justify-center shrink-0">
-                  {hIdx + 1}
-                </span>
-                <div className="flex-1 space-y-1">
-                  <input
-                    type="date"
-                    value={h.date}
-                    onChange={e => updateHearingDate(hIdx, 'date', e.target.value)}
-                    className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-mono font-bold text-blue-700 dark:text-blue-300 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                  />
+              {/* Application No replaced with Docket No for Misc, LR Appeal, First Appeal, and Docket No/Tracking ID for RTI */}
+              {isDocketBased ? (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                    {isRti ? 'Docket No / Tracking ID (ডকেট নং / ট্র্যাকিং আইডি)' : 'Docket No (ডকেট নং) *'}
+                  </label>
                   <input
                     type="text"
-                    value={h.stage || ''}
-                    onChange={e => updateHearingDate(hIdx, 'stage', e.target.value)}
-                    placeholder="e.g. 1st Hearing / Spot Inquiry / Final Order"
-                    className="w-full px-2 py-0.5 text-[11px] rounded border border-slate-200 dark:border-slate-700 bg-transparent text-slate-600 dark:text-slate-400 focus:outline-none"
+                    value={docketNo}
+                    onChange={e => setDocketNo(e.target.value)}
+                    placeholder={isRti ? 'e.g. DOC-2026-XXXX / Tracking ID' : 'DOC-2026-XXXX'}
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-600"
                   />
                 </div>
-                {hearingList.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeHearingDate(hIdx)}
-                    className="p-1 text-rose-500 hover:text-rose-700 cursor-pointer shrink-0"
-                    title="Remove this hearing date"
+              ) : (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                    Mutation App No (Starts with MUTE) *
+                  </label>
+                  <input
+                    type="text"
+                    value={appNo}
+                    onChange={e => setAppNo(e.target.value)}
+                    placeholder="MUTE-2026-XXXX"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                  />
+                </div>
+              )}
+
+              {/* Sub-type / Matter */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                  {isFirstAppeal ? 'Sub-Type / Section (RTI Act 2005)' : 'Sub-Type / Matter'}
+                </label>
+                {isFirstAppeal ? (
+                  <>
+                    <input
+                      type="text"
+                      list="firstappeal-subtypes"
+                      value={subType}
+                      onChange={e => setSubType(e.target.value)}
+                      placeholder="u/s 19(1) or u/s 19(2) of RTI Act 2005"
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-blue-600"
+                    />
+                    <datalist id="firstappeal-subtypes">
+                      {SUBTYPES_BY_TYPE.firstappeal.map(st => (
+                        <option key={st} value={st} />
+                      ))}
+                    </datalist>
+                  </>
+                ) : (
+                  <select
+                    value={subType}
+                    onChange={e => setSubType(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                    {SUBTYPES_BY_TYPE[type].map(st => (
+                      <option key={st} value={st}>
+                        {st}
+                      </option>
+                    ))}
+                  </select>
                 )}
               </div>
-            ))}
+
+              {/* GRN No omitted for Misc, LR Appeal & RTI; replaced with Tracking No for First Appeal */}
+              {!isGrnOmitted && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                    {isFirstAppeal ? 'Tracking No (ট্র্যাকিং নং)' : 'GRN Fee Challan No'}
+                  </label>
+                  <input
+                    type="text"
+                    value={grnNo}
+                    onChange={e => setGrnNo(e.target.value)}
+                    placeholder={isFirstAppeal ? 'EW123456789IN / Tracking No' : '19202600XXXXXX'}
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+              {/* Current Case Status */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                  Current Case Status *
+                </label>
+                <select
+                  value={status}
+                  onChange={e => setStatus(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-blue-600"
+                >
+                  {STATUSES_BY_TYPE[type].map(st => (
+                    <option key={st} value={st}>
+                      {st}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Adjudicating Forum */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                  {isRti ? 'Adjudicating Forum / Authority (Optional)' : 'Adjudicating Forum'}
+                </label>
+                {isRti ? (
+                  <>
+                    <input
+                      type="text"
+                      list="rti-forum-authorities"
+                      value={forum}
+                      onChange={e => setForum(e.target.value)}
+                      placeholder="Police Station / BDO / Panchayat / Municipality / BL&LRO (Optional)"
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                    />
+                    <datalist id="rti-forum-authorities">
+                      {FORUMS_BY_TYPE.rti.map(f => (
+                        <option key={f} value={f} />
+                      ))}
+                    </datalist>
+                  </>
+                ) : (
+                  <select
+                    value={forum}
+                    onChange={e => setForum(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                  >
+                    {FORUMS_BY_TYPE[type].map(f => (
+                      <option key={f} value={f}>
+                        {f}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              {/* Filing Date */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                  Filing / Application Date
+                </label>
+                <input
+                  type="date"
+                  value={filingDate}
+                  onChange={e => setFilingDate(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
+                />
+              </div>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Requirement 6: More than one hearing date with + button for every entry form (Removed for Certified Copy and ROR/PI) */}
+        {!isCertOrRorPi && (
+          <div className="p-3.5 rounded-xl border border-blue-200 dark:border-blue-800/60 bg-blue-50/30 dark:bg-blue-950/20 space-y-2.5">
+            <div className="flex items-center justify-between border-b border-blue-200/60 dark:border-blue-800/60 pb-1.5">
+              <div className="flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <span className="text-xs font-bold uppercase tracking-wider text-blue-800 dark:text-blue-300">
+                  Hearing / Inquiry Date(s) (শুনানি ও তদন্তের তারিখসমূহ)
+                </span>
+                <span className="text-[10px] text-slate-500 font-mono">({hearingList.length} date{hearingList.length > 1 ? 's' : ''})</span>
+              </div>
+              <button
+                type="button"
+                onClick={addHearingDate}
+                className="px-2.5 py-1 text-xs font-bold rounded-lg bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/60 dark:hover:bg-blue-800 text-blue-800 dark:text-blue-200 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Add Hearing Date</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              {hearingList.map((h, hIdx) => (
+                <div
+                  key={h.id}
+                  className="p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center gap-2 shadow-2xs"
+                >
+                  <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/80 text-blue-700 dark:text-blue-300 text-[10px] font-bold flex items-center justify-center shrink-0">
+                    {hIdx + 1}
+                  </span>
+                  <div className="flex-1 space-y-1">
+                    <input
+                      type="date"
+                      value={h.date}
+                      onChange={e => updateHearingDate(hIdx, 'date', e.target.value)}
+                      className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-mono font-bold text-blue-700 dark:text-blue-300 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                    />
+                    <input
+                      type="text"
+                      value={h.stage || ''}
+                      onChange={e => updateHearingDate(hIdx, 'stage', e.target.value)}
+                      placeholder="e.g. 1st Hearing / Spot Inquiry / Final Order"
+                      className="w-full px-2 py-0.5 text-[11px] rounded border border-slate-200 dark:border-slate-700 bg-transparent text-slate-600 dark:text-slate-400 focus:outline-none"
+                    />
+                  </div>
+                  {hearingList.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeHearingDate(hIdx)}
+                      className="p-1 text-rose-500 hover:text-rose-700 cursor-pointer shrink-0"
+                      title="Remove this hearing date"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Section 1 Litigants & Dates */}
         <div className="space-y-4 pt-1">
@@ -1814,71 +2120,73 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
               />
             </div>
 
-            {/* Requirement 9: Applicant's Deed Details (Deed No, Year, Type of Deed, and ADSR) */}
-            <div className="p-3 rounded-lg border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/40 dark:bg-emerald-950/20 space-y-2 mt-2">
-              <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wide flex items-center gap-1.5">
-                <Scroll className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Applicant Purchase / Acquisition Deed Details (আবেদনকারীর দলিলের বিবরণ)</span>
-              </span>
+            {/* Requirement 9: Applicant's Deed Details (Deed No, Year, Type of Deed, and ADSR) (Removed for Certified Copy and ROR/PI) */}
+            {!isCertOrRorPi && (
+              <div className="p-3 rounded-lg border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/40 dark:bg-emerald-950/20 space-y-2 mt-2">
+                <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wide flex items-center gap-1.5">
+                  <Scroll className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Applicant Purchase / Acquisition Deed Details (আবেদনকারীর দলিলের বিবরণ)</span>
+                </span>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
-                    {isRti || isFirstAppeal ? 'Applicant Deed No (Optional)' : 'Applicant Deed No (দলিল নং) *'}
-                  </label>
-                  <input
-                    type="text"
-                    value={applicantDeedNo}
-                    onChange={e => setApplicantDeedNo(e.target.value)}
-                    placeholder="e.g. 1045 / I-240"
-                    className="w-full px-2.5 py-1.5 text-xs rounded border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 font-mono font-bold"
-                  />
-                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                      {isRti || isFirstAppeal ? 'Applicant Deed No (Optional)' : 'Applicant Deed No (দলিল নং) *'}
+                    </label>
+                    <input
+                      type="text"
+                      value={applicantDeedNo}
+                      onChange={e => setApplicantDeedNo(e.target.value)}
+                      placeholder="e.g. 1045 / I-240"
+                      className="w-full px-2.5 py-1.5 text-xs rounded border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 font-mono font-bold"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
-                    {isRti || isFirstAppeal ? 'Deed Year (Optional)' : 'Deed Year (দলিল বছর) *'}
-                  </label>
-                  <input
-                    type="text"
-                    value={applicantDeedYear}
-                    onChange={e => setApplicantDeedYear(e.target.value)}
-                    placeholder="e.g. 2021"
-                    className="w-full px-2.5 py-1.5 text-xs rounded border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 font-mono font-bold text-indigo-700 dark:text-indigo-300"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                      {isRti || isFirstAppeal ? 'Deed Year (Optional)' : 'Deed Year (দলিল বছর) *'}
+                    </label>
+                    <input
+                      type="text"
+                      value={applicantDeedYear}
+                      onChange={e => setApplicantDeedYear(e.target.value)}
+                      placeholder="e.g. 2021"
+                      className="w-full px-2.5 py-1.5 text-xs rounded border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 font-mono font-bold text-indigo-700 dark:text-indigo-300"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
-                    {isRti || isFirstAppeal ? 'Type of Deed (Optional)' : 'Type of Deed (দলিলের ধরন) *'}
-                  </label>
-                  <select
-                    value={applicantDeedType}
-                    onChange={e => setApplicantDeedType(e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs rounded border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 font-semibold"
-                  >
-                    {WB_DEED_TYPES.map(dt => (
-                      <option key={dt} value={dt}>
-                        {dt}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                      {isRti || isFirstAppeal ? 'Type of Deed (Optional)' : 'Type of Deed (দলিলের ধরন) *'}
+                    </label>
+                    <select
+                      value={applicantDeedType}
+                      onChange={e => setApplicantDeedType(e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs rounded border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 font-semibold"
+                    >
+                      {WB_DEED_TYPES.map(dt => (
+                        <option key={dt} value={dt}>
+                          {dt}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
-                    ADSR / SRO (রেজিস্ট্রি অফিস)
-                  </label>
-                  <input
-                    type="text"
-                    value={applicantAdsr}
-                    onChange={e => setApplicantAdsr(e.target.value)}
-                    placeholder="e.g. ADSR Rajarhat / Cossipore"
-                    className="w-full px-2.5 py-1.5 text-xs rounded border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900"
-                  />
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                      ADSR / SRO (রেজিস্ট্রি অফিস)
+                    </label>
+                    <input
+                      type="text"
+                      value={applicantAdsr}
+                      onChange={e => setApplicantAdsr(e.target.value)}
+                      placeholder="e.g. ADSR Rajarhat / Cossipore"
+                      className="w-full px-2.5 py-1.5 text-xs rounded border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Requirement 10: Broker / Muhuri Name & Phone (Omitted from printing forms, shown only in report & entry) */}
             <div className="p-3 rounded-lg border border-amber-200 dark:border-amber-800/60 bg-amber-50/40 dark:bg-amber-950/20 space-y-1.5 mt-2">
@@ -1921,8 +2229,8 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             </div>
           </div>
 
-          {/* Requirement 11: Opposite Party / Respondent Section with + option (Removed for RTI entry page) */}
-          {!isRti && (
+          {/* Requirement 11: Opposite Party / Respondent Section with + option (Removed for RTI, Certified Copy and ROR/PI) */}
+          {!isRti && !isCertOrRorPi && (
           <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 space-y-2.5">
             <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
               <div>
@@ -2034,7 +2342,8 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         </div>
       </div>
 
-      {/* Requirement 12: 2. Land Schedule(s) with + option to add more schedule (Optional / Not Compulsory for RTI) */}
+      {/* Requirement 12: 2. Land Schedule(s) with + option to add more schedule (Optional / Not Compulsory for RTI, Removed for Certified Copy and ROR/PI) */}
+      {!isCertOrRorPi && (
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 flex-wrap gap-2">
           <div>
@@ -2231,6 +2540,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
           ))}
         </div>
       </div>
+      )}
 
       {/* 4. Complete Chronological Chain of Title Builder (Removed for RTI and First Appeal entry forms) */}
       {!isChainDeedHidden && (
@@ -2277,8 +2587,8 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
           </div>
         </div>
 
-        {/* Step 0 (Origin of Title: Original Recorded Owner) is removed for mutation and misc cases */}
-        {!['mutation', 'misc'].includes(type) && (
+        {/* Step 0 (Origin of Title: Original Recorded Owner) is removed for mutation, misc, certcopy, and rorpi cases */}
+        {!['mutation', 'misc', 'certcopy', 'rorpi'].includes(type) && (
           <div className="p-3.5 rounded-xl border border-amber-200 dark:border-amber-800/70 bg-amber-50/60 dark:bg-amber-950/30 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -2746,14 +3056,16 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={handlePrintDossier}
-            className="px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-          >
-            <Printer className="w-4 h-4" />
-            <span>Print Dossier</span>
-          </button>
+          {!isCertOrRorPi && (
+            <button
+              type="button"
+              onClick={handlePrintDossier}
+              className="px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+            >
+              <Printer className="w-4 h-4" />
+              <span>Print Dossier</span>
+            </button>
+          )}
 
           {isEditingExisting && (
             <button
@@ -2762,7 +3074,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
               className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>Update {isMisc ? 'Misc Case' : isMutation ? 'Mutation Case' : 'Case'}</span>
+              <span>Update {isMisc ? 'Misc Case' : isMutation ? 'Mutation Case' : isCertCopy ? 'Certified Copy' : isRorPi ? 'ROR / PI Entry' : 'Case'}</span>
             </button>
           )}
 
@@ -2772,7 +3084,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             className="px-5 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold shadow-md flex items-center gap-1.5 cursor-pointer"
           >
             <Save className="w-4 h-4" />
-            <span>Save {isMisc ? 'Misc Case' : isMutation ? 'Mutation Case' : 'Case'}</span>
+            <span>Save {isMisc ? 'Misc Case' : isMutation ? 'Mutation Case' : isCertCopy ? 'Certified Copy' : isRorPi ? 'ROR / PI Entry' : 'Case'}</span>
           </button>
 
           <button

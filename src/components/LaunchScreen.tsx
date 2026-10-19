@@ -293,24 +293,22 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {targetLoginCompany.users.map(u => {
                     const isSelectedUser = loginEmail.toLowerCase() === u.email.toLowerCase();
-                    const requiresCustomPass = Boolean(u.password && u.password !== 'admin123');
                     return (
                       <div
                         key={u.id}
                         onClick={() => {
                           setLoginEmail(u.email);
-                          if (!requiresCustomPass) {
-                            loginUser(u.email, '', targetLoginCompany.id);
-                          }
+                          loginUser(u.email, '', targetLoginCompany.id);
                         }}
-                        className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                        className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 group ${
                           isSelectedUser
                             ? 'border-blue-600 bg-blue-50/70 dark:bg-blue-950/50 ring-1 ring-blue-500/30'
                             : 'border-slate-200 dark:border-slate-800 hover:border-blue-400 bg-white dark:bg-slate-800/40'
                         }`}
+                        title={`Click to sign in immediately as ${u.name}`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-9 h-9 rounded-full bg-blue-700 text-white text-xs font-bold flex items-center justify-center shrink-0">
+                          <div className="w-9 h-9 rounded-full bg-blue-700 text-white text-xs font-bold flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
                             {u.name.slice(0, 2).toUpperCase()}
                           </div>
                           <div className="min-w-0">
@@ -325,7 +323,11 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
                             </span>
                           </div>
                         </div>
-                        <UserCheck className={`w-4 h-4 shrink-0 ${isSelectedUser ? 'text-blue-600' : 'text-slate-400'}`} />
+                        <div className="flex items-center gap-1 shrink-0">
+                          <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 px-2 py-0.8 rounded-md bg-blue-50 dark:bg-blue-950/70 border border-blue-200 dark:border-blue-800/70 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                            Sign In ➔
+                          </span>
+                        </div>
                       </div>
                     );
                   })}

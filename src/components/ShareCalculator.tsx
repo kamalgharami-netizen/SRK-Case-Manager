@@ -1249,12 +1249,12 @@ export const ShareCalculator: React.FC = () => {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
-                {language === 'bn' ? '১০,০০০ হিস্যা ও ভূমি বণ্টন ক্যালকুলেটর' : 'West Bengal Land Share & Partition Suite'}
+                {language === 'bn' ? 'হিস্যা ক্যালকুলেটর (Share Calculator)' : 'Share Calculator'}
               </h1>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 {language === 'bn'
-                  ? 'সকল ধরনের হিস্যা গণনা: জমির পরিমাণ ➔ ১০,০০০ হিস্যা, হিস্যা ➔ জমি, ১৬ আনা রূপান্তর ও ফারায়েজ।'
-                  : 'All types of share calculation: Area to 10,000 Share, Share to Area, 16-Ana, and Farayez.'}
+                  ? 'সকল ধরনের হিস্যা গণনা: জমির পরিমাণ ➔ হিস্যা, হিস্যা ➔ জমি, ১৬ আনা রূপান্তর ও ফারায়েজ।'
+                  : 'Complete share calculation suite: Area to Share, Share to Area, 16-Ana conversion, and Farayez partition.'}
               </p>
             </div>
           </div>

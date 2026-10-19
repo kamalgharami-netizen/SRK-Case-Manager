@@ -546,6 +546,40 @@ const MainAppContent: React.FC = () => {
                 />
               )}
 
+              {currentPage === 'case-certcopy' && (
+                <CaseDashboard
+                  type="certcopy"
+                  onOpenNewCase={handleOpenNewCase}
+                  onViewCaseDetail={id => {
+                    setViewingCaseId(id);
+                    pushHistoryState({ modal: 'case-detail', id });
+                  }}
+                  onEditCase={handleEditCase}
+                  onOpenChainDeed={c => {
+                    setChainDeedCaseId(c.id);
+                    pushHistoryState({ modal: 'chain-deed', id: c.id });
+                  }}
+                  onOpenAiDraft={handleOpenAiDraft}
+                />
+              )}
+
+              {currentPage === 'case-rorpi' && (
+                <CaseDashboard
+                  type="rorpi"
+                  onOpenNewCase={handleOpenNewCase}
+                  onViewCaseDetail={id => {
+                    setViewingCaseId(id);
+                    pushHistoryState({ modal: 'case-detail', id });
+                  }}
+                  onEditCase={handleEditCase}
+                  onOpenChainDeed={c => {
+                    setChainDeedCaseId(c.id);
+                    pushHistoryState({ modal: 'chain-deed', id: c.id });
+                  }}
+                  onOpenAiDraft={handleOpenAiDraft}
+                />
+              )}
+
               {currentPage === 'causelist' && <CauseList />}
 
               {currentPage === 'sharecalculator' && <ShareCalculator />}
@@ -933,7 +967,7 @@ const MainAppContent: React.FC = () => {
               className="w-full px-3 py-2 text-xs font-semibold rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-left flex items-center gap-2 cursor-pointer"
             >
               <Calculator className="w-4 h-4 text-emerald-600" />
-              <span>10,000 Share Calculator</span>
+              <span>Share Calculator</span>
             </button>
           </div>
         )}
