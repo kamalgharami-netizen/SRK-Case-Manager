@@ -36,6 +36,7 @@ import {
   FileSpreadsheet
 } from 'lucide-react';
 import { CaseType } from '../types';
+import { ThemeDropdown } from './ThemeDropdown';
 
 export type NavPage =
   | 'dashboard'
@@ -63,7 +64,7 @@ interface SidebarProps {
   onNavigate: (page: NavPage) => void;
   isOpen: boolean;
   onClose: () => void;
-  onOpenSettings: (tab?: 'branding' | 'vault' | 'chainSample' | 'backup') => void;
+  onOpenSettings: (tab?: 'branding' | 'vault' | 'backup') => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -478,50 +479,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
             </div>
 
-            {/* White / Light / Dark Theme Segmented Toggle */}
-            <div className="grid grid-cols-3 gap-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-lg border border-slate-200 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => setTheme('white')}
-                className={`flex items-center justify-center gap-1 py-1.5 px-1.5 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
-                  theme === 'white'
-                    ? 'bg-white text-slate-950 font-bold shadow-xs border border-slate-200/80'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-                title="Switch to Pure White Background Theme"
-              >
-                <span className="w-2.5 h-2.5 rounded-full bg-white border border-slate-400 shrink-0" />
-                <span>White</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setTheme('light')}
-                className={`flex items-center justify-center gap-1 py-1.5 px-1.5 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
-                  theme === 'light'
-                    ? 'bg-amber-400 text-slate-950 font-bold shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-                title="Switch to Soft Light Theme"
-              >
-                <Sun className="w-3 h-3 shrink-0" />
-                <span>Light</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setTheme('dark')}
-                className={`flex items-center justify-center gap-1 py-1.5 px-1.5 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
-                  theme === 'dark'
-                    ? 'bg-blue-600 text-white font-bold shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-                title="Switch to Dark Theme"
-              >
-                <Moon className="w-3 h-3 shrink-0" />
-                <span>Dark</span>
-              </button>
-            </div>
+            {/* Theme Dropdown for Variety of Themes */}
+            <ThemeDropdown variant="sidebar" />
           </div>
         </div>
 

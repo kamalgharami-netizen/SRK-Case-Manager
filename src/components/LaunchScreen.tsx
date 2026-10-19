@@ -1,6 +1,30 @@
 import React, { useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { Scale, Building2, FolderOpen, RotateCcw, ArrowRight, UserPlus, Trash2, CheckCircle2, AlertCircle, X, Upload, Sparkles, LogIn, KeyRound, Mail, UserCheck, Eye, EyeOff } from 'lucide-react';
+import {
+  Scale,
+  Building2,
+  FolderOpen,
+  RotateCcw,
+  ArrowRight,
+  UserPlus,
+  Trash2,
+  CheckCircle2,
+  AlertCircle,
+  X,
+  Upload,
+  Sparkles,
+  LogIn,
+  KeyRound,
+  Mail,
+  Phone,
+  ShieldCheck,
+  Eye,
+  EyeOff,
+  Database,
+  Lock,
+  Folder,
+  HardDrive
+} from 'lucide-react';
 import { wbDistricts } from '../data/wbDistricts';
 import { CompanyLogo, BADGE_OPTIONS, COLOR_OPTIONS } from './CompanyLogo';
 import { Toast } from './Toast';
@@ -10,54 +34,39 @@ interface LaunchScreenProps {
 }
 
 export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
-  const { companies, activeCompany, selectCompany, createCompany, deleteCompany, restoreCompany, loginUser, showToast } = useApp();
+  const {
+    companies,
+    activeCompany,
+    selectCompany,
+    createCompany,
+    deleteCompany,
+    loginUser,
+    retrieveExistingData,
+    showToast,
+    language,
+    backupStoragePath
+  } = useApp();
+
   const logoFileRef = useRef<HTMLInputElement>(null);
+  const restoreFileRef = useRef<HTMLInputElement>(null);
 
-  const isFirstLaunch = companies.length === 0;
+  // Check if first-time launch
+  const isFirstLaunch = companies.length === 0 || !localStorage.getItem('srk_first_time_setup_done');
 
-  // When no companies exist (First-Time Launch), default to 'create'.
-  // When companies exist (e.g. after Logout), default to 'login'.
-  const [view, setView] = useState<'login' | 'create' | 'restore' | 'select'>(
-    companies.length === 0 ? 'create' : 'login'
+  // Views: 'login' | 'create' | 'retrieve' | 'select'
+  const [view, setView] = useState<'login' | 'create' | 'retrieve' | 'select'>(
+    isFirstLaunch ? 'create' : 'login'
   );
 
-  // Login states
-  const [selectedLoginCompanyId, setSelectedLoginCompanyId] = useState<string>(
-    activeCompany?.id || companies[0]?.id || ''
-  );
-  const targetLoginCompany =
-    companies.find(c => c.id === selectedLoginCompanyId) || activeCompany || companies[0] || null;
+  // LOGIN STATE (Mobile No + 4-digit Passcode)
+  const targetLoginCompany = activeCompany || companies[0] || null;
+  const [loginMobile, setLoginMobile] = useState<string>(() => {
+    return targetLoginCompany?.users?.[0]?.phone || '';
+  });
+  const [loginPasscode, setLoginPasscode] = useState<string>('');
+  const [showLoginPasscode, setShowLoginPasscode] = useState<boolean>(false);
 
-  const [loginEmail, setLoginEmail] = useState<string>(
-    targetLoginCompany?.users?.[0]?.email || ''
-  );
-  const [loginPassword, setLoginPassword] = useState<string>('');
-  const [showLoginPassword, setShowLoginPassword] = useState<boolean>(false);
-
-  // Sync login email when selected company changes
-  const handleSelectLoginCompany = (compId: string) => {
-    setSelectedLoginCompanyId(compId);
-    const comp = companies.find(c => c.id === compId);
-    if (comp && comp.users.length > 0) {
-      setLoginEmail(comp.users[0].email);
-      setLoginPassword('');
-    }
-  };
-
-  const handleLoginSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!targetLoginCompany) {
-      showToast('Please create or restore a chamber workspace first', 'error');
-      return;
-    }
-    if (!loginEmail.trim()) {
-      showToast('Please enter your registered email address', 'error');
-      return;
-    }
-    loginUser(loginEmail.trim(), loginPassword, targetLoginCompany.id);
-  };
-
-  // Form states for creation
+  // REGISTRATION STATE (Mandatory First-Time)
   const [name, setName] = useState('');
   const [type, setType] = useState('Advocate Chamber');
   const [barCouncil, setBarCouncil] = useState('');
@@ -66,38 +75,129 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
   const [city, setCity] = useState('Kolkata');
   const [state, setState] = useState('West Bengal');
   const [pin, setPin] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
 
-  // Dynamic Logo states (Vyapar style)
+  // Compulsory registration fields
+  const [adminName, setAdminName] = useState('');
+  const [adminPhone, setAdminPhone] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [regPasscode, setRegPasscode] = useState('');
+  const [regConfirmPasscode, setRegConfirmPasscode] = useState('');
+  const [showRegPasscode, setShowRegPasscode] = useState(false);
+
+  // Branding Crest
   const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined);
   const [logoBadge, setLogoBadge] = useState<any>('scales');
   const [logoColor, setLogoColor] = useState('#2563EB');
 
-  // Admin user states
-  const [adminName, setAdminName] = useState('');
-  const [adminEmail, setAdminEmail] = useState('');
-  const [adminPhone, setAdminPhone] = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
+  // Compulsory Data Storage Path for initial registration
+  const [regStoragePath, setRegStoragePath] = useState<string>(backupStoragePath || 'C:/SRK_Case_Backups');
+  const regFolderInputRef = useRef<HTMLInputElement>(null);
+
+  const handleBrowseRegFolder = async () => {
+    let succeeded = false;
+    if (typeof window !== 'undefined' && 'showDirectoryPicker' in window) {
+      try {
+        // @ts-ignore
+        const dirHandle = await (window as any).showDirectoryPicker({ mode: 'readwrite' });
+        if (dirHandle && dirHandle.name) {
+          const isWindows = typeof navigator !== 'undefined' && /win/i.test(navigator.userAgent);
+          const sanitized = dirHandle.name.replace(/[^a-zA-Z0-9_\-\s]/g, '_');
+          const cleanPath = isWindows ? `C:/${sanitized}` : `/Documents/${sanitized}`;
+          setRegStoragePath(cleanPath);
+          showToast(`Directory selected: ${dirHandle.name}`, 'success');
+          succeeded = true;
+          return;
+        }
+      } catch (err: any) {
+        if (err.name === 'AbortError') return;
+        console.info('showDirectoryPicker restricted in iframe, opening folder picker input:', err);
+      }
+    }
+    if (!succeeded && regFolderInputRef.current) {
+      regFolderInputRef.current.value = '';
+      regFolderInputRef.current.click();
+    }
+  };
+
+  const handleRegFolderInputSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const first = files[0];
+    const relPath = first.webkitRelativePath || first.name;
+    const folderName = relPath.includes('/') ? relPath.split('/')[0] : 'Selected_Folder';
+    const isWindows = typeof navigator !== 'undefined' && /win/i.test(navigator.userAgent);
+    const chosen = isWindows
+      ? `C:/Users/Advocate/Documents/${folderName}`
+      : `/Internal_Storage/Documents/${folderName}`;
+    setRegStoragePath(chosen);
+    showToast(`Directory selected: ${folderName}`, 'success');
+  };
+
+  // REINSTALL RETRIEVAL STATE
+  const [retrieveMobile, setRetrieveMobile] = useState('');
+  const [retrievePasscode, setRetrievePasscode] = useState('');
+  const [showRetrievePasscode, setShowRetrievePasscode] = useState(false);
+  const [uploadedBackupPayload, setUploadedBackupPayload] = useState<any>(null);
+  const [backupFileName, setBackupFileName] = useState<string>('');
 
   const districtList = Object.keys(wbDistricts);
 
-  const handleCreateSubmit = (e: React.FormEvent) => {
+  // Handle Login Submit
+  const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
-      showToast('Firm / Chamber name is required', 'error');
+    if (!loginMobile.trim()) {
+      showToast('Please enter your 10-digit registered mobile number', 'error');
       return;
     }
-    if (!adminName.trim()) {
-      showToast('Advocate name is required', 'error');
+    if (!loginPasscode.trim()) {
+      showToast('Please enter your 4-digit passcode', 'error');
       return;
     }
-    if (!adminEmail.trim()) {
-      showToast('Email address is required', 'error');
+    if (loginPasscode.trim().length !== 4) {
+      showToast('Passcode must be exactly 4 digits', 'error');
       return;
     }
 
-    createCompany(
+    const success = loginUser(loginMobile.trim(), loginPasscode.trim());
+    if (success && onClose) {
+      onClose();
+    }
+  };
+
+  // Handle Registration Submit
+  const handleCreateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      showToast('Chamber / Firm name is required', 'error');
+      return;
+    }
+    if (!adminName.trim()) {
+      showToast('Advocate / Practitioner name is required', 'error');
+      return;
+    }
+    // Mobile No is COMPULSORY
+    const cleanMobile = adminPhone.replace(/\D/g, '').slice(-10);
+    if (!cleanMobile || cleanMobile.length < 10) {
+      showToast('Compulsory: Please enter a valid 10-digit Mobile Number', 'error');
+      return;
+    }
+    // Email ID is COMPULSORY
+    if (!adminEmail.trim() || !adminEmail.includes('@')) {
+      showToast('Compulsory: Please enter a valid Email ID', 'error');
+      return;
+    }
+    // 4-Digit Passcode is COMPULSORY
+    const cleanPasscode = regPasscode.replace(/\D/g, '').slice(0, 4);
+    if (cleanPasscode.length !== 4) {
+      showToast('Compulsory: Please enter a 4-digit numeric Passcode', 'error');
+      return;
+    }
+    if (regPasscode !== regConfirmPasscode) {
+      showToast('Passcodes do not match. Please verify your 4-digit passcode.', 'error');
+      return;
+    }
+
+    const ok = createCompany(
       {
         name: name.trim(),
         type,
@@ -107,19 +207,61 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
         city: city.trim() || 'Kolkata',
         state: state.trim() || 'West Bengal',
         pin: pin.trim(),
-        phone: phone.trim() || adminPhone.trim(),
-        email: email.trim() || adminEmail.trim(),
+        phone: cleanMobile,
+        email: adminEmail.trim(),
         logoUrl,
         logoBadge,
-        logoColor
+        logoColor,
+        backupStoragePath: regStoragePath.trim() || 'C:/SRK_Case_Backups'
       },
       {
         name: adminName.trim(),
         email: adminEmail.trim(),
-        phone: adminPhone.trim(),
-        password: adminPassword.trim()
+        phone: cleanMobile,
+        passcode: cleanPasscode
       }
     );
+
+    if (ok && onClose) {
+      onClose();
+    }
+  };
+
+  // Handle Reinstall Retrieval
+  const handleRetrieveSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanPasscode = retrievePasscode.replace(/\D/g, '').slice(0, 4);
+    if (cleanPasscode.length !== 4) {
+      showToast('Please enter your 4-digit passcode to retrieve data', 'error');
+      return;
+    }
+
+    const ok = retrieveExistingData(
+      retrieveMobile.trim(),
+      cleanPasscode,
+      uploadedBackupPayload
+    );
+
+    if (ok && onClose) {
+      onClose();
+    }
+  };
+
+  const handleBackupFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = evt => {
+      try {
+        const parsed = JSON.parse(evt.target?.result as string);
+        setUploadedBackupPayload(parsed);
+        setBackupFileName(file.name);
+        showToast(`Loaded backup file "${file.name}". Enter your 4-digit passcode to retrieve.`, 'info');
+      } catch {
+        showToast('Invalid backup JSON file', 'error');
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleLogoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -137,26 +279,10 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
     reader.readAsDataURL(file);
   };
 
-  const handleRestoreFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = evt => {
-      try {
-        const parsed = JSON.parse(evt.target?.result as string);
-        restoreCompany(parsed);
-      } catch {
-        showToast('Invalid backup JSON file', 'error');
-      }
-    };
-    reader.readAsText(file);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4 sm:p-6 text-slate-100">
       <Toast />
       <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 max-h-[94vh] overflow-y-auto">
-        {/* Optional Close button if launched as modal inside existing session */}
         {onClose && (
           <button
             onClick={onClose}
@@ -184,17 +310,17 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
               <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
               <div>
                 <strong className="font-bold text-amber-800 dark:text-amber-300 block text-xs sm:text-sm">
-                  Mandatory First-Time Setup · চেম্বার নিবন্ধন বাধ্যতামূলক
+                  Mandatory First-Time Registration · প্রথমবার চেম্বার নিবন্ধন বাধ্যতামূলক
                 </strong>
                 <p className="mt-0.5 text-slate-600 dark:text-slate-300 text-[11px] sm:text-xs leading-relaxed">
-                  Welcome Senior Advocate / Learned Counsel. Before you can begin managing West Bengal land cases, daily cause lists, or AI drafts, registering your legal chamber or law firm is mandatory. All records remain 100% private and stored offline in your device.
+                  First-time registration is mandatory for all new advocates, law firms, and chambers. Mobile Number, Email ID, and 4-Digit Passcode are compulsory. If you already have existing data from a previous installation, use the <strong>Retrieve Data</strong> tab with only your 4-digit passcode.
                 </p>
               </div>
             </div>
           )}
         </div>
 
-        {/* Mode switcher tabs */}
+        {/* Mode Switcher Tabs */}
         <div className="flex flex-wrap border-b border-slate-200 dark:border-slate-800 mb-6 gap-1">
           {!isFirstLaunch && (
             <button
@@ -207,22 +333,7 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
               }`}
             >
               <LogIn className="w-4 h-4" />
-              <span>Sign In</span>
-            </button>
-          )}
-
-          {!isFirstLaunch && (
-            <button
-              type="button"
-              onClick={() => setView('select')}
-              className={`flex-1 pb-3 px-2 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 border-b-2 transition-colors cursor-pointer ${
-                view === 'select'
-                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              <FolderOpen className="w-4 h-4" />
-              <span>Chambers ({companies.length})</span>
+              <span>Sign In (লগইন)</span>
             </button>
           )}
 
@@ -236,142 +347,130 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
             }`}
           >
             <Building2 className="w-4 h-4" />
-            <span>{isFirstLaunch ? '1. Create Chamber / Firm' : 'New Chamber'}</span>
+            <span>{isFirstLaunch ? '1. Registration (নিবন্ধন)' : 'New Chamber'}</span>
           </button>
 
           <button
             type="button"
-            onClick={() => setView('restore')}
+            onClick={() => setView('retrieve')}
             className={`flex-1 pb-3 px-2 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 border-b-2 transition-colors cursor-pointer ${
-              view === 'restore'
+              view === 'retrieve'
                 ? 'border-blue-600 text-blue-600 dark:text-blue-400'
                 : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <RotateCcw className="w-4 h-4" />
-            <span>{isFirstLaunch ? '2. Restore Backup Data' : 'Restore JSON'}</span>
+            <span>{isFirstLaunch ? '2. Retrieve Data (পুনরুদ্ধার)' : 'Retrieve / Restore'}</span>
           </button>
+
+          {companies.length > 1 && (
+            <button
+              type="button"
+              onClick={() => setView('select')}
+              className={`flex-1 pb-3 px-2 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 border-b-2 transition-colors cursor-pointer ${
+                view === 'select'
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <FolderOpen className="w-4 h-4" />
+              <span>Chambers ({companies.length})</span>
+            </button>
+          )}
         </div>
 
-        {/* VIEW 0: Sign In to Existing Chamber */}
-        {view === 'login' && !isFirstLaunch && targetLoginCompany && (
+        {/* VIEW 0: Sign In through Mobile No & 4-Digit Passcode */}
+        {view === 'login' && !isFirstLaunch && (
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 <CompanyLogo company={targetLoginCompany} size="md" />
                 <div className="min-w-0">
                   <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100 truncate">
-                    {targetLoginCompany.name}
+                    {targetLoginCompany?.name || 'Legal Chamber'}
                   </div>
                   <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                    {targetLoginCompany.type} · {targetLoginCompany.city} · {targetLoginCompany.cases?.length || 0} Cases
+                    {targetLoginCompany?.type} · {targetLoginCompany?.city} · {targetLoginCompany?.cases?.length || 0} Cases
                   </div>
                 </div>
               </div>
-              {companies.length > 1 && (
-                <select
-                  value={targetLoginCompany.id}
-                  onChange={e => handleSelectLoginCompany(e.target.value)}
-                  className="px-2.5 py-1.5 text-xs font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 cursor-pointer"
-                  title="Switch Chamber Workspace"
-                >
-                  {companies.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              )}
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 font-bold shrink-0">
+                4-Digit Passcode Auth
+              </span>
             </div>
 
-            {/* Quick Select Registered Advocate / Team Member Profile */}
-            {targetLoginCompany.users && targetLoginCompany.users.length > 0 && (
+            {/* Quick Profile Select if users exist */}
+            {targetLoginCompany?.users && targetLoginCompany.users.length > 0 && (
               <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase mb-2">
-                  Select Chamber Account (অ্যাডভোকেট / স্টাফ প্রোফাইল)
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1.5">
+                  Registered Advocate / Member Profile:
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {targetLoginCompany.users.map(u => {
-                    const isSelectedUser = loginEmail.toLowerCase() === u.email.toLowerCase();
-                    return (
-                      <div
-                        key={u.id}
-                        onClick={() => {
-                          setLoginEmail(u.email);
-                          loginUser(u.email, '', targetLoginCompany.id);
-                        }}
-                        className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 group ${
-                          isSelectedUser
-                            ? 'border-blue-600 bg-blue-50/70 dark:bg-blue-950/50 ring-1 ring-blue-500/30'
-                            : 'border-slate-200 dark:border-slate-800 hover:border-blue-400 bg-white dark:bg-slate-800/40'
-                        }`}
-                        title={`Click to sign in immediately as ${u.name}`}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-9 h-9 rounded-full bg-blue-700 text-white text-xs font-bold flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                            {u.name.slice(0, 2).toUpperCase()}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="text-xs font-extrabold text-slate-900 dark:text-slate-100 truncate">
-                              {u.name}
-                            </div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                              {u.email}
-                            </div>
-                            <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300">
-                              {u.role}
-                            </span>
-                          </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {targetLoginCompany.users.map(u => (
+                    <div
+                      key={u.id}
+                      onClick={() => {
+                        setLoginMobile(u.phone || u.email);
+                      }}
+                      className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-blue-500 flex items-center justify-between gap-2 cursor-pointer transition-all"
+                    >
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                          {u.name}
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 px-2 py-0.8 rounded-md bg-blue-50 dark:bg-blue-950/70 border border-blue-200 dark:border-blue-800/70 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                            Sign In ➔
-                          </span>
+                        <div className="text-[10px] text-slate-500 font-mono">
+                          {u.phone || u.email}
                         </div>
                       </div>
-                    );
-                  })}
+                      <span className="text-[9px] px-1.5 py-0.2 rounded font-bold bg-blue-50 dark:bg-blue-950 text-blue-600">
+                        {u.role}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
 
+            {/* Inputs: Mobile No & 4-Digit Passcode */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                  Registered Email *
+                  Mobile Number (10 Digits) *
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
-                    type="email"
+                    type="tel"
                     required
-                    value={loginEmail}
-                    onChange={e => setLoginEmail(e.target.value)}
-                    placeholder="advocate@chamber.in"
-                    className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    value={loginMobile}
+                    onChange={e => setLoginMobile(e.target.value)}
+                    placeholder="9830123456"
+                    className="w-full pl-9 pr-3 py-2 text-sm font-mono rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                  Password (If configured)
+                  4-Digit Pass Code *
                 </label>
                 <div className="relative">
-                  <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
-                    type={showLoginPassword ? 'text' : 'password'}
-                    value={loginPassword}
-                    onChange={e => setLoginPassword(e.target.value)}
-                    placeholder="Enter password (or leave blank)"
-                    className="w-full pl-9 pr-9 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    type={showLoginPasscode ? 'text' : 'password'}
+                    required
+                    maxLength={4}
+                    value={loginPasscode}
+                    onChange={e => setLoginPasscode(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    placeholder="••••"
+                    className="w-full pl-9 pr-9 py-2 text-sm font-mono tracking-widest rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowLoginPassword(prev => !prev)}
+                    onClick={() => setShowLoginPasscode(prev => !prev)}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                   >
-                    {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showLoginPasscode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
@@ -383,22 +482,22 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
                 className="w-full py-3 px-4 text-sm font-bold rounded-xl bg-blue-700 hover:bg-blue-800 border-b-4 border-b-blue-950 active:translate-y-0.5 text-white shadow-lg shadow-blue-700/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <LogIn className="w-4 h-4" />
-                <span>Sign In &amp; Enter Chamber Workspace</span>
+                <span>Sign In with Pass Code</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </form>
         )}
 
-        {/* VIEW 1: Create Chamber / Firm (First time setup) */}
+        {/* VIEW 1: Mandatory Registration */}
         {view === 'create' && (
           <form onSubmit={handleCreateSubmit} className="space-y-4">
             <div>
               <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                Chamber / Firm Registration
+                Chamber / Firm Registration (নিবন্ধন)
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Setup your legal practice details once. You will be logged in permanently.
+                Setup your legal practice details once. Mobile No, Email ID, and 4-Digit Passcode are compulsory.
               </p>
             </div>
 
@@ -410,7 +509,7 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
 
             <div>
               <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                Chamber / Firm Name *
+                Chamber / Law Firm Name *
               </label>
               <input
                 type="text"
@@ -425,7 +524,7 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                  Firm Type
+                  Entity / Practice Type
                 </label>
                 <select
                   value={type}
@@ -434,14 +533,31 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
                 >
                   <option>Advocate Chamber</option>
                   <option>Law Firm</option>
-                  <option>Solo Practice</option>
+                  <option>Muhuri &amp; Registry Practitioner</option>
                   <option>Legal Consultancy</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                  Bar Council Reg No
+                  District (West Bengal) *
+                </label>
+                <select
+                  value={city}
+                  onChange={e => setCity(e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                >
+                  {districtList.map(dist => (
+                    <option key={dist} value={dist}>
+                      {dist}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                  Bar Council Reg / License
                 </label>
                 <input
                   type="text"
@@ -451,24 +567,11 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
                   className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
                 />
               </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                  GST / PAN (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={gst}
-                  onChange={e => setGst(e.target.value)}
-                  placeholder="19AAACS8841M1ZU"
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                />
-              </div>
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                Chamber Office Address
+                Office / Chamber Address
               </label>
               <input
                 type="text"
@@ -479,234 +582,337 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                  District (WB) *
-                </label>
-                <select
-                  value={city}
-                  onChange={e => setCity(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                >
-                  {districtList.map(dist => (
-                    <option key={dist} value={dist}>{dist}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                  State
-                </label>
-                <input
-                  type="text"
-                  value={state}
-                  onChange={e => setState(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                  PIN Code
-                </label>
-                <input
-                  type="text"
-                  value={pin}
-                  onChange={e => setPin(e.target.value)}
-                  placeholder="700027"
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                />
-              </div>
-            </div>
-
+            {/* Advocate Credentials Section with Compulsory Mobile, Email, Passcode */}
             <div className="border-b border-slate-200 dark:border-slate-800 pt-2 pb-1">
               <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
-                2. Senior Advocate Profile (Chamber Head)
+                2. Compulsory Practitioner Profile &amp; 4-Digit Passcode
               </span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                Advocate / Practitioner Full Name *
+              </label>
+              <input
+                type="text"
+                required
+                value={adminName}
+                onChange={e => setAdminName(e.target.value)}
+                placeholder="Adv. S. R. Khan"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
+              />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                  Advocate Full Name *
+                  Mobile Number (10 Digits) * (COMPULSORY)
                 </label>
-                <input
-                  type="text"
-                  required
-                  value={adminName}
-                  onChange={e => setAdminName(e.target.value)}
-                  placeholder="Adv. S. R. Khan"
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                />
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-blue-600 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="tel"
+                    required
+                    maxLength={10}
+                    value={adminPhone}
+                    onChange={e => setAdminPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    placeholder="9830123456"
+                    className="w-full pl-9 pr-3 py-2 text-sm font-mono rounded-lg border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                </div>
               </div>
+
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                  Advocate Email *
+                  Email ID * (COMPULSORY)
                 </label>
-                <input
-                  type="email"
-                  required
-                  value={adminEmail}
-                  onChange={e => setAdminEmail(e.target.value)}
-                  placeholder="advocate@chamber.in"
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                />
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-blue-600 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="email"
+                    required
+                    value={adminEmail}
+                    onChange={e => setAdminEmail(e.target.value)}
+                    placeholder="advocate@chamber.in"
+                    className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-xl bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                  Mobile / WhatsApp
+                <label className="block text-xs font-bold text-blue-900 dark:text-blue-300 uppercase mb-1 flex items-center justify-between">
+                  <span>4-Digit Pass Code *</span>
+                  <span className="text-[10px] text-blue-600 dark:text-blue-400 font-mono">4 NUMBERS</span>
                 </label>
-                <input
-                  type="text"
-                  value={adminPhone}
-                  onChange={e => setAdminPhone(e.target.value)}
-                  placeholder="+91 98301 23456"
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                />
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-blue-600 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type={showRegPasscode ? 'text' : 'password'}
+                    required
+                    maxLength={4}
+                    value={regPasscode}
+                    onChange={e => setRegPasscode(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    placeholder="••••"
+                    className="w-full pl-9 pr-9 py-2 text-base font-mono tracking-widest font-bold rounded-lg border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowRegPasscode(prev => !prev)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    {showRegPasscode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
+
               <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                  Password (Optional)
+                <label className="block text-xs font-bold text-blue-900 dark:text-blue-300 uppercase mb-1">
+                  Confirm 4-Digit Pass Code *
                 </label>
-                <input
-                  type="password"
-                  value={adminPassword}
-                  onChange={e => setAdminPassword(e.target.value)}
-                  placeholder="Optional"
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                />
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-blue-600 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type={showRegPasscode ? 'text' : 'password'}
+                    required
+                    maxLength={4}
+                    value={regConfirmPasscode}
+                    onChange={e => setRegConfirmPasscode(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    placeholder="••••"
+                    className="w-full pl-9 pr-3 py-2 text-base font-mono tracking-widest font-bold rounded-lg border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* 3. Dynamic Logo & Insignia Branding */}
-            <div className="border-b border-slate-200 dark:border-slate-800 pt-2 pb-1">
-              <span className="text-xs font-bold text-blue-600 uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>3. Chamber Legal Insignia & Branding</span>
-              </span>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 space-y-3">
+            {/* Legal Insignia Crest */}
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-750 space-y-2">
               <div className="flex items-center gap-3">
                 <CompanyLogo
                   company={{ name: name || 'Legal Chamber', logoUrl, logoBadge, logoColor } as any}
-                  size="lg"
+                  size="md"
                 />
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                    Live Dynamic Logo Preview
+                    Live Chamber Emblem
                   </div>
-                  <div className="text-[11px] text-slate-500">
-                    Displays on Header, Sidebar, Dashboard & printed case briefs
+                  <div className="text-[10px] text-slate-500">
+                    Displayed on dossier headers and cause lists
                   </div>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => logoFileRef.current?.click()}
-                  className="px-3 py-1.5 text-xs font-bold rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 text-slate-700 dark:text-slate-300 flex items-center gap-1.5 cursor-pointer shadow-xs"
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  <span>{logoUrl ? 'Change' : 'Upload Logo'}</span>
-                </button>
-                <input
-                  ref={logoFileRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleLogoFile}
-                />
-              </div>
-
-              {/* Insignia Badges */}
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 pt-1">
-                {BADGE_OPTIONS.map(b => (
-                  <button
-                    key={b.id}
-                    type="button"
-                    onClick={() => {
-                      setLogoBadge(b.id);
-                      setLogoUrl(undefined);
-                    }}
-                    className={`py-1 px-1.5 rounded-lg text-center border text-[11px] transition-all cursor-pointer ${
-                      logoBadge === b.id && !logoUrl
-                        ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/60 font-bold text-blue-700 dark:text-blue-300 ring-1 ring-blue-600'
-                        : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'
-                    }`}
-                  >
-                    <span className="truncate block">{b.label.split(' ')[0]}</span>
-                  </button>
-                ))}
-              </div>
-
-              {/* Color Scheme Picker */}
-              <div className="flex items-center gap-2 pt-1">
-                <span className="text-[11px] font-bold text-slate-500">Accent Color:</span>
-                <div className="flex items-center gap-2">
-                  {COLOR_OPTIONS.map(c => (
+                <div className="flex items-center gap-1.5">
+                  {COLOR_OPTIONS.slice(0, 4).map(c => (
                     <button
                       key={c.id}
                       type="button"
                       onClick={() => setLogoColor(c.id)}
-                      className={`w-5 h-5 rounded-full transition-transform cursor-pointer ${
-                        logoColor === c.id ? 'scale-125 ring-2 ring-blue-600' : 'hover:scale-110 opacity-70'
+                      className={`w-4 h-4 rounded-full cursor-pointer ${
+                        logoColor === c.id ? 'scale-125 ring-2 ring-blue-600' : 'opacity-70'
                       }`}
                       style={{ backgroundColor: c.id }}
-                      title={c.label}
                     />
                   ))}
                 </div>
               </div>
             </div>
 
-            <div className="pt-3">
+            {/* Section 3: Designated Data Backup Storage Path with Browse Option */}
+            <div className="border-b border-slate-200 dark:border-slate-800 pt-2 pb-1">
+              <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
+                3. Mandatory Data Backup Storage Path
+              </span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-indigo-950 dark:text-indigo-200 uppercase flex items-center gap-1.5">
+                  <FolderOpen className="w-4 h-4 text-indigo-600" />
+                  <span>Backup Destination Path *</span>
+                </label>
+                <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-800">
+                  Auto-Exit Backup Enabled
+                </span>
+              </div>
+
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Folder className="w-4 h-4 text-indigo-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    required
+                    value={regStoragePath}
+                    onChange={e => setRegStoragePath(e.target.value)}
+                    placeholder="e.g. C:/SRK_Case_Backups or D:/Legal_Chamber_Vault"
+                    className="w-full pl-9 pr-3 py-2 text-xs font-mono font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleBrowseRegFolder}
+                  className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer shrink-0"
+                  title="Browse folder via OS dialog"
+                >
+                  <FolderOpen className="w-4 h-4" />
+                  <span>Browse...</span>
+                </button>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                <span className="text-[10px] text-slate-500 font-bold self-center mr-1">Quick Presets:</span>
+                {[
+                  'C:/SRK_Case_Backups',
+                  'D:/Legal_Chamber_Vault',
+                  'C:/Users/Advocate/Documents/SRK_Chamber_Data',
+                  '/storage/emulated/0/Documents/SRK_Case_Backups'
+                ].map(p => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setRegStoragePath(p)}
+                    className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer border ${
+                      regStoragePath === p
+                        ? 'bg-indigo-600 text-white border-indigo-600 font-bold'
+                        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-indigo-400'
+                    }`}
+                  >
+                    {p.split('/').pop() || p}
+                  </button>
+                ))}
+              </div>
+
+              <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                On every closing of the app, all chamber data will be automatically backed up into this selected path with date and time mentioned.
+              </p>
+            </div>
+
+            {/* Hidden native directory picker for registration */}
+            <input
+              ref={regFolderInputRef}
+              type="file"
+              // @ts-ignore
+              webkitdirectory="true"
+              directory=""
+              multiple
+              className="hidden"
+              onChange={handleRegFolderInputSelected}
+            />
+
+            <div className="pt-2">
               <button
                 type="submit"
                 className="w-full py-3 px-4 text-sm font-bold rounded-xl bg-blue-700 hover:bg-blue-800 text-white shadow-lg shadow-blue-700/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>Launch & Enter Chamber Workspace</span>
+                <span>Register &amp; Launch Chamber Workspace</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </form>
         )}
 
-        {/* VIEW 2: Restore from Backup */}
-        {view === 'restore' && (
-          <div className="space-y-6 py-4">
-            <div className="text-center">
-              <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                Restore Existing Chamber from Backup
+        {/* VIEW 2: Reinstall Recovery (Retrieve Existing Data with Passcode) */}
+        {view === 'retrieve' && (
+          <form onSubmit={handleRetrieveSubmit} className="space-y-5 py-2">
+            <div>
+              <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <Database className="w-5 h-5 text-indigo-600" />
+                <span>Retrieve Existing Data (পূর্বের তথ্য পুনরুদ্ধার)</span>
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                If you already have an exported SRK backup JSON file, restore it here to resume work immediately.
+                If you have reinstalled the app or changed devices, retrieve your entire chamber database instantly without filling in registration forms. Only your 4-digit pass code is required.
               </p>
             </div>
 
-            <label className="flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed border-emerald-500/50 hover:border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/20 transition-all cursor-pointer group text-center">
+            <div className="p-4 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900 space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1 flex items-center justify-between">
+                  <span>Registered Mobile Number</span>
+                  <span className="text-[10px] text-slate-400 font-mono">OPTIONAL</span>
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-indigo-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="tel"
+                    maxLength={10}
+                    value={retrieveMobile}
+                    onChange={e => setRetrieveMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    placeholder="9830123456"
+                    className="w-full pl-9 pr-3 py-2 text-sm font-mono rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1 flex items-center justify-between">
+                  <span>Enter 4-Digit Pass Code *</span>
+                  <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-mono">ONLY PASSCODE REQUIRED</span>
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-indigo-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type={showRetrievePasscode ? 'text' : 'password'}
+                    required
+                    maxLength={4}
+                    value={retrievePasscode}
+                    onChange={e => setRetrievePasscode(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    placeholder="••••"
+                    className="w-full pl-9 pr-9 py-2 text-base font-mono tracking-widest font-bold rounded-lg border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowRetrievePasscode(prev => !prev)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    {showRetrievePasscode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Optional backup JSON file selection */}
+            <div className="p-4 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 text-center space-y-2">
+              <div className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                {backupFileName ? (
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Backup File Loaded: {backupFileName}</span>
+                  </span>
+                ) : (
+                  <span>Device storage cleared? You can also select your auto-backup JSON file:</span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => restoreFileRef.current?.click()}
+                className="px-4 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>{backupFileName ? 'Choose Different File' : 'Select Backup JSON File'}</span>
+              </button>
               <input
+                ref={restoreFileRef}
                 type="file"
                 accept=".json"
                 className="hidden"
-                onChange={handleRestoreFile}
+                onChange={handleBackupFileUpload}
               />
-              <div className="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-md">
-                <RotateCcw className="w-8 h-8" />
-              </div>
-              <div className="font-bold text-sm text-slate-900 dark:text-slate-100 mb-1">
-                Click to Select Backup JSON File
-              </div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">
-                Restores cases, cause list, diary, parties, and documents without any password barrier
-              </div>
-            </label>
-          </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={retrievePasscode.length !== 4}
+                className="w-full py-3 px-4 text-sm font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>Retrieve All Data &amp; Enter App</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </form>
         )}
 
-        {/* VIEW 3: Existing Chambers List (if multiple chambers exist) */}
+        {/* VIEW 3: Multiple Chambers List */}
         {view === 'select' && companies.length > 0 && (
           <div className="space-y-4">
             <div>
@@ -742,7 +948,7 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={(e) => {
+                      onClick={e => {
                         e.stopPropagation();
                         selectCompany(c.id);
                       }}
@@ -754,7 +960,7 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
                     {companies.length > 1 && (
                       <button
                         type="button"
-                        onClick={(e) => {
+                        onClick={e => {
                           e.stopPropagation();
                           if (confirm(`Delete chamber workspace "${c.name}"?`)) {
                             deleteCompany(c.id);

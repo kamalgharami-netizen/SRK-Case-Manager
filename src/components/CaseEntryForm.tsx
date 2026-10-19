@@ -14,6 +14,7 @@ import {
 } from '../types';
 import { wbDistricts } from '../data/wbDistricts';
 import { ChainDeedModal } from './ChainDeedModal';
+import { safePrintHtml, safeOpenWhatsApp } from '../utils/printDoc';
 import {
   ArrowLeft,
   Save,
@@ -1091,13 +1092,12 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       const textMsg = encodeURIComponent(
         `Dear ${party}, your ${typeDisplay} ${caseNo} (${subType}) before ${forum} has been registered/updated. Hearing Date: ${
           primaryNextDate || 'To be notified'
+      safeOpenWhatsApp(
+        applicantPhone,
+        `Dear ${party}, your ${typeDisplay} ${caseNo} (${subType}) before ${forum} has been registered/updated. Hearing Date: ${
+          primaryNextDate || 'To be notified'
         }. - ${activeCompany?.name || 'Legal Chamber'}`
       );
-      const cleanPhone = applicantPhone.replace(/[^0-9]/g, '');
-      const waUrl = cleanPhone
-        ? `https://wa.me/${cleanPhone}?text=${textMsg}`
-        : `https://wa.me/?text=${textMsg}`;
-      window.open(waUrl, '_blank');
     }
 
     // Requirement 16 & 20: Forward to concern page / Show make chain deed option
@@ -1106,13 +1106,11 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
 
   // Requirement 19: Print Dossier (excluding broker/muhuri name & phone as per Requirement 10)
   const handlePrintDossier = () => {
-    const printWin = window.open('', '_blank');
-    if (!printWin) return;
     const docTitle = isMisc ? 'MISC CASE REGISTRY DOSSIER' : isLrAppeal ? 'LR APPEAL CASE REGISTRY DOSSIER' : isMutation ? 'MUTATION CASE REGISTRY DOSSIER' : `${type.toUpperCase()} CASE REGISTRY DOSSIER`;
     const subIdentifier = isDocketBased ? `Docket No: ${docketNo || '—'}` : `App No: ${appNo || '—'}`;
     const allHearingDatesText = hearingList.filter(h => h.date).map((h, i) => `${i + 1}. ${h.date} (${h.stage || 'Hearing'})`).join(', ');
 
-    printWin.document.write(`
+    safePrintHtml(`
       <!DOCTYPE html>
       <html>
         <head>
@@ -1207,8 +1205,6 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         </body>
       </html>
     `);
-    printWin.document.close();
-    printWin.print();
   };
 
   // Requirement 20: Direct Make Chain Deed button opener

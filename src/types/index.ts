@@ -18,6 +18,7 @@ export interface User {
   phone?: string;
   role: Role;
   password?: string;
+  passcode?: string; // 4-digit numeric passcode
   isMain?: boolean;
   createdAt: number;
 }
@@ -139,6 +140,7 @@ export interface CaseItem {
   applicantAdsr?: string;
   district?: string;
   ainNo?: string;
+  rorPiNo?: string;
   deedNo?: string;
   deedYear?: string;
   adsr?: string;
@@ -257,6 +259,18 @@ export interface Company {
   chainSampleTemplate?: string;
   sampleDrafts?: SampleDraftItem[];
   lastBackupDate?: number;
+  backupStoragePath?: string;
+}
+
+export interface BackupLogEntry {
+  id: string;
+  timestamp: number;
+  formattedDate: string;
+  fileName: string;
+  storagePath: string;
+  casesCount: number;
+  sizeKb: number;
+  type: 'auto-close' | 'manual' | 'scheduled';
 }
 
 export interface BackupStatusInfo {

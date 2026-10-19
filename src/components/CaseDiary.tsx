@@ -26,6 +26,7 @@ export const CaseDiary: React.FC = () => {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [nextDate, setNextDate] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const currentCase = cases.find(c => c.id === selectedCaseId);
   const diaryEntries = (activeCompany?.diaryData?.[selectedCaseId] || []).sort(
@@ -156,17 +157,37 @@ export const CaseDiary: React.FC = () => {
                       </h3>
                     </div>
 
-                    <button
-                      onClick={() => {
-                        if (confirm('Delete this diary entry?')) {
-                          deleteDiaryEntry(selectedCaseId, entry.id);
-                        }
-                      }}
-                      className="text-slate-400 hover:text-rose-600 p-1"
-                      title="Delete Entry"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {confirmDeleteId === entry.id ? (
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/70 px-2 py-0.5 rounded border border-rose-300 dark:border-rose-800">
+                        <span>Delete?</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            deleteDiaryEntry(selectedCaseId, entry.id);
+                            setConfirmDeleteId(null);
+                          }}
+                          className="underline hover:text-rose-800 font-extrabold cursor-pointer"
+                        >
+                          Yes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteId(null)}
+                          className="text-slate-400 hover:text-slate-600 cursor-pointer"
+                        >
+                          No
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteId(entry.id)}
+                        className="text-slate-400 hover:text-rose-600 p-1 cursor-pointer transition-colors"
+                        title="Delete Entry"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
 
                   <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">

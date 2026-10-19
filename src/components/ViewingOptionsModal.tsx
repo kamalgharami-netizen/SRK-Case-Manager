@@ -14,8 +14,11 @@ import {
   Scale,
   Eye,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Palette
 } from 'lucide-react';
+import { THEME_OPTIONS } from '../data/themes';
+import { ThemeDropdown } from './ThemeDropdown';
 
 export const ViewingOptionsModal: React.FC = () => {
   const {

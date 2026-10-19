@@ -29,6 +29,121 @@ html.theme-white .app-shell-bg {
   background-color: #ffffff !important;
 }
 
+/* Warm Legal Parchment / Sepia Theme */
+html.theme-sepia,
+html.theme-sepia body {
+  background-color: #fbf5e8 !important;
+  color: #291a08 !important;
+  color-scheme: light !important;
+}
+html.theme-sepia main,
+html.theme-sepia .app-shell-bg {
+  background-color: #fbf5e8 !important;
+}
+html.theme-sepia .bg-white {
+  background-color: #fffefb !important;
+}
+html.theme-sepia .bg-slate-50,
+html.theme-sepia .bg-slate-100 {
+  background-color: #f4ecdc !important;
+}
+html.theme-sepia .border-slate-200,
+html.theme-sepia .border-slate-300 {
+  border-color: #e2d2ba !important;
+}
+
+/* High Court Navy Theme */
+html.theme-navy,
+html.theme-navy body,
+html.theme-navy main,
+html.theme-navy .app-shell-bg {
+  background-color: #071326 !important;
+}
+html.theme-navy.dark .dark\:bg-slate-950 {
+  background-color: #071326 !important;
+}
+html.theme-navy.dark .dark\:bg-slate-900 {
+  background-color: #0d1e38 !important;
+}
+html.theme-navy.dark .dark\:bg-slate-800,
+html.theme-navy.dark .dark\:bg-slate-800\/50,
+html.theme-navy.dark .dark\:bg-slate-800\/60 {
+  background-color: #122849 !important;
+}
+html.theme-navy.dark .dark\:border-slate-800,
+html.theme-navy.dark .dark\:border-slate-700 {
+  border-color: #183561 !important;
+}
+
+/* Land Revenue Emerald Theme */
+html.theme-emerald,
+html.theme-emerald body,
+html.theme-emerald main,
+html.theme-emerald .app-shell-bg {
+  background-color: #022019 !important;
+}
+html.theme-emerald.dark .dark\:bg-slate-950 {
+  background-color: #022019 !important;
+}
+html.theme-emerald.dark .dark\:bg-slate-900 {
+  background-color: #042e25 !important;
+}
+html.theme-emerald.dark .dark\:bg-slate-800,
+html.theme-emerald.dark .dark\:bg-slate-800\/50,
+html.theme-emerald.dark .dark\:bg-slate-800\/60 {
+  background-color: #073f33 !important;
+}
+html.theme-emerald.dark .dark\:border-slate-800,
+html.theme-emerald.dark .dark\:border-slate-700 {
+  border-color: #0e5243 !important;
+}
+
+/* Obsidian OLED Pure Noir Theme */
+html.theme-charcoal,
+html.theme-charcoal body,
+html.theme-charcoal main,
+html.theme-charcoal .app-shell-bg {
+  background-color: #000000 !important;
+}
+html.theme-charcoal.dark .dark\:bg-slate-950 {
+  background-color: #000000 !important;
+}
+html.theme-charcoal.dark .dark\:bg-slate-900 {
+  background-color: #09090b !important;
+}
+html.theme-charcoal.dark .dark\:bg-slate-800,
+html.theme-charcoal.dark .dark\:bg-slate-800\/50,
+html.theme-charcoal.dark .dark\:bg-slate-800\/60 {
+  background-color: #141416 !important;
+}
+html.theme-charcoal.dark .dark\:border-slate-800,
+html.theme-charcoal.dark .dark\:border-slate-700 {
+  border-color: #27272a !important;
+}
+
+/* Chamber Royal Indigo Theme */
+html.theme-indigo,
+html.theme-indigo body,
+html.theme-indigo main,
+html.theme-indigo .app-shell-bg {
+  background-color: #0f0d26 !important;
+}
+html.theme-indigo.dark .dark\:bg-slate-950 {
+  background-color: #0f0d26 !important;
+}
+html.theme-indigo.dark .dark\:bg-slate-900 {
+  background-color: #19163e !important;
+}
+html.theme-indigo.dark .dark\:bg-slate-800,
+html.theme-indigo.dark .dark\:bg-slate-800\/50,
+html.theme-indigo.dark .dark\:bg-slate-800\/60 {
+  background-color: #242055 !important;
+}
+html.theme-indigo.dark .dark\:border-slate-800,
+html.theme-indigo.dark .dark\:border-slate-700 {
+  border-color: #383277 !important;
+}
+
 /* Viewing & Display Options Modes */
 html.text-scale-large {
   font-size: 108%;

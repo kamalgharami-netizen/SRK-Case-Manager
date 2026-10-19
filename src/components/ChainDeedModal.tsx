@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { CaseItem, ChainLink, WB_DEED_TYPES } from '../types';
 import { DEFAULT_CHAIN_SAMPLE_TEMPLATE, generateChainDeedText } from '../data/chainSampleTemplate';
+import { safePrintHtml } from '../utils/printDoc';
 import {
   FileText,
   Plus,
@@ -339,9 +340,7 @@ ${recitals}
 
   // Pure case-only print (strictly excludes chamber, advocate, or firm branding as requested in Requirement 20)
   const handlePrint = () => {
-    const printWin = window.open('', '_blank');
-    if (!printWin) return;
-    printWin.document.write(`
+    safePrintHtml(`
       <!DOCTYPE html>
       <html>
         <head>
@@ -369,8 +368,6 @@ ${recitals}
         </body>
       </html>
     `);
-    printWin.document.close();
-    printWin.print();
   };
 
   // Case-only Word doc download

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { CauseItem } from '../types';
 import { CompanyLogo } from './CompanyLogo';
+import { safePrintHtml, safeOpenWhatsApp } from '../utils/printDoc';
 import {
   Calendar,
   Plus,
@@ -23,6 +24,7 @@ export const CauseList: React.FC = () => {
   );
   const [showAllDates, setShowAllDates] = useState(false);
   const [search, setSearch] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Add / Edit Modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -121,9 +123,7 @@ export const CauseList: React.FC = () => {
   };
 
   const printCauseList = () => {
-    const printWin = window.open('', '_blank');
-    if (!printWin) return;
-    printWin.document.write(`
+    safePrintHtml(`
       <!DOCTYPE html>
       <html>
         <head>
@@ -187,17 +187,15 @@ export const CauseList: React.FC = () => {
         </body>
       </html>
     `);
-    printWin.document.close();
-    printWin.print();
   };
 
   const sendWhatsAppHearingAlert = (item: CauseItem) => {
-    const textMsg = encodeURIComponent(
+    safeOpenWhatsApp(
+      '',
       `Hearing Alert: Your matter ${item.caseNo} (${item.party}) is listed today at ${item.time} before ${item.forum} ${
         item.benchRoom ? `(${item.benchRoom})` : ''
       }. Status: ${item.status}. - ${activeCompany?.name}`
     );
-    window.open(`https://wa.me/?text=${textMsg}`, '_blank');
   };
 
   return (
@@ -363,17 +361,37 @@ export const CauseList: React.FC = () => {
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => {
-                              if (confirm(`Remove ${item.caseNo} from cause list?`)) {
-                                deleteCauseItem(item.id);
-                              }
-                            }}
-                            className="p-1 rounded text-slate-600 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950 transition-colors"
-                            title="Delete Hearing"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {confirmDeleteId === item.id ? (
+                            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/70 px-2 py-0.5 rounded border border-rose-300 dark:border-rose-800">
+                              <span>Delete?</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  deleteCauseItem(item.id);
+                                  setConfirmDeleteId(null);
+                                }}
+                                className="underline hover:text-rose-800 font-extrabold cursor-pointer"
+                              >
+                                Yes
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setConfirmDeleteId(null)}
+                                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+                              >
+                                No
+                              </button>
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeleteId(item.id)}
+                              className="p-1 rounded text-slate-600 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950 transition-colors cursor-pointer"
+                              title="Delete Hearing"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

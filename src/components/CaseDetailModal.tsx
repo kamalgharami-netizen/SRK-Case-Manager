@@ -2,6 +2,7 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 import { CaseType, CaseItem } from '../types';
 import { CompanyLogo } from './CompanyLogo';
+import { safePrintHtml } from '../utils/printDoc';
 import {
   FileText,
   Printer,
@@ -41,9 +42,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
   const isCertOrRorPi = caseItem.type === 'certcopy' || caseItem.type === 'rorpi';
 
   const printCaseSummary = () => {
-    const printWin = window.open('', '_blank');
-    if (!printWin) return;
-    printWin.document.write(`
+    safePrintHtml(`
       <!DOCTYPE html>
       <html>
         <head>
@@ -166,8 +165,6 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
         </body>
       </html>
     `);
-    printWin.document.close();
-    printWin.print();
   };
 
   return (
@@ -599,6 +596,30 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
             <div className="text-slate-700 dark:text-slate-300 italic">{caseItem.notes}</div>
           </div>
         )}
+
+        {/* Footer Actions with prominent Close button */}
+        <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
+          <div className="text-xs text-slate-500 font-mono">
+            {caseItem.caseNo || caseItem.appNo || 'Case Dossier'} · {caseItem.party}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={printCaseSummary}
+              className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+            >
+              <Printer className="w-4 h-4" />
+              <span>{isCertOrRorPi ? 'Print Slip' : 'Print Dossier'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs shadow-md transition-colors cursor-pointer"
+            >
+              Close Dossier (বন্ধ করুন)
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

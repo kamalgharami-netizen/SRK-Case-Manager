@@ -22,6 +22,7 @@ export const initialChamberData: Company = {
       phone: '+91 98301 23456',
       role: 'Admin',
       password: 'admin',
+      passcode: '1234',
       isMain: true,
       createdAt: Date.now() - 365 * 86400000
     },
@@ -32,6 +33,7 @@ export const initialChamberData: Company = {
       phone: '+91 98312 88765',
       role: 'Junior Advocate',
       password: 'user123',
+      passcode: '1234',
       isMain: false,
       createdAt: Date.now() - 180 * 86400000
     }

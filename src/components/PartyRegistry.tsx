@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Party } from '../types';
+import { safePrintHtml, safeOpenWhatsApp } from '../utils/printDoc';
 import {
   Users,
   Plus,
@@ -64,9 +65,7 @@ export const PartyRegistry: React.FC = () => {
   };
 
   const printDirectory = () => {
-    const printWin = window.open('', '_blank');
-    if (!printWin) return;
-    printWin.document.write(`
+    safePrintHtml(`
       <!DOCTYPE html>
       <html>
         <head>
@@ -111,8 +110,6 @@ export const PartyRegistry: React.FC = () => {
         </body>
       </html>
     `);
-    printWin.document.close();
-    printWin.print();
   };
 
   const launchWhatsApp = (p: Party) => {
@@ -120,11 +117,10 @@ export const PartyRegistry: React.FC = () => {
       showToast('No phone number recorded for party', 'error');
       return;
     }
-    const cleanPhone = p.phone.replace(/[^0-9]/g, '');
-    const msg = encodeURIComponent(
+    safeOpenWhatsApp(
+      p.phone,
       `Hello ${p.name}, greeting from ${activeCompany?.name || 'SRK Legal Chamber'}. Please contact our chamber regarding your pending land matter.`
     );
-    window.open(`https://wa.me/${cleanPhone}?text=${msg}`, '_blank');
   };
 
   return (

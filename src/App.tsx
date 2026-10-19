@@ -19,6 +19,8 @@ import { CaseDetailModal } from './components/CaseDetailModal';
 import { BackupModal } from './components/BackupModal';
 import { ViewingOptionsModal } from './components/ViewingOptionsModal';
 import { ChainDeedModal } from './components/ChainDeedModal';
+import { BackupPathModal } from './components/BackupPathModal';
+import { ExitConfirmationModal } from './components/ExitConfirmationModal';
 import { Toast } from './components/Toast';
 import { CaseType, CaseItem, getBackupStatus } from './types';
 import {
@@ -48,7 +50,21 @@ interface AiStudioReturnContext {
 }
 
 const MainAppContent: React.FC = () => {
-  const { activeUser, activeCompany, companies, isChamberSetupOpen, setIsChamberSetupOpen, language, showToast } = useApp();
+  const {
+    activeUser,
+    activeCompany,
+    companies,
+    isChamberSetupOpen,
+    setIsChamberSetupOpen,
+    language,
+    showToast,
+    isBackupPathConfigured,
+    setIsSelectBackupPathModalOpen,
+    performBackup,
+    isExitConfirmOpen,
+    setIsExitConfirmOpen,
+    confirmAppExit
+  } = useApp();
 
   const [currentPage, setCurrentPage] = useState<NavPage>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(() => {
@@ -73,6 +89,10 @@ const MainAppContent: React.FC = () => {
 
   // Chain Deed Modal state (Mutation, Misc, LR Appeal, LRTT)
   const [chainDeedCaseId, setChainDeedCaseId] = useState<string | null>(null);
+
+  // Mobile double-back exit interceptor state
+  const [isMobileExitConfirmOpen, setIsMobileExitConfirmOpen] = useState(false);
+  const lastBackPressRef = useRef<number>(0);
 
   // FAB Menu state
   const [fabOpen, setFabOpen] = useState(false);
@@ -119,6 +139,30 @@ const MainAppContent: React.FC = () => {
       }
     }
   }, []);
+
+  // Prompt user to select backup storage path on first launch if not yet configured
+  useEffect(() => {
+    if (activeCompany && !isBackupPathConfigured) {
+      const timer = setTimeout(() => {
+        setIsSelectBackupPathModalOpen(true);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [activeCompany, isBackupPathConfigured, setIsSelectBackupPathModalOpen]);
+
+  // Desktop Window Close Interceptor: Ask confirmation and perform auto-backup on exit
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Execute auto-backup on closing
+      performBackup({ type: 'auto-close' });
+      e.preventDefault();
+      e.returnValue = 'Are you sure you want to close the app? All data will be automatically backed up.';
+      return e.returnValue;
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [performBackup]);
 
   // Sync Hardware / Browser / Gesture Back Button on Mobile
   useEffect(() => {
@@ -173,6 +217,28 @@ const MainAppContent: React.FC = () => {
         setCurrentPage('dashboard');
         return;
       }
+
+      // Root Dashboard: Protect mobile exit - must press back twice within 2.5s, plus confirm closing
+      const now = Date.now();
+      if (now - lastBackPressRef.current < 2500) {
+        // Double-press detected: open mobile exit confirmation modal
+        setIsMobileExitConfirmOpen(true);
+        if (typeof window !== 'undefined') {
+          window.history.pushState({ app: 'srk-case-manager', root: true }, '');
+        }
+      } else {
+        // Single press: warn user and prevent exiting
+        lastBackPressRef.current = now;
+        showToast(
+          language === 'bn'
+            ? 'অ্যাপটি বন্ধ করতে আবার ব্যাক বোতাম চাপুন'
+            : 'Press back again to exit the app',
+          'warning'
+        );
+        if (typeof window !== 'undefined') {
+          window.history.pushState({ app: 'srk-case-manager', root: true }, '');
+        }
+      }
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -186,7 +252,9 @@ const MainAppContent: React.FC = () => {
     currentPage,
     aiStudioConfig,
     entryMode,
-    sidebarOpen
+    sidebarOpen,
+    language,
+    showToast
   ]);
 
   // Programmatic Back handler (invoked by Header Back button or explicit UI triggers)
@@ -386,6 +454,20 @@ const MainAppContent: React.FC = () => {
 
       {/* Display & Viewing Options Modal */}
       <ViewingOptionsModal />
+
+      {/* Backup Path Configuration & Manual Confirmation Modal */}
+      <BackupPathModal />
+
+      {/* Desktop and Mobile Exit Confirmation Modal with Auto-Backup */}
+      <ExitConfirmationModal
+        isOpen={isExitConfirmOpen || isMobileExitConfirmOpen}
+        onClose={() => {
+          setIsExitConfirmOpen(false);
+          setIsMobileExitConfirmOpen(false);
+        }}
+        onConfirm={confirmAppExit}
+        isMobileTrigger={isMobileExitConfirmOpen}
+      />
 
       {/* Collapsible Sidebar for Desktop & Tablets */}
       <Sidebar

@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   Phone
 } from 'lucide-react';
+import { safeOpenWhatsApp } from '../utils/printDoc';
 
 export const CommunicationCenter: React.FC = () => {
   const { activeCompany, sendMessage, showToast } = useApp();
@@ -61,12 +62,7 @@ export const CommunicationCenter: React.FC = () => {
 
     // Launch WhatsApp directly
     if (channel === 'WhatsApp') {
-      const cleanPhone = phone.replace(/[^0-9]/g, '');
-      const encoded = encodeURIComponent(messageBody.trim());
-      const waUrl = cleanPhone
-        ? `https://wa.me/${cleanPhone}?text=${encoded}`
-        : `https://wa.me/?text=${encoded}`;
-      window.open(waUrl, '_blank');
+      safeOpenWhatsApp(phone, messageBody.trim());
     }
 
     setMessageBody('');
