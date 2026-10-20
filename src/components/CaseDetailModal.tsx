@@ -67,7 +67,53 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
           <hr />
           <h3>${isCertOrRorPi ? (caseItem.type === 'rorpi' ? 'ROR / PLOT INFORMATION (PI) APPLICATION SHEET' : 'CERTIFIED COPY OF DEED APPLICATION SHEET') : `CASE DOSSIER: ${caseItem.caseNo}`}</h3>
 
-          ${isCertOrRorPi ? `
+          ${caseItem.type === 'rorpi' ? `
+            <div class="box">
+              <div class="grid">
+                <div><strong>ROR/PI NO:</strong> ${caseItem.rorPiNo || caseItem.appNo || caseItem.caseNo || '—'}</div>
+                <div><strong>GRN Fee Challan:</strong> ${caseItem.grnNo || '—'}</div>
+                <div><strong>Current Status:</strong> ${caseItem.status}</div>
+                <div><strong>Application Date:</strong> ${caseItem.filingDate || '—'}</div>
+              </div>
+            </div>
+
+            ${caseItem.landSchedules && caseItem.landSchedules.length > 0 ? `
+              <h4>Schedule of Land (জমির তপশীল বিবরণ — প্লট / খতিয়ান)</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>District & Block</th>
+                    <th>J.L. No</th>
+                    <th>Record Type</th>
+                    <th>Survey Stage</th>
+                    <th>Plot / Khatian No</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${caseItem.landSchedules.map((s, idx) => {
+                    const isPlot = s.recordType === 'Plot' || (s.dag && !s.khatian);
+                    return `
+                    <tr>
+                      <td>${idx + 1}</td>
+                      <td>${s.district || caseItem.district || '—'} / ${s.block || '—'}</td>
+                      <td>${s.jl ? `JL: ${s.jl}` : '—'}</td>
+                      <td><strong>${s.recordType || (isPlot ? 'Plot' : 'ROR')}</strong></td>
+                      <td><strong>${s.surveyStage || 'LR'}</strong></td>
+                      <td><strong>${isPlot ? (s.dag || s.plotOrKhatian || '—') : (s.khatian || s.plotOrKhatian || '—')}</strong></td>
+                    </tr>
+                  `;
+                  }).join('')}
+                </tbody>
+              </table>
+            ` : ''}
+
+            <h4 style="margin-top: 16px;">Applicant Particulars</h4>
+            <div class="grid">
+              <div><strong>Applicant Name:</strong> ${caseItem.party}</div>
+              ${caseItem.applicants?.[0]?.phone ? `<div><strong>Phone:</strong> ${caseItem.applicants[0].phone}</div>` : ''}
+            </div>
+          ` : caseItem.type === 'certcopy' ? `
             <div class="box">
               <div class="grid">
                 <div><strong>AIN NO:</strong> ${caseItem.appNo || caseItem.ainNo || caseItem.caseNo || '—'}</div>
@@ -75,7 +121,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                 <div><strong>DEED NO:</strong> ${caseItem.applicantDeedNo || caseItem.deedNo || '—'}</div>
                 <div><strong>DEED YEAR:</strong> ${caseItem.applicantDeedYear || caseItem.deedYear || '—'}</div>
                 <div><strong>DISTRICT:</strong> ${caseItem.district || 'West Bengal'}</div>
-                <div><strong>OFFICE:</strong> ${caseItem.applicantAdsr || caseItem.adsr || (caseItem.type === 'rorpi' ? 'BL&LRO Office' : 'ADSR Office')}</div>
+                <div><strong>OFFICE:</strong> ${caseItem.applicantAdsr || caseItem.adsr || 'ADSR Office'}</div>
                 <div><strong>Application Date:</strong> ${caseItem.filingDate || '—'}</div>
                 <div><strong>Expected Delivery Date:</strong> ${caseItem.nextDate || '—'}</div>
                 <div><strong>Current Status:</strong> ${caseItem.status}</div>
@@ -177,49 +223,45 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-mono text-base font-bold text-blue-700 dark:text-blue-400">
-                  {isCertOrRorPi
+                  {caseItem.type === 'rorpi'
+                    ? (caseItem.rorPiNo || caseItem.appNo || caseItem.caseNo || 'ROR/PI Pending')
+                    : caseItem.type === 'certcopy'
                     ? (caseItem.appNo || caseItem.ainNo || caseItem.caseNo || 'AIN Pending')
                     : (caseItem.caseNo || (caseItem.type === 'rti' ? caseItem.docketNo || caseItem.appNo || 'RTI Application' : '—'))}
                 </span>
                 <span className="text-xs px-2 py-0.5 rounded font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300">
                   {caseItem.status}
                 </span>
-                {isCertOrRorPi ? (
-                  caseItem.grnNo ? (
-                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-200 dark:border-emerald-800">
-                      GRN Fee Challan: {caseItem.grnNo}
-                    </span>
-                  ) : null
-                ) : (
-                  <>
-                    {(caseItem.docketNo || caseItem.appNo) && (
-                      <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                        {caseItem.type === 'lrappeal' || caseItem.type === 'firstappeal' || caseItem.type === 'misc'
-                          ? `Docket No: ${caseItem.docketNo || caseItem.appNo}`
-                          : caseItem.type === 'rti'
-                          ? `Docket/Tracking: ${caseItem.docketNo || caseItem.appNo}`
-                          : `App No: ${caseItem.appNo || caseItem.docketNo}`}
-                      </span>
-                    )}
-                    {caseItem.grnNo && !['lrappeal', 'misc', 'rti'].includes(caseItem.type) && (
-                      <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                        {caseItem.type === 'firstappeal'
-                          ? `Tracking No: ${caseItem.grnNo}`
-                          : `GRN: ${caseItem.grnNo}`}
-                      </span>
-                    )}
-                  </>
+                {caseItem.grnNo && (
+                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-200 dark:border-emerald-800">
+                    GRN Fee Challan: {caseItem.grnNo}
+                  </span>
+                )}
+                {!isCertOrRorPi && (caseItem.docketNo || caseItem.appNo) && (
+                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                    {caseItem.type === 'lrappeal' || caseItem.type === 'firstappeal' || caseItem.type === 'misc'
+                      ? `Docket No: ${caseItem.docketNo || caseItem.appNo}`
+                      : caseItem.type === 'rti'
+                      ? `Docket/Tracking: ${caseItem.docketNo || caseItem.appNo}`
+                      : `App No: ${caseItem.appNo || caseItem.docketNo}`}
+                  </span>
                 )}
               </div>
               <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-1">
-                {isCertOrRorPi
-                  ? (caseItem.type === 'rorpi' ? 'ROR / Plot Information (PI) Application' : 'Certified Copy of Deed Application')
+                {caseItem.type === 'rorpi'
+                  ? (caseItem.subType || 'Certified ROR (খতিয়ান নকল / পরচা)')
+                  : caseItem.type === 'certcopy'
+                  ? (caseItem.subType || 'Certified Copy of Deed Application')
                   : `${caseItem.subType} (${caseItem.type.toUpperCase()})`}
               </h2>
               <div className="text-xs text-slate-500 mt-0.5">
-                {isCertOrRorPi ? (
+                {caseItem.type === 'rorpi' ? (
                   <span>
-                    {caseItem.district || 'West Bengal'} · {caseItem.applicantAdsr || caseItem.adsr || (caseItem.type === 'rorpi' ? 'BL&LRO Office' : 'ADSR Office')} · Expected Delivery: <strong>{caseItem.nextDate || 'Not fixed'}</strong>
+                    Filing Date: <strong>{caseItem.filingDate || '—'}</strong> · Issuing Authority: {caseItem.forum || 'BL&LRO Portal'}
+                  </span>
+                ) : caseItem.type === 'certcopy' ? (
+                  <span>
+                    {caseItem.district || 'West Bengal'} · {caseItem.applicantAdsr || caseItem.adsr || 'ADSR Office'} · Expected Delivery: <strong>{caseItem.nextDate || 'Not fixed'}</strong>
                   </span>
                 ) : (
                   <span>
@@ -280,13 +322,113 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
         </div>
 
         {/* Modal Body - Organized Strictly Per Entry Form */}
-        {isCertOrRorPi ? (
+        {caseItem.type === 'rorpi' ? (
           <div className="space-y-4">
             {/* Primary Registry Information matching entry form */}
             <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-3">
               <div className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
                 <FileCheck className="w-3.5 h-3.5" />
-                <span>Primary Registry Details (Entry Form Layout)</span>
+                <span>Primary Registry Details (ROR / PI Registry)</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div>
+                  <div className="text-[10px] font-bold uppercase text-slate-400">ROR/PI NO.</div>
+                  <div className="font-mono font-bold text-blue-700 dark:text-blue-400 text-sm">
+                    {caseItem.rorPiNo || caseItem.appNo || caseItem.caseNo || '—'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase text-slate-400">GRN Fee Challan No</div>
+                  <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                    {caseItem.grnNo || '—'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase text-slate-400">Filing / Application Date</div>
+                  <div className="font-mono font-medium text-slate-800 dark:text-slate-200">
+                    {caseItem.filingDate || '—'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase text-slate-400">Current Status</div>
+                  <div className="font-bold text-slate-900 dark:text-slate-100">
+                    {caseItem.status}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Applicant Details (No Father, No Address, No Broker/Muhuri) */}
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+              <div className="text-[10px] font-bold uppercase text-slate-400 flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-blue-600" />
+                <span>Applicant Information (আবেদনকারী বিবরণ)</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold">Applicant Full Name</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">{caseItem.party}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold">Contact Phone / WhatsApp</span>
+                  <span className="font-mono text-slate-700 dark:text-slate-300 font-semibold">{caseItem.applicants?.[0]?.phone || '—'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Schedule of Land (জমির তপশীল বিবরণ — প্লট / খতিয়ান) */}
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-3">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>Schedule of Land — ROR / Plot (জমির তপশীল বিবরণ) ({caseItem.landSchedules?.length || 0})</span>
+                </span>
+              </div>
+
+              {caseItem.landSchedules && caseItem.landSchedules.length > 0 ? (
+                <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-lg">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 uppercase text-[10px]">
+                      <tr>
+                        <th className="p-2.5">District &amp; Block</th>
+                        <th className="p-2.5">J.L. No</th>
+                        <th className="p-2.5">Record Type</th>
+                        <th className="p-2.5">Survey Stage</th>
+                        <th className="p-2.5">Plot / Khatian No</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+                      {caseItem.landSchedules.map((s, idx) => {
+                        const isPlot = s.recordType === 'Plot' || (s.dag && !s.khatian);
+                        return (
+                          <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/60">
+                            <td className="p-2.5 font-medium">{s.district || caseItem.district || '—'} / {s.block || '—'}</td>
+                            <td className="p-2.5 font-mono font-bold text-slate-700 dark:text-slate-300">{s.jl ? `JL: ${s.jl}` : '—'}</td>
+                            <td className="p-2.5 font-semibold text-blue-700 dark:text-blue-300">{s.recordType || (isPlot ? 'Plot' : 'ROR')}</td>
+                            <td className="p-2.5 font-semibold text-indigo-700 dark:text-indigo-300">{s.surveyStage || 'LR'}</td>
+                            <td className="p-2.5 font-mono font-bold text-slate-900 dark:text-slate-100">
+                              {isPlot ? (s.dag || s.plotOrKhatian || '—') : (s.khatian || s.plotOrKhatian || '—')}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-xs text-slate-500 italic p-3 text-center border border-dashed border-slate-300 dark:border-slate-700 rounded-lg">
+                  No land schedule specified.
+                </div>
+              )}
+            </div>
+          </div>
+        ) : caseItem.type === 'certcopy' ? (
+          <div className="space-y-4">
+            {/* Primary Registry Information matching entry form */}
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-3">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                <FileCheck className="w-3.5 h-3.5" />
+                <span>Primary Registry Details (Certified Copy Layout)</span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                 <div>
@@ -320,11 +462,9 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                   </div>
                 </div>
                 <div>
-                  <div className="text-[10px] font-bold uppercase text-slate-400">
-                    {caseItem.type === 'rorpi' ? 'BL&LRO / ADSR OFFICE' : 'ADSR OFFICE'}
-                  </div>
+                  <div className="text-[10px] font-bold uppercase text-slate-400">ADSR OFFICE</div>
                   <div className="font-bold text-slate-900 dark:text-slate-100">
-                    {caseItem.applicantAdsr || caseItem.adsr || (caseItem.type === 'rorpi' ? 'BL&LRO Office' : 'ADSR Office')}
+                    {caseItem.applicantAdsr || caseItem.adsr || 'ADSR Office'}
                   </div>
                 </div>
               </div>

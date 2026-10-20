@@ -281,8 +281,8 @@ export const PartyRegistry: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-              <h3 className="text-sm font-extrabold text-slate-900 dark:text-slate-100">
-                + Register Party / Contact
+              <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-wide">
+                + NEW PARTY REGISTRY ENTRY FORM
               </h3>
               <button
                 onClick={() => setModalOpen(false)}

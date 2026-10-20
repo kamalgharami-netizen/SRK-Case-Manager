@@ -34,6 +34,9 @@ export interface LandSchedule {
   area: string;
   unit: 'acre' | 'bigha' | 'katha' | 'satak' | 'sqft' | 'decimal';
   classification: string;
+  recordType?: 'ROR' | 'Plot' | string;
+  surveyStage?: 'RS' | 'LR' | string;
+  plotOrKhatian?: string;
 }
 
 export interface Applicant {
@@ -330,7 +333,7 @@ export interface StatusTrackingInfo {
 export function getStatusTrackingInfo(status?: string): StatusTrackingInfo {
   const norm = (status || '').toLowerCase().trim();
 
-  if (['allowed', 'disposed', 'dismissed', 'rejected', 'order passed', 'complete', 'inquiry complete'].includes(norm)) {
+  if (['allowed', 'disposed', 'dismissed', 'rejected', 'order passed', 'complete', 'inquiry complete', 'delivered'].includes(norm)) {
     if (['rejected', 'dismissed'].includes(norm)) {
       return {
         category: 'Disposed',
@@ -347,7 +350,7 @@ export function getStatusTrackingInfo(status?: string): StatusTrackingInfo {
     };
   }
 
-  if (['hearing', 'notice issued', 'stay granted', 'admitted', 'inquiry pending', 'in progress'].includes(norm)) {
+  if (['hearing', 'notice issued', 'stay granted', 'admitted', 'inquiry pending', 'in progress', 'applied', 'downloaded', 'printed', 'sent to whatsapp'].includes(norm)) {
     return {
       category: 'In Progress',
       badgeClass: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800',

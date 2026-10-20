@@ -189,8 +189,22 @@ const STATUSES_BY_TYPE: Record<CaseType, string[]> = {
   rti: ['Application Sent', 'PIO Replied', 'Info Provided', 'First Appeal Filed', 'Hearing', 'Disposed'],
   lrtt: ['OA Filed', 'Notice Issued', 'Hearing', 'Order Reserved', 'Allowed', 'Dismissed'],
   conversion: ['Applied', 'Site Verified', 'Report Submitted', 'Order Passed', 'Rejected'],
-  certcopy: ['Applied', 'Challan Paid', 'Search In Progress', 'Comparing & Stamp Verification', 'Ready for Delivery', 'Delivered', 'Rejected / Objection'],
-  rorpi: ['Applied', 'Fee Paid (Application Generated)', 'RI Verification / Processing', 'Signed & Digitally Sealed', 'Delivered / Downloaded', 'Rejected / Mismatch']
+  certcopy: [
+    'pending for apply',
+    'applied',
+    'downloaded',
+    'printed',
+    'sent to WhatsApp',
+    'delivered'
+  ],
+  rorpi: [
+    'pending for apply',
+    'applied',
+    'downloaded',
+    'printed',
+    'sent to WhatsApp',
+    'delivered'
+  ]
 };
 
 export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
@@ -245,14 +259,19 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     return '';
   };
 
-  // Requirement 2: mutation application no starts with MUTE, certcopy & rorpi use AIN
+  // Requirement 2: mutation starts with MUTE, certcopy uses AIN, rorpi uses ROR/PI
   const defaultAppNo = () => {
     if (editingCase?.appNo) return editingCase.appNo;
+    if (editingCase?.rorPiNo) return editingCase.rorPiNo;
     if (type === 'mutation') {
       return `MUTE-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
     }
-    if (type === 'certcopy' || type === 'rorpi') {
+    if (type === 'certcopy') {
       return `AIN-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
+    }
+    if (type === 'rorpi') {
+      // ROR/PI no is not compulsory for new entries
+      return '';
     }
     return '';
   };
@@ -579,8 +598,10 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     setAppNo(
       type === 'mutation'
         ? `MUTE-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
-        : type === 'certcopy' || type === 'rorpi'
+        : type === 'certcopy'
         ? `AIN-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`
+        : type === 'rorpi'
+        ? `ROR-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`
         : ''
     );
     setDocketNo(
@@ -601,6 +622,20 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     setBrokerName('');
     setBrokerPhone('');
     setChainLinks([]);
+    setLandSchedules([
+      {
+        id: 'ls_init_' + Date.now(),
+        district: 'North 24 Parganas',
+        block: 'Rajarhat',
+        mouza: '',
+        jl: '',
+        khatian: '',
+        dag: '',
+        area: '',
+        unit: 'acre',
+        classification: 'Bastu'
+      }
+    ]);
     setApplicants([
       { id: 'app_' + Date.now(), name: '', father: '', age: '', address: '', phone: '' }
     ]);
@@ -614,8 +649,31 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     if (c.type !== type) return false;
     const q = searchQuery.toLowerCase().trim();
 
-    if (isCertOrRorPi) {
-      // In search box the user can search by deed no, deed year, applicant name, broker name. and it would only search in particular entry of that type
+    if (isRorPi) {
+      // In search box for ROR/PI: search by ROR/PI No, GRN, applicant name, and land schedule (dag, khatian, district, block, jl, mouza)
+      const matchRorPiNo =
+        Boolean((c.appNo && c.appNo.toLowerCase().includes(q)) ||
+        (c.rorPiNo && c.rorPiNo.toLowerCase().includes(q)) ||
+        (c.ainNo && c.ainNo.toLowerCase().includes(q)) ||
+        (c.caseNo && c.caseNo.toLowerCase().includes(q)));
+      const matchGrn = Boolean(c.grnNo && c.grnNo.toLowerCase().includes(q));
+      const matchApplicant =
+        Boolean(c.party && c.party.toLowerCase().includes(q)) ||
+        Boolean(c.applicants?.some(a => a.name && a.name.toLowerCase().includes(q)));
+      const matchLand = Boolean(c.landSchedules?.some(s =>
+        (s.dag && s.dag.toLowerCase().includes(q)) ||
+        (s.khatian && s.khatian.toLowerCase().includes(q)) ||
+        (s.district && s.district.toLowerCase().includes(q)) ||
+        (s.block && s.block.toLowerCase().includes(q)) ||
+        (s.jl && s.jl.toLowerCase().includes(q)) ||
+        (s.mouza && s.mouza.toLowerCase().includes(q))
+      ));
+
+      return matchRorPiNo || matchGrn || matchApplicant || matchLand;
+    }
+
+    if (isCertCopy) {
+      // In search box the user can search by deed no, deed year, applicant name, broker name, AIN, GRN
       const matchDeedNo =
         Boolean(c.applicantDeedNo && c.applicantDeedNo.toLowerCase().includes(q)) ||
         Boolean(c.deedNo && c.deedNo.toLowerCase().includes(q));
@@ -1022,7 +1080,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       subType: isCertCopy
         ? (subType || 'Registered Deed Copy (দলিলের নকল)')
         : isRorPi
-        ? (subType || 'Certified ROR (খতিয়ান নকল / পরচা)')
+        ? ((landSchedules[0]?.recordType === 'Plot' || (landSchedules[0]?.dag && !landSchedules[0]?.khatian))
+            ? 'Plot Information (PI / প্লট তথ্য)'
+            : 'Certified ROR (খতিয়ান নকল / পরচা)')
         : subType,
       status,
       party: trimmedParty,
@@ -1030,10 +1090,10 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       forum: isCertCopy
         ? (forum || 'Sub-Registrar (ADSR / ARA / RA)')
         : isRorPi
-        ? (forum || 'BL&LRO Certified Copy Section')
+        ? 'BL&LRO Certified Copy Section'
         : forum.trim(),
       filingDate,
-      nextDate: primaryNextDate,
+      nextDate: isRorPi ? '' : primaryNextDate,
       hearingDates: isCertOrRorPi ? [] : allHearingDates,
       hearingList: isCertOrRorPi ? [] : hearingList,
       priority,
@@ -1046,28 +1106,57 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       bench,
       targetOfficer,
       notes,
-      applicantDeedNo: applicantDeedNo.trim(),
-      deedNo: applicantDeedNo.trim(),
-      applicantDeedYear: applicantDeedYear.trim(),
-      deedYear: applicantDeedYear.trim(),
-      applicantDeedType,
-      applicantAdsr: applicantAdsr.trim(),
-      adsr: applicantAdsr.trim(),
-      district: district.trim(),
-      ainNo: isCertOrRorPi ? appNo.trim() : undefined,
-      brokerName: brokerName.trim(),
-      brokerPhone: brokerPhone.trim(),
+      applicantDeedNo: isRorPi ? '' : applicantDeedNo.trim(),
+      deedNo: isRorPi ? '' : applicantDeedNo.trim(),
+      applicantDeedYear: isRorPi ? '' : applicantDeedYear.trim(),
+      deedYear: isRorPi ? '' : applicantDeedYear.trim(),
+      applicantDeedType: isRorPi ? '' : applicantDeedType,
+      applicantAdsr: isRorPi ? '' : applicantAdsr.trim(),
+      adsr: isRorPi ? '' : applicantAdsr.trim(),
+      district: isRorPi ? (landSchedules[0]?.district || district || 'North 24 Parganas') : district.trim(),
+      ainNo: isCertCopy ? appNo.trim() : undefined,
+      rorPiNo: isRorPi ? appNo.trim() : undefined,
+      brokerName: isRorPi ? '' : brokerName.trim(),
+      brokerPhone: isRorPi ? '' : brokerPhone.trim(),
       recordedOwner: isCertOrRorPi ? '' : recordedOwner.trim(),
       recordedKhatian: isCertOrRorPi ? '' : recordedKhatian.trim(),
       recordedDag: isCertOrRorPi ? '' : recordedDag.trim(),
-      landSchedules: isCertOrRorPi
+      landSchedules: isCertCopy
         ? []
+        : isRorPi
+        ? landSchedules
+            .map(s => {
+              const recType = s.recordType || (s.dag && !s.khatian ? 'Plot' : 'ROR');
+              const val = (s.plotOrKhatian ?? (recType === 'Plot' ? s.dag : s.khatian) ?? s.dag ?? s.khatian ?? '').trim();
+              return {
+                ...s,
+                recordType: recType,
+                surveyStage: s.surveyStage || 'LR',
+                plotOrKhatian: val,
+                dag: recType === 'Plot' ? val : '',
+                khatian: recType === 'ROR' ? val : ''
+              };
+            })
+            .filter(
+              s => (s.plotOrKhatian && s.plotOrKhatian.trim() !== '') || (s.dag && s.dag.trim() !== '') || (s.khatian && s.khatian.trim() !== '') || (s.jl && s.jl.trim() !== '')
+            )
         : isRti
         ? landSchedules.filter(
             s => s.mouza.trim() !== '' || s.khatian.trim() !== '' || s.dag.trim() !== '' || s.area.trim() !== ''
           )
         : landSchedules,
-      applicants,
+      applicants: isRorPi
+        ? [
+            {
+              id: applicants[0]?.id || 'app_init',
+              name: trimmedParty,
+              father: '',
+              age: '',
+              address: '',
+              phone: applicants[0]?.phone || ''
+            }
+          ]
+        : applicants,
       respondents: (isRti || isCertOrRorPi) ? [] : respondents,
       addresses,
       chainLinks: isChainDeedHidden ? [] : chainLinks,
@@ -1088,12 +1177,11 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
 
     if (andSendWhatsApp) {
       const applicantPhone = applicants[0]?.phone || '';
-      const typeDisplay = isMisc ? 'Misc Case' : isMutation ? 'Mutation Case' : `${type.toUpperCase()} Case`;
+      const typeDisplay = isRorPi ? 'ROR / PI Application' : isCertCopy ? 'Certified Copy' : isMisc ? 'Misc Case' : isMutation ? 'Mutation Case' : `${type.toUpperCase()} Case`;
+      const refNo = isRorPi ? (appNo || finalCaseNo) : isCertCopy ? (appNo || finalCaseNo) : finalCaseNo;
       safeOpenWhatsApp(
         applicantPhone,
-        `Dear ${party}, your ${typeDisplay} ${caseNo} (${subType}) before ${forum} has been registered/updated. Hearing Date: ${
-          primaryNextDate || 'To be notified'
-        }. - ${activeCompany?.name || 'Legal Chamber'}`
+        `Dear ${trimmedParty},\nYour ${typeDisplay} has been recorded in our chamber database.\nReference No: ${refNo}${grnNo ? `\nGRN: ${grnNo}` : ''}\nStatus: ${status}\nAdvocate Chamber.`
       );
     }
 
@@ -1281,7 +1369,12 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                   : 'Mutation Case Saved Successfully!'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                {postSaveCase.type === 'certcopy' || postSaveCase.type === 'rorpi' ? (
+                {postSaveCase.type === 'rorpi' ? (
+                  <>
+                    ROR/PI NO: <strong className="text-blue-600 dark:text-blue-400 font-mono">{postSaveCase.rorPiNo || postSaveCase.appNo || postSaveCase.caseNo || '—'}</strong>
+                    {postSaveCase.grnNo ? <> · GRN: <strong className="font-mono">{postSaveCase.grnNo}</strong></> : null}
+                  </>
+                ) : postSaveCase.type === 'certcopy' ? (
                   <>
                     AIN NO: <strong className="text-blue-600 dark:text-blue-400 font-mono">{postSaveCase.appNo || postSaveCase.caseNo || '—'}</strong>
                     {postSaveCase.grnNo ? <> · GRN: <strong className="font-mono">{postSaveCase.grnNo}</strong></> : null}
@@ -1362,31 +1455,31 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-lg font-extrabold text-slate-900 dark:text-slate-100">
+              <h1 className="text-lg font-black tracking-wide text-slate-900 dark:text-slate-100 uppercase">
                 {(() => {
                   const label =
-                    type === 'mutation' ? 'Mutation Case' :
-                    type === 'misc' ? 'Misc Case' :
-                    type === 'lrappeal' ? 'LR Appeal Case' :
-                    type === 'firstappeal' ? 'First Appeal' :
-                    type === 'rti' ? 'RTI Query' :
-                    type === 'lrtt' ? 'WBLRTT Case' :
-                    type === 'conversion' ? 'Conversion Case' :
-                    type === 'certcopy' ? 'Certified Copy of Deed' :
-                    type === 'rorpi' ? 'ROR / PI Tracking' : type;
+                    type === 'mutation' ? 'MUTATION CASE ENTRY FORM' :
+                    type === 'misc' ? 'MISC CASE ENTRY FORM' :
+                    type === 'lrappeal' ? 'LR APPEAL CASE ENTRY FORM' :
+                    type === 'firstappeal' ? 'FIRST APPEAL ENTRY FORM' :
+                    type === 'rti' ? 'RTI QUERY ENTRY FORM' :
+                    type === 'lrtt' ? 'WBLRTT CASE ENTRY FORM' :
+                    type === 'conversion' ? 'CONVERSION CASE ENTRY FORM' :
+                    type === 'certcopy' ? 'CERTIFIED COPY OF DEED ENTRY FORM' :
+                    type === 'rorpi' ? 'ROR / PI ENTRY FORM' : 'CASE ENTRY FORM';
                   return isEditingExisting
-                    ? `Edit ${caseNo || label}`
-                    : `New ${label} Entry`;
+                    ? `EDIT: ${caseNo ? caseNo.toUpperCase() : ''} · ${label}`
+                    : `NEW: ${label}`;
                 })()}
               </h1>
               {isEditingExisting && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
-                  Update Mode
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800 tracking-wider">
+                  UPDATE MODE
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Chamber Case Entry · {activeCompany?.name}
+            <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">
+              CHAMBER CASE ENTRY · {(activeCompany?.name || 'SRK LEGAL CHAMBER').toUpperCase()}
             </p>
           </div>
         </div>
@@ -1499,7 +1592,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             }}
             onFocus={() => setShowSearchResults(searchQuery.trim().length > 0)}
             placeholder={
-              isCertOrRorPi
+              isRorPi
+                ? "Search by ROR/PI No, GRN No, Applicant Name, Plot (Dag), Khatian..."
+                : isCertCopy
                 ? "Search by Deed No, Deed Year, Applicant Name, or Broker Name..."
                 : isMisc
                 ? "Type Deed No, Docket No (DOC..), Applicant Name, or Misc Case No (MISC/..) to search & edit..."
@@ -1524,7 +1619,29 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                   className="p-2.5 hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer flex items-center justify-between text-xs transition-colors"
                 >
                   <div>
-                    {isCertOrRorPi ? (
+                    {isRorPi ? (
+                      <div>
+                        <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                          <span className="font-mono text-blue-700 dark:text-blue-400 font-extrabold">
+                            ROR/PI: {c.rorPiNo || c.appNo || c.caseNo || '—'}
+                          </span>
+                          {c.grnNo && (
+                            <span className="font-mono text-emerald-600 dark:text-emerald-400 text-[11px] font-bold">
+                              GRN: {c.grnNo}
+                            </span>
+                          )}
+                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold">
+                            {c.status}
+                          </span>
+                        </div>
+                        <div className="text-slate-500 text-[11px] mt-0.5">
+                          Applicant: <strong>{c.party}</strong>
+                          {c.landSchedules?.[0] ? (
+                            <> · Plot/Dag: <strong className="text-blue-700 dark:text-blue-300">{c.landSchedules[0].dag || '—'}</strong> · Khatian: <strong className="text-indigo-700 dark:text-indigo-300">{c.landSchedules[0].khatian || '—'}</strong> · {c.landSchedules[0].block || ''} ({c.landSchedules[0].district || ''})</>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : isCertCopy ? (
                       <div>
                         <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                           <span className="font-mono text-rose-600 dark:text-rose-400 font-extrabold">
@@ -1582,7 +1699,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         {isEditingExisting && (
           <div className="text-[11px] text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-1 pt-0.5">
             <span>● Currently Editing:</span>
-            <strong className="font-mono">{isCertOrRorPi ? (applicantDeedNo ? `Deed: ${applicantDeedNo}/${applicantDeedYear || '—'}` : appNo) : caseNo}</strong>
+            <strong className="font-mono">{isRorPi ? `ROR/PI: ${appNo || caseNo}` : isCertCopy ? (applicantDeedNo ? `Deed: ${applicantDeedNo}/${applicantDeedYear || '—'}` : appNo) : caseNo}</strong>
             <span>({party || 'Applicant'})</span>
             <span className="text-slate-500">— Click "Update {isMisc ? 'Misc Case' : isMutation ? 'Mutation' : isCertCopy ? 'Certified Copy' : isRorPi ? 'ROR / PI Entry' : 'Case'}" when done.</span>
           </div>
@@ -1627,7 +1744,73 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
           <span className="text-[11px] font-normal text-slate-400">Fields marked * are mandatory</span>
         </div>
 
-        {isCertOrRorPi ? (
+        {isRorPi ? (
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* ROR/PI NO. (Not compulsory) */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                  ROR/PI NO. (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={appNo}
+                  onChange={e => setAppNo(e.target.value)}
+                  placeholder="e.g. ROR-2026-XXXXXX (Optional)"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold text-blue-700 dark:text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                />
+              </div>
+
+              {/* GRN Fee Challan No (Same as before) */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                  GRN Fee Challan No
+                </label>
+                <input
+                  type="text"
+                  value={grnNo}
+                  onChange={e => setGrnNo(e.target.value)}
+                  placeholder="19202600XXXXXX"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-medium focus:outline-none focus:ring-1 focus:ring-blue-600"
+                />
+              </div>
+
+              {/* Filing / Application Date */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                  Filing / Application Date
+                </label>
+                <input
+                  type="date"
+                  value={filingDate}
+                  onChange={e => setFilingDate(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
+                />
+              </div>
+
+              {/* Current Status */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                  Current Status *
+                </label>
+                <select
+                  value={status}
+                  onChange={e => setStatus(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-blue-600"
+                >
+                  {STATUSES_BY_TYPE.rorpi.map(st => (
+                    <option key={st} value={st}>
+                      {st}
+                    </option>
+                  ))}
+                  {status && !STATUSES_BY_TYPE.rorpi.includes(status) && (
+                    <option value={status}>{status}</option>
+                  )}
+                </select>
+              </div>
+            </div>
+          </div>
+        ) : isCertCopy ? (
           <div className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
               {/* 2) Mutation App No replaced with AIN NO. */}
@@ -1709,16 +1892,16 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                 </select>
               </div>
 
-              {/* ADSR / BL&LRO OFFICE */}
+              {/* ADSR OFFICE */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                  {isRorPi ? 'BL&LRO / ADSR OFFICE' : 'ADSR OFFICE'}
+                  ADSR OFFICE
                 </label>
                 <input
                   type="text"
                   value={applicantAdsr}
                   onChange={e => setApplicantAdsr(e.target.value)}
-                  placeholder={isRorPi ? 'e.g. BL&LRO Patharghata / ADSR Rajarhat' : 'e.g. ADSR Rajarhat / Bidhannagar'}
+                  placeholder="e.g. ADSR Rajarhat / Bidhannagar"
                   className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-blue-600"
                 />
               </div>
@@ -1740,6 +1923,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                       {st}
                     </option>
                   ))}
+                  {status && !STATUSES_BY_TYPE[type].includes(status) && (
+                    <option value={status}>{status}</option>
+                  )}
                 </select>
               </div>
 
@@ -2036,82 +2222,137 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
               <span className="text-[10px] text-slate-500">Auto-synced with Party Ledger (খতিয়ানভুক্ত মক্কেল)</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 relative">
-              {/* Applicant Name with Ledger Autocomplete */}
-              <div className="relative">
-                <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
-                  Applicant Full Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={party}
-                  onChange={e => handlePartyChange(e.target.value)}
-                  placeholder="e.g. Sri Nirmal Sen"
-                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold focus:outline-none focus:ring-1 focus:ring-blue-600"
-                />
+            {isRorPi ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative">
+                {/* Applicant Name with Ledger Autocomplete */}
+                <div className="relative">
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                    Applicant Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={party}
+                    onChange={e => handlePartyChange(e.target.value)}
+                    placeholder="e.g. Sri Nirmal Sen"
+                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold focus:outline-none focus:ring-1 focus:ring-blue-600"
+                  />
 
-                {/* Autocomplete dropdown for existing parties */}
-                {showPartySuggestions && partySuggestions.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-1 z-30 max-h-48 overflow-y-auto bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 shadow-lg divide-y divide-slate-100 dark:divide-slate-800">
-                    {partySuggestions.map(p => (
-                      <div
-                        key={p.id}
-                        onClick={() => handleSelectPartySuggestion(p)}
-                        className="p-2 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 cursor-pointer text-xs"
-                      >
-                        <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
-                          <span>{p.name}</span>
-                          <span className="text-[10px] px-1 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700">
-                            {p.type}
-                          </span>
+                  {/* Autocomplete dropdown for existing parties */}
+                  {showPartySuggestions && partySuggestions.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full mt-1 z-30 max-h-48 overflow-y-auto bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 shadow-lg divide-y divide-slate-100 dark:divide-slate-800">
+                      {partySuggestions.map(p => (
+                        <div
+                          key={p.id}
+                          onClick={() => handleSelectPartySuggestion(p)}
+                          className="p-2 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 cursor-pointer text-xs"
+                        >
+                          <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                            <span>{p.name}</span>
+                            <span className="text-[10px] px-1 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700">
+                              {p.type}
+                            </span>
+                          </div>
+                          {p.phone && <div className="text-[10px] text-slate-400 font-mono">{p.phone}</div>}
                         </div>
-                        {p.phone && <div className="text-[10px] text-slate-400 font-mono">{p.phone}</div>}
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                    Phone / WhatsApp No
+                  </label>
+                  <input
+                    type="text"
+                    value={applicants[0]?.phone || ''}
+                    onChange={e => updateMainApplicantField('phone', e.target.value)}
+                    placeholder="98300XXXXX"
+                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono focus:outline-none focus:ring-1 focus:ring-blue-600"
+                  />
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 relative">
+                  {/* Applicant Name with Ledger Autocomplete */}
+                  <div className="relative">
+                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                      Applicant Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={party}
+                      onChange={e => handlePartyChange(e.target.value)}
+                      placeholder="e.g. Sri Nirmal Sen"
+                      className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold focus:outline-none focus:ring-1 focus:ring-blue-600"
+                    />
+
+                    {/* Autocomplete dropdown for existing parties */}
+                    {showPartySuggestions && partySuggestions.length > 0 && (
+                      <div className="absolute left-0 right-0 top-full mt-1 z-30 max-h-48 overflow-y-auto bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 shadow-lg divide-y divide-slate-100 dark:divide-slate-800">
+                        {partySuggestions.map(p => (
+                          <div
+                            key={p.id}
+                            onClick={() => handleSelectPartySuggestion(p)}
+                            className="p-2 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 cursor-pointer text-xs"
+                          >
+                            <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                              <span>{p.name}</span>
+                              <span className="text-[10px] px-1 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700">
+                                {p.type}
+                              </span>
+                            </div>
+                            {p.phone && <div className="text-[10px] text-slate-400 font-mono">{p.phone}</div>}
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
-              </div>
 
-              <div>
-                <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
-                  Father / Husband Name
-                </label>
-                <input
-                  type="text"
-                  value={applicants[0]?.father || ''}
-                  onChange={e => updateMainApplicantField('father', e.target.value)}
-                  placeholder="Father / Husband Name"
-                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                />
-              </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                      Father / Husband Name
+                    </label>
+                    <input
+                      type="text"
+                      value={applicants[0]?.father || ''}
+                      onChange={e => updateMainApplicantField('father', e.target.value)}
+                      placeholder="Father / Husband Name"
+                      className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                    />
+                  </div>
 
-              <div>
-                <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
-                  Phone / WhatsApp No
-                </label>
-                <input
-                  type="text"
-                  value={applicants[0]?.phone || ''}
-                  onChange={e => updateMainApplicantField('phone', e.target.value)}
-                  placeholder="98300XXXXX"
-                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono focus:outline-none focus:ring-1 focus:ring-blue-600"
-                />
-              </div>
-            </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                      Phone / WhatsApp No
+                    </label>
+                    <input
+                      type="text"
+                      value={applicants[0]?.phone || ''}
+                      onChange={e => updateMainApplicantField('phone', e.target.value)}
+                      placeholder="98300XXXXX"
+                      className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono focus:outline-none focus:ring-1 focus:ring-blue-600"
+                    />
+                  </div>
+                </div>
 
-            <div>
-              <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
-                Residential Address (স্থায়ী ঠিকানা)
-              </label>
-              <input
-                type="text"
-                value={applicants[0]?.address || ''}
-                onChange={e => updateMainApplicantField('address', e.target.value)}
-                placeholder="Vill, P.O., P.S., Dist, Pin"
-                className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-600"
-              />
-            </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                    Residential Address (স্থায়ী ঠিকানা)
+                  </label>
+                  <input
+                    type="text"
+                    value={applicants[0]?.address || ''}
+                    onChange={e => updateMainApplicantField('address', e.target.value)}
+                    placeholder="Vill, P.O., P.S., Dist, Pin"
+                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                  />
+                </div>
+              </>
+            )}
 
             {/* Requirement 9: Applicant's Deed Details (Deed No, Year, Type of Deed, and ADSR) (Removed for Certified Copy and ROR/PI) */}
             {!isCertOrRorPi && (
@@ -2181,45 +2422,47 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
               </div>
             )}
 
-            {/* Requirement 10: Broker / Muhuri Name & Phone (Omitted from printing forms, shown only in report & entry) */}
-            <div className="p-3 rounded-lg border border-amber-200 dark:border-amber-800/60 bg-amber-50/40 dark:bg-amber-950/20 space-y-1.5 mt-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wide flex items-center gap-1.5">
-                  <UserPlus className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Broker / Muhuri Reference (মুহুরি / মধ্যস্থতাকারীর বিবরণ - চেম্বার রেকর্ড)</span>
-                </span>
-                <span className="text-[10px] text-amber-700 dark:text-amber-400 italic">
-                  * শুধুমাত্র চেম্বার রেকর্ডে থাকবে, কোনো সাধারণ প্রিন্ট বা দলিলে যাবে না
-                </span>
-              </div>
+            {/* Requirement 10: Broker / Muhuri Name & Phone (Omitted from printing forms, shown only in report & entry; Removed for ROR/PI) */}
+            {!isRorPi && (
+              <div className="p-3 rounded-lg border border-amber-200 dark:border-amber-800/60 bg-amber-50/40 dark:bg-amber-950/20 space-y-1.5 mt-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wide flex items-center gap-1.5">
+                    <UserPlus className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Broker / Muhuri Reference (মুহুরি / মধ্যস্থতাকারীর বিবরণ - চেম্বার রেকর্ড)</span>
+                  </span>
+                  <span className="text-[10px] text-amber-700 dark:text-amber-400 italic">
+                    * শুধুমাত্র চেম্বার রেকর্ডে থাকবে, কোনো সাধারণ প্রিন্ট বা দলিলে যাবে না
+                  </span>
+                </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
-                    Broker / Muhuri Full Name
-                  </label>
-                  <input
-                    type="text"
-                    value={brokerName}
-                    onChange={e => setBrokerName(e.target.value)}
-                    placeholder="e.g. Subir Ghosh (Muhuri)"
-                    className="w-full px-2.5 py-1.5 text-xs rounded border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
-                    Broker / Muhuri Phone Number
-                  </label>
-                  <input
-                    type="text"
-                    value={brokerPhone}
-                    onChange={e => setBrokerPhone(e.target.value)}
-                    placeholder="98310XXXXX"
-                    className="w-full px-2.5 py-1.5 text-xs rounded border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900 font-mono"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                      Broker / Muhuri Full Name
+                    </label>
+                    <input
+                      type="text"
+                      value={brokerName}
+                      onChange={e => setBrokerName(e.target.value)}
+                      placeholder="e.g. Subir Ghosh (Muhuri)"
+                      className="w-full px-2.5 py-1.5 text-xs rounded border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                      Broker / Muhuri Phone Number
+                    </label>
+                    <input
+                      type="text"
+                      value={brokerPhone}
+                      onChange={e => setBrokerPhone(e.target.value)}
+                      placeholder="98310XXXXX"
+                      className="w-full px-2.5 py-1.5 text-xs rounded border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900 font-mono"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Requirement 11: Opposite Party / Respondent Section with + option (Removed for RTI, Certified Copy and ROR/PI) */}
@@ -2335,19 +2578,26 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         </div>
       </div>
 
-      {/* Requirement 12: 2. Land Schedule(s) with + option to add more schedule (Optional / Not Compulsory for RTI, Removed for Certified Copy and ROR/PI) */}
-      {!isCertOrRorPi && (
+      {/* Requirement 12: 2. Land Schedule(s) with + option to add more schedule (Optional for RTI, Active for ROR/PI, Removed for Certified Copy) */}
+      {!isCertCopy && (
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 flex-wrap gap-2">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-              {isRti
+              {isRorPi
+                ? '2. জমির তপশীল বিবরণ — প্লট / খতিয়ান (Schedule of Land — Plot or Khatian)'
+                : isRti
                 ? '2. সম্পত্তির তপশীল বিবরণ (Schedule of Land — Optional / Not Compulsory)'
                 : '2. সম্পত্তির তপশীল বিবরণ (Property Schedule Details)'}
             </span>
             <span className="text-[11px] text-slate-400 ml-2">
               ({landSchedules.length} Schedule{landSchedules.length !== 1 ? 's' : ''})
             </span>
+            {isRorPi && (
+              <p className="text-[11px] text-blue-700 dark:text-blue-300 mt-0.5">
+                Add Plot (Dag No.) or Khatian No. along with District, Block, and J.L. No. for ROR / PI generation.
+              </p>
+            )}
             {isRti && (
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                 Schedule of Land is optional for RTI applications (e.g. Police Station, BDO, Panchayat, Municipality queries). Leave blank or remove if not applicable.
@@ -2390,145 +2640,289 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                    District (জেলা)
-                  </label>
-                  <select
-                    value={sched.district}
-                    onChange={e => updateSchedule(idx, 'district', e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
-                  >
-                    {Object.keys(wbDistricts)
-                      .sort()
-                      .map(d => (
-                        <option key={d} value={d}>
-                          {d}
-                        </option>
-                      ))}
-                  </select>
-                </div>
+              {isRorPi ? (
+                <div className="space-y-3">
+                  {/* Row 1: District, Block, J.L. No */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                        District (জেলা)
+                      </label>
+                      <select
+                        value={sched.district}
+                        onChange={e => updateSchedule(idx, 'district', e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                      >
+                        {Object.keys(wbDistricts)
+                          .sort()
+                          .map(d => (
+                            <option key={d} value={d}>
+                              {d}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
 
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                    Block (ব্লক / থানা)
-                  </label>
-                  <select
-                    value={sched.block}
-                    onChange={e => updateSchedule(idx, 'block', e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
-                  >
-                    {(wbDistricts[sched.district] || []).map(b => (
-                      <option key={b} value={b}>
-                        {b}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                        Block (ব্লক / থানা)
+                      </label>
+                      <select
+                        value={sched.block}
+                        onChange={e => updateSchedule(idx, 'block', e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                      >
+                        {(wbDistricts[sched.district] || []).map(b => (
+                          <option key={b} value={b}>
+                            {b}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                    Mouza Name (মৌজা)
-                  </label>
-                  <input
-                    type="text"
-                    value={sched.mouza}
-                    onChange={e => updateSchedule(idx, 'mouza', e.target.value)}
-                    placeholder="e.g. Patharghata / Sarisha"
-                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
-                  />
-                </div>
-              </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                        J.L. No (জে.এল নং)
+                      </label>
+                      <input
+                        type="text"
+                        value={sched.jl}
+                        onChange={e => updateSchedule(idx, 'jl', e.target.value)}
+                        placeholder="36"
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono font-bold"
+                      />
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                    J.L. No (জে.এল)
-                  </label>
-                  <input
-                    type="text"
-                    value={sched.jl}
-                    onChange={e => updateSchedule(idx, 'jl', e.target.value)}
-                    placeholder="36"
-                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono"
-                  />
-                </div>
+                  {/* Row 2: ROR / Plot dropdown, RS / LR dropdown, and Merged Plot / Khatian No Box */}
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 pt-1 border-t border-slate-200/60 dark:border-slate-700/60 items-end">
+                    <div className="sm:col-span-3">
+                      <label className="block text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase mb-1">
+                        Record Type (ROR / Plot) *
+                      </label>
+                      <select
+                        value={sched.recordType || (sched.dag && !sched.khatian ? 'Plot' : 'ROR')}
+                        onChange={e => {
+                          const newType = e.target.value;
+                          const currentVal = sched.plotOrKhatian || sched.khatian || sched.dag || '';
+                          setLandSchedules(prev =>
+                            prev.map((s, i) =>
+                              i === idx
+                                ? {
+                                    ...s,
+                                    recordType: newType,
+                                    plotOrKhatian: currentVal,
+                                    dag: newType === 'Plot' ? currentVal : '',
+                                    khatian: newType === 'ROR' ? currentVal : ''
+                                  }
+                                : s
+                            )
+                          );
+                        }}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-900 font-bold text-blue-700 dark:text-blue-300"
+                      >
+                        <option value="ROR">ROR (খতিয়ান)</option>
+                        <option value="Plot">Plot (দাগ / প্লট)</option>
+                      </select>
+                    </div>
 
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                    Khatian No (খতিয়ান)
-                  </label>
-                  <input
-                    type="text"
-                    value={sched.khatian}
-                    onChange={e => updateSchedule(idx, 'khatian', e.target.value)}
-                    placeholder="1428"
-                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono"
-                  />
-                </div>
+                    <div className="sm:col-span-3">
+                      <label className="block text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase mb-1">
+                        Survey Stage (RS / LR) *
+                      </label>
+                      <select
+                        value={sched.surveyStage || 'LR'}
+                        onChange={e => updateSchedule(idx, 'surveyStage', e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-900 font-bold text-indigo-700 dark:text-indigo-300"
+                      >
+                        <option value="RS">RS</option>
+                        <option value="LR">LR</option>
+                      </select>
+                    </div>
 
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                    Dag No (দাগ)
-                  </label>
-                  <input
-                    type="text"
-                    value={sched.dag}
-                    onChange={e => updateSchedule(idx, 'dag', e.target.value)}
-                    placeholder="482"
-                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono font-bold"
-                  />
+                    <div className="sm:col-span-6">
+                      <label className="block text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                        {(sched.recordType || (sched.dag && !sched.khatian ? 'Plot' : 'ROR')) === 'Plot'
+                          ? 'Plot / Dag No (দাগ নং) *'
+                          : 'Khatian No (খতিয়ান নং) *'}
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={sched.plotOrKhatian ?? (sched.recordType === 'Plot' ? sched.dag : (sched.khatian || sched.dag || ''))}
+                          onChange={e => {
+                            const val = e.target.value;
+                            const recType = sched.recordType || (sched.dag && !sched.khatian ? 'Plot' : 'ROR');
+                            setLandSchedules(prev =>
+                              prev.map((s, i) =>
+                                i === idx
+                                  ? {
+                                      ...s,
+                                      plotOrKhatian: val,
+                                      dag: recType === 'Plot' ? val : '',
+                                      khatian: recType === 'ROR' ? val : ''
+                                    }
+                                  : s
+                              )
+                            );
+                          }}
+                          placeholder={
+                            (sched.recordType || (sched.dag && !sched.khatian ? 'Plot' : 'ROR')) === 'Plot'
+                              ? 'e.g. 482'
+                              : 'e.g. 1428'
+                          }
+                          className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                        />
+                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
+                          {sched.surveyStage || 'LR'} · {sched.recordType || (sched.dag && !sched.khatian ? 'Plot' : 'ROR')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                        District (জেলা)
+                      </label>
+                      <select
+                        value={sched.district}
+                        onChange={e => updateSchedule(idx, 'district', e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                      >
+                        {Object.keys(wbDistricts)
+                          .sort()
+                          .map(d => (
+                            <option key={d} value={d}>
+                              {d}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
 
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                    Area (পরিমাণ)
-                  </label>
-                  <input
-                    type="text"
-                    value={sched.area}
-                    onChange={e => updateSchedule(idx, 'area', e.target.value)}
-                    placeholder="0.08"
-                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono"
-                  />
-                </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                        Block (ব্লক / থানা)
+                      </label>
+                      <select
+                        value={sched.block}
+                        onChange={e => updateSchedule(idx, 'block', e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                      >
+                        {(wbDistricts[sched.district] || []).map(b => (
+                          <option key={b} value={b}>
+                            {b}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                    Unit (একক)
-                  </label>
-                  <select
-                    value={sched.unit}
-                    onChange={e => updateSchedule(idx, 'unit', e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
-                  >
-                    <option value="acre">Acre (একর)</option>
-                    <option value="satak">Satak / Decimal (শতক)</option>
-                    <option value="bigha">Bigha (বিঘা)</option>
-                    <option value="katha">Katha (কাঠা)</option>
-                    <option value="sqft">Sq. Ft.</option>
-                  </select>
-                </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                        Mouza Name (মৌজা)
+                      </label>
+                      <input
+                        type="text"
+                        value={sched.mouza}
+                        onChange={e => updateSchedule(idx, 'mouza', e.target.value)}
+                        placeholder="e.g. Patharghata / Sarisha"
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                      />
+                    </div>
+                  </div>
 
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                    Class (শ্রেণি)
-                  </label>
-                  <select
-                    value={sched.classification}
-                    onChange={e => updateSchedule(idx, 'classification', e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
-                  >
-                    <option value="Bastu">Bastu (বাস্তু)</option>
-                    <option value="Sali">Sali (শালি)</option>
-                    <option value="Danga">Danga (ডাঙা)</option>
-                    <option value="Pond">Pond / Pukur (পুকুর)</option>
-                    <option value="Commercial">Commercial (বাণিজ্যিক)</option>
-                    <option value="Karkhana">Factory / Karkhana</option>
-                  </select>
-                </div>
-              </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                        J.L. No (জে.এল)
+                      </label>
+                      <input
+                        type="text"
+                        value={sched.jl}
+                        onChange={e => updateSchedule(idx, 'jl', e.target.value)}
+                        placeholder="36"
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                        Khatian No (খতিয়ান)
+                      </label>
+                      <input
+                        type="text"
+                        value={sched.khatian}
+                        onChange={e => updateSchedule(idx, 'khatian', e.target.value)}
+                        placeholder="1428"
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                        Dag No (দাগ)
+                      </label>
+                      <input
+                        type="text"
+                        value={sched.dag}
+                        onChange={e => updateSchedule(idx, 'dag', e.target.value)}
+                        placeholder="482"
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                        Area (পরিমাণ)
+                      </label>
+                      <input
+                        type="text"
+                        value={sched.area}
+                        onChange={e => updateSchedule(idx, 'area', e.target.value)}
+                        placeholder="0.08"
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                        Unit (একক)
+                      </label>
+                      <select
+                        value={sched.unit}
+                        onChange={e => updateSchedule(idx, 'unit', e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                      >
+                        <option value="acre">Acre (একর)</option>
+                        <option value="satak">Satak / Decimal (শতক)</option>
+                        <option value="bigha">Bigha (বিঘা)</option>
+                        <option value="katha">Katha (কাঠা)</option>
+                        <option value="sqft">Sq. Ft.</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                        Class (শ্রেণি)
+                      </label>
+                      <select
+                        value={sched.classification}
+                        onChange={e => updateSchedule(idx, 'classification', e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                      >
+                        <option value="Bastu">Bastu (বাস্তু)</option>
+                        <option value="Sali">Sali (শালি)</option>
+                        <option value="Danga">Danga (ডাঙা)</option>
+                        <option value="Pond">Pond / Pukur (পুকুর)</option>
+                        <option value="Commercial">Commercial (বাণিজ্যিক)</option>
+                        <option value="Karkhana">Factory / Karkhana</option>
+                      </select>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           ))}
         </div>
