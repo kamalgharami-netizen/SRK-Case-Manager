@@ -1089,9 +1089,6 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     if (andSendWhatsApp) {
       const applicantPhone = applicants[0]?.phone || '';
       const typeDisplay = isMisc ? 'Misc Case' : isMutation ? 'Mutation Case' : `${type.toUpperCase()} Case`;
-      const textMsg = encodeURIComponent(
-        `Dear ${party}, your ${typeDisplay} ${caseNo} (${subType}) before ${forum} has been registered/updated. Hearing Date: ${
-          primaryNextDate || 'To be notified'
       safeOpenWhatsApp(
         applicantPhone,
         `Dear ${party}, your ${typeDisplay} ${caseNo} (${subType}) before ${forum} has been registered/updated. Hearing Date: ${
