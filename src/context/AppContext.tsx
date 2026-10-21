@@ -3,8 +3,9 @@ import { Company, User, CaseItem, Party, CauseItem, VaultFile, DiaryEntry, Messa
 import { AppLanguage, translations, Translations } from '../data/translations';
 import { initialChamberData } from '../data/seedData';
 import { INITIAL_SAMPLE_DRAFTS } from '../data/sampleDraftTemplates';
+import { APP_VERSION, APP_BUILD_DATE, APP_RELEASE_NAME } from '../config/version';
 
-const STORAGE_KEY = 'srk_case_manager_v4';
+const STORAGE_KEY = 'srk_case_manager_v5';
 
 export interface ToastAction {
   label: string;
@@ -162,6 +163,12 @@ interface AppContextType {
 
   // Communication
   sendMessage: (partyId: string, phone: string, body: string, channel?: 'WhatsApp' | 'SMS') => void;
+
+  // Application Version & Dynamic In-Place Replacement
+  appVersion: string;
+  appBuildDate: string;
+  appReleaseName: string;
+  forceAppUpdateAndReplace: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -169,7 +176,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [companies, setCompanies] = useState<Company[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('srk_case_manager_v4') || localStorage.getItem('srk_case_manager_v3');
       const isSetupDone = localStorage.getItem('srk_first_time_setup_done') === 'true';
       if (saved && isSetupDone) {
         const parsed = JSON.parse(saved);
@@ -200,7 +207,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('srk_case_manager_v4') || localStorage.getItem('srk_case_manager_v3');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.activeCompanyId) {
@@ -216,7 +223,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const [activeUserId, setActiveUserId] = useState<string | null>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('srk_case_manager_v4') || localStorage.getItem('srk_case_manager_v3');
       if (saved) {
         const parsed = JSON.parse(saved);
         if ('activeUserId' in parsed) {
@@ -580,7 +587,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const initialSnapshot = {
         appName: 'SRK Case Manager',
-        appVersion: '4.0',
+        appVersion: APP_VERSION,
         backupType: 'initial-setup',
         timestamp: Date.now(),
         storagePath: targetBackupPath,
@@ -650,7 +657,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const payload = {
       appName: 'SRK Case Manager',
-      appVersion: '4.0',
+      appVersion: APP_VERSION,
       backupType: type,
       backupDateTime: formattedDate,
       timestamp,
@@ -1350,6 +1357,43 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     showToast(`Dispatched ${channel} message`);
   };
 
+  // Check and sync application version on every start/reload so changes replace the running app
+  useEffect(() => {
+    try {
+      const prevVersion = localStorage.getItem('srk_installed_app_version');
+      if (prevVersion !== APP_VERSION) {
+        localStorage.setItem('srk_installed_app_version', APP_VERSION);
+        localStorage.setItem('srk_last_app_update_timestamp', String(Date.now()));
+        if (prevVersion) {
+          showToast(`SRK Case Manager updated to v${APP_VERSION}. All changes replaced and active!`, 'success');
+        }
+      }
+    } catch {}
+  }, []);
+
+  const forceAppUpdateAndReplace = async () => {
+    try {
+      showToast('Clearing stale cache and updating to latest app version...', 'info');
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const reg of registrations) {
+          await reg.update();
+          if (reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
+        }
+      }
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+      localStorage.setItem('srk_installed_app_version', APP_VERSION);
+      window.location.reload();
+    } catch {
+      window.location.reload();
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -1430,7 +1474,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         resetSampleDrafts,
         addDiaryEntry,
         deleteDiaryEntry,
-        sendMessage
+        sendMessage,
+        appVersion: APP_VERSION,
+        appBuildDate: APP_BUILD_DATE,
+        appReleaseName: APP_RELEASE_NAME,
+        forceAppUpdateAndReplace
       }}
     >
       {children}

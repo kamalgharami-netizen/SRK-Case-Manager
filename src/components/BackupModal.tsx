@@ -61,7 +61,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     backupStoragePath,
     backupHistory,
     triggerManualBackupRequest,
-    setIsSelectBackupPathModalOpen
+    setIsSelectBackupPathModalOpen,
+    appVersion,
+    appBuildDate,
+    forceAppUpdateAndReplace
   } = useApp();
 
   const fileInputRef = useRef<HTMLInputElement>(null);

@@ -55,6 +55,23 @@ export const WB_DEED_TYPES = [
   'অন্যান্য দলিল (Other Deed)'
 ];
 
+export const WB_LAND_CLASSIFICATIONS = [
+  { value: 'Bastu', label: 'Bastu (বাস্তু)' },
+  { value: 'Sali', label: 'Sali (শালি)' },
+  { value: 'Danga', label: 'Danga (ডাঙা)' },
+  { value: 'Bagan', label: 'Bagan (বাগান)' },
+  { value: 'Doba', label: 'Doba (ডোবা)' },
+  { value: 'Khal', label: 'Khal (খাল)' },
+  { value: 'Commercial Bastu', label: 'Commercial Bastu (বাণিজ্যিক বাস্তু)' },
+  { value: 'Bil', label: 'Bil / Beel (বিল)' },
+  { value: 'Pukur Par', label: 'Pukur Par (পুকুর পাড়)' },
+  { value: 'Pond', label: 'Pond / Pukur (পুকুর)' },
+  { value: 'Commercial', label: 'Commercial (বাণিজ্যিক)' },
+  { value: 'Karkhana', label: 'Factory / Karkhana (কারখানা)' },
+  { value: 'Patit', label: 'Patit (পতিত জমি)' },
+  { value: 'Other', label: 'Other / Manual Entry (অন্যান্য / নিজে লিখুন)...' }
+];
+
 interface CaseEntryFormProps {
   type: CaseType;
   editingCase?: CaseItem | null;
@@ -149,7 +166,11 @@ const SUBTYPES_BY_TYPE: Record<CaseType, string[]> = {
   conversion: [
     'Sali to Bastu',
     'Danga to Bastu',
+    'Bagan to Bastu',
+    'Doba to Bastu',
     'Pond to Bastu',
+    'Pukur Par to Bastu',
+    'Agricultural to Commercial Bastu',
     'Agricultural to Commercial',
     'Other'
   ],
@@ -700,10 +721,58 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     return matchCaseNo || matchAppNo || matchDocketNo || matchGrnOrTracking || matchParty || matchDeed;
   });
 
+  const [activeSuggestingIdx, setActiveSuggestingIdx] = useState<number>(0);
+
+  const syncPartyFromApplicants = (list: Applicant[]) => {
+    const names = list.map(a => a.name.trim()).filter(Boolean);
+    if (names.length > 0) {
+      setParty(names.join(', '));
+    }
+  };
+
+  const addApplicant = () => {
+    const newApp: Applicant = {
+      id: 'app_' + Date.now(),
+      name: '',
+      father: '',
+      age: '',
+      address: '',
+      phone: ''
+    };
+    setApplicants(prev => {
+      const updated = [...prev, newApp];
+      syncPartyFromApplicants(updated);
+      return updated;
+    });
+  };
+
+  const removeApplicant = (idx: number) => {
+    if (applicants.length <= 1) return;
+    setApplicants(prev => {
+      const updated = prev.filter((_, i) => i !== idx);
+      syncPartyFromApplicants(updated);
+      return updated;
+    });
+  };
+
+  const updateApplicantField = (idx: number, field: keyof Applicant, val: string) => {
+    setApplicants(prev => {
+      const updated = prev.map((a, i) => (i === idx ? { ...a, [field]: val } : a));
+      if (field === 'name') {
+        syncPartyFromApplicants(updated);
+      }
+      return updated;
+    });
+  };
+
+  const updateMainApplicantField = (field: keyof Applicant, val: string) => {
+    updateApplicantField(0, field, val);
+  };
+
   // Handle party name typing and suggestions (Requirement 8)
-  const handlePartyChange = (val: string) => {
-    setParty(val);
-    updateMainApplicantField('name', val);
+  const handlePartyChange = (val: string, idx = 0) => {
+    setActiveSuggestingIdx(idx);
+    updateApplicantField(idx, 'name', val);
 
     if (val.trim().length >= 2 && activeCompany?.parties) {
       const q = val.toLowerCase().trim();
@@ -716,13 +785,13 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   };
 
   const handleSelectPartySuggestion = (selectedParty: Party) => {
-    setParty(selectedParty.name);
-    updateMainApplicantField('name', selectedParty.name);
-    if (selectedParty.phone) updateMainApplicantField('phone', selectedParty.phone);
-    if (selectedParty.address) updateMainApplicantField('address', selectedParty.address);
+    const idx = activeSuggestingIdx;
+    updateApplicantField(idx, 'name', selectedParty.name);
+    if (selectedParty.phone) updateApplicantField(idx, 'phone', selectedParty.phone);
+    if (selectedParty.address) updateApplicantField(idx, 'address', selectedParty.address);
     if (selectedParty.notes && selectedParty.notes.includes('Father:')) {
       const fName = selectedParty.notes.replace('Father:', '').trim();
-      updateMainApplicantField('father', fName);
+      updateApplicantField(idx, 'father', fName);
     }
     setShowPartySuggestions(false);
     showToast(`Linked to Party Ledger: ${selectedParty.name}`);
@@ -807,13 +876,6 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         syncOppFromRespondents(updated);
       }
       return updated;
-    });
-  };
-
-  const updateMainApplicantField = (field: keyof Applicant, val: string) => {
-    setApplicants(prev => {
-      const first = prev[0] || { id: 'app_1', name: party, father: '', age: '', address: '', phone: '' };
-      return [{ ...first, [field]: val }, ...prev.slice(1)];
     });
   };
 
@@ -1046,27 +1108,31 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       showToast('Case Number is required', 'error');
       return;
     }
-    if (!party.trim()) {
+    const currentPartyName = (applicants.map(a => a.name.trim()).filter(Boolean).join(', ')) || party.trim();
+    if (!currentPartyName) {
       showToast('Petitioner / Applicant Name is required', 'error');
       return;
     }
 
     // Requirement 8: If party does not exist in Party Ledger, automatically add it
-    const trimmedParty = party.trim();
-    const partyExists = (activeCompany?.parties || []).some(
-      p => p.name.trim().toLowerCase() === trimmedParty.toLowerCase()
-    );
-    if (!partyExists) {
-      addParty({
-        name: trimmedParty,
-        type: 'Client',
-        phone: applicants[0]?.phone || '',
-        email: '',
-        address: applicants[0]?.address || '',
-        notes: applicants[0]?.father ? `Father/Husband: ${applicants[0].father}` : `Created from ${isMisc ? 'Misc' : isCertCopy ? 'Certified Copy' : isRorPi ? 'ROR / PI' : 'Mutation'} entry`
-      });
-      showToast(`Added ${trimmedParty} to Party Ledger automatically`);
-    }
+    const trimmedParty = currentPartyName;
+    applicants.forEach(app => {
+      const aName = app.name.trim();
+      if (!aName) return;
+      const pExists = (activeCompany?.parties || []).some(
+        p => p.name.trim().toLowerCase() === aName.toLowerCase()
+      );
+      if (!pExists) {
+        addParty({
+          name: aName,
+          type: 'Client',
+          phone: app.phone || '',
+          email: '',
+          address: app.address || '',
+          notes: app.father ? `Father/Husband: ${app.father}` : `Created from ${isMisc ? 'Misc' : isCertCopy ? 'Certified Copy' : isRorPi ? 'ROR / PI' : 'Mutation'} entry`
+        });
+      }
+    });
 
     const primaryNextDate = hearingList.find(h => h.date)?.date || nextDate;
     const allHearingDates = hearingList.map(h => h.date).filter(Boolean);
@@ -1226,7 +1292,19 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             <div><strong>Hearing Date(s):</strong> ${allHearingDatesText || nextDate || '—'}</div>
           </div>
 
-          <div class="section-title">2. PETITIONER / APPLICANT (আবেদনকারী বিবরণ)</div>
+          <div class="section-title">2. PETITIONER(S) / APPLICANT(S) (${isMisc ? 'মামলার আবেদনকারীগণ' : 'আবেদনকারী বিবরণ'})</div>
+          ${applicants.length > 1 ? `
+            <table>
+              <thead><tr><th>#</th><th>Petitioner Name</th><th>Father / Husband</th><th>Phone</th><th>Residential Address</th></tr></thead>
+              <tbody>
+                ${applicants.map((a, i) => `<tr><td>${i + 1}</td><td><strong>${a.name}</strong></td><td>${a.father || '—'}</td><td>${a.phone || '—'}</td><td>${a.address || '—'}</td></tr>`).join('')}
+              </tbody>
+            </table>
+            <div class="grid-info" style="margin-top: 6px;">
+              <div><strong>Applicant Deed No & Year:</strong> ${applicantDeedNo ? `Deed No ${applicantDeedNo} of ${applicantDeedYear || '—'}` : '—'}</div>
+              <div><strong>Deed Type & ADSR:</strong> ${applicantDeedType || '—'} (${applicantAdsr || '—'})</div>
+            </div>
+          ` : `
           <div class="grid-info">
             <div><strong>Applicant Name:</strong> ${party}</div>
             <div><strong>Father / Husband:</strong> ${applicants[0]?.father || '—'}</div>
@@ -1235,6 +1313,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             <div><strong>Applicant Deed No & Year:</strong> ${applicantDeedNo ? `Deed No ${applicantDeedNo} of ${applicantDeedYear || '—'}` : '—'}</div>
             <div><strong>Deed Type & ADSR:</strong> ${applicantDeedType || '—'} (${applicantAdsr || '—'})</div>
           </div>
+          `}
 
           ${!isRti ? `
           <div class="section-title">3. OPPOSITE PARTY / RESPONDENT(S) (প্রতিপক্ষ / নোটিশ প্রাপক)</div>
@@ -1428,6 +1507,17 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                 >
                   <Sparkles className="w-4 h-4" />
                   <span>Proceed to AI Drafting Studio</span>
+                </button>
+              )}
+
+              {!isCertOrRorPi && (
+                <button
+                  type="button"
+                  onClick={handlePrintDossier}
+                  className="w-full py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center gap-2 shadow-xs cursor-pointer transition-colors"
+                >
+                  <Printer className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>Print Case Dossier</span>
                 </button>
               )}
 
@@ -2217,9 +2307,19 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5">
               <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
                 <UserCheck className="w-4 h-4" />
-                <span>Petitioner / Applicant Details (আবেদনকারী বিবরণ) *</span>
+                <span>{isMisc ? 'Petitioner Details (আবেদনকারী বিবরণ) *' : 'Petitioner / Applicant Details (আবেদনকারী বিবরণ) *'}</span>
               </span>
-              <span className="text-[10px] text-slate-500">Auto-synced with Party Ledger (খতিয়ানভুক্ত মক্কেল)</span>
+              {!isCertOrRorPi && (
+                <button
+                  type="button"
+                  onClick={addApplicant}
+                  className="px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                  title="Add Another Petitioner"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Add Petitioner</span>
+                </button>
+              )}
             </div>
 
             {isRorPi ? (
@@ -2274,84 +2374,112 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                 </div>
               </div>
             ) : (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 relative">
-                  {/* Applicant Name with Ledger Autocomplete */}
-                  <div className="relative">
-                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
-                      Applicant Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={party}
-                      onChange={e => handlePartyChange(e.target.value)}
-                      placeholder="e.g. Sri Nirmal Sen"
-                      className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold focus:outline-none focus:ring-1 focus:ring-blue-600"
-                    />
-
-                    {/* Autocomplete dropdown for existing parties */}
-                    {showPartySuggestions && partySuggestions.length > 0 && (
-                      <div className="absolute left-0 right-0 top-full mt-1 z-30 max-h-48 overflow-y-auto bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 shadow-lg divide-y divide-slate-100 dark:divide-slate-800">
-                        {partySuggestions.map(p => (
-                          <div
-                            key={p.id}
-                            onClick={() => handleSelectPartySuggestion(p)}
-                            className="p-2 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 cursor-pointer text-xs"
+              <div className="space-y-3">
+                {applicants.map((app, idx) => (
+                  <div
+                    key={app.id || idx}
+                    className={applicants.length > 1 ? "p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 space-y-2.5 shadow-2xs" : "space-y-2.5"}
+                  >
+                    {applicants.length > 1 && (
+                      <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 pb-1">
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 text-[10px] flex items-center justify-center font-bold">
+                            {idx + 1}
+                          </span>
+                          <span>Petitioner #{idx + 1}</span>
+                        </span>
+                        {idx > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => removeApplicant(idx)}
+                            className="text-slate-400 hover:text-rose-600 transition-colors p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                            title="Remove this petitioner"
                           >
-                            <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
-                              <span>{p.name}</span>
-                              <span className="text-[10px] px-1 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700">
-                                {p.type}
-                              </span>
-                            </div>
-                            {p.phone && <div className="text-[10px] text-slate-400 font-mono">{p.phone}</div>}
-                          </div>
-                        ))}
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     )}
-                  </div>
 
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
-                      Father / Husband Name
-                    </label>
-                    <input
-                      type="text"
-                      value={applicants[0]?.father || ''}
-                      onChange={e => updateMainApplicantField('father', e.target.value)}
-                      placeholder="Father / Husband Name"
-                      className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                    />
-                  </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 relative">
+                      {/* Petitioner Name with Ledger Autocomplete */}
+                      <div className="relative">
+                        <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                          Petitioner Full Name *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={app.name}
+                          onChange={e => handlePartyChange(e.target.value, idx)}
+                          placeholder="e.g. Sri Nirmal Sen"
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold focus:outline-none focus:ring-1 focus:ring-blue-600"
+                        />
 
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
-                      Phone / WhatsApp No
-                    </label>
-                    <input
-                      type="text"
-                      value={applicants[0]?.phone || ''}
-                      onChange={e => updateMainApplicantField('phone', e.target.value)}
-                      placeholder="98300XXXXX"
-                      className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono focus:outline-none focus:ring-1 focus:ring-blue-600"
-                    />
-                  </div>
-                </div>
+                        {/* Autocomplete dropdown for existing parties */}
+                        {showPartySuggestions && activeSuggestingIdx === idx && partySuggestions.length > 0 && (
+                          <div className="absolute left-0 right-0 top-full mt-1 z-30 max-h-48 overflow-y-auto bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 shadow-lg divide-y divide-slate-100 dark:divide-slate-800">
+                            {partySuggestions.map(p => (
+                              <div
+                                key={p.id}
+                                onClick={() => handleSelectPartySuggestion(p)}
+                                className="p-2 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 cursor-pointer text-xs"
+                              >
+                                <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                                  <span>{p.name}</span>
+                                  <span className="text-[10px] px-1 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700">
+                                    {p.type}
+                                  </span>
+                                </div>
+                                {p.phone && <div className="text-[10px] text-slate-400 font-mono">{p.phone}</div>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
 
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
-                    Residential Address (স্থায়ী ঠিকানা)
-                  </label>
-                  <input
-                    type="text"
-                    value={applicants[0]?.address || ''}
-                    onChange={e => updateMainApplicantField('address', e.target.value)}
-                    placeholder="Vill, P.O., P.S., Dist, Pin"
-                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                  />
-                </div>
-              </>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                          Father / Husband Name
+                        </label>
+                        <input
+                          type="text"
+                          value={app.father || ''}
+                          onChange={e => updateApplicantField(idx, 'father', e.target.value)}
+                          placeholder="Father / Husband Name"
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                          Phone / WhatsApp No
+                        </label>
+                        <input
+                          type="text"
+                          value={app.phone || ''}
+                          onChange={e => updateApplicantField(idx, 'phone', e.target.value)}
+                          placeholder="98300XXXXX"
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono focus:outline-none focus:ring-1 focus:ring-blue-600"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-0.5">
+                        Residential Address (স্থায়ী ঠিকানা)
+                      </label>
+                      <input
+                        type="text"
+                        value={app.address || ''}
+                        onChange={e => updateApplicantField(idx, 'address', e.target.value)}
+                        placeholder="Vill, P.O., P.S., Dist, Pin"
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
 
             {/* Requirement 9: Applicant's Deed Details (Deed No, Year, Type of Deed, and ADSR) (Removed for Certified Copy and ROR/PI) */}
@@ -2904,21 +3032,58 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                        Class (শ্রেণি)
-                      </label>
-                      <select
-                        value={sched.classification}
-                        onChange={e => updateSchedule(idx, 'classification', e.target.value)}
-                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
-                      >
-                        <option value="Bastu">Bastu (বাস্তু)</option>
-                        <option value="Sali">Sali (শালি)</option>
-                        <option value="Danga">Danga (ডাঙা)</option>
-                        <option value="Pond">Pond / Pukur (পুকুর)</option>
-                        <option value="Commercial">Commercial (বাণিজ্যিক)</option>
-                        <option value="Karkhana">Factory / Karkhana</option>
-                      </select>
+                      {(() => {
+                        const isPredefined = WB_LAND_CLASSIFICATIONS.some(
+                          c => c.value !== 'Other' && c.value.toLowerCase() === (sched.classification || '').toLowerCase()
+                        );
+                        return (
+                          <>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase">
+                                Class (শ্রেণি)
+                              </label>
+                              {!isPredefined && sched.classification && (
+                                <button
+                                  type="button"
+                                  onClick={() => updateSchedule(idx, 'classification', 'Bastu')}
+                                  className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                >
+                                  List options
+                                </button>
+                              )}
+                            </div>
+
+                            <select
+                              value={isPredefined ? (WB_LAND_CLASSIFICATIONS.find(c => c.value.toLowerCase() === sched.classification.toLowerCase())?.value || sched.classification) : 'Other'}
+                              onChange={e => {
+                                const val = e.target.value;
+                                if (val === 'Other') {
+                                  updateSchedule(idx, 'classification', '');
+                                } else {
+                                  updateSchedule(idx, 'classification', val);
+                                }
+                              }}
+                              className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-semibold cursor-pointer"
+                            >
+                              {WB_LAND_CLASSIFICATIONS.map(c => (
+                                <option key={c.value} value={c.value}>
+                                  {c.label}
+                                </option>
+                              ))}
+                            </select>
+
+                            {(!isPredefined || sched.classification === 'Other' || sched.classification === '') && (
+                              <input
+                                type="text"
+                                value={sched.classification === 'Other' ? '' : sched.classification}
+                                onChange={e => updateSchedule(idx, 'classification', e.target.value)}
+                                placeholder="Enter manual classification (নিজে শ্রেণি লিখুন)..."
+                                className="mt-1.5 w-full px-2.5 py-1.5 text-xs rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-slate-900 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500 animate-in fade-in duration-150"
+                              />
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 </>
@@ -3432,6 +3597,18 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         </button>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {type !== 'mutation' && !isCertOrRorPi && onOpenAiDraft && (
+            <button
+              type="button"
+              onClick={handleTriggerAiDraft}
+              className="px-3.5 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Open AI Drafting Studio for this Case"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>AI Drafting Studio</span>
+            </button>
+          )}
+
           {!isChainDeedHidden && (
             <button
               type="button"

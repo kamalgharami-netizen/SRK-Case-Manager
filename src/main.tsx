@@ -22,10 +22,23 @@ if ('serviceWorker' in navigator) {
             });
           }
         });
+        // Periodically check for updates every 15 minutes
+        setInterval(() => {
+          registration.update().catch(() => {});
+        }, 15 * 60 * 1000);
       })
       .catch(() => {
         // Ignore service worker registration errors in restricted iframe environments
       });
+
+    // When the updated service worker takes over, reload to immediately replace the existing app
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
   });
 }
 

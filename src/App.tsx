@@ -485,6 +485,7 @@ const MainAppContent: React.FC = () => {
           onToggleSidebar={() => setSidebarOpen(prev => !prev)}
           isSidebarOpen={sidebarOpen}
           onOpenSettings={() => handleOpenSettings('branding')}
+          onOpenShareCalculator={() => handleNavigatePage('sharecalculator')}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           canGoBack={canGoBack}
@@ -624,6 +625,10 @@ const MainAppContent: React.FC = () => {
                     pushHistoryState({ modal: 'case-detail', id });
                   }}
                   onEditCase={handleEditCase}
+                  onOpenChainDeed={c => {
+                    setChainDeedCaseId(c.id);
+                    pushHistoryState({ modal: 'chain-deed', id: c.id });
+                  }}
                   onOpenAiDraft={handleOpenAiDraft}
                 />
               )}

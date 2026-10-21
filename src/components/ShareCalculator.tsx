@@ -633,8 +633,23 @@ export const ShareCalculator: React.FC = () => {
   // PART 1: MUSLIM FARAYEZ WITH DYNAMIC "+" ADD MORE BUTTON
   // =========================================================
   const [farayezTotal, setFarayezTotal] = useState<string>('50');
-  const [farayezUnit, setFarayezUnit] = useState<string>('Satak');
+  const [farayezUnit, setFarayezUnit] = useState<string>('decimal');
   const [deceasedGender, setDeceasedGender] = useState<'male' | 'female'>('male');
+
+  const getFarayezUnitDisplay = (unitKey: string) => {
+    const opt = LAND_UNIT_OPTIONS.find(u =>
+      u.key === unitKey ||
+      u.key === unitKey.toLowerCase() ||
+      (unitKey === 'Satak' && u.key === 'decimal') ||
+      (unitKey === 'Decimal' && u.key === 'decimal') ||
+      (unitKey === 'Acre' && u.key === 'acre') ||
+      (unitKey === 'Bigha' && u.key === 'bigha') ||
+      (unitKey === 'Katha' && u.key === 'katha')
+    );
+    if (opt) return opt.short;
+    if (unitKey === 'inr' || unitKey === '₹ (INR)') return 'টাকা (₹)';
+    return unitKey;
+  };
   const [husbandCount, setHusbandCount] = useState<number>(0);
   const [wifeCount, setWifeCount] = useState<number>(1);
   const [sonsCount, setSonsCount] = useState<number>(2);
@@ -844,14 +859,22 @@ export const ShareCalculator: React.FC = () => {
       const wbShare = fractionToWbShare(s.fracVal || 0);
 
       let landDisplay = '';
-      if (['Bigha', 'Katha', 'Acre', 'Satak'].includes(farayezUnit)) {
-        let sqft = 0;
-        if (farayezUnit === 'Bigha') sqft = s.shareVal * WB_AREA_SQFT.bigha;
-        else if (farayezUnit === 'Katha') sqft = s.shareVal * WB_AREA_SQFT.katha;
-        else if (farayezUnit === 'Acre') sqft = s.shareVal * WB_AREA_SQFT.acre;
-        else if (farayezUnit === 'Satak') sqft = s.shareVal * WB_AREA_SQFT.satak;
+      const unitOpt = LAND_UNIT_OPTIONS.find(u =>
+        u.key === farayezUnit ||
+        u.key === farayezUnit.toLowerCase() ||
+        (farayezUnit === 'Satak' && u.key === 'decimal') ||
+        (farayezUnit === 'Decimal' && u.key === 'decimal') ||
+        (farayezUnit === 'Acre' && u.key === 'acre') ||
+        (farayezUnit === 'Bigha' && u.key === 'bigha') ||
+        (farayezUnit === 'Katha' && u.key === 'katha')
+      );
+
+      if (unitOpt) {
+        const sqft = s.shareVal * unitOpt.sqft;
         const wbArea = sqftToWbArea(sqft);
         landDisplay = wbArea.formatted;
+      } else if (farayezUnit === 'inr' || farayezUnit === '₹ (INR)') {
+        landDisplay = `₹ ${s.shareVal.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
       }
 
       return {
@@ -888,7 +911,7 @@ export const ShareCalculator: React.FC = () => {
             <h2>${activeCompany?.name || 'SRK Legal Chamber'}</h2>
             <div><strong>সুন্নি হানাফি আইন অনুসারে মুসলিম ফারায়েজ বণ্টন সনদপত্র</strong></div>
             <div style="font-size: 12px; color: #555;">Hanafi Sunni Inheritance Distribution (16-Ana & WB Land Units)</div>
-            <div style="font-size: 11px; color: #777; margin-top: 4px;">সম্পত্তির পরিমাণ: ${parseFloat(farayezTotal).toLocaleString('en-IN')} ${farayezUnit} | মৃত ব্যক্তি: ${deceasedGender === 'male' ? 'পুরুষ (মরহুম)' : 'নারী (মরহুমা)'}</div>
+            <div style="font-size: 11px; color: #777; margin-top: 4px;">সম্পত্তির পরিমাণ: ${parseFloat(farayezTotal || '0').toLocaleString('en-IN')} ${LAND_UNIT_OPTIONS.find(u => u.key === farayezUnit || u.key === farayezUnit.toLowerCase() || (farayezUnit === 'Satak' && u.key === 'decimal'))?.label || (farayezUnit === 'inr' ? 'টাকা / নগদ অর্থ' : farayezUnit)} | মৃত ব্যক্তি: ${deceasedGender === 'male' ? 'পুরুষ (মরহুম)' : 'নারী (মরহুমা)'}</div>
           </div>
           <hr />
           <table>
@@ -910,7 +933,7 @@ export const ShareCalculator: React.FC = () => {
                 <td class="mono font-bold">${r.fraction}</td>
                 <td style="color: #047857; font-weight: bold;">${r.wbShare.formatted}</td>
                 <td class="mono font-bold">${r.share10000.toFixed(2)}</td>
-                <td class="mono"><strong>${r.shareVal.toLocaleString('en-IN', { maximumFractionDigits: 3 })} ${farayezUnit}</strong></td>
+                <td class="mono"><strong>${r.shareVal.toLocaleString('en-IN', { maximumFractionDigits: 3 })} ${getFarayezUnitDisplay(farayezUnit)}</strong></td>
                 <td>${r.landDisplay || '—'}</td>
               </tr>`
                 )
@@ -1054,11 +1077,12 @@ export const ShareCalculator: React.FC = () => {
                   onChange={e => setFarayezUnit(e.target.value)}
                   className="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold cursor-pointer"
                 >
-                  <option value="Satak">Satak / Decimal (শতক)</option>
-                  <option value="Acre">Acre (একর)</option>
-                  <option value="Bigha">Bigha (বিঘা)</option>
-                  <option value="Katha">Katha (কাঠা)</option>
-                  <option value="₹ (INR)">₹ Rupees (টাকা)</option>
+                  {LAND_UNIT_OPTIONS.map(opt => (
+                    <option key={opt.key} value={opt.key}>
+                      {opt.label}
+                    </option>
+                  ))}
+                  <option value="inr">টাকা / নগদ অর্থ (₹ Rupees / Cash)</option>
                 </select>
               </div>
 
@@ -1298,13 +1322,13 @@ export const ShareCalculator: React.FC = () => {
                           {r.share10000.toFixed(2)}
                         </td>
                         <td className="py-2.5 px-3 font-mono font-bold text-slate-800 dark:text-slate-200">
-                          {r.shareVal.toLocaleString('en-IN', { maximumFractionDigits: 3 })} {farayezUnit}
+                          {r.shareVal.toLocaleString('en-IN', { maximumFractionDigits: 3 })} {getFarayezUnitDisplay(farayezUnit)}
                         </td>
                         <td className="py-2.5 px-3 font-bold text-slate-700 dark:text-slate-300">
                           {r.landDisplay || '—'}
                         </td>
                         <td className="py-2.5 px-3 font-mono text-right text-slate-600 dark:text-slate-400">
-                          {r.totalVal.toLocaleString('en-IN', { maximumFractionDigits: 3 })} {farayezUnit}
+                          {r.totalVal.toLocaleString('en-IN', { maximumFractionDigits: 3 })} {getFarayezUnitDisplay(farayezUnit)}
                         </td>
                       </tr>
                     ))}
@@ -1411,25 +1435,6 @@ export const ShareCalculator: React.FC = () => {
           {/* ========================================================= */}
           {activeSubTab === 'land-share' && (
             <div className="space-y-4">
-              {/* Statutory Share Formula Box from Image 1 */}
-              <div className="rounded-2xl bg-slate-100 dark:bg-slate-800/90 border border-slate-250 dark:border-slate-750 p-3.5 sm:p-4 text-xs text-slate-700 dark:text-slate-300 leading-relaxed shadow-2xs">
-                <div className="flex items-start gap-2">
-                  <div className="w-4 h-4 rounded-full border border-slate-400 dark:border-slate-500 flex items-center justify-center text-[10px] font-bold text-slate-500 shrink-0 mt-0.5">
-                    i
-                  </div>
-                  <div className="space-y-0.5">
-                    <div>
-                      <strong className="text-slate-900 dark:text-slate-100">Statutory Share Formula: </strong>
-                      <span className="font-mono text-blue-700 dark:text-blue-400 font-bold">
-                        Share = (10000 / Total Area) * Owned Area
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-                      * Owned Area. Example: Total 15 dec, Owned 2.30 dec =&gt; Share = (10000 / 15) * 2.30 = 1533.33 (or 0.1533)
-                    </div>
-                  </div>
-                </div>
-              </div>
 
               {/* Main Land Share Calculator Card */}
               <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-xs space-y-4">

@@ -29,7 +29,9 @@ import {
   ShieldAlert,
   X,
   Scroll,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Search,
+  CheckCircle2
 } from 'lucide-react';
 import { CaseType, CaseItem, getStatusTrackingInfo, getBackupStatus } from '../types';
 
@@ -91,15 +93,89 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const totalCases = activeCompany?.cases?.length || 0;
   const todayHearings = activeCompany?.causeList?.length || 0;
-  const pendingCases =
-    activeCompany?.cases?.filter(
-      c => !['Disposed', 'Allowed', 'Dismissed', 'Rejected', 'Order Passed'].includes(c.status)
-    ).length || 0;
+
+  const isDisposedStatus = (status?: string) => {
+    return getStatusTrackingInfo(status).category === 'Disposed';
+  };
+
+  const isPendingStatus = (status?: string) => {
+    return !isDisposedStatus(status);
+  };
+
+  const isUnderInquiryStatus = (status?: string) => {
+    if (isDisposedStatus(status)) return false;
+    const norm = (status || '').toLowerCase().trim();
+    return (
+      norm.includes('inquiry') ||
+      norm.includes('hearing') ||
+      norm.includes('notice') ||
+      norm.includes('verified') ||
+      norm.includes('report') ||
+      norm.includes('admitted') ||
+      norm.includes('stay') ||
+      norm.includes('progress') ||
+      norm.includes('verification')
+    );
+  };
+
+  const pendingCasesList = React.useMemo(() => {
+    return (activeCompany?.cases || []).filter(c => isPendingStatus(c.status));
+  }, [activeCompany?.cases]);
+
+  const underInquiryCasesList = React.useMemo(() => {
+    return (activeCompany?.cases || []).filter(c => isUnderInquiryStatus(c.status));
+  }, [activeCompany?.cases]);
+
+  const disposedCasesList = React.useMemo(() => {
+    return (activeCompany?.cases || []).filter(c => isDisposedStatus(c.status));
+  }, [activeCompany?.cases]);
+
+  const pendingCases = pendingCasesList.length;
+  const underInquiryCases = underInquiryCasesList.length;
+  const disposedCases = disposedCasesList.length;
   const vaultFiles = activeCompany?.vaultFiles?.length || 0;
+
+  // KPI Case Modal State ('total' | 'pending' | 'inquiry' | 'disposed' | null)
+  type KpiModalType = 'total' | 'pending' | 'inquiry' | 'disposed' | null;
+  const [activeKpiModal, setActiveKpiModal] = React.useState<KpiModalType>(null);
+  const [pendingTypeFilter, setPendingTypeFilter] = React.useState<string>('All');
+  const [pendingSearch, setPendingSearch] = React.useState<string>('');
+
+  const isPendingModalOpen = activeKpiModal !== null;
+  const setIsPendingModalOpen = (open: boolean) => {
+    setActiveKpiModal(open ? 'pending' : null);
+  };
 
   const getCaseCount = (type: CaseType) => {
     return activeCompany?.cases?.filter(c => c.type === type).length || 0;
   };
+
+  const activeModalCasesList = React.useMemo(() => {
+    if (activeKpiModal === 'total') return activeCompany?.cases || [];
+    if (activeKpiModal === 'pending') return pendingCasesList;
+    if (activeKpiModal === 'inquiry') return underInquiryCasesList;
+    if (activeKpiModal === 'disposed') return disposedCasesList;
+    return pendingCasesList;
+  }, [activeKpiModal, activeCompany?.cases, pendingCasesList, underInquiryCasesList, disposedCasesList]);
+
+  const filteredPendingCases = React.useMemo(() => {
+    return activeModalCasesList.filter(c => {
+      const matchType = pendingTypeFilter === 'All' || c.type === pendingTypeFilter;
+      const q = pendingSearch.toLowerCase().trim();
+      if (!q) return matchType;
+      const matchSearch =
+        Boolean(c.caseNo?.toLowerCase().includes(q)) ||
+        Boolean(c.appNo?.toLowerCase().includes(q)) ||
+        Boolean(c.rorPiNo?.toLowerCase().includes(q)) ||
+        Boolean(c.ainNo?.toLowerCase().includes(q)) ||
+        Boolean(c.party?.toLowerCase().includes(q)) ||
+        Boolean(c.opp?.toLowerCase().includes(q)) ||
+        Boolean(c.forum?.toLowerCase().includes(q)) ||
+        Boolean(c.status?.toLowerCase().includes(q)) ||
+        Boolean(c.landSchedules?.some(s => s.dag?.toLowerCase().includes(q) || s.khatian?.toLowerCase().includes(q) || s.mouza?.toLowerCase().includes(q)));
+      return matchType && matchSearch;
+    });
+  }, [activeModalCasesList, pendingTypeFilter, pendingSearch]);
 
   // Active cases for tracking: prioritize cases with nextDate, then recent cases
   const trackedCases = [...(activeCompany?.cases || [])]
@@ -401,6 +477,137 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   ];
 
+  const getPageForCaseType = (type: CaseType): NavPage => {
+    const card = landCaseCards.find(c => c.type === type);
+    return card ? card.page : 'case-mutation';
+  };
+
+  const exportPendingCasesCSV = () => {
+    const headers = [
+      'Sl No',
+      'Case / App No',
+      'Module / Category',
+      'Sub-Type',
+      'Petitioner / Applicant',
+      'Opposite Party',
+      'Forum / Authority',
+      'Current Status',
+      'Next Hearing Date',
+      'Filing Date'
+    ];
+
+    const escapeCsv = (val: any) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val).replace(/"/g, '""');
+      return `"${str}"`;
+    };
+
+    const rows = filteredPendingCases.map((c, idx) => {
+      return [
+        idx + 1,
+        escapeCsv(c.caseNo || c.appNo || c.rorPiNo || '—'),
+        escapeCsv(c.type.toUpperCase()),
+        escapeCsv(c.subType || '—'),
+        escapeCsv(c.party),
+        escapeCsv(c.opp || '—'),
+        escapeCsv(c.forum || '—'),
+        escapeCsv(c.status),
+        escapeCsv(c.nextDate || '—'),
+        escapeCsv(c.filingDate || '—')
+      ].join(',');
+    });
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `active_pending_cases_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast('Exported active pending cases to CSV', 'success');
+  };
+
+  const exportPendingCasesPDF = () => {
+    const list = filteredPendingCases;
+    const rowsHtml = list
+      .map((c, idx) => {
+        const refNo = c.caseNo || c.appNo || c.rorPiNo || '—';
+        return `<tr>
+          <td style="color: #64748b; font-family: monospace; font-size: 10px;">${idx + 1}</td>
+          <td><strong style="font-family: monospace; color: #1e3a8a;">${refNo}</strong></td>
+          <td><span style="font-weight: bold; text-transform: uppercase; font-size: 10px; color: #2563eb;">${c.type}</span></td>
+          <td>${c.subType || '—'}</td>
+          <td><strong>${c.party}</strong></td>
+          <td>${c.opp || '—'}</td>
+          <td>${c.forum || '—'}</td>
+          <td style="font-weight: bold; font-family: monospace; color: #0284c7;">${c.nextDate || '—'}</td>
+          <td>
+            <span style="padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; background: #fef3c7; color: #92400e;">${c.status}</span>
+          </td>
+        </tr>`;
+      })
+      .join('');
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Active Pending Cases - ${activeCompany?.name || 'Legal Chamber'}</title>
+          <style>
+            body { font-family: 'Times New Roman', serif; padding: 30px; color: #0f172a; line-height: 1.4; font-size: 11px; }
+            h1 { font-size: 18px; margin: 0 0 2px 0; color: #1e3a8a; }
+            .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1e3a8a; padding-bottom: 12px; margin-bottom: 12px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10.5px; }
+            th, td { border: 1px solid #cbd5e1; padding: 6px 8px; text-align: left; vertical-align: top; }
+            th { background: #f1f5f9; font-weight: 700; color: #0f172a; text-transform: uppercase; font-size: 9.5px; }
+            tr:nth-child(even) { background: #f8fafc; }
+            .footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 10px; color: #64748b; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1>${activeCompany?.name || 'Legal Chamber'}</h1>
+              <div style="font-size: 12px; font-weight: bold; color: #475569;">Active Pending Cases &amp; Proceedings Dossier</div>
+            </div>
+            <div style="text-align: right; font-size: 10px; color: #64748b;">
+              <div>Chamber: ${activeCompany?.city || 'Kolkata'}, WB</div>
+              <div>Generated: ${new Date().toLocaleString('en-IN')}</div>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 30px;">#</th>
+                <th>Case / Ref No</th>
+                <th>Module</th>
+                <th>Sub-Type</th>
+                <th>Petitioner / Party</th>
+                <th>Opposite Party</th>
+                <th>Forum</th>
+                <th>Next Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml || '<tr><td colspan="9" style="text-align: center; padding: 20px;">No pending cases found</td></tr>'}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            <span>SRK Case Manager · Active Pending Cases Report</span>
+            <span>Total Pending: ${list.length}</span>
+          </div>
+        </body>
+      </html>
+    `;
+    printHtmlContent(html);
+  };
+
   const toolCards: {
     page: NavPage;
     title: string;
@@ -547,12 +754,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       )}
 
-      {/* Top Row: 4 Compact KPI Summary Stat Cards (2x Smaller) — Total Cases, Today's Hearings, Active Pending, Vault Files */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+      {/* Top Row: 5 Compact KPI Summary Stat Cards — Total Cases, Pending Cases, Today's Hearings, Under Inquiry, Disposed (Vault Files omitted) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+        {/* 1. Total Cases */}
         <div
-          onClick={() => onNavigate('case-mutation')}
+          onClick={() => setActiveKpiModal('total')}
           className="bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-blue-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group"
-          title="Click to browse all registered cases"
+          title="Click to view all registered cases across all categories"
         >
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
             <span className="truncate">{t.totalCases}</span>
@@ -564,10 +772,31 @@ export const Dashboard: React.FC<DashboardProps> = ({
             {totalCases}
           </div>
           <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
-            Mutation ({getCaseCount('mutation')}) • Misc ({getCaseCount('misc')}) • Appeal ({getCaseCount('lrappeal')})
+            Mutation ({getCaseCount('mutation')}) • Misc ({getCaseCount('misc')})
           </div>
         </div>
 
+        {/* 2. Pending Cases */}
+        <div
+          onClick={() => setActiveKpiModal('pending')}
+          className="bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-purple-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group"
+          title="Click to view all Active Pending cases across all categories"
+        >
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+            <span className="truncate">{t.pendingCases}</span>
+            <div className="w-5 h-5 rounded-md bg-purple-50 dark:bg-purple-950/80 border border-purple-200/70 dark:border-purple-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+              <Clock className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+            </div>
+          </div>
+          <div className="text-sm sm:text-base font-extrabold font-mono text-purple-600 dark:text-purple-400 leading-tight">
+            {pendingCases}
+          </div>
+          <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+            Requires follow-up &amp; dates
+          </div>
+        </div>
+
+        {/* 3. Today's Hearings */}
         <div
           onClick={() => onNavigate('causelist')}
           className="bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-amber-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group"
@@ -579,7 +808,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <Calendar className="w-3 h-3 text-amber-500" />
             </div>
           </div>
-          <div className="text-sm sm:text-base font-extrabold font-mono text-slate-900 dark:text-slate-100 leading-tight">
+          <div className="text-sm sm:text-base font-extrabold font-mono text-amber-600 dark:text-amber-400 leading-tight">
             {todayHearings}
           </div>
           <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
@@ -587,41 +816,43 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
 
+        {/* 4. Under Inquiry */}
         <div
-          onClick={() => onNavigate('case-misc')}
-          className="bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-purple-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group"
-          title="Click to view Active Pending cases"
+          onClick={() => setActiveKpiModal('inquiry')}
+          className="bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-indigo-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group"
+          title="Click to view cases under inquiry &amp; field verification"
         >
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
-            <span className="truncate">{t.pendingCases}</span>
-            <div className="w-5 h-5 rounded-md bg-purple-50 dark:bg-purple-950/80 border border-purple-200/70 dark:border-purple-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-              <Clock className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+            <span className="truncate">{language === 'bn' ? 'তদন্তাধীন মামলা' : 'Under Inquiry'}</span>
+            <div className="w-5 h-5 rounded-md bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200/70 dark:border-indigo-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+              <FileSearch className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
             </div>
           </div>
-          <div className="text-sm sm:text-base font-extrabold font-mono text-slate-900 dark:text-slate-100 leading-tight">
-            {pendingCases}
+          <div className="text-sm sm:text-base font-extrabold font-mono text-indigo-600 dark:text-indigo-400 leading-tight">
+            {underInquiryCases}
           </div>
           <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
-            Requires follow-up &amp; dates
+            Investigation &amp; verification
           </div>
         </div>
 
+        {/* 5. Disposed */}
         <div
-          onClick={() => (onOpenSettings ? onOpenSettings('vault') : onNavigate('vault'))}
-          className="bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-emerald-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group"
-          title="Open Document Vault"
+          onClick={() => setActiveKpiModal('disposed')}
+          className="bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-emerald-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group"
+          title="Click to view all Disposed &amp; Completed cases"
         >
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
-            <span className="truncate">{t.vaultFilesTitle}</span>
+            <span className="truncate">{language === 'bn' ? 'নিষ্পত্তিকৃত মামলা' : 'Disposed'}</span>
             <div className="w-5 h-5 rounded-md bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200/70 dark:border-emerald-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-              <Archive className="w-3 h-3 text-emerald-500" />
+              <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
             </div>
           </div>
-          <div className="text-sm sm:text-base font-extrabold font-mono text-slate-900 dark:text-slate-100 leading-tight">
-            {vaultFiles}
+          <div className="text-sm sm:text-base font-extrabold font-mono text-emerald-600 dark:text-emerald-400 leading-tight">
+            {disposedCases}
           </div>
           <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
-            Saved deeds, orders &amp; ROR
+            Allowed &amp; completed
           </div>
         </div>
       </div>
@@ -916,6 +1147,315 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Active KPI Cases Modal Dialog */}
+      {isPendingModalOpen && (() => {
+        const modalMeta = (() => {
+          switch (activeKpiModal) {
+            case 'total':
+              return {
+                title: language === 'bn' ? 'সমস্ত নথিভুক্ত মামলা (Total Registered Cases)' : 'Total Registered Cases',
+                subtitle: language === 'bn' ? 'সকল বিভাগ মিলিয়ে সমস্ত মামলা ও আবেদনের সম্পূর্ণ তালিকা' : 'Comprehensive register of all matters across all chamber departments.',
+                color: 'text-blue-600 dark:text-blue-400',
+                bg: 'bg-blue-100 dark:bg-blue-950/70',
+                badgeBg: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+                totalCount: totalCases,
+                typeName: 'registered',
+                Icon: Gavel
+              };
+            case 'inquiry':
+              return {
+                title: language === 'bn' ? 'তদন্তাধীন ও শুনানি মামলা (Under Inquiry Cases)' : 'Under Inquiry & Investigation Cases',
+                subtitle: language === 'bn' ? 'বিভাগীয় তদন্ত, ক্ষেত্র যাচাই ও প্রতিবেদন অপেক্ষমাণ সকল মামলা' : 'Matters currently undergoing departmental inquiry, field verification, or RI investigation report.',
+                color: 'text-indigo-600 dark:text-indigo-400',
+                bg: 'bg-indigo-100 dark:bg-indigo-950/70',
+                badgeBg: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
+                totalCount: underInquiryCases,
+                typeName: 'under inquiry',
+                Icon: FileSearch
+              };
+            case 'disposed':
+              return {
+                title: language === 'bn' ? 'নিষ্পত্তিকৃত মামলা (Disposed Cases)' : 'Disposed & Completed Cases',
+                subtitle: language === 'bn' ? 'চূড়ান্ত আদেশ প্রদান ও নিষ্পত্তি হওয়া সমস্ত মামলা ও নথি' : 'All finalized, allowed, disposed, order passed, or delivered records.',
+                color: 'text-emerald-600 dark:text-emerald-400',
+                bg: 'bg-emerald-100 dark:bg-emerald-950/70',
+                badgeBg: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+                totalCount: disposedCases,
+                typeName: 'disposed',
+                Icon: CheckCircle2
+              };
+            case 'pending':
+            default:
+              return {
+                title: language === 'bn' ? 'সক্রিয় বিচারাধীন মামলা (Active Pending Cases)' : 'Active Pending Cases',
+                subtitle: language === 'bn' ? 'শুনানি, নোটিশ ও আদেশের জন্য অপেক্ষমাণ সকল সক্রিয় মামলা' : 'All matters currently pending hearing dates, inquiry, or disposal across all chamber departments.',
+                color: 'text-purple-600 dark:text-purple-400',
+                bg: 'bg-purple-100 dark:bg-purple-950/70',
+                badgeBg: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border-purple-200 dark:border-purple-800',
+                totalCount: pendingCases,
+                typeName: 'pending',
+                Icon: Clock
+              };
+          }
+        })();
+        const ModalIcon = modalMeta.Icon;
+
+        return (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="w-full max-w-5xl bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden my-4 animate-in fade-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50/80 dark:bg-slate-850/60 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl ${modalMeta.bg} flex items-center justify-center shrink-0 shadow-xs`}>
+                  <ModalIcon className={`w-5 h-5 ${modalMeta.color}`} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-slate-100">
+                      {modalMeta.title}
+                    </h2>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-extrabold border ${modalMeta.badgeBg}`}>
+                      {activeModalCasesList.length} Total
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {modalMeta.subtitle}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={exportPendingCasesCSV}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 shadow-2xs transition-colors cursor-pointer"
+                  title="Export cases to CSV spreadsheet"
+                >
+                  <Download className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  <span className="hidden sm:inline">CSV</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={exportPendingCasesPDF}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 shadow-2xs transition-colors cursor-pointer"
+                  title="Print case list or save as PDF"
+                >
+                  <Printer className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span className="hidden sm:inline">Print / PDF</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveKpiModal(null)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-sm cursor-pointer ml-1"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Filter and Search Bar */}
+            <div className="p-3 sm:p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3 shrink-0">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                {/* Search Box */}
+                <div className="relative flex-1 max-w-md">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={pendingSearch}
+                    onChange={e => setPendingSearch(e.target.value)}
+                    placeholder="Search by Case No, Party, Forum, Dag, Khatian..."
+                    className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-600 text-slate-900 dark:text-slate-100"
+                  />
+                  {pendingSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setPendingSearch('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="text-[11px] text-slate-500 font-medium">
+                  Showing <strong className="font-mono text-slate-800 dark:text-slate-200">{filteredPendingCases.length}</strong> of {activeModalCasesList.length} {modalMeta.typeName} cases
+                </div>
+              </div>
+
+              {/* Department Filter Pills */}
+              <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                <button
+                  type="button"
+                  onClick={() => setPendingTypeFilter('All')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    pendingTypeFilter === 'All'
+                      ? 'bg-slate-900 text-white dark:bg-blue-600 shadow-xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  All ({activeModalCasesList.length})
+                </button>
+
+                {landCaseCards.map(card => {
+                  const count = activeModalCasesList.filter(c => c.type === card.type).length;
+                  if (count === 0) return null;
+                  const isSelected = pendingTypeFilter === card.type;
+                  return (
+                    <button
+                      key={card.type}
+                      type="button"
+                      onClick={() => setPendingTypeFilter(card.type)}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        isSelected
+                          ? 'bg-slate-900 text-white dark:bg-blue-600 shadow-xs'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      <span>{card.title}</span>
+                      <span className="px-1.5 py-0.2 rounded font-mono text-[10px] font-extrabold bg-white/20">
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Modal Body / Table */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {filteredPendingCases.length > 0 ? (
+                <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
+                      <tr>
+                        <th className="py-2.5 px-3">#</th>
+                        <th className="py-2.5 px-3">Case / App No</th>
+                        <th className="py-2.5 px-3">Department</th>
+                        <th className="py-2.5 px-3">Petitioner / Applicant</th>
+                        <th className="py-2.5 px-3">Forum / Authority</th>
+                        <th className="py-2.5 px-3">Next Date</th>
+                        <th className="py-2.5 px-3">Status</th>
+                        <th className="py-2.5 px-3 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+                      {filteredPendingCases.map((c, idx) => {
+                        const statusInfo = getStatusTrackingInfo(c.status);
+                        const card = landCaseCards.find(card => card.type === c.type);
+                        const refNo = c.caseNo || c.appNo || c.rorPiNo || '—';
+
+                        return (
+                          <tr
+                            key={c.id}
+                            className="hover:bg-slate-50/80 dark:hover:bg-slate-850/60 transition-colors"
+                          >
+                            <td className="py-3 px-3 font-mono text-[11px] text-slate-400">
+                              {idx + 1}
+                            </td>
+                            <td className="py-3 px-3">
+                              <div className="font-mono font-bold text-blue-700 dark:text-blue-400 text-xs">
+                                {refNo}
+                              </div>
+                              <div className="text-[10px] text-slate-400 truncate max-w-[180px]">
+                                {c.subType || '—'}
+                              </div>
+                            </td>
+                            <td className="py-3 px-3 whitespace-nowrap">
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold ${card?.bg || 'bg-slate-100'} ${card?.color || 'text-slate-700'}`}>
+                                {card?.title || c.type.toUpperCase()}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3">
+                              <div className="font-bold text-slate-900 dark:text-slate-100 max-w-[200px] truncate">
+                                {c.party}
+                              </div>
+                              {c.opp && (
+                                <div className="text-[10px] text-slate-400 truncate max-w-[200px]">
+                                  vs {c.opp}
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-3 px-3 text-[11px] text-slate-600 dark:text-slate-300 max-w-[180px] truncate">
+                              {c.forum || 'Revenue Forum'}
+                            </td>
+                            <td className="py-3 px-3 whitespace-nowrap">
+                              {c.nextDate ? (
+                                <span className="font-mono font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800 text-[11px]">
+                                  {c.nextDate}
+                                </span>
+                              ) : (
+                                <span className="text-[11px] text-slate-400 italic">No date set</span>
+                              )}
+                            </td>
+                            <td className="py-3 px-3 whitespace-nowrap">
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border ${statusInfo.badgeClass}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotClass}`} />
+                                <span>{c.status}</span>
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => onViewCaseDetail(c.id)}
+                                  className="px-2.5 py-1 rounded-md bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold text-[11px] transition-colors cursor-pointer"
+                                  title="View full case dossier"
+                                >
+                                  View
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setIsPendingModalOpen(false);
+                                    onNavigate(getPageForCaseType(c.type));
+                                  }}
+                                  className="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-[11px] transition-colors cursor-pointer flex items-center gap-1"
+                                  title={`Open ${card?.title || 'Module'}`}
+                                >
+                                  <span>Go</span>
+                                  <ArrowRight className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-16 text-center text-slate-500">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                    <ModalIcon className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    No {modalMeta.typeName} cases found
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {pendingSearch ? `No ${modalMeta.typeName} cases matched "${pendingSearch}".` : 'No cases found in this department or category.'}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-850/60 flex items-center justify-between text-xs shrink-0">
+              <span className="text-slate-500 dark:text-slate-400">
+                SRK Case Manager · {modalMeta.title}
+              </span>
+              <button
+                type="button"
+                onClick={() => setActiveKpiModal(null)}
+                className="px-4 py-1.5 rounded-xl bg-slate-900 text-white dark:bg-blue-600 font-bold text-xs hover:bg-slate-800 dark:hover:bg-blue-700 transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+        );
+      })()}
     </div>
   );
 };

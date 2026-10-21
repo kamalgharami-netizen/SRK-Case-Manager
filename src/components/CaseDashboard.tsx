@@ -223,7 +223,11 @@ const MODULE_META: Record<
     subTypes: [
       'Sali to Bastu',
       'Danga to Bastu',
+      'Bagan to Bastu',
+      'Doba to Bastu',
       'Pond to Bastu',
+      'Pukur Par to Bastu',
+      'Agricultural to Commercial Bastu',
       'Agricultural to Commercial',
       'Other'
     ],
@@ -317,6 +321,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
   const [underInquiryFilter, setUnderInquiryFilter] = useState<boolean>(false);
   const [todayHearingsFilter, setTodayHearingsFilter] = useState<boolean>(false);
   const [attachmentFilter, setAttachmentFilter] = useState<boolean>(false);
+  const [rtiOverdueFilter, setRtiOverdueFilter] = useState<boolean>(false);
   const [search, setSearch] = useState('');
 
   // Reset filters when case sub menu / type changes
@@ -328,6 +333,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
     setUnderInquiryFilter(false);
     setTodayHearingsFilter(false);
     setAttachmentFilter(false);
+    setRtiOverdueFilter(false);
     setSearch('');
     setSelectedCaseIds([]);
     setIsBatchMode(false);
@@ -357,19 +363,55 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
     );
   };
 
+  // Helper to identify overdue RTI cases (>30 days statutory deadline or explicit overdue status)
+  const isRtiOverdue = (c: CaseItem) => {
+    if (c.type !== 'rti') return false;
+    const norm = (c.status || '').toLowerCase().trim();
+    if (['disposed', 'allowed', 'dismissed', 'complete', 'delivered', 'inquiry complete'].includes(norm)) return false;
+    if (norm.includes('overdue') || norm.includes('delayed') || norm.includes('expired')) return true;
+    if (c.filingDate) {
+      const fileTime = new Date(c.filingDate).getTime();
+      if (!isNaN(fileTime)) {
+        const daysDiff = (Date.now() - fileTime) / (1000 * 60 * 60 * 24);
+        if (daysDiff > 30) return true;
+      }
+    }
+    return false;
+  };
+
+  const rtiOverdueCount = allCases.filter(isRtiOverdue).length;
+
   const nowDate = new Date();
   const todayDateStr = `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, '0')}-${String(nowDate.getDate()).padStart(2, '0')}`;
 
-  const todayHearingCount = allCases.filter(
-    c =>
+  // Rigorous calculation logic: Single source of truth from getStatusTrackingInfo
+  const isCaseDisposed = (status: string) => {
+    return getStatusTrackingInfo(status).category === 'Disposed';
+  };
+
+  const isCasePending = (status: string) => {
+    return !isCaseDisposed(status);
+  };
+
+  const isCaseUnderInquiry = (status: string) => {
+    if (isCaseDisposed(status)) return false;
+    return isUnderInquiry(status);
+  };
+
+  const isCaseTodayHearing = (c: CaseItem) => {
+    return Boolean(
       c.nextDate === todayDateStr ||
       (c.hearingDates && c.hearingDates.includes(todayDateStr)) ||
       (c.hearingList && c.hearingList.some(h => h.date === todayDateStr))
-  ).length;
+    );
+  };
 
-  const activePendingCount = allCases.filter(
-    c => !['Disposed', 'Allowed', 'Dismissed', 'Rejected', 'Order Passed', 'Delivered'].includes(c.status)
-  ).length;
+  // Mathematical calculation identity: allCases.length === pendingCount + disposedCount
+  const disposedCount = allCases.filter(c => isCaseDisposed(c.status)).length;
+  const pendingCount = allCases.filter(c => isCasePending(c.status)).length;
+  const underInquiryCount = allCases.filter(c => isCaseUnderInquiry(c.status)).length;
+  const todayHearingCount = allCases.filter(c => isCaseTodayHearing(c)).length;
+  const activePendingCount = pendingCount;
 
   const moduleVaultCount = (activeCompany?.vaultFiles || []).filter(
     f => f.category === type || f.category.toLowerCase().includes(type)
@@ -377,7 +419,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
   const totalAttachments = allCases.reduce((acc, c) => acc + (c.attachments?.length || 0), 0);
   const vaultDisplayCount = moduleVaultCount > 0 ? moduleVaultCount : (totalAttachments > 0 ? totalAttachments : (activeCompany?.vaultFiles?.length || 0));
 
-  // Status & Category counts
+  // Status counts for status pills
   const statusCounts: Record<string, number> = { All: allCases.length };
   meta.statuses.forEach(s => {
     statusCounts[s] = allCases.filter(c => c.status === s).length;
@@ -385,21 +427,24 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
 
   const categoryCounts = {
     All: allCases.length,
-    Pending: allCases.filter(c => getStatusTrackingInfo(c.status).category === 'Pending').length,
+    Pending: pendingCount,
     'In Progress': allCases.filter(c => getStatusTrackingInfo(c.status).category === 'In Progress').length,
-    Disposed: allCases.filter(c => getStatusTrackingInfo(c.status).category === 'Disposed').length
+    Disposed: disposedCount
   };
-
-  const pendingCount = categoryCounts.Pending;
-  const underInquiryCount = allCases.filter(c => isUnderInquiry(c.status)).length;
-  const disposedCount = categoryCounts.Disposed;
 
   const isCertOrRorPi = type === 'certcopy' || type === 'rorpi';
 
-  // Filtered cases
+  // Filtered cases strictly linked with calculation logic
   const filteredCases = allCases.filter(c => {
     const statusInfo = getStatusTrackingInfo(c.status);
-    const matchCategory = categoryFilter === 'All' || statusInfo.category === categoryFilter;
+    const matchCategory =
+      categoryFilter === 'All'
+        ? true
+        : categoryFilter === 'Pending'
+        ? isCasePending(c.status)
+        : categoryFilter === 'Disposed'
+        ? isCaseDisposed(c.status)
+        : statusInfo.category === categoryFilter;
     const matchStatus = statusFilter === 'All' || c.status === statusFilter;
     const matchSubType = type === 'rorpi'
       ? (subTypeFilter === 'All' || c.subType === subTypeFilter)
@@ -407,13 +452,10 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
       ? true
       : (subTypeFilter === 'All' || c.subType === subTypeFilter);
     const matchDistrict = !isCertOrRorPi || districtFilter === 'All' || c.district === districtFilter || Boolean(c.landSchedules?.some(s => s.district === districtFilter));
-    const matchUnderInquiry = !underInquiryFilter || isUnderInquiry(c.status);
-    const matchToday =
-      !todayHearingsFilter ||
-      c.nextDate === todayDateStr ||
-      (c.hearingDates && c.hearingDates.includes(todayDateStr)) ||
-      (c.hearingList && c.hearingList.some(h => h.date === todayDateStr));
+    const matchUnderInquiry = !underInquiryFilter || isCaseUnderInquiry(c.status);
+    const matchToday = !todayHearingsFilter || isCaseTodayHearing(c);
     const matchAttachment = !attachmentFilter || (c.attachments && c.attachments.length > 0);
+    const matchRtiOverdue = !rtiOverdueFilter || isRtiOverdue(c);
     const q = search.toLowerCase().trim();
 
     let matchSearch = !q;
@@ -489,7 +531,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
           ));
       }
     }
-    return matchCategory && matchStatus && matchSubType && matchDistrict && matchUnderInquiry && matchToday && matchAttachment && matchSearch;
+    return matchCategory && matchStatus && matchSubType && matchDistrict && matchUnderInquiry && matchToday && matchAttachment && matchRtiOverdue && matchSearch;
   });
 
   // Applicable iconic stage options according to case type
@@ -1456,7 +1498,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap shrink-0">
-            {type !== 'mutation' && type !== 'certcopy' && type !== 'rorpi' && onOpenAiDraft && (
+            {type !== 'mutation' && type !== 'certcopy' && type !== 'rorpi' && type !== 'conversion' && onOpenAiDraft && (
               <button
                 type="button"
                 onClick={() => onOpenAiDraft(type)}
@@ -1490,150 +1532,143 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
           </div>
         </div>
 
-        {/* 4 Compact 3D KPI Stat Cards (2x Smaller) — Total Cases, Today's Hearings, Active Pending, Vault Files */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-          {/* 1. Total Cases */}
-          {(() => {
-            const isActive =
-              categoryFilter === 'All' &&
-              statusFilter === 'All' &&
-              subTypeFilter === 'All' &&
-              !underInquiryFilter &&
-              !todayHearingsFilter &&
-              !attachmentFilter;
-            return (
-              <div
-                onClick={() => {
-                  setCategoryFilter('All');
-                  setStatusFilter('All');
-                  setSubTypeFilter('All');
-                  setUnderInquiryFilter(false);
-                  setTodayHearingsFilter(false);
-                  setAttachmentFilter(false);
-                }}
-                className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-blue-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
-                  isActive ? 'ring-2 ring-blue-500/40 bg-blue-50/40 dark:bg-blue-950/30' : ''
-                }`}
-                title="Click to view all registered cases in this module"
-              >
-                <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
-                  <span className="truncate">
-                    {isCertOrRorPi
-                      ? (language === 'bn' ? 'মোট আবেদন' : 'Total Applications')
-                      : (language === 'bn' ? 'মোট কেস (Total Cases)' : 'Total Cases')}
-                  </span>
-                  <div className="w-5 h-5 rounded-md bg-blue-50 dark:bg-blue-950/80 border border-blue-200/70 dark:border-blue-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-                    <Icon className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                  </div>
-                </div>
-                <div className="text-sm sm:text-base font-extrabold font-mono text-slate-900 dark:text-slate-100 leading-tight">
-                  {allCases.length}
-                </div>
-                <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
-                  {isCertOrRorPi
-                    ? `${pendingCount} Processing • ${disposedCount} Delivered`
-                    : `${pendingCount} Pending • ${disposedCount} Disposed`}
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* 2. Today's Hearings / Expected Delivery Today */}
-          {(() => {
-            const isActive = todayHearingsFilter;
-            return (
-              <div
-                onClick={() => {
-                  setTodayHearingsFilter(prev => !prev);
-                  if (!todayHearingsFilter) {
+        {/* Top KPI Stat Cards */}
+        {isCertOrRorPi ? (
+          /* Keep ror/pi & certified copy of deed dashboard unchanged as requested */
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+            {/* 1. Total Applications */}
+            {(() => {
+              const isActive =
+                categoryFilter === 'All' &&
+                statusFilter === 'All' &&
+                subTypeFilter === 'All' &&
+                !underInquiryFilter &&
+                !todayHearingsFilter &&
+                !attachmentFilter;
+              return (
+                <div
+                  onClick={() => {
                     setCategoryFilter('All');
                     setStatusFilter('All');
                     setSubTypeFilter('All');
-                    setDistrictFilter('All');
-                    setUnderInquiryFilter(false);
-                    setAttachmentFilter(false);
-                  }
-                }}
-                className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-amber-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
-                  isActive ? 'ring-2 ring-amber-500/50 bg-amber-50/50 dark:bg-amber-950/40' : ''
-                }`}
-                title={isCertOrRorPi ? "Filter by records with expected delivery scheduled today" : "Filter by cases with hearings scheduled today"}
-              >
-                <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
-                  <span className="truncate">
-                    {isCertOrRorPi
-                      ? (language === 'bn' ? 'আজকের সম্ভাব্য ডেলিভারি' : "Delivery Due Today")
-                      : (language === 'bn' ? 'আজকের শুনানি' : "Today's Hearings")}
-                  </span>
-                  <div className="w-5 h-5 rounded-md bg-amber-50 dark:bg-amber-950/80 border border-amber-200/70 dark:border-amber-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-                    <Calendar className="w-3 h-3 text-amber-500" />
-                  </div>
-                </div>
-                <div className="text-sm sm:text-base font-extrabold font-mono text-amber-600 dark:text-amber-400 leading-tight">
-                  {todayHearingCount}
-                </div>
-                <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
-                  {isCertOrRorPi ? 'Due for delivery today' : 'Scheduled hearings today'}
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* 3. Active Pending / In Progress */}
-          {(() => {
-            const isActive =
-              (categoryFilter === 'Pending' || underInquiryFilter) &&
-              !todayHearingsFilter &&
-              !attachmentFilter;
-            return (
-              <div
-                onClick={() => {
-                  if (isActive) {
-                    setCategoryFilter('All');
-                    setUnderInquiryFilter(false);
-                  } else {
-                    setCategoryFilter('Pending');
-                    setStatusFilter('All');
-                    setSubTypeFilter('All');
-                    setDistrictFilter('All');
                     setUnderInquiryFilter(false);
                     setTodayHearingsFilter(false);
                     setAttachmentFilter(false);
-                  }
-                }}
-                className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-purple-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
-                  isActive ? 'ring-2 ring-purple-500/50 bg-purple-50/50 dark:bg-purple-950/40' : ''
-                }`}
-                title={isCertOrRorPi ? "Filter by active in-progress applications" : "Filter by active pending & under inquiry cases"}
-              >
-                <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
-                  <span className="truncate">
-                    {isCertOrRorPi
-                      ? (language === 'bn' ? 'চলমান আবেদন' : 'In Progress')
-                      : (language === 'bn' ? 'চলমান বিচারাধীন' : 'Active Pending')}
-                  </span>
-                  <div className="w-5 h-5 rounded-md bg-purple-50 dark:bg-purple-950/80 border border-purple-200/70 dark:border-purple-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-                    <Clock className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                  }}
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-blue-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-blue-500/40 bg-blue-50/40 dark:bg-blue-950/30' : ''
+                  }`}
+                  title="Click to view all registered applications in this module"
+                >
+                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                    <span className="truncate">
+                      {language === 'bn' ? 'মোট আবেদন' : 'Total Applications'}
+                    </span>
+                    <div className="w-5 h-5 rounded-md bg-blue-50 dark:bg-blue-950/80 border border-blue-200/70 dark:border-blue-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                      <Icon className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                    </div>
+                  </div>
+                  <div className="text-sm sm:text-base font-extrabold font-mono text-slate-900 dark:text-slate-100 leading-tight">
+                    {allCases.length}
+                  </div>
+                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                    {pendingCount} Processing • {disposedCount} Delivered
                   </div>
                 </div>
-                <div className="text-sm sm:text-base font-extrabold font-mono text-purple-600 dark:text-purple-400 leading-tight">
-                  {activePendingCount}
-                </div>
-                <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
-                  {isCertOrRorPi ? 'Under verification & processing' : 'Requires follow-up & dates'}
-                </div>
-              </div>
-            );
-          })()}
+              );
+            })()}
 
-          {/* 4. Vault Files or Delivered (for certcopy/rorpi) */}
-          {(() => {
-            const deliveredCount = allCases.filter(c => c.status.toLowerCase().includes('delivered')).length;
-            const isActive = isCertOrRorPi ? statusFilter.toLowerCase().includes('delivered') : attachmentFilter;
-            return (
-              <div
-                onClick={() => {
-                  if (isCertOrRorPi) {
+            {/* 2. Expected Delivery Today */}
+            {(() => {
+              const isActive = todayHearingsFilter;
+              return (
+                <div
+                  onClick={() => {
+                    setTodayHearingsFilter(prev => !prev);
+                    if (!todayHearingsFilter) {
+                      setCategoryFilter('All');
+                      setStatusFilter('All');
+                      setSubTypeFilter('All');
+                      setDistrictFilter('All');
+                      setUnderInquiryFilter(false);
+                      setAttachmentFilter(false);
+                    }
+                  }}
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-amber-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-amber-500/50 bg-amber-50/50 dark:bg-amber-950/40' : ''
+                  }`}
+                  title="Filter by records with expected delivery scheduled today"
+                >
+                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                    <span className="truncate">
+                      {language === 'bn' ? 'আজকের সম্ভাব্য ডেলিভারি' : 'Delivery Due Today'}
+                    </span>
+                    <div className="w-5 h-5 rounded-md bg-amber-50 dark:bg-amber-950/80 border border-amber-200/70 dark:border-amber-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                      <Calendar className="w-3 h-3 text-amber-500" />
+                    </div>
+                  </div>
+                  <div className="text-sm sm:text-base font-extrabold font-mono text-amber-600 dark:text-amber-400 leading-tight">
+                    {todayHearingCount}
+                  </div>
+                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                    Due for delivery today
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* 3. In Progress */}
+            {(() => {
+              const isActive =
+                (categoryFilter === 'Pending' || underInquiryFilter) &&
+                !todayHearingsFilter &&
+                !attachmentFilter;
+              return (
+                <div
+                  onClick={() => {
+                    if (isActive) {
+                      setCategoryFilter('All');
+                      setUnderInquiryFilter(false);
+                    } else {
+                      setCategoryFilter('Pending');
+                      setStatusFilter('All');
+                      setSubTypeFilter('All');
+                      setDistrictFilter('All');
+                      setUnderInquiryFilter(false);
+                      setTodayHearingsFilter(false);
+                      setAttachmentFilter(false);
+                    }
+                  }}
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-purple-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-purple-500/50 bg-purple-50/50 dark:bg-purple-950/40' : ''
+                  }`}
+                  title="Filter by active in-progress applications"
+                >
+                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                    <span className="truncate">
+                      {language === 'bn' ? 'চলমান আবেদন' : 'In Progress'}
+                    </span>
+                    <div className="w-5 h-5 rounded-md bg-purple-50 dark:bg-purple-950/80 border border-purple-200/70 dark:border-purple-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                      <Clock className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                    </div>
+                  </div>
+                  <div className="text-sm sm:text-base font-extrabold font-mono text-purple-600 dark:text-purple-400 leading-tight">
+                    {activePendingCount}
+                  </div>
+                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                    Under verification &amp; processing
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* 4. Delivered */}
+            {(() => {
+              const deliveredCount = allCases.filter(c => c.status.toLowerCase().includes('delivered')).length;
+              const isActive = statusFilter.toLowerCase().includes('delivered');
+              return (
+                <div
+                  onClick={() => {
                     const deliveredStatus = type === 'rorpi' ? 'delivered' : 'Delivered';
                     if (statusFilter === deliveredStatus) {
                       setStatusFilter('All');
@@ -1643,42 +1678,396 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       setUnderInquiryFilter(false);
                       setTodayHearingsFilter(false);
                     }
-                  } else {
-                    setAttachmentFilter(prev => !prev);
-                    if (!attachmentFilter) {
-                      setTodayHearingsFilter(false);
-                    }
-                  }
-                }}
-                className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-emerald-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
-                  isActive ? 'ring-2 ring-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/40' : ''
-                }`}
-                title={isCertOrRorPi ? "Filter by delivered entries" : "Filter by cases with vault attachments or view stored documents"}
-              >
-                <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
-                  <span className="truncate">
-                    {isCertOrRorPi
-                      ? (language === 'bn' ? 'সরবরাহ সম্পন্ন' : 'Delivered')
-                      : (language === 'bn' ? 'ভল্ট ফাইলসমূহ' : 'Vault Files')}
-                  </span>
-                  <div className="w-5 h-5 rounded-md bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200/70 dark:border-emerald-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-                    {isCertOrRorPi ? (
+                  }}
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-emerald-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/40' : ''
+                  }`}
+                  title="Filter by delivered entries"
+                >
+                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                    <span className="truncate">
+                      {language === 'bn' ? 'সরবরাহ সম্পন্ন' : 'Delivered'}
+                    </span>
+                    <div className="w-5 h-5 rounded-md bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200/70 dark:border-emerald-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
                       <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                    ) : (
-                      <Archive className="w-3 h-3 text-emerald-500" />
-                    )}
+                    </div>
+                  </div>
+                  <div className="text-sm sm:text-base font-extrabold font-mono text-emerald-600 dark:text-emerald-400 leading-tight">
+                    {deliveredCount}
+                  </div>
+                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                    Completed &amp; handed to party
                   </div>
                 </div>
-                <div className="text-sm sm:text-base font-extrabold font-mono text-emerald-600 dark:text-emerald-400 leading-tight">
-                  {isCertOrRorPi ? deliveredCount : vaultDisplayCount}
+              );
+            })()}
+          </div>
+        ) : type === 'rti' ? (
+          /* RTI Dashboard: TOTAL CASES, DISPOSED, OVERDUE CASES, ACTIVE PENDING CASES (Vault Files omitted) */
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+            {/* 1. Total Cases */}
+            {(() => {
+              const isActive =
+                categoryFilter === 'All' &&
+                statusFilter === 'All' &&
+                !rtiOverdueFilter &&
+                !todayHearingsFilter &&
+                !underInquiryFilter;
+              return (
+                <div
+                  onClick={() => {
+                    setCategoryFilter('All');
+                    setStatusFilter('All');
+                    setSubTypeFilter('All');
+                    setRtiOverdueFilter(false);
+                    setUnderInquiryFilter(false);
+                    setTodayHearingsFilter(false);
+                  }}
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-blue-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-blue-500/40 bg-blue-50/40 dark:bg-blue-950/30' : ''
+                  }`}
+                  title="Click to view all RTI applications"
+                >
+                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                    <span className="truncate">
+                      {language === 'bn' ? 'মোট আরটিআই' : 'TOTAL CASES'}
+                    </span>
+                    <div className="w-5 h-5 rounded-md bg-blue-50 dark:bg-blue-950/80 border border-blue-200/70 dark:border-blue-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                      <FileSearch className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                    </div>
+                  </div>
+                  <div className="text-sm sm:text-base font-extrabold font-mono text-slate-900 dark:text-slate-100 leading-tight">
+                    {allCases.length}
+                  </div>
+                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                    {pendingCount} Active • {disposedCount} Replied
+                  </div>
                 </div>
-                <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
-                  {isCertOrRorPi ? 'Completed & handed to party' : 'Saved deeds, orders & ROR'}
+              );
+            })()}
+
+            {/* 2. Disposed */}
+            {(() => {
+              const isActive = categoryFilter === 'Disposed';
+              return (
+                <div
+                  onClick={() => {
+                    if (categoryFilter === 'Disposed') {
+                      setCategoryFilter('All');
+                    } else {
+                      setCategoryFilter('Disposed');
+                      setStatusFilter('All');
+                      setRtiOverdueFilter(false);
+                      setUnderInquiryFilter(false);
+                      setTodayHearingsFilter(false);
+                    }
+                  }}
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-emerald-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/40' : ''
+                  }`}
+                  title="Filter by replied and disposed RTI matters"
+                >
+                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                    <span className="truncate">
+                      {language === 'bn' ? 'নিষ্পত্তিকৃত (তথ্য প্রাপ্ত)' : 'DISPOSED'}
+                    </span>
+                    <div className="w-5 h-5 rounded-md bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200/70 dark:border-emerald-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                  </div>
+                  <div className="text-sm sm:text-base font-extrabold font-mono text-emerald-600 dark:text-emerald-400 leading-tight">
+                    {disposedCount}
+                  </div>
+                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                    Information provided &amp; closed
+                  </div>
                 </div>
-              </div>
-            );
-          })()}
-        </div>
+              );
+            })()}
+
+            {/* 3. Overdue Cases */}
+            {(() => {
+              const isActive = rtiOverdueFilter;
+              return (
+                <div
+                  onClick={() => {
+                    setRtiOverdueFilter(prev => !prev);
+                    if (!rtiOverdueFilter) {
+                      setCategoryFilter('All');
+                      setStatusFilter('All');
+                      setUnderInquiryFilter(false);
+                      setTodayHearingsFilter(false);
+                    }
+                  }}
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-rose-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-rose-500/50 bg-rose-50/50 dark:bg-rose-950/40' : ''
+                  }`}
+                  title="Filter by RTI matters exceeding statutory 30-day response limit"
+                >
+                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                    <span className="truncate">
+                      {language === 'bn' ? 'মেয়াদোত্তীর্ণ (৩০ দিন+)' : 'OVERDUE CASES'}
+                    </span>
+                    <div className="w-5 h-5 rounded-md bg-rose-50 dark:bg-rose-950/80 border border-rose-200/70 dark:border-rose-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                      <AlertTriangle className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+                    </div>
+                  </div>
+                  <div className="text-sm sm:text-base font-extrabold font-mono text-rose-600 dark:text-rose-400 leading-tight">
+                    {rtiOverdueCount}
+                  </div>
+                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                    &gt; 30-day statutory reply window
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* 4. Active Pending Cases */}
+            {(() => {
+              const rtiPendingCount = allCases.filter(c => getStatusTrackingInfo(c.status).category === 'Pending' || getStatusTrackingInfo(c.status).category === 'In Progress').length;
+              const isActive = (categoryFilter === 'Pending' || categoryFilter === 'In Progress') && !rtiOverdueFilter;
+              return (
+                <div
+                  onClick={() => {
+                    if (categoryFilter === 'Pending') {
+                      setCategoryFilter('All');
+                    } else {
+                      setCategoryFilter('Pending');
+                      setStatusFilter('All');
+                      setRtiOverdueFilter(false);
+                      setUnderInquiryFilter(false);
+                      setTodayHearingsFilter(false);
+                    }
+                  }}
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-purple-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-purple-500/50 bg-purple-50/50 dark:bg-purple-950/40' : ''
+                  }`}
+                  title="Filter by active pending RTI applications"
+                >
+                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                    <span className="truncate">
+                      {language === 'bn' ? 'সক্রিয় বিচারাধীন' : 'ACTIVE PENDING CASES'}
+                    </span>
+                    <div className="w-5 h-5 rounded-md bg-purple-50 dark:bg-purple-950/80 border border-purple-200/70 dark:border-purple-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                      <Clock className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                    </div>
+                  </div>
+                  <div className="text-sm sm:text-base font-extrabold font-mono text-purple-600 dark:text-purple-400 leading-tight">
+                    {rtiPendingCount}
+                  </div>
+                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                    Awaiting PIO / Appellate reply
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        ) : (
+          /* All other sub dashboards (mutation, misc, lrappeal, firstappeal, lrtt, conversion): 5 cards (Vault Files omitted) */
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+            {/* 1. Total Cases */}
+            {(() => {
+              const isActive =
+                categoryFilter === 'All' &&
+                statusFilter === 'All' &&
+                subTypeFilter === 'All' &&
+                !underInquiryFilter &&
+                !todayHearingsFilter &&
+                !attachmentFilter;
+              return (
+                <div
+                  onClick={() => {
+                    setCategoryFilter('All');
+                    setStatusFilter('All');
+                    setSubTypeFilter('All');
+                    setUnderInquiryFilter(false);
+                    setTodayHearingsFilter(false);
+                    setAttachmentFilter(false);
+                  }}
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-blue-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-blue-500/40 bg-blue-50/40 dark:bg-blue-950/30' : ''
+                  }`}
+                  title="Click to view all registered cases in this module"
+                >
+                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                    <span className="truncate">
+                      {language === 'bn' ? 'মোট কেস (Total Cases)' : 'TOTAL CASES'}
+                    </span>
+                    <div className="w-5 h-5 rounded-md bg-blue-50 dark:bg-blue-950/80 border border-blue-200/70 dark:border-blue-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                      <Icon className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                    </div>
+                  </div>
+                  <div className="text-sm sm:text-base font-extrabold font-mono text-slate-900 dark:text-slate-100 leading-tight">
+                    {allCases.length}
+                  </div>
+                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                    {pendingCount} Pending • {disposedCount} Disposed
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* 2. Pending Cases */}
+            {(() => {
+              const isActive = categoryFilter === 'Pending' && !underInquiryFilter && !todayHearingsFilter;
+              return (
+                <div
+                  onClick={() => {
+                    if (categoryFilter === 'Pending') {
+                      setCategoryFilter('All');
+                    } else {
+                      setCategoryFilter('Pending');
+                      setStatusFilter('All');
+                      setSubTypeFilter('All');
+                      setDistrictFilter('All');
+                      setUnderInquiryFilter(false);
+                      setTodayHearingsFilter(false);
+                      setAttachmentFilter(false);
+                    }
+                  }}
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-purple-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-purple-500/50 bg-purple-50/50 dark:bg-purple-950/40' : ''
+                  }`}
+                  title="Filter by active pending cases"
+                >
+                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                    <span className="truncate">
+                      {language === 'bn' ? 'চলমান বিচারাধীন' : 'PENDING CASES'}
+                    </span>
+                    <div className="w-5 h-5 rounded-md bg-purple-50 dark:bg-purple-950/80 border border-purple-200/70 dark:border-purple-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                      <Clock className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                    </div>
+                  </div>
+                  <div className="text-sm sm:text-base font-extrabold font-mono text-purple-600 dark:text-purple-400 leading-tight">
+                    {pendingCount}
+                  </div>
+                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                    Requires follow-up &amp; dates
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* 3. Today's Hearings */}
+            {(() => {
+              const isActive = todayHearingsFilter;
+              return (
+                <div
+                  onClick={() => {
+                    setTodayHearingsFilter(prev => !prev);
+                    if (!todayHearingsFilter) {
+                      setCategoryFilter('All');
+                      setStatusFilter('All');
+                      setSubTypeFilter('All');
+                      setDistrictFilter('All');
+                      setUnderInquiryFilter(false);
+                      setAttachmentFilter(false);
+                    }
+                  }}
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-amber-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-amber-500/50 bg-amber-50/50 dark:bg-amber-950/40' : ''
+                  }`}
+                  title="Filter by cases with hearings scheduled today"
+                >
+                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                    <span className="truncate">
+                      {language === 'bn' ? 'আজকের শুনানি' : "TODAYS HEARING"}
+                    </span>
+                    <div className="w-5 h-5 rounded-md bg-amber-50 dark:bg-amber-950/80 border border-amber-200/70 dark:border-amber-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                      <Calendar className="w-3 h-3 text-amber-500" />
+                    </div>
+                  </div>
+                  <div className="text-sm sm:text-base font-extrabold font-mono text-amber-600 dark:text-amber-400 leading-tight">
+                    {todayHearingCount}
+                  </div>
+                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                    Scheduled hearings today
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* 4. Under Inquiry */}
+            {(() => {
+              const isActive = underInquiryFilter;
+              return (
+                <div
+                  onClick={() => {
+                    setUnderInquiryFilter(prev => !prev);
+                    if (!underInquiryFilter) {
+                      setCategoryFilter('All');
+                      setStatusFilter('All');
+                      setSubTypeFilter('All');
+                      setDistrictFilter('All');
+                      setTodayHearingsFilter(false);
+                      setAttachmentFilter(false);
+                    }
+                  }}
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-indigo-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-indigo-500/50 bg-indigo-50/50 dark:bg-indigo-950/40' : ''
+                  }`}
+                  title="Filter by cases currently under inquiry, verification, or hearing report"
+                >
+                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                    <span className="truncate">
+                      {language === 'bn' ? 'তদন্তাধীন মামলা' : 'UNDER INQUIRY'}
+                    </span>
+                    <div className="w-5 h-5 rounded-md bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200/70 dark:border-indigo-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                      <FileSearch className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                  </div>
+                  <div className="text-sm sm:text-base font-extrabold font-mono text-indigo-600 dark:text-indigo-400 leading-tight">
+                    {underInquiryCount}
+                  </div>
+                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                    Field inquiry &amp; verification
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* 5. Disposed */}
+            {(() => {
+              const isActive = categoryFilter === 'Disposed';
+              return (
+                <div
+                  onClick={() => {
+                    if (categoryFilter === 'Disposed') {
+                      setCategoryFilter('All');
+                    } else {
+                      setCategoryFilter('Disposed');
+                      setStatusFilter('All');
+                      setSubTypeFilter('All');
+                      setDistrictFilter('All');
+                      setUnderInquiryFilter(false);
+                      setTodayHearingsFilter(false);
+                      setAttachmentFilter(false);
+                    }
+                  }}
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-emerald-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/40' : ''
+                  }`}
+                  title="Filter by disposed &amp; allowed cases"
+                >
+                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                    <span className="truncate">
+                      {language === 'bn' ? 'নিষ্পত্তিকৃত মামলা' : 'DISPOSED'}
+                    </span>
+                    <div className="w-5 h-5 rounded-md bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200/70 dark:border-emerald-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                  </div>
+                  <div className="text-sm sm:text-base font-extrabold font-mono text-emerald-600 dark:text-emerald-400 leading-tight">
+                    {disposedCount}
+                  </div>
+                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                    Order passed &amp; finalized
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
       </div>
 
       {/* Filter and Case List / Table Container — Matching Image 3 with 3D Visuals */}

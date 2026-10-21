@@ -87,7 +87,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     fontSize,
     setFontSize,
     openViewModal,
-    openChamberSetup
+    openChamberSetup,
+    appVersion,
+    forceAppUpdateAndReplace
   } = useApp();
   const [casesOpen, setCasesOpen] = useState(true);
   const [toolsOpen, setToolsOpen] = useState(true);
@@ -529,6 +531,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <LogOut className="w-3 h-3" />
               <span>Logout</span>
+            </button>
+          </div>
+
+          {/* Application Version & In-Place Replacement Sync */}
+          <div className="pt-2 mt-1 border-t border-slate-200/70 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 px-1">
+            <span className="font-mono font-bold tracking-tight text-slate-700 dark:text-slate-300">
+              v{appVersion}
+            </span>
+            <button
+              type="button"
+              onClick={forceAppUpdateAndReplace}
+              className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 font-semibold cursor-pointer transition-colors"
+              title="Replace existing app with latest build and refresh"
+            >
+              <RefreshCw className="w-2.5 h-2.5 text-blue-500" />
+              <span>Update / Sync</span>
             </button>
           </div>
         </div>

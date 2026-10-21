@@ -1,4 +1,4 @@
-const CACHE_NAME = 'srk-legal-app-v2';
+const CACHE_NAME = 'srk-case-manager-v5.0.0';
 
 // Install and immediately replace older service worker versions in-place
 self.addEventListener('install', (event) => {
