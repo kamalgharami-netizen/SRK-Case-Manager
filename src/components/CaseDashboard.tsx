@@ -252,7 +252,7 @@ const MODULE_META: Record<
       'Field Survey Trace Map Copy',
       'Other Certified Copy'
     ],
-    statuses: ['Applied', 'Challan Paid', 'Search In Progress', 'Comparing & Stamp Verification', 'Ready for Delivery', 'Delivered', 'Rejected / Objection'],
+    statuses: ['pending for apply', 'applied', 'downloaded', 'printed', 'sent to WhatsApp', 'delivered'],
     lawRef: 'Registration Act 1908 (Sec 57) / Indian Stamp Act',
     forum: 'ADSR / Sub-Registry Office / DR Record Room',
     limitation: 'Statutory delivery period 7-15 working days',
@@ -787,25 +787,40 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
       case 'certcopy':
         return [
           {
-            id: 'search',
-            label: language === 'bn' ? 'তল্লাশ ও রেকর্ড যাচাই' : 'Search in Progress',
-            subLabel: 'ADSR Record',
-            count: allCases.filter(c => c.status === 'Search In Progress').length,
-            icon: Search,
-            iconBg: 'bg-indigo-100 dark:bg-indigo-950/60',
-            iconColor: 'text-indigo-600 dark:text-indigo-400',
-            activeBorder: 'border-indigo-600',
-            activeRing: 'ring-indigo-600/30',
-            activeBg: 'bg-indigo-50/70 dark:bg-indigo-950/40',
-            badgeActiveText: 'text-indigo-600 dark:text-indigo-400',
+            id: 'pendingapply',
+            label: language === 'bn' ? 'আবেদন অপেক্ষমাণ' : 'Pending for Apply',
+            subLabel: 'Ready to Apply',
+            count: allCases.filter(c => (c.status || '').toLowerCase() === 'pending for apply').length,
+            icon: Clock,
+            iconBg: 'bg-amber-100 dark:bg-amber-950/60',
+            iconColor: 'text-amber-600 dark:text-amber-400',
+            activeBorder: 'border-amber-600',
+            activeRing: 'ring-amber-600/30',
+            activeBg: 'bg-amber-50/70 dark:bg-amber-950/40',
+            badgeActiveText: 'text-amber-600 dark:text-amber-400',
             filterMode: 'status' as const,
-            value: 'Search In Progress'
+            value: 'pending for apply'
           },
           {
-            id: 'ready',
-            label: language === 'bn' ? 'ডেলিভারি প্রস্তুত' : 'Ready for Delivery',
-            subLabel: 'Stamp Verified',
-            count: allCases.filter(c => c.status === 'Ready for Delivery').length,
+            id: 'downloaded',
+            label: language === 'bn' ? 'ডাউনলোড ও প্রিন্ট' : 'Downloaded / Printed',
+            subLabel: 'Ready Copy',
+            count: allCases.filter(c => ['downloaded', 'printed'].includes((c.status || '').toLowerCase())).length,
+            icon: Download,
+            iconBg: 'bg-blue-100 dark:bg-blue-950/60',
+            iconColor: 'text-blue-600 dark:text-blue-400',
+            activeBorder: 'border-blue-600',
+            activeRing: 'ring-blue-600/30',
+            activeBg: 'bg-blue-50/70 dark:bg-blue-950/40',
+            badgeActiveText: 'text-blue-600 dark:text-blue-400',
+            filterMode: 'status' as const,
+            value: 'downloaded'
+          },
+          {
+            id: 'delivered',
+            label: language === 'bn' ? 'সরবরাহ সম্পন্ন' : 'Delivered',
+            subLabel: 'Handed to Party',
+            count: allCases.filter(c => (c.status || '').toLowerCase().includes('delivered')).length,
             icon: PackageCheck,
             iconBg: 'bg-emerald-100 dark:bg-emerald-950/60',
             iconColor: 'text-emerald-600 dark:text-emerald-400',
@@ -814,22 +829,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
             activeBg: 'bg-emerald-50/70 dark:bg-emerald-950/40',
             badgeActiveText: 'text-emerald-600 dark:text-emerald-400',
             filterMode: 'status' as const,
-            value: 'Ready for Delivery'
-          },
-          {
-            id: 'delivered',
-            label: language === 'bn' ? 'সরবরাহ সম্পন্ন' : 'Delivered',
-            subLabel: 'Handed to Party',
-            count: allCases.filter(c => c.status === 'Delivered').length,
-            icon: Check,
-            iconBg: 'bg-blue-100 dark:bg-blue-950/60',
-            iconColor: 'text-blue-600 dark:text-blue-400',
-            activeBorder: 'border-blue-600',
-            activeRing: 'ring-blue-600/30',
-            activeBg: 'bg-blue-50/70 dark:bg-blue-950/40',
-            badgeActiveText: 'text-blue-600 dark:text-blue-400',
-            filterMode: 'status' as const,
-            value: 'Delivered'
+            value: 'delivered'
           }
         ];
       case 'rorpi':
