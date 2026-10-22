@@ -277,9 +277,9 @@ export const CauseList: React.FC = () => {
           <input
             type="text"
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => setSearch(e.target.value.toUpperCase())}
             placeholder="Search cause list..."
-            className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
+            className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 uppercase focus:outline-none focus:ring-1 focus:ring-blue-600"
           />
         </div>
       </div>
@@ -474,9 +474,9 @@ export const CauseList: React.FC = () => {
                   type="text"
                   required
                   value={caseNo}
-                  onChange={e => setCaseNo(e.target.value)}
+                  onChange={e => setCaseNo(e.target.value.toUpperCase())}
                   placeholder="e.g. MUT/2026/0418 or OA 482/2026"
-                  className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold"
+                  className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold uppercase"
                 />
               </div>
 
@@ -488,9 +488,9 @@ export const CauseList: React.FC = () => {
                   type="text"
                   required
                   value={forum}
-                  onChange={e => setForum(e.target.value)}
+                  onChange={e => setForum(e.target.value.toUpperCase())}
                   placeholder="BL&LRO Rajarhat / DL&LRO Alipore"
-                  className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                  className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 uppercase"
                 />
               </div>
 
@@ -502,9 +502,9 @@ export const CauseList: React.FC = () => {
                   type="text"
                   required
                   value={party}
-                  onChange={e => setParty(e.target.value)}
+                  onChange={e => setParty(e.target.value.toUpperCase())}
                   placeholder="e.g. Debashis Chatterjee vs State"
-                  className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                  className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 uppercase"
                 />
               </div>
 
@@ -516,9 +516,9 @@ export const CauseList: React.FC = () => {
                   <input
                     type="text"
                     value={benchRoom}
-                    onChange={e => setBenchRoom(e.target.value)}
+                    onChange={e => setBenchRoom(e.target.value.toUpperCase())}
                     placeholder="Room 104 / Court 2"
-                    className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                    className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 uppercase"
                   />
                 </div>
                 <div>

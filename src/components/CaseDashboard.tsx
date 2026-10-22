@@ -1498,7 +1498,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap shrink-0">
-            {type !== 'mutation' && type !== 'certcopy' && type !== 'rorpi' && type !== 'conversion' && onOpenAiDraft && (
+            {type !== 'mutation' && type !== 'misc' && type !== 'certcopy' && type !== 'rorpi' && type !== 'conversion' && type !== 'lrappeal' && type !== 'lrtt' && onOpenAiDraft && (
               <button
                 type="button"
                 onClick={() => onOpenAiDraft(type)}
@@ -2705,7 +2705,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       onClick={e => e.stopPropagation()}
                     >
                       <div className="flex items-center gap-1">
-                        {!isCertOrRorPi && ['mutation', 'misc', 'lrappeal', 'lrtt'].includes(c.type) && onOpenChainDeed && (
+                        {!isCertOrRorPi && ['mutation', 'misc'].includes(c.type) && onOpenChainDeed && (
                           <button
                             type="button"
                             onClick={() => onOpenChainDeed(c)}
@@ -3082,7 +3082,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                           onClick={e => e.stopPropagation()}
                         >
                           <div className="flex items-center justify-end gap-1">
-                            {['mutation', 'misc', 'lrappeal', 'lrtt'].includes(c.type) && onOpenChainDeed && (
+                            {['mutation', 'misc'].includes(c.type) && onOpenChainDeed && (
                               <button
                                 onClick={() => onOpenChainDeed(c)}
                                 className="p-1.5 rounded-lg text-blue-600 hover:text-white hover:bg-blue-600 transition-colors cursor-pointer"

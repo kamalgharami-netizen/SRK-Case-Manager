@@ -246,10 +246,11 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   const isRti = type === 'rti';
   const isCertCopy = type === 'certcopy';
   const isRorPi = type === 'rorpi';
+  const isLrtt = type === 'lrtt';
   const isCertOrRorPi = isCertCopy || isRorPi;
   const isDocketBased = isMisc || isLrAppeal || isFirstAppeal || isRti;
   const isGrnOmitted = isMisc || isLrAppeal || isRti;
-  const isChainDeedHidden = isRti || isFirstAppeal || isCertCopy || isRorPi;
+  const isChainDeedHidden = isMisc || isRti || isFirstAppeal || isCertCopy || isRorPi || isLrAppeal || isLrtt;
   const isMutation = type === 'mutation';
 
   // Search box for updating existing data through deed no, app no / docket no, applicant name, case no
@@ -358,9 +359,10 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   };
 
   const updateHearingDate = (idx: number, field: 'date' | 'stage', val: string) => {
+    const finalVal = field === 'stage' ? val.toUpperCase() : val;
     setHearingList(prev => {
       const copy = [...prev];
-      copy[idx] = { ...copy[idx], [field]: val };
+      copy[idx] = { ...copy[idx], [field]: finalVal };
       if (field === 'date' && idx === 0) {
         setNextDate(val);
       }
@@ -723,8 +725,11 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
 
   const [activeSuggestingIdx, setActiveSuggestingIdx] = useState<number>(0);
 
+  // Helper to automatically convert typed text to uppercase without losing spaces
+  const toUpper = (val: string) => val.toUpperCase();
+
   const syncPartyFromApplicants = (list: Applicant[]) => {
-    const names = list.map(a => a.name.trim()).filter(Boolean);
+    const names = list.map(a => a.name).filter(Boolean);
     if (names.length > 0) {
       setParty(names.join(', '));
     }
@@ -756,8 +761,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   };
 
   const updateApplicantField = (idx: number, field: keyof Applicant, val: string) => {
+    const finalVal = (field === 'name' || field === 'father' || field === 'address') ? toUpper(val) : val;
     setApplicants(prev => {
-      const updated = prev.map((a, i) => (i === idx ? { ...a, [field]: val } : a));
+      const updated = prev.map((a, i) => (i === idx ? { ...a, [field]: finalVal } : a));
       if (field === 'name') {
         syncPartyFromApplicants(updated);
       }
@@ -771,11 +777,12 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
 
   // Handle party name typing and suggestions (Requirement 8)
   const handlePartyChange = (val: string, idx = 0) => {
+    const upperVal = val.toUpperCase();
     setActiveSuggestingIdx(idx);
-    updateApplicantField(idx, 'name', val);
+    updateApplicantField(idx, 'name', upperVal);
 
-    if (val.trim().length >= 2 && activeCompany?.parties) {
-      const q = val.toLowerCase().trim();
+    if (upperVal.trim().length >= 2 && activeCompany?.parties) {
+      const q = upperVal.toLowerCase().trim();
       const matches = activeCompany.parties.filter(p => p.name.toLowerCase().includes(q));
       setPartySuggestions(matches);
       setShowPartySuggestions(matches.length > 0);
@@ -822,6 +829,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   };
 
   const updateSchedule = (idx: number, field: keyof LandSchedule, val: any) => {
+    const finalVal = (typeof val === 'string' && ['mouza', 'jl', 'khatian', 'dag', 'classification', 'plotOrKhatian'].includes(field))
+      ? val.toUpperCase()
+      : val;
     setLandSchedules(prev =>
       prev.map((s, i) => {
         if (i !== idx) return s;
@@ -829,14 +839,14 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
           const blocks = wbDistricts[val] || [];
           return { ...s, district: val, block: blocks[0] || '' };
         }
-        return { ...s, [field]: val };
+        return { ...s, [field]: finalVal };
       })
     );
   };
 
-  // Sync opposite party string from respondents array
+  // Sync opposite party string from respondents array without trimming trailing spaces
   const syncOppFromRespondents = (resps: Respondent[]) => {
-    const names = resps.map(r => r.name.trim()).filter(Boolean);
+    const names = resps.map(r => r.name).filter(Boolean);
     setOpp(names.join(', '));
   };
 
@@ -870,8 +880,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   };
 
   const updateRespondent = (idx: number, field: keyof Respondent, val: any) => {
+    const finalVal = (typeof val === 'string' && field !== 'phone') ? val.toUpperCase() : val;
     setRespondents(prev => {
-      const updated = prev.map((r, i) => (i === idx ? { ...r, [field]: val } : r));
+      const updated = prev.map((r, i) => (i === idx ? { ...r, [field]: finalVal } : r));
       if (isMutationOrMisc && field === 'name') {
         syncOppFromRespondents(updated);
       }
@@ -926,10 +937,11 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   };
 
   const updateVendorInLink = (linkIdx: number, vIdx: number, val: string) => {
+    const upperVal = val.toUpperCase();
     setChainLinks(prev =>
       prev.map((cl, i) => {
         if (i !== linkIdx) return cl;
-        const updated = (cl.vendors || ['']).map((v, idx) => (idx === vIdx ? val : v));
+        const updated = (cl.vendors || ['']).map((v, idx) => (idx === vIdx ? upperVal : v));
         return { ...cl, vendors: updated, vendor: updated.join(', ') };
       })
     );
@@ -957,10 +969,11 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   };
 
   const updatePurchaserInLink = (linkIdx: number, pIdx: number, val: string) => {
+    const upperVal = val.toUpperCase();
     setChainLinks(prev =>
       prev.map((cl, i) => {
         if (i !== linkIdx) return cl;
-        const updated = (cl.purchasers || ['']).map((p, idx) => (idx === pIdx ? val : p));
+        const updated = (cl.purchasers || ['']).map((p, idx) => (idx === pIdx ? upperVal : p));
         return { ...cl, purchasers: updated, purchaser: updated.join(', ') };
       })
     );
@@ -1013,10 +1026,11 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   };
 
   const updateWarishNameInLink = (linkIdx: number, wIdx: number, val: string) => {
+    const upperVal = val.toUpperCase();
     setChainLinks(prev =>
       prev.map((cl, i) => {
         if (i !== linkIdx) return cl;
-        const updated = (cl.warishNames || ['']).map((w, idx) => (idx === wIdx ? val : w));
+        const updated = (cl.warishNames || ['']).map((w, idx) => (idx === wIdx ? upperVal : w));
         return { ...cl, warishNames: updated, purchaser: updated.join(', ') };
       })
     );
@@ -1027,8 +1041,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   };
 
   const updateChainLink = (idx: number, field: keyof ChainLink, val: string) => {
+    const finalVal = (field !== 'notes' && field !== 'warishDetails') ? val.toUpperCase() : val;
     setChainLinks(prev =>
-      prev.map((cl, i) => (i === idx ? { ...cl, [field]: val } : cl))
+      prev.map((cl, i) => (i === idx ? { ...cl, [field]: finalVal } : cl))
     );
   };
 
@@ -1206,7 +1221,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             .filter(
               s => (s.plotOrKhatian && s.plotOrKhatian.trim() !== '') || (s.dag && s.dag.trim() !== '') || (s.khatian && s.khatian.trim() !== '') || (s.jl && s.jl.trim() !== '')
             )
-        : isRti
+        : (isRti || isFirstAppeal)
         ? landSchedules.filter(
             s => s.mouza.trim() !== '' || s.khatian.trim() !== '' || s.dag.trim() !== '' || s.area.trim() !== ''
           )
@@ -1495,7 +1510,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                 </button>
               )}
 
-              {postSaveCase.type !== 'mutation' && postSaveCase.type !== 'certcopy' && postSaveCase.type !== 'rorpi' && onOpenAiDraft && (
+              {postSaveCase.type !== 'mutation' && postSaveCase.type !== 'misc' && postSaveCase.type !== 'firstappeal' && postSaveCase.type !== 'certcopy' && postSaveCase.type !== 'rorpi' && postSaveCase.type !== 'lrappeal' && postSaveCase.type !== 'lrtt' && onOpenAiDraft && (
                 <button
                   type="button"
                   onClick={() => {
@@ -1510,7 +1525,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                 </button>
               )}
 
-              {!isCertOrRorPi && (
+              {!isCertOrRorPi && postSaveCase.type !== 'lrappeal' && postSaveCase.type !== 'lrtt' && (
                 <button
                   type="button"
                   onClick={handlePrintDossier}
@@ -1576,8 +1591,8 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
 
         {/* Action Buttons: Save, Update, Cancel, Print, Make Chain Deed, AI Drafting */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Requirement 5: AI Drafting Option (Removed for Mutation, Certified Copy and ROR/PI) */}
-          {type !== 'mutation' && !isCertOrRorPi && onOpenAiDraft && (
+          {/* Requirement 5: AI Drafting Option (Removed for Mutation, Misc, First Appeal, Certified Copy, ROR/PI, LR Appeal and LRTT) */}
+          {type !== 'mutation' && type !== 'misc' && type !== 'firstappeal' && type !== 'lrappeal' && type !== 'lrtt' && !isCertOrRorPi && onOpenAiDraft && (
             <button
               type="button"
               onClick={handleTriggerAiDraft}
@@ -1589,7 +1604,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             </button>
           )}
 
-          {/* Requirement 20: Make Chain Deed direct button (Removed for RTI, First Appeal, Certified Copy, and ROR/PI) */}
+          {/* Requirement 20: Make Chain Deed direct button (Removed for RTI, First Appeal, Certified Copy, ROR/PI, LR Appeal, and LRTT) */}
           {!isChainDeedHidden && (
             <button
               type="button"
@@ -1602,8 +1617,8 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             </button>
           )}
 
-          {/* Requirement 19: Print Dossier button (Removed for Certified Copy and ROR/PI) */}
-          {!isCertOrRorPi && (
+          {/* Requirement 19: Print Dossier button (Removed for Certified Copy, ROR/PI, LR Appeal, and LRTT) */}
+          {!isCertOrRorPi && type !== 'lrappeal' && type !== 'lrtt' && (
             <button
               type="button"
               onClick={handlePrintDossier}
@@ -1677,8 +1692,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             type="text"
             value={searchQuery}
             onChange={e => {
-              setSearchQuery(e.target.value);
-              setShowSearchResults(e.target.value.trim().length > 0);
+              const val = toUpper(e.target.value);
+              setSearchQuery(val);
+              setShowSearchResults(val.trim().length > 0);
             }}
             onFocus={() => setShowSearchResults(searchQuery.trim().length > 0)}
             placeholder={
@@ -1696,7 +1712,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                 ? "Type Docket No / Tracking ID, Applicant Name, Authority, or Case No to search & edit..."
                 : "Type Deed No, Application No (MUTE..), Applicant Name, or Case No (MN/..) to search & edit..."
             }
-            className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-600"
+            className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-900 font-medium uppercase focus:outline-none focus:ring-2 focus:ring-blue-600"
           />
           <Search className="w-4 h-4 text-blue-500 absolute left-3 top-2.5" />
 
@@ -1845,9 +1861,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                 <input
                   type="text"
                   value={appNo}
-                  onChange={e => setAppNo(e.target.value)}
+                  onChange={e => setAppNo(toUpper(e.target.value))}
                   placeholder="e.g. ROR-2026-XXXXXX (Optional)"
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold text-blue-700 dark:text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold uppercase text-blue-700 dark:text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
                 />
               </div>
 
@@ -1859,9 +1875,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                 <input
                   type="text"
                   value={grnNo}
-                  onChange={e => setGrnNo(e.target.value)}
+                  onChange={e => setGrnNo(toUpper(e.target.value))}
                   placeholder="19202600XXXXXX"
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-medium focus:outline-none focus:ring-1 focus:ring-blue-600"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-medium uppercase focus:outline-none focus:ring-1 focus:ring-blue-600"
                 />
               </div>
 
@@ -1912,9 +1928,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                   type="text"
                   required
                   value={appNo}
-                  onChange={e => setAppNo(e.target.value)}
+                  onChange={e => setAppNo(toUpper(e.target.value))}
                   placeholder="AIN-2026-XXXXXX"
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold uppercase text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-600"
                 />
               </div>
 
@@ -1926,9 +1942,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                 <input
                   type="text"
                   value={grnNo}
-                  onChange={e => setGrnNo(e.target.value)}
+                  onChange={e => setGrnNo(toUpper(e.target.value))}
                   placeholder="19202600XXXXXX"
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-medium focus:outline-none focus:ring-1 focus:ring-blue-600"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-medium uppercase focus:outline-none focus:ring-1 focus:ring-blue-600"
                 />
               </div>
 
@@ -1941,9 +1957,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                   type="text"
                   required
                   value={applicantDeedNo}
-                  onChange={e => setApplicantDeedNo(e.target.value)}
+                  onChange={e => setApplicantDeedNo(toUpper(e.target.value))}
                   placeholder="e.g. 1045 / I-240"
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold text-blue-700 dark:text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold uppercase text-blue-700 dark:text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
                 />
               </div>
 
@@ -1956,9 +1972,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                   type="text"
                   required
                   value={applicantDeedYear}
-                  onChange={e => setApplicantDeedYear(e.target.value)}
+                  onChange={e => setApplicantDeedYear(toUpper(e.target.value))}
                   placeholder="e.g. 2024"
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold text-indigo-700 dark:text-indigo-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold uppercase text-indigo-700 dark:text-indigo-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
                 />
               </div>
 
@@ -1990,9 +2006,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                 <input
                   type="text"
                   value={applicantAdsr}
-                  onChange={e => setApplicantAdsr(e.target.value)}
+                  onChange={e => setApplicantAdsr(toUpper(e.target.value))}
                   placeholder="e.g. ADSR Rajarhat / Bidhannagar"
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-blue-600"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium uppercase focus:outline-none focus:ring-1 focus:ring-blue-600"
                 />
               </div>
             </div>
@@ -2068,7 +2084,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                   type="text"
                   required={!isRti}
                   value={caseNo}
-                  onChange={e => setCaseNo(e.target.value)}
+                  onChange={e => setCaseNo(toUpper(e.target.value))}
                   placeholder={
                     isMisc
                       ? 'MISC/2026/0418'
@@ -2082,7 +2098,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                       ? 'MN/2026/0418'
                       : 'Case/2026/001'
                   }
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold text-blue-700 dark:text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold uppercase text-blue-700 dark:text-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
                 />
               </div>
 
@@ -2095,9 +2111,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                   <input
                     type="text"
                     value={docketNo}
-                    onChange={e => setDocketNo(e.target.value)}
+                    onChange={e => setDocketNo(toUpper(e.target.value))}
                     placeholder={isRti ? 'e.g. DOC-2026-XXXX / Tracking ID' : 'DOC-2026-XXXX'}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold uppercase text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-600"
                   />
                 </div>
               ) : (
@@ -2108,9 +2124,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                   <input
                     type="text"
                     value={appNo}
-                    onChange={e => setAppNo(e.target.value)}
+                    onChange={e => setAppNo(toUpper(e.target.value))}
                     placeholder="MUTE-2026-XXXX"
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold uppercase text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-600"
                   />
                 </div>
               )}
@@ -2126,9 +2142,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                       type="text"
                       list="firstappeal-subtypes"
                       value={subType}
-                      onChange={e => setSubType(e.target.value)}
+                      onChange={e => setSubType(toUpper(e.target.value))}
                       placeholder="u/s 19(1) or u/s 19(2) of RTI Act 2005"
-                      className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-blue-600"
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold uppercase focus:outline-none focus:ring-1 focus:ring-blue-600"
                     />
                     <datalist id="firstappeal-subtypes">
                       {SUBTYPES_BY_TYPE.firstappeal.map(st => (
@@ -2160,9 +2176,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                   <input
                     type="text"
                     value={grnNo}
-                    onChange={e => setGrnNo(e.target.value)}
+                    onChange={e => setGrnNo(toUpper(e.target.value))}
                     placeholder={isFirstAppeal ? 'EW123456789IN / Tracking No' : '19202600XXXXXX'}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono uppercase"
                   />
                 </div>
               )}
@@ -2198,9 +2214,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                       type="text"
                       list="rti-forum-authorities"
                       value={forum}
-                      onChange={e => setForum(e.target.value)}
+                      onChange={e => setForum(toUpper(e.target.value))}
                       placeholder="Police Station / BDO / Panchayat / Municipality / BL&LRO (Optional)"
-                      className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 uppercase focus:outline-none focus:ring-1 focus:ring-blue-600"
                     />
                     <datalist id="rti-forum-authorities">
                       {FORUMS_BY_TYPE.rti.map(f => (
@@ -2279,9 +2295,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                     <input
                       type="text"
                       value={h.stage || ''}
-                      onChange={e => updateHearingDate(hIdx, 'stage', e.target.value)}
+                      onChange={e => updateHearingDate(hIdx, 'stage', toUpper(e.target.value))}
                       placeholder="e.g. 1st Hearing / Spot Inquiry / Final Order"
-                      className="w-full px-2 py-0.5 text-[11px] rounded border border-slate-200 dark:border-slate-700 bg-transparent text-slate-600 dark:text-slate-400 focus:outline-none"
+                      className="w-full px-2 py-0.5 text-[11px] rounded border border-slate-200 dark:border-slate-700 bg-transparent text-slate-600 dark:text-slate-400 uppercase focus:outline-none"
                     />
                   </div>
                   {hearingList.length > 1 && (
@@ -2333,9 +2349,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                     type="text"
                     required
                     value={party}
-                    onChange={e => handlePartyChange(e.target.value)}
+                    onChange={e => handlePartyChange(toUpper(e.target.value))}
                     placeholder="e.g. Sri Nirmal Sen"
-                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold focus:outline-none focus:ring-1 focus:ring-blue-600"
+                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold uppercase focus:outline-none focus:ring-1 focus:ring-blue-600"
                   />
 
                   {/* Autocomplete dropdown for existing parties */}
@@ -2411,9 +2427,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                           type="text"
                           required
                           value={app.name}
-                          onChange={e => handlePartyChange(e.target.value, idx)}
+                          onChange={e => handlePartyChange(toUpper(e.target.value), idx)}
                           placeholder="e.g. Sri Nirmal Sen"
-                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold focus:outline-none focus:ring-1 focus:ring-blue-600"
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold uppercase focus:outline-none focus:ring-1 focus:ring-blue-600"
                         />
 
                         {/* Autocomplete dropdown for existing parties */}
@@ -2445,9 +2461,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                         <input
                           type="text"
                           value={app.father || ''}
-                          onChange={e => updateApplicantField(idx, 'father', e.target.value)}
+                          onChange={e => updateApplicantField(idx, 'father', toUpper(e.target.value))}
                           placeholder="Father / Husband Name"
-                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 uppercase focus:outline-none focus:ring-1 focus:ring-blue-600"
                         />
                       </div>
 
@@ -2472,9 +2488,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                       <input
                         type="text"
                         value={app.address || ''}
-                        onChange={e => updateApplicantField(idx, 'address', e.target.value)}
+                        onChange={e => updateApplicantField(idx, 'address', toUpper(e.target.value))}
                         placeholder="Vill, P.O., P.S., Dist, Pin"
-                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 uppercase focus:outline-none focus:ring-1 focus:ring-blue-600"
                       />
                     </div>
                   </div>
@@ -2482,8 +2498,8 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
               </div>
             )}
 
-            {/* Requirement 9: Applicant's Deed Details (Deed No, Year, Type of Deed, and ADSR) (Removed for Certified Copy and ROR/PI) */}
-            {!isCertOrRorPi && (
+            {/* Requirement 9: Applicant's Deed Details (Deed No, Year, Type of Deed, and ADSR) (Removed for First Appeal, Certified Copy and ROR/PI) */}
+            {!isCertOrRorPi && !isFirstAppeal && (
               <div className="p-3 rounded-lg border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/40 dark:bg-emerald-950/20 space-y-2 mt-2">
                 <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wide flex items-center gap-1.5">
                   <Scroll className="w-3.5 h-3.5 text-emerald-600" />
@@ -2498,9 +2514,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                     <input
                       type="text"
                       value={applicantDeedNo}
-                      onChange={e => setApplicantDeedNo(e.target.value)}
+                      onChange={e => setApplicantDeedNo(toUpper(e.target.value))}
                       placeholder="e.g. 1045 / I-240"
-                      className="w-full px-2.5 py-1.5 text-xs rounded border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 font-mono font-bold"
+                      className="w-full px-2.5 py-1.5 text-xs rounded border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 font-mono font-bold uppercase"
                     />
                   </div>
 
@@ -2511,9 +2527,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                     <input
                       type="text"
                       value={applicantDeedYear}
-                      onChange={e => setApplicantDeedYear(e.target.value)}
+                      onChange={e => setApplicantDeedYear(toUpper(e.target.value))}
                       placeholder="e.g. 2021"
-                      className="w-full px-2.5 py-1.5 text-xs rounded border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 font-mono font-bold text-indigo-700 dark:text-indigo-300"
+                      className="w-full px-2.5 py-1.5 text-xs rounded border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 font-mono font-bold uppercase text-indigo-700 dark:text-indigo-300"
                     />
                   </div>
 
@@ -2541,9 +2557,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                     <input
                       type="text"
                       value={applicantAdsr}
-                      onChange={e => setApplicantAdsr(e.target.value)}
+                      onChange={e => setApplicantAdsr(toUpper(e.target.value))}
                       placeholder="e.g. ADSR Rajarhat / Cossipore"
-                      className="w-full px-2.5 py-1.5 text-xs rounded border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900"
+                      className="w-full px-2.5 py-1.5 text-xs rounded border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 uppercase"
                     />
                   </div>
                 </div>
@@ -2571,9 +2587,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                     <input
                       type="text"
                       value={brokerName}
-                      onChange={e => setBrokerName(e.target.value)}
+                      onChange={e => setBrokerName(toUpper(e.target.value))}
                       placeholder="e.g. Subir Ghosh (Muhuri)"
-                      className="w-full px-2.5 py-1.5 text-xs rounded border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900"
+                      className="w-full px-2.5 py-1.5 text-xs rounded border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900 uppercase"
                     />
                   </div>
                   <div>
@@ -2652,9 +2668,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                         <input
                           type="text"
                           value={r.name}
-                          onChange={e => updateRespondent(i, 'name', e.target.value)}
+                          onChange={e => updateRespondent(i, 'name', toUpper(e.target.value))}
                           placeholder="e.g. Sri Subhas Sen (Co-sharer)"
-                          className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold"
+                          className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold uppercase"
                         />
                       </div>
                       <div>
@@ -2692,9 +2708,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                       <input
                         type="text"
                         value={r.address}
-                        onChange={e => updateRespondent(i, 'address', e.target.value)}
+                        onChange={e => updateRespondent(i, 'address', toUpper(e.target.value))}
                         placeholder="Full residential or official address for summons / notice"
-                        className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                        className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 uppercase"
                       />
                     </div>
                   </div>
@@ -2714,7 +2730,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
               {isRorPi
                 ? '2. জমির তপশীল বিবরণ — প্লট / খতিয়ান (Schedule of Land — Plot or Khatian)'
-                : isRti
+                : isRti || isFirstAppeal
                 ? '2. সম্পত্তির তপশীল বিবরণ (Schedule of Land — Optional / Not Compulsory)'
                 : '2. সম্পত্তির তপশীল বিবরণ (Property Schedule Details)'}
             </span>
@@ -2724,6 +2740,11 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             {isRorPi && (
               <p className="text-[11px] text-blue-700 dark:text-blue-300 mt-0.5">
                 Add Plot (Dag No.) or Khatian No. along with District, Block, and J.L. No. for ROR / PI generation.
+              </p>
+            )}
+            {isFirstAppeal && (
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                Schedule of Land is not compulsory for First Appeal applications. Leave blank or remove if not applicable.
               </p>
             )}
             {isRti && (
@@ -2743,9 +2764,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         </div>
 
         <div className="space-y-3">
-          {landSchedules.length === 0 && isRti && (
+          {landSchedules.length === 0 && (isRti || isFirstAppeal) && (
             <div className="p-3.5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-center text-xs text-slate-500 dark:text-slate-400">
-              No land schedule attached (Not compulsory for RTI). Click <strong>+ Add Schedule</strong> above only if this RTI relates to a specific land plot.
+              No land schedule attached (Not compulsory for {isFirstAppeal ? 'First Appeal' : 'RTI'}). Click <strong>+ Add Schedule</strong> above only if this case relates to a specific land plot.
             </div>
           )}
           {landSchedules.map((sched, idx) => (
@@ -2755,9 +2776,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             >
               <div className="flex items-center justify-between">
                 <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Schedule #{idx + 1} {isRti ? '(Optional)' : ''}
+                  Schedule #{idx + 1} {(isRti || isFirstAppeal) ? '(Optional)' : ''}
                 </div>
-                {(landSchedules.length > 1 || isRti) && (
+                {(landSchedules.length > 1 || isRti || isFirstAppeal) && (
                   <button
                     type="button"
                     onClick={() => removeLandSchedule(idx)}
@@ -2815,9 +2836,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                       <input
                         type="text"
                         value={sched.jl}
-                        onChange={e => updateSchedule(idx, 'jl', e.target.value)}
+                        onChange={e => updateSchedule(idx, 'jl', toUpper(e.target.value))}
                         placeholder="36"
-                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono font-bold"
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono font-bold uppercase"
                       />
                     </div>
                   </div>
@@ -2879,7 +2900,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                           type="text"
                           value={sched.plotOrKhatian ?? (sched.recordType === 'Plot' ? sched.dag : (sched.khatian || sched.dag || ''))}
                           onChange={e => {
-                            const val = e.target.value;
+                            const val = toUpper(e.target.value);
                             const recType = sched.recordType || (sched.dag && !sched.khatian ? 'Plot' : 'ROR');
                             setLandSchedules(prev =>
                               prev.map((s, i) =>
@@ -2899,7 +2920,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                               ? 'e.g. 482'
                               : 'e.g. 1428'
                           }
-                          className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                          className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono font-bold uppercase text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-600"
                         />
                         <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
                           {sched.surveyStage || 'LR'} · {sched.recordType || (sched.dag && !sched.khatian ? 'Plot' : 'ROR')}
@@ -2954,9 +2975,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                       <input
                         type="text"
                         value={sched.mouza}
-                        onChange={e => updateSchedule(idx, 'mouza', e.target.value)}
+                        onChange={e => updateSchedule(idx, 'mouza', toUpper(e.target.value))}
                         placeholder="e.g. Patharghata / Sarisha"
-                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 uppercase"
                       />
                     </div>
                   </div>
@@ -2969,9 +2990,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                       <input
                         type="text"
                         value={sched.jl}
-                        onChange={e => updateSchedule(idx, 'jl', e.target.value)}
+                        onChange={e => updateSchedule(idx, 'jl', toUpper(e.target.value))}
                         placeholder="36"
-                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono"
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono uppercase"
                       />
                     </div>
 
@@ -2982,9 +3003,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                       <input
                         type="text"
                         value={sched.khatian}
-                        onChange={e => updateSchedule(idx, 'khatian', e.target.value)}
+                        onChange={e => updateSchedule(idx, 'khatian', toUpper(e.target.value))}
                         placeholder="1428"
-                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono"
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono uppercase"
                       />
                     </div>
 
@@ -2995,9 +3016,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                       <input
                         type="text"
                         value={sched.dag}
-                        onChange={e => updateSchedule(idx, 'dag', e.target.value)}
+                        onChange={e => updateSchedule(idx, 'dag', toUpper(e.target.value))}
                         placeholder="482"
-                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono font-bold"
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono font-bold uppercase"
                       />
                     </div>
 
@@ -3008,9 +3029,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                       <input
                         type="text"
                         value={sched.area}
-                        onChange={e => updateSchedule(idx, 'area', e.target.value)}
+                        onChange={e => updateSchedule(idx, 'area', toUpper(e.target.value))}
                         placeholder="0.08"
-                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono"
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono uppercase"
                       />
                     </div>
 
@@ -3076,9 +3097,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                               <input
                                 type="text"
                                 value={sched.classification === 'Other' ? '' : sched.classification}
-                                onChange={e => updateSchedule(idx, 'classification', e.target.value)}
+                                onChange={e => updateSchedule(idx, 'classification', toUpper(e.target.value))}
                                 placeholder="Enter manual classification (নিজে শ্রেণি লিখুন)..."
-                                className="mt-1.5 w-full px-2.5 py-1.5 text-xs rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-slate-900 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500 animate-in fade-in duration-150"
+                                className="mt-1.5 w-full px-2.5 py-1.5 text-xs rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-slate-900 font-semibold uppercase focus:outline-none focus:ring-1 focus:ring-emerald-500 animate-in fade-in duration-150"
                               />
                             )}
                           </>
@@ -3160,9 +3181,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                 <input
                   type="text"
                   value={recordedOwner}
-                  onChange={e => setRecordedOwner(e.target.value)}
+                  onChange={e => setRecordedOwner(toUpper(e.target.value))}
                   placeholder="e.g. Sri Haripada Mondal"
-                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900 font-bold"
+                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900 font-bold uppercase"
                 />
               </div>
               <div>
@@ -3172,9 +3193,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                 <input
                   type="text"
                   value={recordedKhatian}
-                  onChange={e => setRecordedKhatian(e.target.value)}
+                  onChange={e => setRecordedKhatian(toUpper(e.target.value))}
                   placeholder="1428"
-                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono"
+                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono uppercase"
                 />
               </div>
               <div>
@@ -3184,9 +3205,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                 <input
                   type="text"
                   value={recordedDag}
-                  onChange={e => setRecordedDag(e.target.value)}
+                  onChange={e => setRecordedDag(toUpper(e.target.value))}
                   placeholder="482"
-                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono"
+                  className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono uppercase"
                 />
               </div>
             </div>
@@ -3304,9 +3325,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                         <input
                           type="text"
                           value={cl.deedNo || ''}
-                          onChange={e => updateChainLink(i, 'deedNo', e.target.value)}
+                          onChange={e => updateChainLink(i, 'deedNo', toUpper(e.target.value))}
                           placeholder="e.g. 1120 / I-3418"
-                          className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono font-bold"
+                          className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono font-bold uppercase"
                         />
                       </div>
 
@@ -3317,9 +3338,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                         <input
                           type="text"
                           value={cl.deedYear || ''}
-                          onChange={e => updateChainLink(i, 'deedYear', e.target.value)}
+                          onChange={e => updateChainLink(i, 'deedYear', toUpper(e.target.value))}
                           placeholder="e.g. 1985 / 2004"
-                          className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono font-bold text-indigo-700 dark:text-indigo-300"
+                          className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono font-bold uppercase text-indigo-700 dark:text-indigo-300"
                         />
                       </div>
 
@@ -3347,9 +3368,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                         <input
                           type="text"
                           value={cl.registrationOffice || ''}
-                          onChange={e => updateChainLink(i, 'registrationOffice', e.target.value)}
+                          onChange={e => updateChainLink(i, 'registrationOffice', toUpper(e.target.value))}
                           placeholder="e.g. A.D.S.R. Rajarhat"
-                          className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                          className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 uppercase"
                         />
                       </div>
                     </div>
@@ -3374,9 +3395,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                             <input
                               type="text"
                               value={v}
-                              onChange={e => updateVendorInLink(i, vIdx, e.target.value)}
+                              onChange={e => updateVendorInLink(i, vIdx, toUpper(e.target.value))}
                               placeholder={`Seller / Donor #${vIdx + 1}`}
-                              className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-semibold"
+                              className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-semibold uppercase"
                             />
                             {(cl.vendors?.length || 1) > 1 && (
                               <button
@@ -3412,9 +3433,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                             <input
                               type="text"
                               value={p}
-                              onChange={e => updatePurchaserInLink(i, pIdx, e.target.value)}
+                              onChange={e => updatePurchaserInLink(i, pIdx, toUpper(e.target.value))}
                               placeholder={`Buyer #${pIdx + 1}`}
-                              className="w-full px-2.5 py-1.5 text-xs rounded border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-900 font-bold text-blue-700 dark:text-blue-300"
+                              className="w-full px-2.5 py-1.5 text-xs rounded border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-900 font-bold uppercase text-blue-700 dark:text-blue-300"
                             />
                             {(cl.purchasers?.length || 1) > 1 && (
                               <button
@@ -3449,9 +3470,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                         <input
                           type="text"
                           value={cl.area || ''}
-                          onChange={e => updateChainLink(i, 'area', e.target.value)}
+                          onChange={e => updateChainLink(i, 'area', toUpper(e.target.value))}
                           placeholder="e.g. 0.08 Acre"
-                          className="w-full px-2 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                          className="w-full px-2 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 uppercase"
                         />
                       </div>
                       <div>
@@ -3461,9 +3482,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                         <input
                           type="text"
                           value={cl.consideration || ''}
-                          onChange={e => updateChainLink(i, 'consideration', e.target.value)}
+                          onChange={e => updateChainLink(i, 'consideration', toUpper(e.target.value))}
                           placeholder="₹ 15,00,000"
-                          className="w-full px-2 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono"
+                          className="w-full px-2 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono uppercase"
                         />
                       </div>
                     </div>
@@ -3479,9 +3500,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                         <input
                           type="text"
                           value={cl.vendor}
-                          onChange={e => updateChainLink(i, 'vendor', e.target.value)}
+                          onChange={e => updateChainLink(i, 'vendor', toUpper(e.target.value))}
                           placeholder="e.g. Late Haripada Mondal"
-                          className="w-full px-2.5 py-1.5 text-xs rounded border border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900 font-semibold"
+                          className="w-full px-2.5 py-1.5 text-xs rounded border border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900 font-semibold uppercase"
                         />
                       </div>
 
@@ -3492,9 +3513,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                         <input
                           type="text"
                           value={cl.deedYear || ''}
-                          onChange={e => updateChainLink(i, 'deedYear', e.target.value)}
+                          onChange={e => updateChainLink(i, 'deedYear', toUpper(e.target.value))}
                           placeholder="e.g. 1998"
-                          className="w-full px-2.5 py-1.5 text-xs rounded border border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900 font-mono font-bold"
+                          className="w-full px-2.5 py-1.5 text-xs rounded border border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900 font-mono font-bold uppercase"
                         />
                       </div>
 
@@ -3505,9 +3526,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                         <input
                           type="text"
                           value={cl.certificateRef || ''}
-                          onChange={e => updateChainLink(i, 'certificateRef', e.target.value)}
+                          onChange={e => updateChainLink(i, 'certificateRef', toUpper(e.target.value))}
                           placeholder="e.g. Cert No. 240/GP dt 15/04/1998"
-                          className="w-full px-2.5 py-1.5 text-xs rounded border border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900"
+                          className="w-full px-2.5 py-1.5 text-xs rounded border border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900 uppercase"
                         />
                       </div>
 
@@ -3518,9 +3539,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                         <input
                           type="text"
                           value={cl.registrationOffice || ''}
-                          onChange={e => updateChainLink(i, 'registrationOffice', e.target.value)}
+                          onChange={e => updateChainLink(i, 'registrationOffice', toUpper(e.target.value))}
                           placeholder="e.g. Pradhan, Patharghata Gram Panchayat"
-                          className="w-full px-2.5 py-1.5 text-xs rounded border border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900"
+                          className="w-full px-2.5 py-1.5 text-xs rounded border border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900 uppercase"
                         />
                       </div>
                     </div>
@@ -3545,9 +3566,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                             <input
                               type="text"
                               value={w}
-                              onChange={e => updateWarishNameInLink(i, wIdx, e.target.value)}
+                              onChange={e => updateWarishNameInLink(i, wIdx, toUpper(e.target.value))}
                               placeholder={`Warish #${wIdx + 1} Name`}
-                              className="w-full px-2.5 py-1.5 text-xs rounded border border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900 font-bold text-purple-800 dark:text-purple-200"
+                              className="w-full px-2.5 py-1.5 text-xs rounded border border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900 font-bold uppercase text-purple-800 dark:text-purple-200"
                             />
                             {(cl.warishNames?.length || 1) > 1 && (
                               <button
@@ -3597,7 +3618,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         </button>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {type !== 'mutation' && !isCertOrRorPi && onOpenAiDraft && (
+          {type !== 'mutation' && type !== 'misc' && type !== 'firstappeal' && type !== 'lrappeal' && type !== 'lrtt' && !isCertOrRorPi && onOpenAiDraft && (
             <button
               type="button"
               onClick={handleTriggerAiDraft}
@@ -3620,7 +3641,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             </button>
           )}
 
-          {!isCertOrRorPi && (
+          {!isCertOrRorPi && type !== 'lrappeal' && type !== 'lrtt' && (
             <button
               type="button"
               onClick={handlePrintDossier}

@@ -140,15 +140,7 @@ const MainAppContent: React.FC = () => {
     }
   }, []);
 
-  // Prompt user to select backup storage path on first launch if not yet configured
-  useEffect(() => {
-    if (activeCompany && !isBackupPathConfigured) {
-      const timer = setTimeout(() => {
-        setIsSelectBackupPathModalOpen(true);
-      }, 800);
-      return () => clearTimeout(timer);
-    }
-  }, [activeCompany, isBackupPathConfigured, setIsSelectBackupPathModalOpen]);
+
 
   // Desktop Window Close Interceptor: Ask confirmation and perform auto-backup on exit
   useEffect(() => {
@@ -552,7 +544,6 @@ const MainAppContent: React.FC = () => {
                     setChainDeedCaseId(c.id);
                     pushHistoryState({ modal: 'chain-deed', id: c.id });
                   }}
-                  onOpenAiDraft={handleOpenAiDraft}
                 />
               )}
 

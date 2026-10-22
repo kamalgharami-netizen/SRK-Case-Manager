@@ -441,60 +441,7 @@ export const BackupPathModal: React.FC = () => {
               )}
             </div>
 
-            {/* Quick Storage Presets */}
-            <div>
-              <div className="text-[11px] font-bold text-slate-500 uppercase mb-2 flex items-center justify-between">
-                <span>Common Chamber Storage Locations:</span>
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <FileText className="w-3 h-3" />
-                  <span>Select via File in Folder</span>
-                </button>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                {storagePresets.map(preset => {
-                  const isSelected = customPath === preset.path;
-                  return (
-                    <button
-                      key={preset.path}
-                      type="button"
-                      onClick={() => setCustomPath(preset.path)}
-                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-2.5 ${
-                        isSelected
-                          ? 'border-indigo-600 bg-indigo-50/80 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-200 ring-2 ring-indigo-500/30'
-                          : 'border-slate-200 dark:border-slate-800 hover:border-indigo-400 bg-slate-50/70 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300'
-                      }`}
-                    >
-                      <div className="mt-0.5 shrink-0">{preset.icon}</div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-bold text-[11px] flex items-center justify-between">
-                          <span className="truncate">{preset.label}</span>
-                          {isSelected && <Check className="w-3.5 h-3.5 text-indigo-600 shrink-0 ml-1" />}
-                        </div>
-                        <div className="font-mono text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                          {preset.path}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Automatic Exit Backup Rule Notice */}
-            <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/70 text-amber-900 dark:text-amber-200 text-xs space-y-1">
-              <div className="font-bold flex items-center gap-1.5">
-                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                <span>Automatic Exit Backup Rule (স্বয়ংক্রিয় ব্যাকআপ নিয়ম):</span>
-              </div>
-              <p className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
-                On every closing (desktop window cross button, mobile double-back exit, or logout), all chamber data will be automatically backed up into this designated path with the exact date and time mentioned.
-              </p>
-            </div>
 
             {/* Footer Buttons */}
             <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800">

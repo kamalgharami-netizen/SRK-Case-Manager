@@ -290,22 +290,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isChamberSetupOpen, setIsChamberSetupOpen] = useState(false);
 
-  // Backup & Storage Path State
+  // Backup & Storage Path State - Single path automatically detected for Mobile vs Windows
   const [backupStoragePath, setBackupStoragePathState] = useState<string>(() => {
     try {
-      return localStorage.getItem('srk_backup_storage_path') || 'C:/SRK_Case_Backups';
-    } catch {
-      return 'C:/SRK_Case_Backups';
-    }
+      const stored = localStorage.getItem('srk_backup_storage_path');
+      if (stored && stored.trim()) return stored;
+    } catch {}
+    const isMobile = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
+    return isMobile ? '/storage/emulated/0/Documents/SRK_Case_Backups' : 'C:/SRK_Case_Backups';
   });
 
-  const [isBackupPathConfigured, setIsBackupPathConfigured] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('srk_backup_path_configured') === 'true';
-    } catch {
-      return false;
-    }
-  });
+  const [isBackupPathConfigured, setIsBackupPathConfigured] = useState<boolean>(true);
 
   const [backupHistory, setBackupHistory] = useState<BackupLogEntry[]>(() => {
     try {
@@ -728,6 +723,43 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     showToast(`All data auto-backed up to: ${backupStoragePath}. Session closed safely.`, 'info');
     setIsExitConfirmOpen(false);
     logoutUser();
+
+    // Safely close desktop Windows / Electron / PWA app window
+    try {
+      const w = window as any;
+      if (w.electronAPI?.closeApp) {
+        w.electronAPI.closeApp();
+        return;
+      }
+      if (w.electron?.close) {
+        w.electron.close();
+        return;
+      }
+      if (w.ipcRenderer?.send) {
+        w.ipcRenderer.send('app-close');
+        return;
+      }
+      if (w.require) {
+        try {
+          const { ipcRenderer } = w.require('electron');
+          ipcRenderer.send('app-close');
+          return;
+        } catch {}
+      }
+      if (w.nw?.App?.quit) {
+        w.nw.App.quit();
+        return;
+      }
+      if (w.__TAURI__?.window?.getCurrent) {
+        w.__TAURI__.window.getCurrent().close();
+        return;
+      }
+      window.close();
+      window.open('', '_self', '');
+      window.close();
+    } catch (e) {
+      console.warn('App close trigger notice:', e);
+    }
   };
 
   const updateCompanyDetails = (updates: Partial<Company>) => {

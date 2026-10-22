@@ -273,7 +273,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {!isCertOrRorPi && ['mutation', 'misc', 'lrappeal', 'lrtt'].includes(caseItem.type) && (
+            {!isCertOrRorPi && ['mutation', 'misc'].includes(caseItem.type) && (
               <button
                 onClick={() => onOpenChainDeed && onOpenChainDeed(caseItem)}
                 className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -283,7 +283,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                 <span>Chain Deed</span>
               </button>
             )}
-            {!isCertOrRorPi && caseItem.type !== 'mutation' && onOpenAiDraft && (
+            {!isCertOrRorPi && caseItem.type !== 'mutation' && caseItem.type !== 'lrappeal' && caseItem.type !== 'lrtt' && onOpenAiDraft && (
               <button
                 onClick={() => {
                   onClose();
@@ -612,7 +612,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
         )}
 
         {/* Chain Deeds & Warish Transitions */}
-        {['mutation', 'misc', 'lrappeal', 'lrtt'].includes(caseItem.type) && caseItem.chainLinks && caseItem.chainLinks.length > 0 && (
+        {['mutation', 'misc'].includes(caseItem.type) && caseItem.chainLinks && caseItem.chainLinks.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1.5">
@@ -666,8 +666,8 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
           </div>
         )}
 
-        {/* Chain Deed Making Box (Exclusive to Mutation, Misc, LR Appeal, LRTT) */}
-        {['mutation', 'misc', 'lrappeal', 'lrtt'].includes(caseItem.type) && (
+        {/* Chain Deed Making Box (Exclusive to Mutation and Misc) */}
+        {['mutation', 'misc'].includes(caseItem.type) && (
           <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/30 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2.5">

@@ -176,9 +176,9 @@ export const PartyRegistry: React.FC = () => {
           <input
             type="text"
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => setSearch(e.target.value.toUpperCase())}
             placeholder="Search party by name, phone..."
-            className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-600"
+            className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 uppercase focus:outline-none focus:ring-1 focus:ring-blue-600"
           />
         </div>
       </div>
@@ -301,9 +301,9 @@ export const PartyRegistry: React.FC = () => {
                   type="text"
                   required
                   value={name}
-                  onChange={e => setName(e.target.value)}
+                  onChange={e => setName(e.target.value.toUpperCase())}
                   placeholder="e.g. Debashis Chatterjee"
-                  className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                  className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 uppercase"
                 />
               </div>
 
@@ -357,9 +357,9 @@ export const PartyRegistry: React.FC = () => {
                 <input
                   type="text"
                   value={address}
-                  onChange={e => setAddress(e.target.value)}
+                  onChange={e => setAddress(e.target.value.toUpperCase())}
                   placeholder="Street, City, PIN"
-                  className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                  className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 uppercase"
                 />
               </div>
 
