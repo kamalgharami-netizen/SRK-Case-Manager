@@ -195,6 +195,7 @@ export interface VaultFile {
   date: string;
   category: string;
   aiLearned?: boolean;
+  aiTrackedCategory?: string;
 }
 
 export interface DiaryEntry {

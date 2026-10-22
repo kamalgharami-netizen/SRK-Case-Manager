@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Company, User, CaseItem, Party, CauseItem, VaultFile, DiaryEntry, MessageItem, SampleDraftItem, BackupLogEntry } from '../types';
 import { AppLanguage, translations, Translations } from '../data/translations';
-import { initialChamberData } from '../data/seedData';
 import { INITIAL_SAMPLE_DRAFTS } from '../data/sampleDraftTemplates';
 import { APP_VERSION, APP_BUILD_DATE, APP_RELEASE_NAME } from '../config/version';
 
@@ -109,6 +108,8 @@ interface AppContextType {
   isBackupPathConfigured: boolean;
   setBackupStoragePath: (path: string) => void;
   backupHistory: BackupLogEntry[];
+  deleteBackupLogEntry: (id: string) => void;
+  clearAllBackupLog: () => void;
   performBackup: (options?: {
     type?: 'auto-close' | 'manual' | 'scheduled';
     customPath?: string;
@@ -177,32 +178,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [companies, setCompanies] = useState<Company[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('srk_case_manager_v4') || localStorage.getItem('srk_case_manager_v3');
-      const isSetupDone = localStorage.getItem('srk_first_time_setup_done') === 'true';
-      if (saved && isSetupDone) {
+      if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.companies && Array.isArray(parsed.companies) && parsed.companies.length > 0) {
-          // Ensure no leftover demo data is displayed
-          return parsed.companies.map((c: Company) => {
-            const hasDemoCases = c.cases?.some(cs => cs.id === 'c_fa_001' || cs.id.startsWith('c_fa_') || cs.party?.includes('Bimal Krishna') || cs.id?.startsWith('c_mut_'));
-            if (hasDemoCases) {
-              return {
-                ...c,
-                cases: [],
-                parties: [],
-                causeList: [],
-                vaultFiles: [],
-                messages: []
-              };
-            }
-            return c;
-          });
+        if (parsed.companies && Array.isArray(parsed.companies)) {
+          return parsed.companies;
         }
       }
     } catch (e) {
       console.error('Failed to load companies from localStorage', e);
     }
-    // Default chamber workspace: Ensure advocate chamber profile is ready
-    return [initialChamberData];
+    // "dont creat any demo company into the app"
+    return [];
   });
 
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(() => {
@@ -218,7 +204,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
       }
     } catch {}
-    return initialChamberData.id;
+    return null;
   });
 
   const [activeUserId, setActiveUserId] = useState<string | null>(() => {
@@ -234,7 +220,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
       }
     } catch {}
-    return initialChamberData.users[0]?.id || null;
+    return null;
   });
 
   const [theme, setThemeState] = useState<AppTheme>(() => {
@@ -714,6 +700,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return logEntry;
   };
 
+  const deleteBackupLogEntry = (id: string) => {
+    const updated = backupHistory.filter(b => b.id !== id);
+    setBackupHistory(updated);
+    try {
+      localStorage.setItem('srk_backup_history', JSON.stringify(updated));
+    } catch (e) {
+      console.warn('Storage save warning during backup deletion:', e);
+    }
+    showToast('Backup record deleted successfully');
+  };
+
+  const clearAllBackupLog = () => {
+    setBackupHistory([]);
+    try {
+      localStorage.removeItem('srk_backup_history');
+    } catch (e) {
+      console.warn('Storage clear warning for backup history:', e);
+    }
+    showToast('All stored backup records deleted');
+  };
+
   const requestAppExit = () => {
     setIsExitConfirmOpen(true);
   };
@@ -791,17 +798,34 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const deleteCompany = (companyId: string) => {
     const c = companies.find(x => x.id === companyId);
     if (!c) return;
-    setCompanies(prev => prev.filter(x => x.id !== companyId));
-    if (activeCompanyId === companyId) {
-      const remaining = companies.filter(x => x.id !== companyId);
-      if (remaining.length > 0) {
-        setActiveCompanyId(remaining[0].id);
-        setActiveUserId(remaining[0].users[0]?.id || null);
-      } else {
-        setActiveCompanyId(null);
-        setActiveUserId(null);
+    const remaining = companies.filter(x => x.id !== companyId);
+    setCompanies(remaining);
+    const nextCompanyId = remaining.length > 0 ? (activeCompanyId === companyId ? remaining[0].id : activeCompanyId) : null;
+    const nextUserId = remaining.length > 0 ? (activeCompanyId === companyId ? (remaining[0].users[0]?.id || null) : activeUserId) : null;
+    
+    if (activeCompanyId === companyId || remaining.length === 0) {
+      setActiveCompanyId(nextCompanyId);
+      setActiveUserId(nextUserId);
+      if (remaining.length === 0) {
+        try {
+          localStorage.removeItem('srk_first_time_setup_done');
+        } catch {}
       }
     }
+
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          companies: remaining,
+          activeCompanyId: nextCompanyId,
+          activeUserId: nextUserId
+        })
+      );
+    } catch (err) {
+      console.warn('Storage error on company deletion:', err);
+    }
+
     showToast(`Deleted workspace "${c.name}"`, 'info');
   };
 
@@ -1475,6 +1499,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         isBackupPathConfigured,
         setBackupStoragePath,
         backupHistory,
+        deleteBackupLogEntry,
+        clearAllBackupLog,
         performBackup,
         isSelectBackupPathModalOpen,
         setIsSelectBackupPathModalOpen,

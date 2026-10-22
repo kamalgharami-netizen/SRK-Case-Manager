@@ -33,10 +33,24 @@ import { CompanyLogo, BADGE_OPTIONS, COLOR_OPTIONS } from './CompanyLogo';
 import { DEFAULT_CHAIN_SAMPLE_TEMPLATE } from '../data/chainSampleTemplate';
 import { SampleDraftItem, VaultFile } from '../types';
 
+export const VAULT_CATEGORIES = [
+  'Mutation Petitions & Orders',
+  'Misc Case Petitions & Orders',
+  'First Appeal Drafts & Petitions',
+  'LR Appeal Drafts & Petitions',
+  'WBLRTT Tribunal Applications',
+  'RTI Applications & Appeals',
+  'Conversion Applications & Sanctions',
+  'Registered Deeds & Title Documents',
+  'Khatian Copies & Land Records',
+  'Court Orders & Precedents',
+  'General Legal Formats & Affidavits'
+];
+
 interface BackupModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialTab?: 'branding' | 'vault' | 'chainSample' | 'backup';
+  initialTab?: 'branding' | 'vault' | 'backup';
 }
 
 export const BackupModal: React.FC<BackupModalProps> = ({
@@ -49,17 +63,15 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     exportCompanyJson,
     restoreCompany,
     updateCompanyDetails,
+    deleteCompany,
     showToast,
-    sampleDrafts,
-    addSampleDraft,
-    updateSampleDraft,
-    deleteSampleDraft,
-    resetSampleDrafts,
     addVaultFile,
     deleteVaultFile,
     logoutUser,
     backupStoragePath,
     backupHistory,
+    deleteBackupLogEntry,
+    clearAllBackupLog,
     triggerManualBackupRequest,
     setIsSelectBackupPathModalOpen,
     appVersion,
@@ -71,34 +83,14 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   const logoInputRef = useRef<HTMLInputElement>(null);
   const vaultUploadInputRef = useRef<HTMLInputElement>(null);
 
-  const [activeTab, setActiveTab] = useState<'branding' | 'vault' | 'chainSample' | 'backup'>(initialTab);
-  const [chainSampleDraft, setChainSampleDraft] = useState('');
+  const [activeTab, setActiveTab] = useState<'branding' | 'vault' | 'backup'>(initialTab);
 
-  // Vault Tab state
-  const [vaultSubTab, setVaultSubTab] = useState<'samples' | 'files'>('samples');
-  const [sampleCategoryFilter, setSampleCategoryFilter] = useState<string>('All');
-  const [sampleSearch, setSampleSearch] = useState('');
-
-  // Editing / Creating new Sample Draft in Vault
-  const [isEditingDraft, setIsEditingDraft] = useState(false);
-  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
-  const [draftTitle, setDraftTitle] = useState('');
-  const [draftCategory, setDraftCategory] = useState<SampleDraftItem['category']>('general');
-  const [draftDescription, setDraftDescription] = useState('');
-  const [draftText, setDraftText] = useState('');
-
-  // AI Draft Generator state inside Vault
-  const [aiPromptOpen, setAiPromptOpen] = useState(false);
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [aiGenerating, setAiGenerating] = useState(false);
-
-  // File search & filter
+  // Vault Tab state - category dropdown selection without 'All'
+  const [selectedVaultCategory, setSelectedVaultCategory] = useState<string>(VAULT_CATEGORIES[0]);
   const [fileSearch, setFileSearch] = useState('');
-  const [fileCategoryFilter, setFileCategoryFilter] = useState('All');
 
-  // Preview popups state with close options
+  // Preview popup state
   const [previewVaultFile, setPreviewVaultFile] = useState<VaultFile | null>(null);
-  const [previewSampleDraft, setPreviewSampleDraft] = useState<SampleDraftItem | null>(null);
 
   useEffect(() => {
     if (initialTab) {
@@ -184,157 +176,22 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         size: sizeStr,
         type: fType,
         date: new Date().toISOString().slice(0, 10),
-        category: fileCategoryFilter !== 'All' ? fileCategoryFilter : 'Registered Deeds',
-        aiLearned: true
+        category: selectedVaultCategory,
+        aiLearned: true,
+        aiTrackedCategory: selectedVaultCategory
       });
     });
-    showToast('Files saved in Document Vault');
+    showToast(`Files saved to "${selectedVaultCategory}". Tracked by AI exclusively for this category.`);
   };
 
-  // Save new or updated Sample Draft format in Vault
-  const handleSaveSampleDraft = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!draftTitle.trim() || !draftText.trim()) {
-      showToast('Title and Template Format text are required', 'error');
-      return;
-    }
-
-    if (editingDraftId) {
-      updateSampleDraft(editingDraftId, {
-        title: draftTitle.trim(),
-        category: draftCategory,
-        description: draftDescription.trim(),
-        templateText: draftText
-      });
-    } else {
-      addSampleDraft({
-        title: draftTitle.trim(),
-        category: draftCategory,
-        description: draftDescription.trim() || 'Custom user legal format for chamber drafting',
-        templateText: draftText,
-        aiAssisted: false
-      });
-    }
-
-    setIsEditingDraft(false);
-    setEditingDraftId(null);
-    setDraftTitle('');
-    setDraftDescription('');
-    setDraftText('');
-  };
-
-  const handleOpenEditSampleDraft = (item: SampleDraftItem) => {
-    setEditingDraftId(item.id);
-    setDraftTitle(item.title);
-    setDraftCategory(item.category);
-    setDraftDescription(item.description);
-    setDraftText(item.templateText);
-    setIsEditingDraft(true);
-  };
-
-  // AI Draft Assistance inside Document Vault
-  const handleGenerateAiFormat = () => {
-    if (!aiPrompt.trim()) {
-      showToast('Please enter what format or petition you want to generate', 'error');
-      return;
-    }
-
-    setAiGenerating(true);
-    setTimeout(() => {
-      const generatedTemplate = `FORMAL LEGAL DRAFT / PETITION
-BEFORE THE COMPETENT REVENUE AUTHORITY / COURT OF LAW
-DISTRICT: {{DISTRICT}}, WEST BENGAL
-
-Subject Matter: ${aiPrompt.trim()}
-
-Case / Proceeding Ref: {{CASE_NO}}
-In the Matter of:
-{{PARTY}}
-...Petitioner / Applicant
-
--VERSUS-
-1. {{OPP}}
-2. State of West Bengal.
-...Opposite Parties
-
-SCHEDULE OF PROPERTY:
-Mouza: {{MOUZA}}, J.L. No: {{JL}}, Khatian No: {{KHATIAN}}, Plot / Dag No: {{DAG}}, Area: {{AREA}} {{UNIT}}, Classification: {{CLASSIFICATION}}.
-
-GROUNDS & STATUTORY PROVISIONS:
-1. That the applicant has valid right, title, and lawful possession over the subject property by virtue of Registered Deed No. {{DEED_NO}}.
-2. That the opposing party / administrative inaction has caused legal prejudice to the applicant's rights under the West Bengal Land Reforms Act, 1955.
-3. That the applicant has made representations which remain unredressed.
-
-PRAYER:
-In the premises aforesaid, the Petitioner respectfully prays that Your Honour may graciously be pleased to:
-a) Pass an appropriate order granting requisite relief in accordance with law;
-b) Direct immediate field spot enquiry;
-And pass such further order or orders as may be just and proper.
-
-Advocate for the Petitioner
-Chamber: {{CHAMBER_NAME}}
-Date: {{TODAY_DATE}}`;
-
-      addSampleDraft({
-        title: `AI Draft: ${aiPrompt.slice(0, 45)}...`,
-        category: 'general',
-        description: `Generated with AI Draft Assistant based on prompt: "${aiPrompt.trim()}"`,
-        templateText: generatedTemplate,
-        aiAssisted: true
-      });
-
-      setAiGenerating(false);
-      setAiPromptOpen(false);
-      setAiPrompt('');
-      showToast('AI Legal Format generated and stored in Document Vault!');
-    }, 700);
-  };
-
-  // Filtered sample drafts
-  const filteredSamples = sampleDrafts.filter(s => {
-    const matchCat =
-      sampleCategoryFilter === 'All' ||
-      s.category === sampleCategoryFilter ||
-      (sampleCategoryFilter === 'chain' && s.category === 'chain');
-    const q = sampleSearch.toLowerCase().trim();
-    const matchSearch =
-      !q ||
-      s.title.toLowerCase().includes(q) ||
-      s.description.toLowerCase().includes(q) ||
-      s.templateText.toLowerCase().includes(q);
-    return matchCat && matchSearch;
-  });
-
-  // Filtered vault files
-  const vaultFiles = activeCompany.vaultFiles || [];
+  // Filtered vault files for currently selected dropdown category
+  const vaultFiles = activeCompany?.vaultFiles || [];
   const filteredFiles = vaultFiles.filter(f => {
-    const matchCat = fileCategoryFilter === 'All' || f.category === fileCategoryFilter;
+    const matchCat = f.category === selectedVaultCategory || f.aiTrackedCategory === selectedVaultCategory;
     const q = fileSearch.toLowerCase().trim();
     const matchSearch = !q || f.name.toLowerCase().includes(q) || f.category.toLowerCase().includes(q);
     return matchCat && matchSearch;
   });
-
-  const sampleCategories = [
-    { id: 'All', label: 'All Formats' },
-    { id: 'chain', label: 'Chain of Title' },
-    { id: 'mutation', label: 'Mutation' },
-    { id: 'misc', label: 'Misc Case' },
-    { id: 'lrappeal', label: 'LR Appeal' },
-    { id: 'lrtt', label: 'WBLRTT Tribunal' },
-    { id: 'rti', label: 'RTI' },
-    { id: 'conversion', label: 'Conversion' },
-    { id: 'general', label: 'General & Custom' }
-  ];
-
-  const fileCategories = [
-    'All',
-    'Registered Deeds',
-    'Court Orders',
-    'Khatian Copies',
-    'Certificates',
-    'Pleadings & Petitions',
-    'Draft Templates'
-  ];
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
@@ -350,7 +207,7 @@ Date: {{TODAY_DATE}}`;
                 Chamber Settings &amp; Configuration
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Manage firm brand identity, Document Vault samples, master Chain Sample, and backups.
+                Manage firm brand identity, Document Vault, and data backups.
               </p>
             </div>
           </div>
@@ -379,7 +236,7 @@ Date: {{TODAY_DATE}}`;
         </div>
 
         {/* Tab Navigator */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 p-2 bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 shrink-0 text-xs font-bold">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 p-2 bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 shrink-0 text-xs font-bold">
           <button
             type="button"
             onClick={() => setActiveTab('branding')}
@@ -403,20 +260,7 @@ Date: {{TODAY_DATE}}`;
             }`}
           >
             <Archive className="w-4 h-4 text-indigo-500" />
-            <span>Document Vault &amp; Samples</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('chainSample')}
-            className={`py-2 px-3 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-2 ${
-              activeTab === 'chainSample'
-                ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs font-extrabold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            <LinkIcon className="w-4 h-4 text-blue-500" />
-            <span>Chain Sample</span>
+            <span>Document Vault</span>
           </button>
 
           <button

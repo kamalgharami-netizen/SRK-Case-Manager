@@ -2498,8 +2498,8 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
               </div>
             )}
 
-            {/* Requirement 9: Applicant's Deed Details (Deed No, Year, Type of Deed, and ADSR) (Removed for First Appeal, Certified Copy and ROR/PI) */}
-            {!isCertOrRorPi && !isFirstAppeal && (
+            {/* Applicant's Deed Details (Omitted for First Appeal, RTI, Certified Copy and ROR/PI) */}
+            {!isCertOrRorPi && !isFirstAppeal && !isRti && (
               <div className="p-3 rounded-lg border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/40 dark:bg-emerald-950/20 space-y-2 mt-2">
                 <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wide flex items-center gap-1.5">
                   <Scroll className="w-3.5 h-3.5 text-emerald-600" />

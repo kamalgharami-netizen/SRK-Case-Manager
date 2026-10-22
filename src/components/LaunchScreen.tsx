@@ -59,7 +59,10 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
   );
 
   // LOGIN STATE (Mobile No + 4-digit Passcode)
-  const targetLoginCompany = activeCompany || companies[0] || null;
+  const [selectedLoginCompanyId, setSelectedLoginCompanyId] = useState<string>(() => {
+    return activeCompany?.id || companies[0]?.id || '';
+  });
+  const targetLoginCompany = companies.find(c => c.id === selectedLoginCompanyId) || activeCompany || companies[0] || null;
   const [loginMobile, setLoginMobile] = useState<string>(() => {
     return targetLoginCompany?.users?.[0]?.phone || '';
   });
@@ -363,7 +366,7 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
             <span>{isFirstLaunch ? '2. Retrieve Data (পুনরুদ্ধার)' : 'Retrieve / Restore'}</span>
           </button>
 
-          {companies.length > 1 && (
+          {companies.length > 0 && (
             <button
               type="button"
               onClick={() => setView('select')}
@@ -382,7 +385,7 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
         {/* VIEW 0: Sign In through Mobile No & 4-Digit Passcode */}
         {view === 'login' && !isFirstLaunch && (
           <form onSubmit={handleLoginSubmit} className="space-y-4">
-            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
               <div className="flex items-center gap-3 min-w-0">
                 <CompanyLogo company={targetLoginCompany} size="md" />
                 <div className="min-w-0">
@@ -394,9 +397,32 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
                   </div>
                 </div>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 font-bold shrink-0">
-                4-Digit Passcode Auth
-              </span>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 font-bold">
+                  4-Digit Passcode Auth
+                </span>
+                {targetLoginCompany && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (
+                        confirm(
+                          `Delete chamber workspace "${targetLoginCompany.name}"? This action permanently removes this company and its data.`
+                        )
+                      ) {
+                        deleteCompany(targetLoginCompany.id);
+                        if (companies.length <= 1) {
+                          setView('create');
+                        }
+                      }
+                    }}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 border border-slate-200 dark:border-slate-700 hover:border-rose-300 transition-colors cursor-pointer"
+                    title={`Delete chamber "${targetLoginCompany.name}"`}
+                  >
+                    <Trash2 className="w-4 h-4 text-rose-500" />
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Quick Profile Select if users exist */}
@@ -516,7 +542,7 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
                 required
                 value={name}
                 onChange={e => setName(e.target.value)}
-                placeholder="e.g. S.R. Khan Legal Chamber & Associates"
+                placeholder="e.g. Legal Chamber & Associates"
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
               />
             </div>
@@ -598,7 +624,7 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
                 required
                 value={adminName}
                 onChange={e => setAdminName(e.target.value)}
-                placeholder="Adv. S. R. Khan"
+                placeholder="e.g. Adv. R. K. Mukherjee"
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
               />
             </div>
@@ -957,21 +983,22 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
                       <span>Open</span>
                       <ArrowRight className="w-3 h-3" />
                     </button>
-                    {companies.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={e => {
-                          e.stopPropagation();
-                          if (confirm(`Delete chamber workspace "${c.name}"?`)) {
-                            deleteCompany(c.id);
+                    <button
+                      type="button"
+                      onClick={e => {
+                        e.stopPropagation();
+                        if (confirm(`Delete chamber workspace "${c.name}"? This will permanently delete this chamber.`)) {
+                          deleteCompany(c.id);
+                          if (companies.length <= 1) {
+                            setView('create');
                           }
-                        }}
-                        className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
-                        title="Delete Company"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
+                        }
+                      }}
+                      className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                      title="Delete Company"
+                    >
+                      <Trash2 className="w-4 h-4 text-rose-500" />
+                    </button>
                   </div>
                 </div>
               ))}
