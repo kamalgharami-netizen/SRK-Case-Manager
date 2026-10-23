@@ -430,7 +430,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
   const [activeTab, setActiveTab] = useState<'draft' | 'learning'>('draft');
 
   // Active category filter: defaults to initialCaseType or 'rti_sec6_1'
-  const [selectedCategory, setSelectedCategory] = useState<CaseType>(() => {
+  const [selectedCategory, setSelectedCategory] = useState<DraftingMatterType>(() => {
     if (initialCaseType && initialCaseType !== 'all' && initialCaseType !== 'mutation') {
       if (initialCaseType === 'rti') return 'rti_sec6_1';
       return initialCaseType;
