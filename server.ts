@@ -44,14 +44,57 @@ function generateStatutoryDraft(
   const chName = companyName || 'Legal Chamber';
   const bar = barCouncil || 'WB/Chamber';
 
+  const isRti = template === 'rti' || template === 'rti_sec6_1' || template === 'rti_sec7_1';
+  const isRtiAppeal = template === 'rtifirstappeal' || template === 'rti_sec19_1' || template === 'rti_sec19_2' || template === 'rti_sec19_3';
+
   const titleMap: Record<string, { en: string; bn: string; act: string }> = {
+    rti: {
+      en: 'APPLICATION UNDER SECTION 6(1) OF THE RIGHT TO INFORMATION ACT, 2005',
+      bn: 'তথ্য জানার অধিকার আইন ২০০৫ এর ৬(১) ধারা মতে তথ্যের আবেদনপত্র',
+      act: 'Under Section 6(1) of the Right to Information Act, 2005'
+    },
+    rti_sec6_1: {
+      en: 'APPLICATION UNDER SECTION 6(1) OF THE RIGHT TO INFORMATION ACT, 2005',
+      bn: 'তথ্য জানার অধিকার আইন ২০০৫ এর ৬(১) ধারা মতে তথ্যের আবেদনপত্র',
+      act: 'Under Section 6(1) of the Right to Information Act, 2005'
+    },
+    rti_sec7_1: {
+      en: 'URGENT APPLICATION UNDER SECTION 6(1) READ WITH PROVISO TO SECTION 7(1) OF RTI ACT',
+      bn: 'জীবন ও স্বাধীনতা সংক্রান্ত তথ্যের জরুরি আবেদন (ধারা ৭(১))',
+      act: 'Under Proviso to Section 7(1) of the Right to Information Act, 2005'
+    },
+    rtifirstappeal: {
+      en: 'FIRST APPEAL UNDER SECTION 19(1) OF THE RTI ACT, 2005',
+      bn: 'তথ্য জানার অধিকার আইন ২০০৫ এর ১৯(১) ধারা মতে প্রথম আপিল',
+      act: 'Under Section 19(1) of the Right to Information Act, 2005'
+    },
+    rti_sec19_1: {
+      en: 'FIRST APPEAL UNDER SECTION 19(1) OF THE RTI ACT, 2005',
+      bn: 'তথ্য জানার অধিকার আইন ২০০৫ এর ১৯(১) ধারা মতে প্রথম আপিল',
+      act: 'Under Section 19(1) of the Right to Information Act, 2005'
+    },
+    rti_sec19_2: {
+      en: 'THIRD PARTY APPEAL UNDER SECTION 19(2) OF THE RTI ACT, 2005',
+      bn: 'তথ্য জানার অধিকার আইন ২০০৫ এর ১৯(২) ধারা মতে তৃতীয় পক্ষের আপিল',
+      act: 'Under Section 19(2) read with Section 11 of the RTI Act, 2005'
+    },
     misc10000: {
       en: 'MISCELLANEOUS PETITION FOR CORRECTION OF 10000 SHARE & AREA',
       bn: 'হিস্যা ও রের্কড সংশোধনের নিমিত্ত বিবিধ মোকদ্দমা আবেদনপত্র',
       act: 'Under Section 50 / 51A of the West Bengal Land Reforms Act, 1955'
     },
+    misc_share10000: {
+      en: 'RECTIFICATION OF 10,000 SHARE ANOMALY (SECTION 50A WBLR ACT)',
+      bn: '১০,০০০ হিস্যা বৈষম্য নিরসন ও খতিয়ান সংশোধন (ধারা ৫০ক)',
+      act: 'Under Section 50A of the West Bengal Land Reforms Act, 1955'
+    },
     lrappeal: {
       en: 'MEMORANDUM OF APPEAL UNDER SECTION 54 OF WBLR ACT, 1955',
+      bn: 'পশ্চিমবঙ্গ ভূমি সংস্কার আইন ১৯৫৫ এর ৫৪ ধারা মতে আপিল মেমোরেন্ডাম',
+      act: 'Under Section 54 of the West Bengal Land Reforms Act, 1955'
+    },
+    lrappeal_memo: {
+      en: 'MEMORANDUM OF STATUTORY APPEAL UNDER SECTION 54 OF WBLR ACT, 1955',
       bn: 'পশ্চিমবঙ্গ ভূমি সংস্কার আইন ১৯৫৫ এর ৫৪ ধারা মতে আপিল মেমোরেন্ডাম',
       act: 'Under Section 54 of the West Bengal Land Reforms Act, 1955'
     },
@@ -65,20 +108,30 @@ function generateStatutoryDraft(
       bn: 'তামাদি আইন ১৯৬৩ এর ৫ ধারা মতে বিলম্ব মকুবের আবেদনপত্র',
       act: 'Under Section 5 of the Limitation Act, 1963 for Condonation of Delay'
     },
+    sec5_appeal_delay: {
+      en: 'PETITION UNDER SECTION 5 OF THE LIMITATION ACT, 1963',
+      bn: 'তামাদি আইন ১৯৬৩ এর ৫ ধারা মতে বিলম্ব মার্জনা আবেদনপত্র',
+      act: 'Under Section 5 of the Limitation Act, 1963 for Condonation of Delay'
+    },
     conversion: {
       en: 'APPLICATION FOR CONVERSION OF LAND CLASSIFICATION (SEC 4C)',
       bn: 'জমির শ্রেণি পরিবর্তনের (বাস্তু রূপান্তর) নিমিত্ত আবেদনপত্র (ধারা ৪সি)',
       act: 'Under Section 4C of the West Bengal Land Reforms Act, 1955'
     },
-    rti: {
-      en: 'APPLICATION UNDER SECTION 6(1) OF THE RIGHT TO INFORMATION ACT, 2005',
-      bn: 'তথ্য জানার অধিকার আইন ২০০৫ এর ৬(১) ধারা মতে তথ্যের আবেদনপত্র',
-      act: 'Under Section 6(1) of the Right to Information Act, 2005'
+    conv_sec4c: {
+      en: 'APPLICATION FOR LAND USE CONVERSION (SECTION 4C WBLR ACT)',
+      bn: 'বাস্তু / বাণিজ্যিক শ্রেণি রূপান্তর দরখাস্ত (ধারা ৪সি)',
+      act: 'Under Section 4C of the West Bengal Land Reforms Act, 1955'
     },
-    rtifirstappeal: {
-      en: 'FIRST APPEAL UNDER SECTION 19(1) OF THE RTI ACT, 2005',
-      bn: 'তথ্য জানার অধিকার আইন ২০০৫ এর ১৯(১) ধারা মতে প্রথম আপিল',
-      act: 'Under Section 19(1) of the Right to Information Act, 2005'
+    lrtt_oa: {
+      en: 'ORIGINAL APPLICATION UNDER SECTION 6 OF WBLRTT ACT, 1997',
+      bn: 'ভূমি সংস্কার ট্রাইব্যুনাল মূল আবেদন (ধারা ৬)',
+      act: 'Under Section 6 of the West Bengal Land Reforms Tenancy Tribunal Act, 1997'
+    },
+    barga_prevention: {
+      en: 'PETITION FOR PREVENTION OF UNLAWFUL EVICTION OF BARGADAR (SEC 17)',
+      bn: 'বর্গাদার উচ্ছেদ প্রতিরোধ ও প্রতিকারের দরখাস্ত (ধারা ১৭)',
+      act: 'Under Section 17(1) of the West Bengal Land Reforms Act, 1955'
     }
   };
 
@@ -96,13 +149,13 @@ function generateStatutoryDraft(
       </div>
 
       <!-- FORUM / SPIO AUTHORITY -->
-      ${template === 'rti' ? `
+      ${isRti ? `
         <div style="background:#f8fafc; border:1px solid #cbd5e1; border-left:4px solid #0284c7; padding:10px 14px; margin-bottom:16px;">
           <div style="font-size:13px; font-weight:bold; color:#0369a1;">TO:</div>
           <div style="font-size:14px; font-weight:bold; color:#0f172a;">${forum}</div>
           <div style="font-size:12px; color:#475569;">${authorityAddress}</div>
         </div>
-      ` : template === 'rtifirstappeal' ? `
+      ` : isRtiAppeal ? `
         <div style="background:#f8fafc; border:1px solid #cbd5e1; border-left:4px solid #7c3aed; padding:10px 14px; margin-bottom:16px;">
           <div style="font-size:12px; font-weight:bold; color:#6d28d9;">BEFORE THE FIRST APPELLATE AUTHORITY (FAA) u/s 19(1) RTI ACT, 2005</div>
           <div style="font-size:14px; font-weight:bold; color:#0f172a;">${forum}</div>
@@ -116,7 +169,7 @@ function generateStatutoryDraft(
       `}
 
       <!-- CAUSE TITLE -->
-      ${template === 'rti' ? `
+      ${isRti ? `
         <table style="width:100%; border-collapse:collapse; margin-bottom:12px; font-size:13px; background:#f8fafc; border:1px solid #e2e8f0; padding:8px;">
           <tr>
             <td style="padding:8px; vertical-align:top;">
@@ -196,9 +249,9 @@ function generateStatutoryDraft(
           ${(isBn || isBi) ? `<div style="color:#475569; font-size:12px; margin-top:4px;">প্রাসঙ্গিক বিবরণ ও আইনগত ভিত্তি: ${facts}</div>` : ''}
         </li>
         <li style="margin-bottom:8px;">
-          ${template === 'rti' ? `
+          ${isRti ? `
             That the information sought hereunder is not exempt under Section 8 or Section 9 of the RTI Act, 2005, and pertains to official public records maintained in the ordinary course of administration. Statutory application fee of ₹10/- is affixed herewith.
-          ` : template === 'rtifirstappeal' ? `
+          ` : isRtiAppeal ? `
             That the SPIO has arbitrarily failed to supply the requested information within the mandatory statutory period of 30 days under Section 7(1) of the RTI Act, 2005, thereby constraining the Appellant to file this First Appeal under Section 19(1).
           ` : `
             That the applicant has submitted all requisite revenue records, receipts, and identity proofs, and is lawfully entitled to the relief prayed for hereunder in the interest of justice.
@@ -241,11 +294,11 @@ function generateStatutoryDraft(
         <div style="font-weight:bold; color:#9d174d; margin-bottom:4px;">PRAYER (প্রার্থনা)</div>
         <p style="margin:0 0 6px 0;">In the premises aforesaid, it is most respectfully prayed that Your Honour may graciously be pleased to:</p>
         <ol style="margin:0; padding-left:20px;">
-          ${template === 'rti' ? `
+          ${isRti ? `
             <li>Admit this application under Section 6(1) of the RTI Act, 2005;</li>
             <li>Direct supply of certified copies of the requested information and documents within the statutory 30-day period;</li>
             <li>Provide inspection of the case record/files if necessary.</li>
-          ` : template === 'rtifirstappeal' ? `
+          ` : isRtiAppeal ? `
             <li>Admit this First Appeal under Section 19(1) of the RTI Act, 2005;</li>
             <li>Direct the SPIO to furnish all requested certified records forthwith free of cost;</li>
             <li>Initiate departmental inquiry/recommendation for maximum penalty under Section 20 of the RTI Act.</li>

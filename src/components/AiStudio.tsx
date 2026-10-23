@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
-import { CaseType, CaseItem } from '../types';
+import { CaseType, CaseItem, DraftingMatterType } from '../types';
 import {
   Brain,
   FileText,
@@ -40,13 +40,56 @@ export type DraftLanguage = 'english' | 'bengali' | 'bilingual';
 
 // Mutation drafting is completely removed as requested
 export type TemplateType =
+  // Core / Backward compatibility aliases
   | 'rti'
   | 'rtifirstappeal'
   | 'misc10000'
   | 'lrappeal'
   | 'firstappeal'
   | 'sec5delay'
-  | 'conversion';
+  | 'conversion'
+  | 'lrtt'
+  | 'barga'
+  // RTI Matters (u/s 6(1), 7(1), 19(1), 19(2), 19(3), 18 & 20)
+  | 'rti_sec6_1'
+  | 'rti_sec7_1'
+  | 'rti_sec19_1'
+  | 'rti_sec19_2'
+  | 'rti_sec19_3'
+  | 'rti_sec18_20'
+  // Land Appeal u/s 54 WBLR Act
+  | 'lrappeal_memo'
+  | 'lrappeal_stay'
+  | 'lrappeal_statusquo'
+  | 'lrappeal_localinspect'
+  // Delay Condonation u/s 5 Limitation Act
+  | 'sec5_appeal_delay'
+  | 'sec5_supported_affidavit'
+  | 'sec14_exclusion'
+  // Misc Cases & 10000 Share u/s 50A
+  | 'misc_share10000'
+  | 'misc_record_rect'
+  | 'misc_demarcation'
+  | 'misc_delete_wrong'
+  | 'misc_reopen_hear'
+  // Land Conversion u/s 4C
+  | 'conv_sec4c'
+  | 'conv_regularize'
+  | 'conv_khatian_update'
+  // WBLRTT Tenancy Tribunal u/s 6
+  | 'lrtt_oa'
+  | 'lrtt_interim_stay'
+  | 'lrtt_sec5_delay'
+  | 'lrtt_contempt'
+  // Statutory First Appeal (CPC / Sec 54)
+  | 'firstappeal_memo'
+  | 'firstappeal_stay'
+  | 'firstappeal_addl_evidence'
+  // Bargadar & Barga Matters u/s 15-21
+  | 'barga_prevent_evict'
+  | 'barga_recording'
+  | 'barga_produce_share'
+  | 'barga_surrender';
 
 export interface FormValues {
   forum: string;
@@ -70,108 +113,310 @@ export interface FormValues {
 }
 
 export interface AiStudioProps {
-  initialCaseType?: CaseType | 'all';
+  initialCaseType?: CaseType | DraftingMatterType | 'all';
   lockCaseType?: boolean;
   prefilledCase?: Partial<CaseItem> | null;
   onBack?: () => void;
 }
 
-// Template mapping per case/form type (Mutation completely removed)
-export const CASE_TEMPLATES_MAP: Record<
-  string,
-  { id: TemplateType; labelEn: string; labelBn: string; desc: string }[]
-> = {
+export interface TemplateOption {
+  id: TemplateType;
+  section: string;
+  labelEn: string;
+  labelBn: string;
+  desc: string;
+}
+
+// Complete arranged legal setup for Land-related and RTI-related matters with statutory sections
+export const CASE_TEMPLATES_MAP: Record<string, TemplateOption[]> = {
   rti: [
     {
-      id: 'rti',
+      id: 'rti_sec6_1',
+      section: '[Sec 6(1)]',
       labelEn: 'RTI Application u/s 6(1)',
       labelBn: 'তথ্য জানার অধিকার দরখাস্ত (ধারা ৬(১))',
       desc: 'Demand certified public records from SPIO'
-    },
-    {
-      id: 'rtifirstappeal',
-      labelEn: 'RTI First Appeal u/s 19(1)',
-      labelBn: 'আর.টি.আই. প্রথম আপিল (ধারা ১৯(১))',
-      desc: 'First Appeal before FAA against SPIO delay/refusal'
     }
   ],
-  misc: [
+  rti_sec6_1: [
     {
-      id: 'misc10000',
-      labelEn: '10000-Share & Misc Case u/s 50A',
-      labelBn: '১০,০০০ হিস্যা ও বিবিধ মোকদ্দমা আবেদনপত্র (ধারা ৫০/৫০ক)',
-      desc: 'Petition to Revenue Officer for share & ROR correction'
+      id: 'rti_sec6_1',
+      section: '[Sec 6(1)]',
+      labelEn: 'RTI Application u/s 6(1)',
+      labelBn: 'তথ্য জানার অধিকার দরখাস্ত (ধারা ৬(১))',
+      desc: 'Demand certified public records from SPIO under Sec 6(1)'
+    }
+  ],
+  rti_sec19_1: [
+    {
+      id: 'rti_sec19_1',
+      section: '[Sec 19(1)]',
+      labelEn: 'RTI First Appeal u/s 19(1)',
+      labelBn: 'আর.টি.আই. প্রথম আপিল স্মারকলিপি (ধারা ১৯(১))',
+      desc: 'First Appeal before First Appellate Authority (FAA) against SPIO failure / delay'
+    }
+  ],
+  rti_sec19_2: [
+    {
+      id: 'rti_sec19_2',
+      section: '[Sec 19(2)]',
+      labelEn: 'Third Party Appeal u/s 19(2)',
+      labelBn: 'তৃতীয় পক্ষের অধিকার সুরক্ষার্থে আপিল (ধারা ১৯(২))',
+      desc: 'First Appeal by affected third party against disclosure or wrongful orders u/s 19(2)'
     }
   ],
   lrappeal: [
     {
-      id: 'lrappeal',
-      labelEn: 'Memo of Appeal u/s 54 WBLR Act',
-      labelBn: 'এল.আর. আপিল মেমোরেন্ডাম (ধারা ৫৪)',
-      desc: 'Statutory Appeal before DL&LRO against lower revenue order'
+      id: 'lrappeal_memo',
+      section: '[Sec 54]',
+      labelEn: 'Memo of Statutory Appeal before DL&LRO against Lower Order',
+      labelBn: 'এল.আর. আপিল মেমোরেন্ডাম (ধারা ৫৪ - DL&LRO)',
+      desc: 'Statutory Appeal before DL&LRO against erroneous orders of Revenue Officer u/s 54'
     },
     {
-      id: 'sec5delay',
-      labelEn: 'Section 5 Delay Condonation Petition',
-      labelBn: 'তামাদি আইন ৫ ধারা মতে বিলম্ব মকুবের আবেদনপত্র',
-      desc: 'Limitation Act condonation of delay in preferring appeal'
+      id: 'lrappeal_stay',
+      section: '[Sec 54(3) / O 41 R 5]',
+      labelEn: 'Application for Interim Stay of Impugned Revenue Order',
+      labelBn: 'তর্কিত আদেশের কার্যক্রম স্থগিতাদেশের অন্তর্বর্তী আবেদন',
+      desc: 'Interim stay petition restraining execution/implementation of lower revenue order'
+    },
+    {
+      id: 'lrappeal_statusquo',
+      section: '[Sec 54 / Injunction]',
+      labelEn: 'Petition for Status Quo & Restraining Possession Change',
+      labelBn: 'জমির অবস্থা ও দখল অক্ষুণ্ণ রাখার স্থিতাবস্থা আবেদন',
+      desc: 'Status quo / Injunction petition preserving physical possession and nature/character of land'
+    },
+    {
+      id: 'lrappeal_localinspect',
+      section: '[Sec 54 / O 39 R 7]',
+      labelEn: 'Application for Local Field Inspection & Spot Inquiry by RO',
+      labelBn: 'সরজমিন তদন্ত ও স্থানীয় পরিদর্শনের আবেদন',
+      desc: 'Local spot investigation through Revenue Inspector/Kanungo to ascertain ground reality'
     }
   ],
-  firstappeal: [
+  limitation: [
     {
-      id: 'firstappeal',
-      labelEn: 'Statutory First Appeal (CPC / Sec 54)',
-      labelBn: 'বিধিবদ্ধ প্রথম আপিল মেমোরেন্ডাম',
-      desc: 'First Appeal before Appellate Authority'
+      id: 'sec5_appeal_delay',
+      section: '[Sec 5 Limitation Act]',
+      labelEn: 'Petition for Condonation of Delay in Preferring Appeal',
+      labelBn: 'তামাদি আইন ৫ ধারা মতে বিলম্ব মার্জনার দরখাস্ত',
+      desc: 'Limitation Act condonation of delay explaining day-to-day sufficient cause'
     },
     {
-      id: 'sec5delay',
-      labelEn: 'Section 5 Delay Condonation Petition',
-      labelBn: 'তামাদি আইন ৫ ধারা মতে বিলম্ব মার্জনার আবেদনপত্র',
-      desc: 'Limitation Act condonation of delay'
+      id: 'sec5_supported_affidavit',
+      section: '[Sec 5 & O 19 CPC]',
+      labelEn: 'Delay Condonation Petition with Accompanying Affidavit',
+      labelBn: 'হলফনামাসহ বিলম্ব মার্জনা আবেদনপত্র',
+      desc: 'Formal delay condonation petition with sworn verification affidavit'
+    },
+    {
+      id: 'sec14_exclusion',
+      section: '[Sec 14 Limitation Act]',
+      labelEn: 'Exclusion of Time Spent in Good Faith in Wrong Forum',
+      labelBn: 'ভুল ফোরামে সরলবিশ্বাসে মামলার সময় বাদ দেওয়ার আবেদন',
+      desc: 'Statutory exclusion of time prosecuted in good faith before court lacking jurisdiction'
+    }
+  ],
+  misc: [
+    {
+      id: 'misc_share10000',
+      section: '[Sec 50A]',
+      labelEn: 'Rectification of 10,000-Share Anomaly in Computerized ROR',
+      labelBn: '১০,০০০ হিস্যা বৈষম্য নিরসন ও খতিয়ান সংশোধন (ধারা ৫০ক)',
+      desc: 'Petition to RO for re-apportioning 10,000 fractional share parts and unlocking khatian'
+    },
+    {
+      id: 'misc_record_rect',
+      section: '[Sec 50 / 51A(4)]',
+      labelEn: 'Misc Petition for Correction of Clerical / Printing Errors in Khatian',
+      labelBn: 'খতিয়ানের করণিক ও মুদ্রণ প্রমাদ সংশোধনের আবেদন',
+      desc: 'Correction of spelling, share fractions, and area entries in computerized ROR'
+    },
+    {
+      id: 'misc_demarcation',
+      section: '[Sec 50 / Manual R 28]',
+      labelEn: 'Misc Application for Demarcation & Boundary Settlement of Dag',
+      labelBn: 'দাগের সীমানা চিহ্নিতকরণ ও ডিমারকেশন আবেদন',
+      desc: 'Fixation of boundaries and spot demarcating of plot by official Amine/Surveyor'
+    },
+    {
+      id: 'misc_delete_wrong',
+      section: '[Sec 50A]',
+      labelEn: 'Application to Expunge Wrong Co-Sharer / Erroneous Entry from ROR',
+      labelBn: 'খতিয়ানে অনধিকার ব্যক্তির ভুল নাম কর্তন দরখাস্ত',
+      desc: 'Striking off erroneous co-sharer entered without deed or inheritance'
+    },
+    {
+      id: 'misc_reopen_hear',
+      section: '[Sec 50 / Natural Justice]',
+      labelEn: 'Petition to Reopen Misc Hearing Heard Ex-Parte',
+      labelBn: 'একতরফা শুনানি আদেশ প্রত্যাহার ও পুনর্বিবেচনার আবেদন',
+      desc: 'Recalling ex-parte order passed without serving statutory hearing notice'
     }
   ],
   conversion: [
     {
-      id: 'conversion',
-      labelEn: 'Conversion Petition u/s 4C WBLR Act',
-      labelBn: 'বাস্তু শ্রেণি রূপান্তর দরখাস্ত (ধারা ৪সি)',
-      desc: 'Application to Collector for land use conversion'
+      id: 'conv_sec4c',
+      section: '[Sec 4C]',
+      labelEn: 'Application for Land Use Conversion (Sali to Bastu / Comm.)',
+      labelBn: 'বাস্তু / বাণিজ্যিক শ্রেণি রূপান্তর দরখাস্ত (ধারা ৪সি)',
+      desc: 'Application to Collector / DL&LRO for permission to change land classification'
+    },
+    {
+      id: 'conv_regularize',
+      section: '[Sec 4C(6)]',
+      labelEn: 'Regularization of Post-Facto Land Use Change & Fine Remission',
+      labelBn: 'অননুমোদিত ব্যবহারের নিয়মিতকরণ দরখাস্ত',
+      desc: 'Regularization of existing construction / use upon payment of statutory compounding fees'
+    },
+    {
+      id: 'conv_khatian_update',
+      section: '[Sec 4C read with 50]',
+      labelEn: 'Application for Updating ROR after Conversion Order',
+      labelBn: 'রূপান্তরোত্তর কম্পিউটারাইজড খতিয়ান রেকর্ড সংশোধন',
+      desc: 'Updating Banglarbhumi computerized ledger reflecting new conversion certificate'
     }
   ],
   lrtt: [
     {
-      id: 'lrappeal',
-      labelEn: 'WBLRTT Original Application / Appeal',
-      labelBn: 'ভূমি সংস্কার ট্রাইব্যুনাল (LRTT) আবেদনপত্র',
-      desc: 'Tribunal application under WBLRTT Act'
+      id: 'lrtt_oa',
+      section: '[Sec 6 WBLRTT Act]',
+      labelEn: 'Original Application (O.A.) challenging Appellate Order',
+      labelBn: 'ভূমি সংস্কার ট্রাইব্যুনাল মূল আবেদন (O.A.)',
+      desc: 'Tribunal petition challenging order of DL&LRO or Appellate Authority u/s 6'
     },
     {
-      id: 'sec5delay',
-      labelEn: 'Section 5 Delay Condonation Petition',
-      labelBn: 'বিলম্ব মকুবের আবেদনপত্র',
-      desc: 'Tribunal delay condonation'
+      id: 'lrtt_interim_stay',
+      section: '[Sec 6(2) WBLRTT Act]',
+      labelEn: 'Application for Interim Stay / Injunction pending O.A.',
+      labelBn: 'ট্রাইব্যুনালে অন্তর্বর্তীকালীন স্থগিতাদেশ আবেদন (M.A.)',
+      desc: 'Interim protection restraining disturbance of possession during trial'
+    },
+    {
+      id: 'lrtt_sec5_delay',
+      section: '[Sec 6 & Sec 5 Lim.]',
+      labelEn: 'Delay Condonation in Filing Tribunal O.A.',
+      labelBn: 'ট্রাইব্যুনালে ও.এ. দাখিলে বিলম্ব মার্জনা আবেদন',
+      desc: 'Condoning delay in approaching Tenancy Tribunal within limitation'
+    },
+    {
+      id: 'lrtt_contempt',
+      section: '[Sec 15 WBLRTT Act]',
+      labelEn: 'Contempt Petition for Disobedience of Tribunal Orders',
+      labelBn: 'ট্রাইব্যুনালের নির্দেশ অমান্যের আদালত অবমাননা আবেদন',
+      desc: 'Action against contemnors for violating Tribunal interim status quo'
+    }
+  ],
+  firstappeal: [
+    {
+      id: 'firstappeal_memo',
+      section: '[Sec 96 / O 41 R 1 CPC]',
+      labelEn: 'Memorandum of Statutory First Appeal',
+      labelBn: 'বিধিবদ্ধ প্রথম আপিলের স্মারকলিপি',
+      desc: 'Appellate memorandum challenging decree or formal order on merits'
+    },
+    {
+      id: 'firstappeal_stay',
+      section: '[Order 41 Rule 5 CPC]',
+      labelEn: 'Application for Stay of Execution / Lower Decree',
+      labelBn: 'রায় ও ডিক্রি কার্যকর স্থগিতের আবেদনপত্র',
+      desc: 'Stay of lower court decree or proceedings during pendency of appeal'
+    },
+    {
+      id: 'firstappeal_addl_evidence',
+      section: '[Order 41 Rule 27 CPC]',
+      labelEn: 'Petition for Production of Additional Evidence in Appeal',
+      labelBn: 'আপিল স্তরে অতিরিক্ত প্রমাণ ও দলিল দাখিলের আবেদন',
+      desc: 'Application to produce certified documents not available earlier'
+    }
+  ],
+  barga: [
+    {
+      id: 'barga_prevent_evict',
+      section: '[Sec 17(1) WBLR Act]',
+      labelEn: 'Application to Prevent Illegal Eviction / Termination of Cultivation',
+      labelBn: 'বর্গাদারের বেআইনি উচ্ছেদ রোধ ও সুরক্ষা আবেদন',
+      desc: 'Preventing land owner from terminating cultivation without RO order u/s 17(1)'
+    },
+    {
+      id: 'barga_recording',
+      section: '[Sec 21B WBLR Act]',
+      labelEn: 'Petition for Recording Name as Bargadar in Field ROR',
+      labelBn: 'খতিয়ানে বর্গাদার হিসেবে নাম রেকর্ডভুক্তির আবেদন',
+      desc: 'Recording of actual tiller / cultivator under Operation Barga principles'
+    },
+    {
+      id: 'barga_produce_share',
+      section: '[Sec 16 WBLR Act]',
+      labelEn: 'Petition for Tender / Deposit of Crop Produce Share before RO',
+      labelBn: 'ফসলের ন্যায্য অংশ রাজস্ব আধিকারিকের নিকট জমাদানের আবেদন',
+      desc: 'Tender of landlord share of produce upon refusal or non-issuance of receipt'
+    },
+    {
+      id: 'barga_surrender',
+      section: '[Sec 20B WBLR Act]',
+      labelEn: 'Verification of Voluntary Surrender / Abandonment of Cultivation',
+      labelBn: 'বর্গা অধিকার স্বেচ্ছায় সমর্পণ বা প্রত্যাহারের যাচাই',
+      desc: 'Statutory verification by Revenue Officer regarding voluntary surrender'
     }
   ]
 };
 
-export const CASE_FORM_TYPE_OPTIONS: { id: CaseType; labelEn: string; labelBn: string }[] = [
-  { id: 'rti', labelEn: 'RTI Matter (u/s 6(1) & 19(1))', labelBn: 'তথ্য জানার অধিকার (RTI)' },
-  { id: 'misc', labelEn: 'Misc Case & 10000 Share (u/s 50A)', labelBn: 'বিবিধ মোকদ্দমা ও ১০,০০০ হিস্যা (Misc Case)' },
-  { id: 'lrappeal', labelEn: 'LR Appeal (u/s 54 WBLR Act)', labelBn: 'এল.আর. আপিল ধারা ৫৪ (LR Appeal)' },
-  { id: 'firstappeal', labelEn: 'Statutory First Appeal (CPC / Sec 54)', labelBn: 'বিধিবদ্ধ প্রথম আপিল (First Appeal)' },
-  { id: 'conversion', labelEn: 'Land Conversion (u/s 4C WBLR Act)', labelBn: 'বাস্তু রূপান্তর ধারা ৪সি (Conversion)' },
-  { id: 'lrtt', labelEn: 'WBLRTT Tribunal Appeal / Application', labelBn: 'ভূমি সংস্কার ট্রাইব্যুনাল (WBLRTT Tribunal)' }
+export const CASE_FORM_TYPE_OPTIONS: { id: DraftingMatterType; labelEn: string; labelBn: string }[] = [
+  { id: 'rti_sec6_1', labelEn: 'RTI Application (u/s 6(1) RTI Act)', labelBn: 'তথ্য জানার অধিকার দরখাস্ত (ধারা ৬(১))' },
+  { id: 'rti_sec19_1', labelEn: 'RTI First Appeal (u/s 19(1) RTI Act)', labelBn: 'আর.টি.আই. প্রথম আপিল (ধারা ১৯(১))' },
+  { id: 'rti_sec19_2', labelEn: 'RTI Appeal u/s 19(2) [Third Party]', labelBn: 'আর.টি.আই. তৃতীয় পক্ষের আপিল (ধারা ১৯(২))' },
+  { id: 'lrappeal', labelEn: 'Land Appeal (u/s 54 WBLR Act 1955)', labelBn: 'এল.আর. আপিল (ধারা ৫৪ - DL&LRO)' },
+  { id: 'limitation', labelEn: 'Delay Condonation (u/s 5 of Limitation Act 1963)', labelBn: 'তামাদি আইন ৫ ধারা মতে বিলম্ব মার্জনা' },
+  { id: 'misc', labelEn: 'Misc Cases & 10000 Share (u/s 50A WBLR Act)', labelBn: 'বিবিধ মোকদ্দমা ও ১০,০০০ হিস্যা বৈষম্য (ধারা ৫০ক)' },
+  { id: 'conversion', labelEn: 'Land Conversion (u/s 4C WBLR Act 1955)', labelBn: 'বাস্তু ও শ্রেণি রূপান্তর (ধারা ৪সি)' },
+  { id: 'lrtt', labelEn: 'WBLRTT Tenancy Tribunal (u/s 6 Act 1997)', labelBn: 'ভূমি সংস্কার ট্রাইব্যুনাল (WBLRTT Tribunal)' },
+  { id: 'firstappeal', labelEn: 'Statutory First Appeal (CPC / Sec 54)', labelBn: 'বিধিবদ্ধ প্রথম আপিল (First Appeal - CPC/৫৪)' },
+  { id: 'barga', labelEn: 'Bargadar & Barga Matters (u/s 15–21 WBLR Act)', labelBn: 'বর্গাদার ও বর্গা সংক্রান্ত (ধারা ১৫-২১)' }
 ];
 
-export const ALL_TEMPLATES_LIST: { id: TemplateType; labelEn: string; labelBn: string; category: string }[] = [
-  { id: 'rti', labelEn: 'RTI Application u/s 6(1)', labelBn: 'তথ্য জানার অধিকার দরখাস্ত (৬(১) ধারা)', category: 'RTI' },
-  { id: 'rtifirstappeal', labelEn: 'RTI First Appeal u/s 19(1)', labelBn: 'আর.টি.আই. প্রথম আপিল (১৯(১) ধারা)', category: 'RTI' },
-  { id: 'misc10000', labelEn: '10000-Share & Misc Case u/s 50A', labelBn: '১০,০০০ হিস্যা ও বিবিধ মোকদ্দমা আবেদনপত্র', category: 'Misc' },
-  { id: 'lrappeal', labelEn: 'Memo of Appeal u/s 54 WBLR Act', labelBn: 'এল.আর. আপিল মেমোরেন্ডাম (৫৪ ধারা)', category: 'Appeal' },
-  { id: 'firstappeal', labelEn: 'Statutory First Appeal', labelBn: 'বিধিবদ্ধ প্রথম আপিল মেমোরেন্ডাম', category: 'Appeal' },
-  { id: 'sec5delay', labelEn: 'Section 5 Delay Condonation', labelBn: 'তামাদি আইন ৫ ধারা মতে বিলম্ব মকুবের আবেদন', category: 'Appeal' },
-  { id: 'conversion', labelEn: 'Conversion Petition u/s 4C', labelBn: 'বাস্তু শ্রেণি রূপান্তর দরখাস্ত (৪সি ধারা)', category: 'Conversion' }
+export const ALL_TEMPLATES_LIST: { id: TemplateType; section: string; labelEn: string; labelBn: string; category: string }[] = [
+  // RTI
+  { id: 'rti_sec6_1', section: '[Sec 6(1)]', labelEn: 'RTI Application u/s 6(1)', labelBn: 'তথ্য জানার অধিকার দরখাস্ত (৬(১) ধারা)', category: 'RTI' },
+  { id: 'rti_sec7_1', section: '[Sec 7(1)]', labelEn: 'Urgent RTI u/s 7(1)', labelBn: 'জরুরি আরটিআই দরখাস্ত (৭(১) ধারা)', category: 'RTI' },
+  { id: 'rti_sec19_1', section: '[Sec 19(1)]', labelEn: 'RTI First Appeal u/s 19(1)', labelBn: 'আরটিআই প্রথম আপিল (১৯(১) ধারা)', category: 'RTI' },
+  { id: 'rti_sec19_2', section: '[Sec 19(2)]', labelEn: 'Third Party Appeal u/s 19(2)', labelBn: 'তৃতীয় পক্ষের আপিল (১৯(২) ধারা)', category: 'RTI' },
+  { id: 'rti_sec19_3', section: '[Sec 19(3)]', labelEn: 'Second Appeal u/s 19(3)', labelBn: 'দ্বিতীয় আপিল (১৯(৩) ধারা)', category: 'RTI' },
+  { id: 'rti_sec18_20', section: '[Sec 18 & 20]', labelEn: 'RTI Complaint & Penalty', labelBn: 'অভিযোগ ও জরিমানা দরখাস্ত (১৮ ও ২০ ধারা)', category: 'RTI' },
+  // Land Appeal
+  { id: 'lrappeal_memo', section: '[Sec 54]', labelEn: 'Memo of Appeal u/s 54 WBLR Act', labelBn: 'এল.আর. আপিল মেমোরেন্ডাম (৫৪ ধারা)', category: 'Appeal' },
+  { id: 'lrappeal_stay', section: '[Sec 54(3)]', labelEn: 'Stay Petition u/s 54(3)', labelBn: 'স্থগিতাদেশ আবেদন (৫৪(৩) ধারা)', category: 'Appeal' },
+  { id: 'lrappeal_statusquo', section: '[Injunction]', labelEn: 'Status Quo Application', labelBn: 'স্থিতাবস্থা আবেদন', category: 'Appeal' },
+  { id: 'lrappeal_localinspect', section: '[O 39 R 7]', labelEn: 'Local Inspection Application', labelBn: 'সরজমিন তদন্ত আবেদন', category: 'Appeal' },
+  // Delay Condonation
+  { id: 'sec5_appeal_delay', section: '[Sec 5]', labelEn: 'Section 5 Delay Condonation', labelBn: 'তামাদি আইন ৫ ধারা মতে বিলম্ব মকুব', category: 'Limitation' },
+  { id: 'sec5_supported_affidavit', section: '[Sec 5 & Aff.]', labelEn: 'Delay Petition with Affidavit', labelBn: 'হলফনামাসহ বিলম্ব মার্জনা দরখাস্ত', category: 'Limitation' },
+  { id: 'sec14_exclusion', section: '[Sec 14]', labelEn: 'Exclusion of Time u/s 14', labelBn: 'সময় গণনা বাদ দেওয়ার আবেদন (১৪ ধারা)', category: 'Limitation' },
+  // Misc
+  { id: 'misc_share10000', section: '[Sec 50A]', labelEn: '10000-Share Anomaly u/s 50A', labelBn: '১০,০০০ হিস্যা বৈষম্য সংশোধন (৫০ক ধারা)', category: 'Misc' },
+  { id: 'misc_record_rect', section: '[Sec 50]', labelEn: 'Clerical Error Rectification', labelBn: 'খতিয়ান করণিক ভুল সংশোধন (৫০ ধারা)', category: 'Misc' },
+  { id: 'misc_demarcation', section: '[Demarcation]', labelEn: 'Plot Demarcation Petition', labelBn: 'দাগের সীমানা চিহ্নিতকরণ আবেদন', category: 'Misc' },
+  { id: 'misc_delete_wrong', section: '[Sec 50A]', labelEn: 'Expunge Erroneous Entry', labelBn: 'অনধিকার ব্যক্তির নাম কর্তন', category: 'Misc' },
+  { id: 'misc_reopen_hear', section: '[Reopen]', labelEn: 'Reopen Ex-Parte Hearing', labelBn: 'একতরফা আদেশ পুনর্বিবেচনা', category: 'Misc' },
+  // Conversion
+  { id: 'conv_sec4c', section: '[Sec 4C]', labelEn: 'Conversion Petition u/s 4C', labelBn: 'বাস্তু শ্রেণি রূপান্তর দরখাস্ত (৪সি ধারা)', category: 'Conversion' },
+  { id: 'conv_regularize', section: '[Sec 4C(6)]', labelEn: 'Conversion Regularization', labelBn: 'অননুমোদিত ব্যবহারের নিয়মিতকরণ', category: 'Conversion' },
+  { id: 'conv_khatian_update', section: '[Sec 50]', labelEn: 'ROR Update post-Conversion', labelBn: 'রূপান্তরোত্তর রেকর্ড সংশোধন', category: 'Conversion' },
+  // LRTT
+  { id: 'lrtt_oa', section: '[Sec 6 LRTT]', labelEn: 'WBLRTT Original Application', labelBn: 'ভূমি সংস্কার ট্রাইব্যুনাল মূল আবেদন', category: 'LRTT' },
+  { id: 'lrtt_interim_stay', section: '[Sec 6(2)]', labelEn: 'LRTT Interim Stay / Injunction', labelBn: 'ট্রাইব্যুনাল অন্তর্বর্তী স্থগিতাদেশ', category: 'LRTT' },
+  { id: 'lrtt_sec5_delay', section: '[Sec 6 & 5]', labelEn: 'LRTT Delay Condonation', labelBn: 'ট্রাইব্যুনাল বিলম্ব মার্জনা আবেদন', category: 'LRTT' },
+  { id: 'lrtt_contempt', section: '[Sec 15 LRTT]', labelEn: 'LRTT Contempt Petition', labelBn: 'ট্রাইব্যুনাল আদালত অবমাননা আবেদন', category: 'LRTT' },
+  // First Appeal
+  { id: 'firstappeal_memo', section: '[Sec 96 CPC]', labelEn: 'Statutory First Appeal Memo', labelBn: 'বিধিবদ্ধ প্রথম আপিল স্মারকলিপি', category: 'First Appeal' },
+  { id: 'firstappeal_stay', section: '[O 41 R 5]', labelEn: 'First Appeal Stay of Execution', labelBn: 'প্রথম আপিল কার্যকর স্থগিতের আবেদন', category: 'First Appeal' },
+  { id: 'firstappeal_addl_evidence', section: '[O 41 R 27]', labelEn: 'Additional Evidence in Appeal', labelBn: 'আপিল স্তরে অতিরিক্ত প্রমাণ দাখিল', category: 'First Appeal' },
+  // Barga
+  { id: 'barga_prevent_evict', section: '[Sec 17(1)]', labelEn: 'Restrain Bargadar Eviction', labelBn: 'বর্গাদারের বেআইনি উচ্ছেদ রোধ', category: 'Barga' },
+  { id: 'barga_recording', section: '[Sec 21B]', labelEn: 'Bargadar Name Recording', labelBn: 'খতিয়ানে বর্গাদার নাম রেকর্ডভুক্তি', category: 'Barga' },
+  { id: 'barga_produce_share', section: '[Sec 16]', labelEn: 'Tender Crop Produce Share', labelBn: 'ফসলের ন্যায্য অংশ রাজস্ব অফিসে জমা', category: 'Barga' },
+  { id: 'barga_surrender', section: '[Sec 20B]', labelEn: 'Barga Surrender Verification', labelBn: 'বর্গা অধিকার সমর্পণ বা প্রত্যাহারের যাচাই', category: 'Barga' }
 ];
 
 export const AiStudio: React.FC<AiStudioProps> = ({
@@ -184,12 +429,13 @@ export const AiStudio: React.FC<AiStudioProps> = ({
 
   const [activeTab, setActiveTab] = useState<'draft' | 'learning'>('draft');
 
-  // Active category filter: defaults to initialCaseType or 'rti'
+  // Active category filter: defaults to initialCaseType or 'rti_sec6_1'
   const [selectedCategory, setSelectedCategory] = useState<CaseType>(() => {
     if (initialCaseType && initialCaseType !== 'all' && initialCaseType !== 'mutation') {
+      if (initialCaseType === 'rti') return 'rti_sec6_1';
       return initialCaseType;
     }
-    return 'rti';
+    return 'rti_sec6_1';
   });
 
   // Mobile View state (for small screens < 1024px)
@@ -198,9 +444,10 @@ export const AiStudio: React.FC<AiStudioProps> = ({
   // Synchronize when initialCaseType prop changes
   useEffect(() => {
     if (initialCaseType && initialCaseType !== 'all' && initialCaseType !== 'mutation') {
-      setSelectedCategory(initialCaseType);
-      if (CASE_TEMPLATES_MAP[initialCaseType]?.length > 0) {
-        setTemplate(CASE_TEMPLATES_MAP[initialCaseType][0].id);
+      const cat = initialCaseType === 'rti' ? 'rti_sec6_1' : initialCaseType;
+      setSelectedCategory(cat);
+      if (CASE_TEMPLATES_MAP[cat]?.length > 0) {
+        setTemplate(CASE_TEMPLATES_MAP[cat][0].id);
       }
     }
   }, [initialCaseType]);
@@ -210,16 +457,22 @@ export const AiStudio: React.FC<AiStudioProps> = ({
     if (CASE_TEMPLATES_MAP[selectedCategory]) {
       return CASE_TEMPLATES_MAP[selectedCategory];
     }
-    return CASE_TEMPLATES_MAP.rti;
+    return CASE_TEMPLATES_MAP.rti_sec6_1 || CASE_TEMPLATES_MAP.rti;
   }, [selectedCategory]);
+
+  // Whether active matter is an RTI application/appeal
+  const isRtiCategory = selectedCategory === 'rti' || selectedCategory.startsWith('rti');
 
   // Drafting inputs (Mutation completely removed)
   const [template, setTemplate] = useState<TemplateType>(() => {
-    const initialList = CASE_TEMPLATES_MAP[initialCaseType !== 'all' && initialCaseType !== 'mutation' ? initialCaseType : 'rti'];
+    const defaultCat = initialCaseType && initialCaseType !== 'all' && initialCaseType !== 'mutation' && initialCaseType !== 'rti'
+      ? initialCaseType
+      : 'rti_sec6_1';
+    const initialList = CASE_TEMPLATES_MAP[defaultCat] || CASE_TEMPLATES_MAP.rti_sec6_1 || CASE_TEMPLATES_MAP.rti;
     if (initialList && initialList.length > 0) {
       return initialList[0].id;
     }
-    return 'rti';
+    return 'rti_sec6_1';
   });
 
   const [draftLang, setDraftLang] = useState<DraftLanguage>(() => {
@@ -229,7 +482,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
   // Resolve matching internal draft format attached in Document Vault according to present application matter
   const activeVaultDraftRef = useMemo(() => {
     const vaultFiles = activeCompany?.vaultFiles || [];
-    const matter = (selectedCategory || 'rti').toLowerCase();
+    const matter = (selectedCategory || 'rti_sec6_1').toLowerCase();
 
     // 1. Check custom uploaded vault files attached to Document Vault
     const relevantVaultFiles = vaultFiles.filter(vf => {
@@ -238,24 +491,28 @@ export const AiStudio: React.FC<AiStudioProps> = ({
       return (
         cat.includes(matter) ||
         nm.includes(matter) ||
+        (matter.includes('rti') && (nm.includes('rti') || cat.includes('rti'))) ||
         (matter === 'misc' && (nm.includes('share') || nm.includes('50a') || cat.includes('misc') || cat.includes('petition'))) ||
         (matter === 'lrappeal' && (nm.includes('appeal') || nm.includes('54') || cat.includes('appeal'))) ||
+        (matter === 'limitation' && (nm.includes('delay') || nm.includes('limitation') || cat.includes('limitation'))) ||
         (matter === 'firstappeal' && (nm.includes('first') || nm.includes('appeal'))) ||
         (matter === 'conversion' && (nm.includes('conversion') || nm.includes('4c'))) ||
         (matter === 'lrtt' && (nm.includes('tribunal') || nm.includes('lrtt') || nm.includes('oa'))) ||
-        (matter === 'rti' && nm.includes('rti'))
+        (matter === 'barga' && (nm.includes('barga') || nm.includes('bargadar')))
       );
     });
 
     // 2. Check sample drafts attached to Document Vault
     const matchingSample = (sampleDrafts || []).find(sd => {
-      if (template === 'misc10000' && sd.category === 'misc') return true;
-      if (template === 'lrappeal' && (sd.category === 'lrappeal' || sd.id.includes('lrappeal'))) return true;
-      if (template === 'firstappeal' && (sd.category === 'firstappeal' || sd.category === 'lrappeal')) return true;
-      if (template === 'sec5delay' && (sd.id.includes('delay') || sd.templateText.includes('Section 5'))) return true;
-      if (template === 'conversion' && sd.category === 'conversion') return true;
-      if (template === 'rti' && (sd.category === 'rti' || sd.id.includes('rti_sec6'))) return true;
-      if (template === 'rtifirstappeal' && (sd.category === 'rti' || sd.id.includes('rti'))) return true;
+      if ((template === 'rti' || template === 'rti_sec6_1') && (sd.category === 'rti' || sd.id.includes('rti_sec6'))) return true;
+      if ((template === 'rtifirstappeal' || template === 'rti_sec19_1' || template === 'rti_sec19_2') && (sd.category === 'rti' || sd.id.includes('rti'))) return true;
+      if ((template === 'misc10000' || template.startsWith('misc')) && sd.category === 'misc') return true;
+      if ((template === 'lrappeal' || template.startsWith('lrappeal')) && (sd.category === 'lrappeal' || sd.id.includes('lrappeal'))) return true;
+      if ((template === 'firstappeal' || template.startsWith('firstappeal')) && (sd.category === 'firstappeal' || sd.category === 'lrappeal')) return true;
+      if ((template === 'sec5delay' || template.startsWith('sec5') || template.startsWith('sec14')) && (sd.id.includes('delay') || sd.templateText.includes('Section 5'))) return true;
+      if ((template === 'conversion' || template.startsWith('conv')) && sd.category === 'conversion') return true;
+      if ((template === 'lrtt' || template.startsWith('lrtt')) && (sd.category === 'lrtt' || sd.id.includes('lrtt'))) return true;
+      if (template.startsWith('barga') && (sd.category === 'barga' || sd.id.includes('barga'))) return true;
       if (sd.category === selectedCategory) return true;
       return false;
     });
@@ -396,7 +653,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
 
   // Whenever template changes, set smart defaults per template requirements
   useEffect(() => {
-    if (template === 'rti') {
+    if (template === 'rti' || template === 'rti_sec6_1' || template === 'rti_sec7_1') {
       setForum(prev => (prev.toLowerCase().includes('court') || prev.toLowerCase().includes('collector') ? 'To: The State Public Information Officer (SPIO) / BL&LRO, Rajarhat' : prev));
       setAuthorityAddress('Office of the Block Land & Land Reforms Officer, Rajarhat, North 24 Parganas - 700135');
       setShowOppParty(false); // RTI has NO opposite party
@@ -406,7 +663,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
           'The applicant requires certified copy of the spot verification report and order-sheet of the Revenue Inspector in respect of L.R. Khatian No. 1428, Dag No. 482. Requisite RTI fee has been paid.'
         );
       }
-    } else if (template === 'rtifirstappeal') {
+    } else if (template === 'rtifirstappeal' || template === 'rti_sec19_1') {
       setForum('Before the First Appellate Authority (FAA) & District Land & Land Reforms Officer (DL&LRO)');
       setAuthorityAddress('Administrative Building, Barasat, North 24 Parganas - 700124');
       setSpioDetails('State Public Information Officer & Revenue Officer, Office of the BL&LRO Rajarhat');
@@ -417,7 +674,18 @@ export const AiStudio: React.FC<AiStudioProps> = ({
           'The SPIO failed to furnish the requested certified copies within the mandatory statutory period of 30 days under Section 7(1) of the RTI Act, 2005. The delay is arbitrary, intentional, and causes gross denial of justice.'
         );
       }
-    } else if (template === 'misc10000') {
+    } else if (template === 'rti_sec19_2') {
+      setForum('Before the First Appellate Authority (FAA) & District Land & Land Reforms Officer (DL&LRO)');
+      setAuthorityAddress('Administrative Building, Barasat, North 24 Parganas - 700124');
+      setSpioDetails('State Public Information Officer & Revenue Officer, Office of the BL&LRO Rajarhat');
+      setShowOppParty(false);
+      setShowCaseRef(true);
+      if (!prefilledCase?.grounds) {
+        setCustomFacts(
+          'The SPIO has issued notice to disclose personal and confidential land transaction records of the Appellant third party without providing adequate opportunity of hearing under Section 11 of the RTI Act, 2005.'
+        );
+      }
+    } else if (template === 'misc10000' || template === 'misc_share10000') {
       setForum('Before the Ld. Revenue Officer / Block Land & Land Reforms Officer, Rajarhat');
       setAuthorityAddress('Office of the BL&LRO, Rajarhat');
       setShowOppParty(false); // Default hidden, user can add via + button
@@ -428,7 +696,12 @@ export const AiStudio: React.FC<AiStudioProps> = ({
           'The total recorded shares in Dag No. 482 in Mouza Patharghata do not aggregate to 10,000 parts, leading to mathematical mismatch and system lock on the Banglarbhumi portal. Correction of shares u/s 50A WBLR Act is required.'
         );
       }
-    } else if (template === 'lrappeal') {
+    } else if (template.startsWith('misc')) {
+      setForum('Before the Ld. Revenue Officer / Block Land & Land Reforms Officer, Rajarhat');
+      setAuthorityAddress('Office of the BL&LRO, Rajarhat');
+      setShowOppParty(false);
+      setShowLandSchedule(true);
+    } else if (template === 'lrappeal' || template.startsWith('lrappeal')) {
       setForum('In the Court of the Ld. District Land & Land Reforms Officer (DL&LRO), North 24 Parganas');
       setAuthorityAddress('Collectorate Compound, Barasat');
       setShowOppParty(true);
@@ -440,7 +713,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
           'The Ld. Revenue Officer passed the impugned order behind the back of the appellant without serving statutory notice under Rule 24 of WBLR Manual 1991, thereby violating the fundamental principles of natural justice.'
         );
       }
-    } else if (template === 'firstappeal') {
+    } else if (template === 'firstappeal' || template.startsWith('firstappeal')) {
       setForum('In the Court of the Appellate Authority / Additional District Magistrate (ADM L&LR)');
       setAuthorityAddress('District Collectorate, Barasat');
       setSpioDetails('Ld. Primary Adjudicating Officer / Revenue Officer, Rajarhat');
@@ -452,7 +725,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
           'The primary adjudicating authority failed to appreciate the registered chain of title deeds and continuous uninterrupted possession of the appellant over the scheduled property.'
         );
       }
-    } else if (template === 'sec5delay') {
+    } else if (template === 'sec5delay' || template.startsWith('sec5') || template.startsWith('sec14')) {
       setForum('In the Court of the Ld. District Land & Land Reforms Officer (DL&LRO)');
       setAuthorityAddress('District Collectorate, Barasat');
       setShowOppParty(true);
@@ -463,7 +736,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
           'Certified copy of the impugned order was received late and the appellant was afflicted with severe medical ailments. The delay of 45 days is bona fide and not intentional, requiring condonation u/s 5 Limitation Act.'
         );
       }
-    } else if (template === 'conversion') {
+    } else if (template === 'conversion' || template.startsWith('conv')) {
       setForum('Before the Collector / District Land & Land Reforms Officer (DL&LRO)');
       setAuthorityAddress('Office of the DL&LRO, North 24 Parganas');
       setShowOppParty(false);
@@ -473,6 +746,19 @@ export const AiStudio: React.FC<AiStudioProps> = ({
           'The surrounding plots have undergone complete urbanization. Agricultural cultivation is no longer feasible, and the applicant intends to use the property for residential (Bastu) purpose without disturbing public drainage.'
         );
       }
+    } else if (template.startsWith('lrtt')) {
+      setForum('Before the West Bengal Land Reforms Tenancy Tribunal (WBLRTT)');
+      setAuthorityAddress('Salt Lake, Kolkata');
+      setShowOppParty(true);
+      setOppParty('The State of West Bengal & Ors.');
+      setShowLandSchedule(true);
+      setShowCaseRef(true);
+    } else if (template.startsWith('barga')) {
+      setForum('Before the Ld. Revenue Officer & Special Officer (Barga), BL&LRO Office');
+      setAuthorityAddress('Office of the BL&LRO, Rajarhat');
+      setShowOppParty(true);
+      setOppParty('The Recorded Land Owner / Raityat');
+      setShowLandSchedule(true);
     }
   }, [template, prefilledCase]);
 
@@ -532,61 +818,339 @@ export const AiStudio: React.FC<AiStudioProps> = ({
       let prayerEn = '';
       let prayerBn = '';
 
-      if (t === 'rti') {
+      const isRti = t === 'rti' || t === 'rti_sec6_1' || t === 'rti_sec7_1';
+      const isRtiAppeal = t === 'rtifirstappeal' || t === 'rti_sec19_1' || t === 'rti_sec19_2' || t === 'rti_sec19_3' || t === 'rti_sec18_20';
+
+      // 1. RTI Matters
+      if (isRti) {
         courtHeaderEn = 'TO THE STATE PUBLIC INFORMATION OFFICER (SPIO)';
         courtHeaderBn = 'মাননীয় রাজ্য জনতথ্য আধিকারিক (SPIO) সমীপে আবেদনপত্র';
-        subjectEn = 'APPLICATION UNDER SECTION 6(1) OF THE RIGHT TO INFORMATION ACT, 2005';
-        subjectBn = 'তথ্য জানার অধিকার আইন, ২০০৫ এর ৬(১) ধারা মতে তথ্য ও জাবেদা নকল পাইবার আবেদন';
+        if (t === 'rti_sec7_1') {
+          subjectEn = 'URGENT APPLICATION UNDER SECTION 6(1) READ WITH PROVISO TO SECTION 7(1) OF THE RTI ACT, 2005 (CONCERNING LIFE & LIBERTY)';
+          subjectBn = 'তথ্য জানার অধিকার আইন, ২০০৫ এর ৭(১) ধারার শর্তানুসারে জীবন ও ব্যক্তিগত স্বাধীনতা সংক্রান্ত তথ্যের জরুরি আবেদন (৪৮ ঘণ্টার মধ্যে)';
+          factsEn = `
+            <p>1. <strong>Applicant Identity:</strong> That the Applicant is a citizen of India residing at ${vals.address}, Contact: ${vals.contactPhone}.</p>
+            <p>2. <strong>Urgent Particulars of Information Sought (Directly Concerning Life & Liberty):</strong><br/>
+            ${vals.customFacts}</p>
+            ${vals.showCaseRef && vals.caseNumber ? `<p>3. <strong>Case / Reference Details:</strong> Relating to Case / Memo No. <strong>${vals.caseNumber}</strong> ${vals.caseDate ? `dated ${vals.caseDate}` : ''}.</p>` : ''}
+            <p>${vals.showCaseRef ? '4' : '3'}. That this application directly concerns the life and liberty of the applicant / citizen, warranting immediate mandatory disclosure within 48 hours pursuant to the proviso to Section 7(1) of the RTI Act, 2005.</p>
+            <p>${vals.showCaseRef ? '5' : '4'}. That statutory application fee of ₹ 10/- is affixed herewith through Court Fee Stamp / IPO.</p>
+          `;
+          factsBn = `
+            <p>১. <strong>আবেদনকারীর পরিচয়:</strong> আবেদনকারী ভারতীয় নাগরিক এবং ${vals.address} ঠিকানার স্থায়ী বাসিন্দা।</p>
+            <p>২. <strong>জীবন ও ব্যক্তিগত স্বাধীনতা সংক্রান্ত জরুরি তথ্যের বিবরণ:</strong><br/>
+            ${vals.customFacts}</p>
+            ${vals.showCaseRef && vals.caseNumber ? `<p>৩. <strong>মামলা / নথি নম্বর:</strong> সংশ্লিষ্ট মেমো / কেস নং <strong>${vals.caseNumber}</strong> ${vals.caseDate ? `তারিখ: ${vals.caseDate}` : ''}।</p>` : ''}
+            <p>${vals.showCaseRef ? '৪' : '৩'}. অত্র চাহিদাকৃত তথ্য সরাসরি জীবন ও স্বাধীনতার সহিত জড়িত বিধায় তথ্য জানার অধিকার আইন ২০০৫ এর ৭(১) ধারার বিধানমতে আবেদন প্রাপ্তির ৪৮ ঘণ্টার মধ্যে সরবরাহ বিধিবদ্ধ বাধ্যতামূলক।</p>
+            <p>${vals.showCaseRef ? '৫' : '৪'}. নির্ধারিত ১০ টাকার কোর্ট ফি / আইপিও অত্র আবেদনের সহিত সংযুক্ত করা হইল।</p>
+          `;
+          prayerEn = `
+            The Applicant prays that the requested certified records directly concerning life and liberty may kindly be furnished within 48 hours of receipt of this application as mandated by the proviso to Section 7(1) of the RTI Act, 2005.
+          `;
+          prayerBn = `
+            অতএব প্রার্থনা, তথ্য জানার অধিকার আইন ২০০৫ এর ৭(১) ধারার বিধানমতে অত্র আবেদন প্রাপ্তির ৪৮ ঘণ্টার মধ্যে প্রার্থিত প্রত্যয়িত তথ্য ও রেকর্ড সরবরাহ করিয়া বাধিত করিবেন।
+          `;
+        } else {
+          subjectEn = 'APPLICATION UNDER SECTION 6(1) OF THE RIGHT TO INFORMATION ACT, 2005';
+          subjectBn = 'তথ্য জানার অধিকার আইন, ২০০৫ এর ৬(১) ধারা মতে তথ্য ও জাবেদা নকল পাইবার আবেদন';
+          factsEn = `
+            <p>1. <strong>Applicant Identity:</strong> That the Applicant is a citizen of India residing at ${vals.address}.</p>
+            <p>2. <strong>Particulars of Information Sought (Observed by Counsel / AI):</strong><br/>
+            ${vals.customFacts}</p>
+            ${vals.showCaseRef && vals.caseNumber ? `<p>3. <strong>Case / File Reference:</strong> Relating to Case / Memo No. <strong>${vals.caseNumber}</strong> ${vals.caseDate ? `dated ${vals.caseDate}` : ''}.</p>` : ''}
+            <p>${vals.showCaseRef ? '4' : '3'}. That the information sought relates to public records and does not fall within the exemptions specified under Section 8 or 9 of the RTI Act, 2005.</p>
+            <p>${vals.showCaseRef ? '5' : '4'}. That statutory application fee of ₹ 10/- is affixed herewith through Court Fee Stamp / IPO.</p>
+          `;
+          factsBn = `
+            <p>১. <strong>আবেদনকারীর পরিচয়:</strong> আবেদনকারী ভারতীয় নাগরিক এবং ${vals.address} ঠিকানার স্থায়ী বাসিন্দা।</p>
+            <p>২. <strong>প্রার্থিত তথ্যের বিশদ বিবরণ (তথ্য জানার অধিকার মতে):</strong><br/>
+            ${vals.customFacts}</p>
+            ${vals.showCaseRef && vals.caseNumber ? `<p>৩. <strong>মামলা / নথি নম্বর:</strong> সংশ্লিষ্ট মেমো / কেস নং <strong>${vals.caseNumber}</strong> ${vals.caseDate ? `তারিখ: ${vals.caseDate}` : ''}।</p>` : ''}
+            <p>${vals.showCaseRef ? '৪' : '৩'}. উক্ত তথ্য তথ্য জানার অধিকার আইন ২০০৫ এর ৮ বা ৯ ধারার কোনো ব্যতিক্রমের আওতাভুক্ত নহে এবং সাধারণ জনস্বার্থের সহিত জড়িত।</p>
+            <p>${vals.showCaseRef ? '৫' : '৪'}. নির্ধারিত ১০ টাকার কোর্ট ফি / আইপিও অত্র আবেদনের সহিত সংযুক্ত করা হইল।</p>
+          `;
+          prayerEn = `
+            The Applicant prays that certified true copies of the aforesaid information and documents may kindly be furnished within the statutory period of 30 days under Section 7(1) of the RTI Act, 2005.
+          `;
+          prayerBn = `
+            অতএব বিনীত প্রার্থনা, তথ্য জানার অধিকার আইন ২০০৫ এর ৭(১) ধারা অনুসারে বিধিবদ্ধ ৩০ দিনের মধ্যে প্রার্থিত তথ্যাদি ও প্রত্যয়িত নকল সরবরাহ করিয়া বাধিত করিবেন।
+          `;
+        }
+      } else if (isRtiAppeal) {
+        if (t === 'rti_sec19_2') {
+          courtHeaderEn = 'BEFORE THE FIRST APPELLATE AUTHORITY (FAA) UNDER RTI ACT, 2005';
+          courtHeaderBn = 'মাননীয় প্রথম আপিল কর্তৃপক্ষ সমীপে সংক্ষুব্ধ তৃতীয় পক্ষের আপিল';
+          subjectEn = 'MEMORANDUM OF THIRD PARTY APPEAL UNDER SECTION 19(2) READ WITH SECTION 11 OF RTI ACT, 2005';
+          subjectBn = 'তথ্য জানার অধিকার আইন, ২০০৫ এর ১৯(২) ধারা মতে সংক্ষুব্ধ তৃতীয় পক্ষের প্রথম আপিল';
+          factsEn = `
+            <p>1. <strong>Appellant (Affected Third Party):</strong> ${vals.partyName}, residing at ${vals.address}, Contact: ${vals.contactPhone}.</p>
+            <p>2. <strong>Details of Concerned SPIO:</strong> ${vals.spioDetails}, Address: ${vals.authorityAddress}.</p>
+            ${vals.showCaseRef && vals.caseNumber ? `<p>3. <strong>Impugned SPIO Notice / Case Ref:</strong> Notice / Memo No. <strong>${vals.caseNumber}</strong> ${vals.caseDate ? `dated ${vals.caseDate}` : ''}.</p>` : ''}
+            <p>4. <strong>Grounds of Third Party Appeal Observed by AI:</strong><br/>
+            ${vals.customFacts}</p>
+            <p>5. That the SPIO arbitrarily decided to disclose confidential, proprietary, or personal documents without properly serving Section 11 notice and without granting fair opportunity of representation.</p>
+          `;
+          factsBn = `
+            <p>১. <strong>আপিলকারী (সংক্ষুব্ধ তৃতীয় পক্ষ):</strong> ${vals.partyName}, পিতা: ${vals.fatherName}, ঠিকানা: ${vals.address}।</p>
+            <p>২. <strong>সংশ্লিষ্ট এস.পি.আই.ও.-র বিবরণ:</strong> ${vals.spioDetails}।</p>
+            ${vals.showCaseRef && vals.caseNumber ? `<p>৩. <strong>বিতর্কিত নোটিশ / কেস নং:</strong> স্মারক নং <strong>${vals.caseNumber}</strong> ${vals.caseDate ? `তারিখ: ${vals.caseDate}` : ''}।</p>` : ''}
+            <p>৪. <strong>তৃতীয় পক্ষের আপিলের মূল গ্রাউন্ডস ও বিবরণ:</strong><br/>
+            ${vals.customFacts}</p>
+            <p>৫. এসপিআইও ধারা ১১ মতে কোনো শুনানি ও আপত্তি বিবেচনা ব্যতিরেকে আবেদনকারীর ব্যক্তিগত ও ব্যবসায়িক গোপনীয় নথি প্রকাশের সিদ্ধান্ত গ্রহণ করিয়া অন্যায় করিয়াছেন।</p>
+          `;
+          prayerEn = `
+            The Appellant prays that the First Appellate Authority may graciously be pleased to admit this Third Party Appeal, stay and set aside the SPIO disclosure order, and protect the confidential documents under Section 8(1)(j) & Section 11 of the RTI Act.
+          `;
+          prayerBn = `
+            অতএব প্রার্থনা, অত্র তৃতীয় পক্ষের আপিল গ্রহণ করিয়া বিতর্কিত তথ্য প্রকাশের আদেশ বাতিল ও ব্যক্তিগত তথ্যাদি সুরক্ষিত রাখিতে আদেশদানে মর্জি হয়।
+          `;
+        } else if (t === 'rti_sec19_3') {
+          courtHeaderEn = 'BEFORE THE HON\'BLE WEST BENGAL STATE INFORMATION COMMISSION';
+          courtHeaderBn = 'মাননীয় পশ্চিমবঙ্গ রাজ্য তথ্য কমিশন সমীপে দ্বিতীয় আপিল';
+          subjectEn = 'MEMORANDUM OF SECOND APPEAL UNDER SECTION 19(3) OF THE RIGHT TO INFORMATION ACT, 2005';
+          subjectBn = 'তথ্য জানার অধিকার আইন, ২০০৫ এর ১৯(৩) ধারা মতে দ্বিতীয় আপিলের স্মারকলিপি';
+          factsEn = `
+            <p>1. <strong>Appellant:</strong> ${vals.partyName}, residing at ${vals.address}, Contact: ${vals.contactPhone}.</p>
+            <p>2. <strong>Respondent Public Authority:</strong> SPIO & First Appellate Authority (FAA), ${vals.authorityAddress}.</p>
+            ${vals.showCaseRef && vals.caseNumber ? `<p>3. <strong>First Appeal Order / Ref:</strong> FAA Order No. <strong>${vals.caseNumber}</strong> ${vals.caseDate ? `dated ${vals.caseDate}` : ''}.</p>` : ''}
+            <p>4. <strong>Grounds of Second Appeal Observed by AI:</strong><br/>
+            ${vals.customFacts}</p>
+            <p>5. That the FAA failed to enforce statutory compliance or arbitrarily rejected the First Appeal, frustrating the statutory objects of transparency under the RTI Act, 2005.</p>
+          `;
+          factsBn = `
+            <p>১. <strong>আপিলকারী:</strong> ${vals.partyName}, পিতা: ${vals.fatherName}, ঠিকানা: ${vals.address}।</p>
+            <p>২. <strong>প্রতিপক্ষ কর্তৃপক্ষ:</strong> জনতথ্য আধিকারিক ও প্রথম আপিল কর্তৃপক্ষ (FAA)।</p>
+            ${vals.showCaseRef && vals.caseNumber ? `<p>৩. <strong>প্রথম আপিলের আদেশ নং:</strong> আদেশ নং <strong>${vals.caseNumber}</strong> ${vals.caseDate ? `তারিখ: ${vals.caseDate}` : ''}।</p>` : ''}
+            <p>৪. <strong>দ্বিতীয় আপিলের আইনি ভিত্তি ও ঘটনাবলী:</strong><br/>
+            ${vals.customFacts}</p>
+            <p>৫. প্রথম আপিল কর্তৃপক্ষ বিধিবদ্ধ দায়িত্ব পালনে অবহেলা করিয়া আবেদনকারীর আইনানুগ তথ্য অধিকার নস্যাৎ করিয়াছেন।</p>
+          `;
+          prayerEn = `
+            The Appellant prays that the Hon'ble Commission may admit this Second Appeal, summon the original revenue records, direct immediate supply of certified documents free of cost, and initiate penalty proceedings under Section 20 of the RTI Act against the delinquent officers.
+          `;
+          prayerBn = `
+            অতএব প্রার্থনা, অত্র দ্বিতীয় আপিল গ্রহণ করিয়া মূল রেকর্ড তলব পূর্বক নিঃশর্তভাবে তথ্য সরবরাহের নির্দেশ এবং ধারা ২০ মতে এসপিআইও-র বিরুদ্ধে জরিমানা ও বিভাগীয় ব্যবস্থার আদেশে মর্জি হয়।
+          `;
+        } else if (t === 'rti_sec18_20') {
+          courtHeaderEn = 'BEFORE THE HON\'BLE STATE INFORMATION COMMISSION, WEST BENGAL';
+          courtHeaderBn = 'মাননীয় রাজ্য তথ্য কমিশন সমীপে অভিযোগ ও জরিমানা প্রার্থনা দরখাস্ত';
+          subjectEn = 'COMPLAINT UNDER SECTION 18 READ WITH SECTION 20 OF THE RTI ACT, 2005';
+          subjectBn = 'তথ্য জানার অধিকার আইন ২০০৫ এর ১৮ ধারা মতে অভিযোগ ও ২০ ধারা মতে জরিমানা আরোপের আবেদন';
+          factsEn = `
+            <p>1. <strong>Complainant:</strong> ${vals.partyName}, residing at ${vals.address}, Contact: ${vals.contactPhone}.</p>
+            <p>2. <strong>Delinquent Public Official:</strong> ${vals.spioDetails}, ${vals.authorityAddress}.</p>
+            ${vals.showCaseRef && vals.caseNumber ? `<p>3. <strong>Application Reference:</strong> RTI Application No. <strong>${vals.caseNumber}</strong> ${vals.caseDate ? `dated ${vals.caseDate}` : ''}.</p>` : ''}
+            <p>4. <strong>Particulars of Malafide Refusal Observed by AI:</strong><br/>
+            ${vals.customFacts}</p>
+            <p>5. That the SPIO persistently, obstinately, and malafidely refused to receive the RTI application / failed to furnish records without reasonable cause, attracting maximum penalty under Section 20(1) and disciplinary action under Section 20(2).</p>
+          `;
+          factsBn = `
+            <p>১. <strong>অভিযোগকারী:</strong> ${vals.partyName}, পিতা: ${vals.fatherName}, ঠিকানা: ${vals.address}।</p>
+            <p>২. <strong>অভিযুক্ত আধিকারিক:</strong> ${vals.spioDetails}।</p>
+            ${vals.showCaseRef && vals.caseNumber ? `<p>৩. <strong>আবেদন রেফারেন্স:</strong> আরটিআই দরখাস্ত নং <strong>${vals.caseNumber}</strong> ${vals.caseDate ? `তারিখ: ${vals.caseDate}` : ''}।</p>` : ''}
+            <p>৪. <strong>আইন অমান্য ও দায়িত্বহীনতার বিবরণ:</strong><br/>
+            ${vals.customFacts}</p>
+            <p>৫. সংশ্লিষ্ট আধিকারিক কোনো যুক্তিসঙ্গত কারণ ব্যতীত ইচ্ছাকৃতভাবে তথ্য প্রদান অস্বীকার করিয়াছেন বিধায় ধারা ২০(১) মতে দৈনিক ২৫০ টাকা হারে সর্বোচ্চ ২৫,০০০ টাকা জরিমানা আরোপযোগ্য।</p>
+          `;
+          prayerEn = `
+            The Complainant prays that the Hon'ble Commission may be pleased to inquire into this complaint, impose statutory maximum penalty of ₹ 25,000/- upon the SPIO under Section 20(1), and recommend disciplinary action under Section 20(2) of the Act.
+          `;
+          prayerBn = `
+            অতএব প্রার্থনা, অত্র অভিযোগের প্রেক্ষিতে তদন্ত করিয়া অভিযুক্ত এসপিআইও-র উপর সর্বোচ্চ ২৫,০০০ টাকা জরিমানা আরোপ ও সার্ভিস রুল অনুসারে শাস্তিমূলক ব্যবস্থার সুপারিশে মর্জি হয়।
+          `;
+        } else {
+          // rti_sec19_1 or rtifirstappeal
+          courtHeaderEn = 'BEFORE THE FIRST APPELLATE AUTHORITY (FAA) UNDER RTI ACT, 2005';
+          courtHeaderBn = 'মাননীয় প্রথম আপিল কর্তৃপক্ষ (First Appellate Authority - FAA) সমীপে আর.টি.আই. প্রথম আপিল';
+          subjectEn = 'MEMORANDUM OF FIRST APPEAL UNDER SECTION 19(1) OF THE RIGHT TO INFORMATION ACT, 2005';
+          subjectBn = 'তথ্য জানার অধিকার আইন, ২০০৫ এর ১৯(১) ধারা মতে বিধিবদ্ধ প্রথম আপিলের স্মারকলিপি';
+          factsEn = `
+            <p>1. <strong>Appellant:</strong> ${vals.partyName}, residing at ${vals.address}, Contact: ${vals.contactPhone}.</p>
+            <p>2. <strong>Details of Concerned SPIO:</strong> ${vals.spioDetails}, Address: ${vals.authorityAddress}.</p>
+            ${vals.showCaseRef && vals.caseNumber ? `<p>3. <strong>Original RTI Application Ref:</strong> Application No. <strong>${vals.caseNumber}</strong> dated ${vals.caseDate || 'earlier'}, filed with requisite fees.</p>` : '<p>3. That an application u/s 6(1) was submitted before the SPIO along with statutory fee.</p>'}
+            <p>4. <strong>Grounds of Appeal & Facts Observed by AI:</strong><br/>
+            ${vals.customFacts}</p>
+            <p>5. That the SPIO has arbitrarily failed to supply the requested records within the mandatory period of 30 days / supplied misleading information, violating Section 7(1) of the Act.</p>
+          `;
+          factsBn = `
+            <p>১. <strong>আপিলকারী:</strong> ${vals.partyName}, পিতা: ${vals.fatherName}, ঠিকানা: ${vals.address}।</p>
+            <p>২. <strong>সংশ্লিষ্ট এস.পি.আই.ও.-র বিবরণ:</strong> ${vals.spioDetails}।</p>
+            ${vals.showCaseRef && vals.caseNumber ? `<p>৩. <strong>মূল আরটিআই দরখাস্তের বিবরণ:</strong> আবেদনপত্র নং <strong>${vals.caseNumber}</strong> তারিখ: ${vals.caseDate || 'পূর্বে দাখিলকৃত'}।</p>` : '<p>৩. পূর্বে ৬(১) ধারায় বিধিবদ্ধ ফিসহ দরখাস্ত দাখিল করা হইয়াছিল।</p>'}
+            <p>৪. <strong>আপিলের আইনি ভিত্তি ও ঘটনার বিবরণ:</strong><br/>
+            ${vals.customFacts}</p>
+            <p>৫. সংশ্লিষ্ট জনতথ্য আধিকারিক নির্ধারিত ৩০ দিনের মধ্যে তথ্য প্রদানে ব্যর্থ হইয়াছেন অথবা বিভ্রান্তিকর তথ্য প্রদান করিয়াছেন।</p>
+          `;
+          prayerEn = `
+            The Appellant prays that the First Appellate Authority may graciously be pleased to admit this Appeal, direct the SPIO to supply all certified documents forthwith free of cost under Section 7(6), and recommend penalty proceedings under Section 20 of the RTI Act.
+          `;
+          prayerBn = `
+            অতএব প্রার্থনা, অত্র প্রথম আপিল গ্রহণ করিয়া সংশ্লিষ্ট এসপিআইও-কে অবিলম্বে নিঃশর্তভাবে সম্পূর্ণ ও নির্ভুল প্রত্যয়িত তথ্য বিনা খরচে সরবরাহের নির্দেশ প্রদান এবং দায়িত্বে অবহেলার বিরুদ্ধে আইনানুগ ব্যবস্থা গ্রহণে মর্জি হয়।
+          `;
+        }
+      } else if (t === 'lrappeal' || t === 'lrappeal_memo') {
+        courtHeaderEn = 'IN THE COURT OF THE LD. DISTRICT LAND & LAND REFORMS OFFICER (DL&LRO)';
+        courtHeaderBn = 'মাননীয় জেলা ভূমি ও ভূমি সংস্কার আধিকারিক (DL&LRO) সমীপে আপিল স্মারকলিপি';
+        subjectEn = 'MEMORANDUM OF APPEAL UNDER SECTION 54 OF THE WEST BENGAL LAND REFORMS ACT, 1955';
+        subjectBn = 'পশ্চিমবঙ্গ ভূমি সংস্কার আইন, ১৯৫৫ এর ৫৪ ধারা মতে আপিলের স্মারকলিপি (Memorandum of Appeal)';
         factsEn = `
-          <p>1. <strong>Applicant Identity:</strong> That the Applicant is a citizen of India residing at ${vals.address}.</p>
-          <p>2. <strong>Particulars of Information Sought (Observed by Counsel / AI):</strong><br/>
+          <p>1. That this Appeal is directed against the impugned order passed by the Ld. Revenue Officer in ${vals.caseNumber || 'the lower case'}, erroneously disposing the matter without statutory hearing.</p>
+          <p>2. That no statutory notice was served upon the Appellant under Rule 24 of the West Bengal Land Reforms Manual, 1991, thereby causing severe prejudice and gross violation of natural justice.</p>
+          <p>3. <strong>Grounds of Appeal Observed by AI:</strong><br/>
           ${vals.customFacts}</p>
-          ${vals.showCaseRef && vals.caseNumber ? `<p>3. <strong>Case / File Reference:</strong> Relating to Case / Memo No. <strong>${vals.caseNumber}</strong> ${vals.caseDate ? `dated ${vals.caseDate}` : ''}.</p>` : ''}
-          <p>${vals.showCaseRef ? '4' : '3'}. That the information sought relates to public records and does not fall within the exemptions specified under Section 8 or 9 of the RTI Act, 2005.</p>
-          <p>${vals.showCaseRef ? '5' : '4'}. That statutory application fee of ₹ 10/- is affixed herewith through Court Fee Stamp / IPO.</p>
+          <p>4. That the Appellant has a strong prima facie case and the balance of convenience is entirely in his favour.</p>
         `;
         factsBn = `
-          <p>১. <strong>আবেদনকারীর পরিচয়:</strong> আবেদনকারী ভারতীয় নাগরিক এবং ${vals.address} ঠিকানার স্থায়ী বাসিন্দা।</p>
-          <p>২. <strong>প্রার্থিত তথ্যের বিশদ বিবরণ (তথ্য জানার অধিকার মতে):</strong><br/>
+          <p>১. অত্র আপিলটি নিম্ন আদালতের রেভিনিউ অফিসার কর্তৃক প্রদত্ত অন্যায় ও একতরফা আদেশের বিরুদ্ধে দায়ের করা হইল।</p>
+          <p>২. ভূমি সংস্কার ম্যানুয়াল ১৯৯১ এর ২৪ নম্বর বিধি অনুসারে আপিলকারীকে কোনো বিধিসম্মত শুনানির নোটিশ প্রদান করা হয় নাই।</p>
+          <p>৩. <strong>আপিলের আইনি গ্রাউন্ডস ও ঘটনা:</strong><br/>
           ${vals.customFacts}</p>
-          ${vals.showCaseRef && vals.caseNumber ? `<p>৩. <strong>মামলা / নথি নম্বর:</strong> সংশ্লিষ্ট মেমো / কেস নং <strong>${vals.caseNumber}</strong> ${vals.caseDate ? `তারিখ: ${vals.caseDate}` : ''}।</p>` : ''}
-          <p>${vals.showCaseRef ? '৪' : '৩'}. উক্ত তথ্য তথ্য জানার অধিকার আইন ২০০৫ এর ৮ বা ৯ ধারার কোনো ব্যতিক্রমের আওতাভুক্ত নহে এবং সাধারণ জনস্বার্থের সহিত জড়িত।</p>
-          <p>${vals.showCaseRef ? '৫' : '৪'}. নির্ধারিত ১০ টাকার কোর্ট ফি / আইপিও অত্র আবেদনের সহিত সংযুক্ত করা হইল।</p>
+          <p>৪. আপিলকারীর অনুকূলে সুস্পষ্ট প্রাথমিক প্রমাণ (prima facie case) রহিয়াছে।</p>
         `;
         prayerEn = `
-          The Applicant prays that certified true copies of the aforesaid information and documents may kindly be furnished within the statutory period of 30 days under Section 7(1) of the RTI Act, 2005.
+          The Appellant therefore prays that Your Honour may graciously be pleased to admit this Appeal, call for the lower court records, pass an interim stay order, and set aside the impugned order.
         `;
         prayerBn = `
-          অতএব বিনীত প্রার্থনা, তথ্য জানার অধিকার আইন ২০০৫ এর ৭(১) ধারা অনুসারে বিধিবদ্ধ ৩০ দিনের মধ্যে প্রার্থিত তথ্যাদি ও প্রত্যয়িত নকল সরবরাহ করিয়া বাধিত করিবেন।
+          অতএব প্রার্থনা, অত্র আপিল শুনানির জন্য গ্রহণ করিয়া নিম্ন আদালতের মূল নথি তলব পূর্বক অন্তর্বর্তীকালীন স্থগিতাদেশ প্রদান করিয়া উক্ত বিতর্কিত আদেশ বাতিল ও খারিজ করিতে আজ্ঞাবহ হইবেন।
         `;
-      } else if (t === 'rtifirstappeal') {
-        courtHeaderEn = 'BEFORE THE FIRST APPELLATE AUTHORITY (FAA) UNDER RTI ACT, 2005';
-        courtHeaderBn = 'মাননীয় প্রথম আপিল কর্তৃপক্ষ (First Appellate Authority - FAA) সমীপে আর.টি.আই. প্রথম আপিল';
-        subjectEn = 'MEMORANDUM OF FIRST APPEAL UNDER SECTION 19(1) OF THE RIGHT TO INFORMATION ACT, 2005';
-        subjectBn = 'তথ্য জানার অধিকার আইন, ২০০৫ এর ১৯(১) ধারা মতে বিধিবদ্ধ প্রথম আপিলের স্মারকলিপি';
+      } else if (t === 'lrappeal_stay') {
+        courtHeaderEn = 'IN THE COURT OF THE LD. DISTRICT LAND & LAND REFORMS OFFICER (DL&LRO)';
+        courtHeaderBn = 'মাননীয় জেলা ভূমি ও ভূমি সংস্কার আধিকারিক সমীপে অন্তর্বর্তী স্থগিতাদেশের দরখাস্ত';
+        subjectEn = 'APPLICATION UNDER SECTION 54(3) OF WBLR ACT, 1955 READ WITH ORDER 41 RULE 5 CPC FOR STAY OF IMPUGNED ORDER';
+        subjectBn = 'পশ্চিমবঙ্গ ভূমি সংস্কার আইন ১৯৫৫ এর ৫৪(৩) ধারা মতে তর্কিত আদেশের কার্যক্রম স্থগিতের অন্তর্বর্তী আবেদন';
         factsEn = `
-          <p>1. <strong>Appellant:</strong> ${vals.partyName}, residing at ${vals.address}, Contact: ${vals.contactPhone}.</p>
-          <p>2. <strong>Details of Concerned SPIO:</strong> ${vals.spioDetails}, Address: ${vals.authorityAddress}.</p>
-          ${vals.showCaseRef && vals.caseNumber ? `<p>3. <strong>Original RTI Application Ref:</strong> Application No. <strong>${vals.caseNumber}</strong> dated ${vals.caseDate || 'earlier'}, filed with requisite fees.</p>` : '<p>3. That an application u/s 6(1) was submitted before the SPIO along with statutory fee.</p>'}
-          <p>4. <strong>Grounds of Appeal & Facts Observed by AI:</strong><br/>
+          <p>1. That the Appellant has preferred the connected Statutory Appeal challenging the order passed in ${vals.caseNumber || 'the lower case'}.</p>
+          <p>2. <strong>Grounds for Immediate Interim Stay Observed by Counsel / AI:</strong><br/>
           ${vals.customFacts}</p>
-          <p>5. That the SPIO has arbitrarily failed to supply the requested records within the mandatory period of 30 days / supplied misleading information, violating Section 7(1) of the Act.</p>
+          <p>3. That if the operation of the impugned order is not stayed immediately, the opposite parties will change the physical possession and create third-party encumbrances, rendering the main appeal infructuous.</p>
         `;
         factsBn = `
-          <p>১. <strong>আপিলকারী:</strong> ${vals.partyName}, পিতা: ${vals.fatherName}, ঠিকানা: ${vals.address}।</p>
-          <p>২. <strong>সংশ্লিষ্ট এস.পি.আই.ও.-র বিবরণ:</strong> ${vals.spioDetails}।</p>
-          ${vals.showCaseRef && vals.caseNumber ? `<p>৩. <strong>মূল আরটিআই দরখাস্তের বিবরণ:</strong> আবেদনপত্র নং <strong>${vals.caseNumber}</strong> তারিখ: ${vals.caseDate || 'পূর্বে দাখিলকৃত'}।</p>` : '<p>৩. পূর্বে ৬(১) ধারায় বিধিবদ্ধ ফিসহ দরখাস্ত দাখিল করা হইয়াছিল।</p>'}
-          <p>৪. <strong>আপিলের আইনি ভিত্তি ও ঘটনার বিবরণ:</strong><br/>
+          <p>১. আপিলকারী নিম্ন আদালতের তর্কিত আদেশের বিরুদ্ধে অত্র মূল আপিল মেমোরেন্ডাম দাখিল করিয়াছেন।</p>
+          <p>২. <strong>অবিলম্বে স্থগিতাদেশের জরুরি ভিত্তি ও বিবরণ:</strong><br/>
           ${vals.customFacts}</p>
-          <p>৫. সংশ্লিষ্ট জনতথ্য আধিকারিক নির্ধারিত ৩০ দিনের মধ্যে তথ্য প্রদানে ব্যর্থ হইয়াছেন অথবা বিভ্রান্তিকর তথ্য প্রদান করিয়াছেন।</p>
+          <p>৩. অন্তর্বর্তী স্থগিতাদেশ প্রদান না করিলে প্রতিপক্ষ জমির দখল পরিবর্তন করিয়া তৃতীয় পক্ষের স্বত্ব সৃষ্টি করিবে, যাহার ফলে মূল আপিলটি ফলহীন হইয়া পড়িবে।</p>
         `;
         prayerEn = `
-          The Appellant prays that the First Appellate Authority may graciously be pleased to admit this Appeal, direct the SPIO to supply all certified documents forthwith free of cost under Section 7(6), and recommend penalty proceedings under Section 20 of the RTI Act.
+          The Appellant prays that Your Honour may graciously be pleased to stay all further proceedings and operation of the impugned order pending disposal of the Appeal.
         `;
         prayerBn = `
-          অতএব প্রার্থনা, অত্র প্রথম আপিল গ্রহণ করিয়া সংশ্লিষ্ট এসপিআইও-কে অবিলম্বে নিঃশর্তভাবে সম্পূর্ণ ও নির্ভুল প্রত্যয়িত তথ্য বিনা খরচে সরবরাহের নির্দেশ প্রদান এবং দায়িত্বে অবহেলার বিরুদ্ধে আইনানুগ ব্যবস্থা গ্রহণে মর্জি হয়।
+          অতএব প্রার্থনা, অত্র আপিল নিষ্পত্তি না হওয়া পর্যন্ত নিম্ন আদালতের তর্কিত আদেশের কার্যক্রম সম্পূর্ণ স্থগিত রাখিতে আজ্ঞাবহ হইবেন।
         `;
-      } else if (t === 'misc10000') {
+      } else if (t === 'lrappeal_statusquo') {
+        courtHeaderEn = 'IN THE COURT OF THE LD. DISTRICT LAND & LAND REFORMS OFFICER (DL&LRO)';
+        courtHeaderBn = 'মাননীয় জেলা ভূমি ও ভূমি সংস্কার আধিকারিক সমীপে স্থিতাবস্থা বজায় রাখার আবেদন';
+        subjectEn = 'PETITION FOR STATUS QUO AND TEMPORARY RESTRAINING ORDER IN RESPECT OF SCHEDULED PROPERTY';
+        subjectBn = 'তফশিল বর্ণিত সম্পত্তির দখল ও প্রকৃতির স্থিতাবস্থা বজায় রাখার আবেদনপত্র';
+        factsEn = `
+          <p>1. That the Appellant is in actual physical possession and cultivating the scheduled land.</p>
+          <p>2. <strong>Facts & Threat of Dispossession Observed by Counsel / AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That the opposite parties are actively attempting to alter the nature and character of the scheduled land and construct boundary structures illegally.</p>
+        `;
+        factsBn = `
+          <p>১. আপিলকারী তফশিল বর্ণিত সম্পত্তিতে প্রকৃত দখলদার ও চাষাবাদকারী।</p>
+          <p>২. <strong>দখলচ্যুতি ও বিরোধের বিশদ বিবরণ:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. প্রতিপক্ষগণ বেআইনিভাবে জমির শ্রেণি ও প্রকৃতি পরিবর্তন করিয়া সীমানা প্রাচীর নির্মাণের অপচেষ্টা চালাইতেছে।</p>
+        `;
+        prayerEn = `
+          The Appellant prays that Your Honour may be pleased to issue an order directing both parties to maintain strict status quo as to possession, nature, and character of the scheduled land.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, তফশিল বর্ণিত সম্পত্তির বর্তমান দখল ও প্রকৃতির উপর কঠোর স্থিতাবস্থা (Status Quo) বজায় রাখার আদেশ প্রদানে আজ্ঞাবহ হইবেন।
+        `;
+      } else if (t === 'lrappeal_localinspect') {
+        courtHeaderEn = 'IN THE COURT OF THE LD. DISTRICT LAND & LAND REFORMS OFFICER (DL&LRO)';
+        courtHeaderBn = 'মাননীয় জেলা ভূমি ও ভূমি সংস্কার আধিকারিক সমীপে স্থানীয় তদন্তের আবেদন';
+        subjectEn = 'APPLICATION UNDER SECTION 54 OF WBLR ACT READ WITH ORDER 39 RULE 7 CPC FOR LOCAL INQUIRY & SPOT INSPECTION';
+        subjectBn = 'রাজস্ব পরিদর্শক দ্বারা সরজমিন পরিদর্শন ও স্থানীয় তদন্তের আবেদনপত্র';
+        factsEn = `
+          <p>1. That there exists a serious dispute regarding actual physical possession, boundary demarcation, and standing constructions on the scheduled Dag.</p>
+          <p>2. <strong>Necessity of Spot Inspection Observed by AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That an on-spot inquiry and sketch map by a competent Revenue Inspector is essential for elucidating the matter in dispute and doing complete justice.</p>
+        `;
+        factsBn = `
+          <p>১. অত্র তফশিলভুক্ত দাগের বাস্তব দখল, সীমানা ও বর্তমান অবকাঠামো লইয়া মারাত্মক বিরোধ বিদ্যমান রহিয়াছে।</p>
+          <p>২. <strong>সরজমিন তদন্তের আবশ্যকতা ও বিবরণ:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. একজন উপযুক্ত রাজস্ব পরিদর্শক দ্বারা স্থান পরিদর্শন ও নকশাসহ সরজমিন প্রতিবেদন তলব করা ন্যায়বিচারের স্বার্থে একান্ত আবশ্যক।</p>
+        `;
+        prayerEn = `
+          The Appellant prays that Your Honour may be pleased to depute a Revenue Officer / Inspector for holding local inquiry and spot verification to ascertain actual physical possession and ground reality.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, একজন নিরপেক্ষ রাজস্ব পরিদর্শক নিয়োগ করিয়া সরজমিন তদন্ত পূর্বক বস্তুনিষ্ঠ রিপোর্ট তলবে আজ্ঞাবহ হইবেন।
+        `;
+      } else if (t === 'sec5delay' || t === 'sec5_appeal_delay') {
+        courtHeaderEn = 'IN THE COURT OF THE LD. DISTRICT LAND & LAND REFORMS OFFICER (DL&LRO)';
+        courtHeaderBn = 'মাননীয় জেলা ভূমি ও ভূমি সংস্কার আধিকারিক (DL&LRO) সমীপে দরখাস্ত';
+        subjectEn = 'APPLICATION UNDER SECTION 5 OF THE LIMITATION ACT, 1963 FOR CONDONATION OF DELAY IN PREFERRING APPEAL';
+        subjectBn = 'তামাদি আইন, ১৯৬৩ এর ৫ ধারা মতে আপিল দাখিলে বিলম্ব মার্জনার দরখাস্ত';
+        factsEn = `
+          <p>1. That the Appellant has filed the accompanying Memorandum of Appeal against the order passed by the Ld. Revenue Officer in ${vals.caseNumber || 'the lower case'}.</p>
+          <p>2. <strong>Cause of Delay Observed by Counsel / AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That the delay was neither intentional nor deliberate, but occasioned by sufficient cause as envisaged under Section 5 of the Limitation Act, 1963.</p>
+        `;
+        factsBn = `
+          <p>১. আপিলকারী নিম্ন রাজস্ব আদেশের বিরুদ্ধে সঙ্গে সংযুক্ত আপিল স্মারকলিপি দাখিল করিয়াছেন।</p>
+          <p>২. <strong>বিলম্বের পর্যাপ্ত ও যুক্তিগ্রাহ্য কারণ:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. এই বিলম্ব ইচ্ছাকৃত নহে, বরং তামাদি আইনের ৫ ধারা মতে পর্যাপ্ত কারণে ঘটিয়াছে।</p>
+        `;
+        prayerEn = `
+          It is respectfully prayed that Your Honour may graciously be pleased to condone the delay in preferring the appeal and admit the same on merits.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, বিলম্ব মার্জনা করিয়া আপিলটি শুনানির জন্য গ্রহণ করিতে আজ্ঞাবহ হইবেন।
+        `;
+      } else if (t === 'sec5_supported_affidavit') {
+        courtHeaderEn = 'IN THE COURT OF THE LD. DISTRICT LAND & LAND REFORMS OFFICER (DL&LRO)';
+        courtHeaderBn = 'মাননীয় জেলা ভূমি ও ভূমি সংস্কার আধিকারিক সমীপে হলফনামাসহ বিলম্ব মার্জনা আবেদন';
+        subjectEn = 'PETITION UNDER SECTION 5 LIMITATION ACT, 1963 SUPPORTED BY SWORN VERIFICATION AFFIDAVIT';
+        subjectBn = 'হলফনামা দ্বারা সমর্থিত তামাদি আইন ১৯৬৩ এর ৫ ধারা মতে বিলম্ব মকুবের আবেদনপত্র';
+        factsEn = `
+          <p>1. That the Deponent / Appellant is preferring the connected appeal with a delay occasioned by extraordinary bona fide circumstances.</p>
+          <p>2. <strong>Day-to-day Explanation of Delay Supported by Affidavit:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That medical documents and certified copy delivery challans are annexed hereto and sworn on oath.</p>
+        `;
+        factsBn = `
+          <p>১. হলফকারী / আপিলকারী অনিবার্য কারণবশত তামাদি অতিক্রান্তের পর সংযুক্ত আপিলটি দায়ের করিতেছেন।</p>
+          <p>২. <strong>হলফনামা দ্বারা সমর্থিত প্রতিদিনের বিলম্বের ব্যাখ্যা:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. চিকিৎসার কাগজপত্র ও নকল সরবরাহের রসিদ অত্র হলফনামার সহিত সংযুক্ত করা হইল।</p>
+        `;
+        prayerEn = `
+          The Deponent prays that Your Honour may graciously accept the sworn explanations and condone the statutory delay in the interest of justice.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, শপথপূর্বক প্রদত্ত কারণসমূহ গ্রহণ পূর্বক ন্যায়বিচারের স্বার্থে বিধিবদ্ধ বিলম্ব মার্জনার আদেশদানে আজ্ঞাবহ হইবেন।
+        `;
+      } else if (t === 'sec14_exclusion') {
+        courtHeaderEn = 'IN THE COURT OF THE LD. DISTRICT LAND & LAND REFORMS OFFICER (DL&LRO)';
+        courtHeaderBn = 'মাননীয় জেলা ভূমি ও ভূমি সংস্কার আধিকারিক সমীপে সময় গণনা বাদ দেওয়ার দরখাস্ত';
+        subjectEn = 'APPLICATION UNDER SECTION 14 OF THE LIMITATION ACT, 1963 FOR EXCLUSION OF TIME SPENT IN WRONG FORUM';
+        subjectBn = 'তামাদি আইন ১৯৬৩ এর ১৪ ধারা মতে ভুল ফোরামে সরলবিশ্বাসে মামলার সময় গণনা বাদ দেওয়ার আবেদন';
+        factsEn = `
+          <p>1. That the Applicant was diligently prosecuting the grievance with bona fide belief before another authority / forum.</p>
+          <p>2. <strong>Particulars of Bona Fide Proceedings Observed by AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That pursuant to Section 14 of the Limitation Act, 1963, the time spent bona fide in prosecuting proceedings before a forum lacking inherent jurisdiction must be excluded in computing limitation.</p>
+        `;
+        factsBn = `
+          <p>১. আবেদনকারী সরলবিশ্বাসে অন্য ফোরামে ন্যায়বিচার পাইবার উদ্দেশ্যে নিষ্ঠার সহিত মামলা পরিচালনা করিতেছিলেন।</p>
+          <p>২. <strong>পূর্ববর্তী ফোরামের মামলার বিবরণ:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. তামাদি আইন ১৯৬৩ এর ১৪ ধারা মতে এখতিয়ারহীন ফোরামে সরলবিশ্বাসে অতিক্রান্ত কাল তামাদি গণনায় বাদ দেওয়া বিধিবদ্ধ নিয়ম।</p>
+        `;
+        prayerEn = `
+          The Applicant prays that the time bona fide spent prosecuting the matter before the former forum be excluded in computing limitation and the appeal be admitted.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, সরলবিশ্বাসে পূর্ববর্তী ফোরামে অতিক্রান্ত সময় গণনা হইতে বাদ দিয়া অত্র মামলা আইনানুযায়ী শুনানিতে গ্রহণের মর্জি হয়।
+        `;
+      } else if (t === 'misc10000' || t === 'misc_share10000') {
         courtHeaderEn = 'BEFORE THE REVENUE OFFICER / BLOCK LAND & LAND REFORMS OFFICER';
         courtHeaderBn = 'মাননীয় রেভিনিউ অফিসার / ব্লক ভূমি ও ভূমি সংস্কার আধিকারিক সমীপে দরখাস্ত';
         subjectEn = 'PETITION UNDER SECTION 50 READ WITH SECTION 50A OF WBLR ACT, 1955 FOR RECTIFICATION OF 10,000-SHARE ANOMALY';
@@ -613,79 +1177,99 @@ export const AiStudio: React.FC<AiStudioProps> = ({
         prayerBn = `
           অতএব প্রার্থনা, একটি বিবিধ মোকদ্দমা (Misc Case) রুজু করিয়া মূল জরিপ ও দলিল পর্যালোচনা পূর্বক আইনানুযায়ী ১০,০০০ অংশের বণ্টন সংশোধন করিতে আজ্ঞাবহ হইবেন।
         `;
-      } else if (t === 'lrappeal') {
-        courtHeaderEn = 'IN THE COURT OF THE LD. DISTRICT LAND & LAND REFORMS OFFICER (DL&LRO)';
-        courtHeaderBn = 'মাননীয় জেলা ভূমি ও ভূমি সংস্কার আধিকারিক (DL&LRO) সমীপে আপিল স্মারকলিপি';
-        subjectEn = 'MEMORANDUM OF APPEAL UNDER SECTION 54 OF THE WEST BENGAL LAND REFORMS ACT, 1955';
-        subjectBn = 'পশ্চিমবঙ্গ ভূমি সংস্কার আইন, ১৯৫৫ এর ৫৪ ধারা মতে আপিলের স্মারকলিপি (Memorandum of Appeal)';
+      } else if (t === 'misc_record_rect') {
+        courtHeaderEn = 'BEFORE THE REVENUE OFFICER / BLOCK LAND & LAND REFORMS OFFICER';
+        courtHeaderBn = 'মাননীয় রেভিনিউ অফিসার সমীপে খতিয়ান সংশোধনের বিবিধ আবেদন';
+        subjectEn = 'MISC PETITION UNDER SECTION 50/51A(4) OF WBLR ACT, 1955 FOR RECTIFICATION OF CLERICAL ERROR IN KHATIAN';
+        subjectBn = 'পশ্চিমবঙ্গ ভূমি সংস্কার আইন ১৯৫৫ এর ৫০/৫১ক(৪) ধারা মতে খতিয়ানের করণিক ও মুদ্রণ ভুল সংশোধনের আবেদন';
         factsEn = `
-          <p>1. That this Appeal is directed against the impugned order passed by the Ld. Revenue Officer in ${vals.caseNumber || 'the lower case'}, erroneously disposing the matter without statutory hearing.</p>
-          <p>2. That no statutory notice was served upon the Appellant under Rule 24 of the West Bengal Land Reforms Manual, 1991, thereby causing severe prejudice and gross violation of natural justice.</p>
-          <p>3. <strong>Grounds of Appeal Observed by AI:</strong><br/>
+          <p>1. That the Petitioner is the lawful recorded raiyat / successor in respect of the scheduled land.</p>
+          <p>2. <strong>Clerical / Printing Discrepancy Observed by AI:</strong><br/>
           ${vals.customFacts}</p>
-          <p>4. That the Appellant has a strong prima facie case and the balance of convenience is entirely in his favour.</p>
+          <p>3. That the error is apparent on the face of the record and can be rectified summarily under Section 50 / 51A(4) of the Act.</p>
         `;
         factsBn = `
-          <p>১. অত্র আপিলটি নিম্ন আদালতের রেভিনিউ অফিসার কর্তৃক প্রদত্ত অন্যায় ও একতরফা আদেশের বিরুদ্ধে দায়ের করা হইল।</p>
-          <p>২. ভূমি সংস্কার ম্যানুয়াল ১৯৯১ এর ২৪ নম্বর বিধি অনুসারে আপিলকারীকে কোনো বিধিসম্মত শুনানির নোটিশ প্রদান করা হয় নাই।</p>
-          <p>৩. <strong>আপিলের আইনি গ্রাউন্ডস ও ঘটনা:</strong><br/>
+          <p>১. দরখাস্তকারী তফশিল বর্ণিত ভূমির বৈধ রেকর্ডীয় মালিক / উত্তরাধিকারী।</p>
+          <p>২. <strong>করণিক ও মুদ্রণ প্রমাদের বিবরণ:</strong><br/>
           ${vals.customFacts}</p>
-          <p>৪. আপিলকারীর অনুকূলে সুস্পষ্ট প্রাথমিক প্রমাণ (prima facie case) রহিয়াছে।</p>
+          <p>৩. উক্ত ভুলটি নথিপত্র দৃষ্টে স্পষ্ট ও প্রকাশ্য, যাহা ধারা ৫০/৫১ক(৪) মতে অবিলম্বে সংশোধনযোগ্য।</p>
         `;
         prayerEn = `
-          The Appellant therefore prays that Your Honour may graciously be pleased to admit this Appeal, call for the lower court records, pass an interim stay order, and set aside the impugned order.
+          The Petitioner prays that Your Honour may be pleased to rectify the clerical spelling / area errors in the computerized L.R. Khatian on the basis of registered title deeds.
         `;
         prayerBn = `
-          অতএব প্রার্থনা, অত্র আপিল শুনানির জন্য গ্রহণ করিয়া নিম্ন আদালতের মূল নথি তলব পূর্বক অন্তর্বর্তীকালীন স্থগিতাদেশ প্রদান করিয়া উক্ত বিতর্কিত আদেশ বাতিল ও খারিজ করিতে আজ্ঞাবহ হইবেন।
+          অতএব প্রার্থনা, মূল রেজিস্টার্ড দলিল ও জরিপ রেকর্ড দৃষ্টে খতিয়ানের করণিক ভুল সংশোধন করিতে আজ্ঞাবহ হইবেন।
         `;
-      } else if (t === 'firstappeal') {
-        courtHeaderEn = 'IN THE COURT OF THE APPELLATE AUTHORITY / DL&LRO / ADM (L&LR)';
-        courtHeaderBn = 'মাননীয় বিধিবদ্ধ প্রথম আপিল কর্তৃপক্ষ / ডিএলঅ্যান্ডএলআরও সমীপে';
-        subjectEn = 'MEMORANDUM OF STATUTORY FIRST APPEAL (ORDER 41 CPC / SEC 54 WBLR ACT)';
-        subjectBn = 'বিধিবদ্ধ প্রথম আপিলের স্মারকলিপি (Statutory First Appeal)';
+      } else if (t === 'misc_demarcation') {
+        courtHeaderEn = 'BEFORE THE REVENUE OFFICER / BLOCK LAND & LAND REFORMS OFFICER';
+        courtHeaderBn = 'মাননীয় রেভিনিউ অফিসার সমীপে দাগের সীমানা নির্ধারণের আবেদন';
+        subjectEn = 'MISC APPLICATION UNDER SECTION 50 OF WBLR ACT READ WITH RULE 28 OF WBLR MANUAL, 1991 FOR DEMARCATION';
+        subjectBn = 'পশ্চিমবঙ্গ ভূমি সংস্কার ম্যানুয়াল ১৯৯১ এর ২৮ বিধি মতে দাগের সীমানা চিহ্নিতকরণ ও ডিমারকেশন আবেদন';
         factsEn = `
-          <p>1. That the Appellant is severely aggrieved by and dissatisfied with the impugned order passed by ${vals.spioDetails || 'the lower forum'}.</p>
-          <p>2. <strong>Grounds of First Appeal Observed by AI:</strong><br/>
+          <p>1. That the Petitioner is in exclusive possession of the purchased land within the scheduled Dag.</p>
+          <p>2. <strong>Boundary Dispute & Field Details Observed by AI:</strong><br/>
           ${vals.customFacts}</p>
-          <p>3. That unless interim protection / stay of the impugned order is granted, the Appellant will suffer irreparable loss and injury.</p>
+          <p>3. That adjoining owners are encroaching upon the plot, necessitating scientific demarcation and boundary pillar fixation through a Government Amine.</p>
         `;
         factsBn = `
-          <p>১. আপিলকারী নিম্ন কর্তৃপক্ষের তর্কিত আদেশে সংক্ষুব্ধ হইয়া অত্র প্রথম আপিল দায়ের করিতেছেন।</p>
-          <p>২. <strong>প্রথম আপিলের মূল গ্রাউন্ডস ও বিবরণ:</strong><br/>
+          <p>১. দরখাস্তকারী তফশিলভুক্ত দাগের স্বীয় খরিদকৃত জমিতে প্রত্যক্ষ দখলদার।</p>
+          <p>২. <strong>সীমানা বিরোধ ও ঘটনার বিবরণ:</strong><br/>
           ${vals.customFacts}</p>
-          <p>৩. স্থগিতাদেশ না দিলে আপিলকারীর অপূরণীয় ক্ষতি হইবে।</p>
+          <p>৩. সীমানা অস্পষ্ট থাকার কারণে সংলগ্ন অংশীদারগণ জবরদখলের চেষ্টা করিতেছে বিধায় সরকারি আমিন দ্বারা মাপজোক একান্ত জরুরি।</p>
         `;
         prayerEn = `
-          The Appellant prays that Your Honour may graciously be pleased to admit this Statutory First Appeal, stay operation of the impugned order, and grant full relief.
+          The Petitioner prays that Your Honour may be pleased to depute a Government Amine for holding scientific demarcation and fixing boundary pillars.
         `;
         prayerBn = `
-          অতএব প্রার্থনা, অত্র প্রথম আপিল গ্রহণ করিয়া বিতর্কিত আদেশের কার্যক্রম স্থগিত পূর্বক আপিলকারীর পক্ষে ন্যায্য প্রতিকার প্রদানে আজ্ঞাবহ হইবেন।
+          অতএব প্রার্থনা, সরকারি আমিন দ্বারা সরজমিনে মাপজোক পূর্বক সীমানা নির্ধারণ ও সীমানা খুঁটি স্থাপনের আদেশদানে মর্জি হয়।
         `;
-      } else if (t === 'sec5delay') {
-        courtHeaderEn = 'IN THE COURT OF THE LD. DISTRICT LAND & LAND REFORMS OFFICER (DL&LRO)';
-        courtHeaderBn = 'মাননীয় জেলা ভূমি ও ভূমি সংস্কার আধিকারিক (DL&LRO) সমীপে দরখাস্ত';
-        subjectEn = 'APPLICATION UNDER SECTION 5 OF THE LIMITATION ACT, 1963 FOR CONDONATION OF DELAY';
-        subjectBn = 'তামাদি আইন, ১৯৬৩ এর ৫ ধারা মতে আপিল দাখিলে বিলম্ব মার্জনার দরখাস্ত';
+      } else if (t === 'misc_delete_wrong') {
+        courtHeaderEn = 'BEFORE THE REVENUE OFFICER / BLOCK LAND & LAND REFORMS OFFICER';
+        courtHeaderBn = 'মাননীয় রেভিনিউ অফিসার সমীপে অনধিকার ব্যক্তির নাম কর্তন আবেদন';
+        subjectEn = 'APPLICATION UNDER SECTION 50A OF WBLR ACT, 1955 TO EXPUNGE ERRONEOUS RECORDING OF STRANGER CO-SHARER';
+        subjectBn = 'পশ্চিমবঙ্গ ভূমি সংস্কার আইন ১৯৫৫ এর ৫০(ক) ধারা মতে খতিয়ানে অনধিকার ব্যক্তির ভুল নাম কর্তন দরখাস্ত';
         factsEn = `
-          <p>1. That the Appellant has filed the accompanying Memorandum of Appeal against the order passed by the Ld. Revenue Officer.</p>
-          <p>2. <strong>Cause of Delay Observed by Counsel / AI:</strong><br/>
+          <p>1. That the Petitioner and lawful co-sharers own and possess 16 Annas share of the scheduled property.</p>
+          <p>2. <strong>Erroneous Entry Details Observed by AI:</strong><br/>
           ${vals.customFacts}</p>
-          <p>3. That the delay was neither intentional nor deliberate, but occasioned by sufficient cause as envisaged under Section 5 of the Limitation Act, 1963.</p>
+          <p>3. That the name of the opposite party was fraudulently or inadvertently inserted into the computerized ledger without any basis of deed or lineage.</p>
         `;
         factsBn = `
-          <p>১. আপিলকারী আদেশের বিরুদ্ধে সঙ্গে সংযুক্ত আপিল স্মারকলিপি দাখিল করিয়াছেন।</p>
-          <p>২. <strong>বিলম্বের পর্যাপ্ত ও যুক্তিগ্রাহ্য কারণ:</strong><br/>
+          <p>১. দরখাস্তকারী ও তাহার বৈধ অংশীদারগণ তফশিলভুক্ত সম্পত্তির ষোলো আনা অংশের মালিক ও দখলদার।</p>
+          <p>২. <strong>অনধিকার ব্যক্তির ভুল এন্ট্রির বিবরণ:</strong><br/>
           ${vals.customFacts}</p>
-          <p>৩. এই বিলম্ব ইচ্ছাকৃত নহে, বরং তামাদি আইনের ৫ ধারা মতে পর্যাপ্ত কারণে ঘটিয়াছে।</p>
+          <p>৩. প্রতিপক্ষের নামে কোনো রেজিস্টার্ড দলিল বা ওয়ারিশান স্বত্ব না থাকা সত্ত্বেও অবৈধভাবে নাম এন্ট্রি হইয়াছে।</p>
         `;
         prayerEn = `
-          It is respectfully prayed that Your Honour may graciously be pleased to condone the delay in preferring the appeal and admit the same on merits.
+          The Petitioner prays that the unauthorized and erroneous entry in the computerized ROR be expunged and struck off in accordance with law.
         `;
         prayerBn = `
-          অতএব প্রার্থনা, বিলম্ব মার্জনা করিয়া আপিলটি শুনানির জন্য গ্রহণ করিতে আজ্ঞাবহ হইবেন।
+          অতএব প্রার্থনা, খতিয়ান হইতে উক্ত অনধিকার ব্যক্তির অবৈধ এন্ট্রি অবিলম্বে কর্তন ও বাতিল করিতে আজ্ঞাবহ হইবেন।
         `;
-      } else {
-        // conversion
+      } else if (t === 'misc_reopen_hear') {
+        courtHeaderEn = 'BEFORE THE REVENUE OFFICER / BLOCK LAND & LAND REFORMS OFFICER';
+        courtHeaderBn = 'মাননীয় রেভিনিউ অফিসার সমীপে একতরফা আদেশ প্রত্যাহারের আবেদন';
+        subjectEn = 'PETITION TO RECALL EX-PARTE MISC ORDER AND RE-OPEN HEARING ON MERITS';
+        subjectBn = 'প্রাকৃতিক ন্যায়বিচারের স্বার্থে একতরফা বিবিধ মোকদ্দমা আদেশ প্রত্যাহার ও পুনঃশুনানির আবেদন';
+        factsEn = `
+          <p>1. That the Petitioner was severely prejudiced by the ex-parte disposal of ${vals.caseNumber || 'the Misc Case'}.</p>
+          <p>2. <strong>Grounds for Recalling Ex-Parte Order Observed by AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That no statutory notice of hearing was ever served upon the Petitioner, violating the fundamental principle of audi alteram partem.</p>
+        `;
+        factsBn = `
+          <p>১. দরখাস্তকারীকে কোনো শুনানির নোটিশ না দিয়া একতরফা আদেশ প্রদান করায় দরখাস্তকারী মারাত্মক ক্ষতিগ্রস্ত হইয়াছেন।</p>
+          <p>২. <strong>একতরফা আদেশ প্রত্যাহারের কারণ:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. শুনানির কোনো বিধিবদ্ধ নোটিশ জারি করা হয় নাই, যাহা প্রাকৃতিক ন্যায়বিচারের পরিপন্থী।</p>
+        `;
+        prayerEn = `
+          The Petitioner prays that the ex-parte order passed without notice be recalled and the matter be re-heard on merits in presence of both parties.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, নোটিশবিহীন একতরফা আদেশটি প্রত্যাহার পূর্বক উভয় পক্ষের উপস্থিতিতে পুনর্বিবেচনায় আজ্ঞাবহ হইবেন।
+        `;
+      } else if (t === 'conversion' || t === 'conv_sec4c') {
         courtHeaderEn = 'BEFORE THE COLLECTOR / DISTRICT LAND & LAND REFORMS OFFICER';
         courtHeaderBn = 'মাননীয় সমাহর্তা / জেলা ভূমি ও ভূমি সংস্কার আধিকারিক সমীপে দরখাস্ত';
         subjectEn = 'PETITION UNDER SECTION 4C OF THE WEST BENGAL LAND REFORMS ACT, 1955 FOR CONVERSION OF LAND USE';
@@ -708,12 +1292,312 @@ export const AiStudio: React.FC<AiStudioProps> = ({
         prayerBn = `
           অতএব প্রার্থনা, রাজস্ব পরিদর্শক দ্বারা স্থান পরিদর্শন পূর্বক শ্রেণি পরিবর্তনের অনুমতি প্রদান করিতে আজ্ঞাবহ হইবেন।
         `;
+      } else if (t === 'conv_regularize') {
+        courtHeaderEn = 'BEFORE THE COLLECTOR / DISTRICT LAND & LAND REFORMS OFFICER';
+        courtHeaderBn = 'মাননীয় সমাহর্তা / জেলা ভূমি ও ভূমি সংস্কার আধিকারিক সমীপে নিয়মিতকরণ আবেদন';
+        subjectEn = 'APPLICATION UNDER SECTION 4C(6) OF WBLR ACT, 1955 FOR POST-FACTO REGULARIZATION OF LAND CONVERSION';
+        subjectBn = 'পশ্চিমবঙ্গ ভূমি সংস্কার আইন ১৯৫৫ এর ৪সি(৬) ধারা মতে অননুমোদিত ব্যবহারের নিয়মিতকরণ দরখাস্ত';
+        factsEn = `
+          <p>1. That the scheduled land had undergone change of use prior to the enactment of stringent conversion guidelines.</p>
+          <p>2. <strong>Particulars of Land Use Observed by AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That the Petitioner is ready and willing to deposit statutory compounding fees and fine as provided under Section 4C(6) of the Act.</p>
+        `;
+        factsBn = `
+          <p>১. তফশিল বর্ণিত জমিতে বাস্তব প্রয়োজনে পূর্ব হইতেই ভিন্ন প্রকৃতির ব্যবহার প্রচলিত রহিয়াছে।</p>
+          <p>২. <strong>বর্তমান ব্যবহারের বিবরণ:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. আবেদনকারী সরকার নির্ধারিত বিধিবদ্ধ ক্ষতিপূরণ ফি ও জরিমানা পরিশোধ করিতে প্রস্তুত আছেন।</p>
+        `;
+        prayerEn = `
+          The Petitioner prays that post-facto regularization of the land use be granted upon payment of assessed statutory compounding fees.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, নির্ধারিত বিধিবদ্ধ ফি গ্রহণান্তে জমির বর্তমান ব্যবহার নিয়মিতকরণের অনুমতি প্রদানে আজ্ঞাবহ হইবেন।
+        `;
+      } else if (t === 'conv_khatian_update') {
+        courtHeaderEn = 'BEFORE THE REVENUE OFFICER / BLOCK LAND & LAND REFORMS OFFICER';
+        courtHeaderBn = 'মাননীয় রেভিনিউ অফিসার সমীপে রূপান্তরোত্তর খতিয়ান রেকর্ড সংশোধন দরখাস্ত';
+        subjectEn = 'PETITION UNDER SECTION 50 READ WITH SECTION 4C OF WBLR ACT, 1955 FOR RECORDING CONVERSION IN ROR';
+        subjectBn = 'রূপান্তর সনদপত্র প্রাপ্তির প্রেক্ষিতে কম্পিউটারাইজড এল.আর. খতিয়ানে শ্রেণি হালনাগাদের আবেদন';
+        factsEn = `
+          <p>1. That the Collector / DL&LRO has duly issued formal Conversion Certificate in respect of the scheduled plot.</p>
+          <p>2. <strong>Conversion Certificate Details Observed by AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That under Section 50 of WBLR Act, 1955, the Revenue Officer is bound to update the computerized Record-of-Rights accordingly.</p>
+        `;
+        factsBn = `
+          <p>১. জেলা সমাহর্তা / ডিএলঅ্যান্ডএলআরও কর্তৃক তফশিল বর্ণিত দাগের রূপান্তর সনদপত্র জারি করা হইয়াছে।</p>
+          <p>২. <strong>সনদপত্রের বিবরণ:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. পশ্চিমবঙ্গ ভূমি সংস্কার আইন ১৯৫৫ এর ৫০ ধারা অনুসারে অনলাইন খতিয়ানে উক্ত শ্রেণি হালনাগাদ করা বিধিবদ্ধ বিধান।</p>
+        `;
+        prayerEn = `
+          The Petitioner prays that the computerized Record-of-Rights (L.R. Khatian) be formally updated reflecting the conversion certificate.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, প্রাপ্ত রূপান্তর সনদ মোতাবেক অনলাইন খতিয়ানে শ্রেণি সংশোধন করিতে আজ্ঞাবহ হইবেন।
+        `;
+      } else if (t === 'lrtt' || t === 'lrtt_oa') {
+        courtHeaderEn = 'BEFORE THE WEST BENGAL LAND REFORMS TENANCY TRIBUNAL (WBLRTT)';
+        courtHeaderBn = 'মাননীয় পশ্চিমবঙ্গ ভূমি সংস্কার ট্রাইব্যুনাল সমীপে মূল আবেদন';
+        subjectEn = 'ORIGINAL APPLICATION UNDER SECTION 6 OF THE WBLRTT ACT, 1997';
+        subjectBn = 'পশ্চিমবঙ্গ ভূমি সংস্কার ট্রাইব্যুনাল আইন ১৯৯৭ এর ৬ ধারা মতে মূল আবেদন (Original Application)';
+        factsEn = `
+          <p>1. That this Original Application challenges the arbitrary and illegal order passed by the Appellate Authority in ${vals.caseNumber || 'the appeal'}.</p>
+          <p>2. <strong>Grounds of Challenge Observed by AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That the impugned order violates Section 54 of WBLR Act and infringes the constitutional rights guaranteed under Article 300A of the Constitution of India.</p>
+        `;
+        factsBn = `
+          <p>১. আপিল কর্তৃপক্ষের বেআইনি ও একতরফা আদেশের বিরুদ্ধে অত্র মূল আবেদন দায়ের করা হইল।</p>
+          <p>২. <strong>আইনি গ্রাউন্ডস ও ঘটনা:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. উক্ত বিতর্কিত আদেশটি ভারতীয় সংবিধানের ৩০০ক অনুচ্ছেদ এবং ভূমি সংস্কার আইনের সুস্পষ্ট লঙ্ঘন।</p>
+        `;
+        prayerEn = `
+          The Applicant prays that the Tribunal may admit this Original Application, call for lower records, and set aside the impugned appellate order.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, অত্র মূল আবেদন গ্রহণ করিয়া সংশ্লিষ্ট বিতর্কিত আদেশ বাতিল ও ন্যায়সঙ্গত প্রতিকার প্রদানে মর্জি হয়।
+        `;
+      } else if (t === 'lrtt_interim_stay') {
+        courtHeaderEn = 'BEFORE THE WEST BENGAL LAND REFORMS TENANCY TRIBUNAL (WBLRTT)';
+        courtHeaderBn = 'মাননীয় ট্রাইব্যুনাল সমীপে অন্তর্বর্তীকালীন স্থগিতাদেশ আবেদন';
+        subjectEn = 'MISCELLANEOUS APPLICATION UNDER SECTION 6(2) OF WBLRTT ACT, 1997 FOR INTERIM STAY / STATUS QUO';
+        subjectBn = 'ট্রাইব্যুনাল মূল মোকদ্দমা নিষ্পত্তি না হওয়া পর্যন্ত অন্তর্বর্তীকালীন স্থগিতাদেশের আবেদন';
+        factsEn = `
+          <p>1. That the Applicant has filed the connected Original Application challenging the revenue appellate order.</p>
+          <p>2. <strong>Grounds for Interim Protection Observed by AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That unless the operation of the impugned order is stayed, the applicant will be forcibly dispossessed, causing irreparable injury.</p>
+        `;
+        factsBn = `
+          <p>১. আবেদনকারী ট্রাইব্যুনালে মূল ও.এ. আবেদন দাখিল করিয়াছেন।</p>
+          <p>২. <strong>জরুরি অন্তর্বর্তীকালীন সুরক্ষার কারণ:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. স্থগিতাদেশ না দিলে আবেদনকারীকে বলপূর্বক দখলচ্যুত করা হইবে, যাহার ক্ষতি অপূরণীয়।</p>
+        `;
+        prayerEn = `
+          The Applicant prays for an interim order staying the operation of the impugned order and directing maintenance of status quo.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, মোকদ্দমা চলাকালীন বিতর্কিত আদেশ কার্যকর স্থগিত ও স্থিতাবস্থা বজায় রাখার আদেশ প্রদানে মর্জি হয়।
+        `;
+      } else if (t === 'lrtt_sec5_delay') {
+        courtHeaderEn = 'BEFORE THE WEST BENGAL LAND REFORMS TENANCY TRIBUNAL (WBLRTT)';
+        courtHeaderBn = 'মাননীয় ট্রাইব্যুনাল সমীপে ও.এ. দাখিলে বিলম্ব মার্জনা দরখাস্ত';
+        subjectEn = 'APPLICATION UNDER SECTION 6 OF WBLRTT ACT READ WITH SECTION 5 OF LIMITATION ACT, 1963 FOR CONDONATION OF DELAY';
+        subjectBn = 'তামাদি আইন ১৯৬৩ এর ৫ ধারা মতে ট্রাইব্যুনালে মূল আবেদন দাখিলে বিলম্ব মার্জনার দরখাস্ত';
+        factsEn = `
+          <p>1. That the Applicant was prevented by sufficient bona fide cause from approaching the Hon'ble Tribunal within the period of limitation.</p>
+          <p>2. <strong>Cause of Delay Observed by Counsel / AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That the delay was not intentional and justice warrants condonation of delay.</p>
+        `;
+        factsBn = `
+          <p>১. আবেদনকারী পর্যাপ্ত ও যুক্তিসঙ্গত কারণে নির্ধারিত সময়ের মধ্যে ট্রাইব্যুনালে আসিতে পারেন নাই।</p>
+          <p>২. <strong>বিলম্বের সুনির্দিষ্ট কারণ:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. এই বিলম্ব অনিচ্ছাকৃত বিধায় ন্যায়বিচারের স্বার্থে মার্জনাযোগ্য।</p>
+        `;
+        prayerEn = `
+          The Applicant prays that the Tribunal may condone the delay in preferring the Original Application and hear the same on merits.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, বিলম্ব মার্জনা করিয়া মূল আবেদনটি শুনানির জন্য গ্রহণ করিতে আজ্ঞাবহ হইবেন।
+        `;
+      } else if (t === 'lrtt_contempt') {
+        courtHeaderEn = 'BEFORE THE WEST BENGAL LAND REFORMS TENANCY TRIBUNAL (WBLRTT)';
+        courtHeaderBn = 'মাননীয় ভূমি সংস্কার ট্রাইব্যুনাল সমীপে আদালত অবমাননার দরখাস্ত';
+        subjectEn = 'CONTEMPT PETITION UNDER SECTION 15 OF THE WBLRTT ACT, 1997 READ WITH CONTEMPT OF COURTS ACT, 1971';
+        subjectBn = 'ট্রাইব্যুনালের নির্দেশ ইচ্ছাকৃত অমান্য করায় ১৫ ধারা মতে আদালত অবমাননার আবেদনপত্র';
+        factsEn = `
+          <p>1. That the Hon'ble Tribunal was pleased to pass a solemn order of status quo / injunction on [DATE].</p>
+          <p>2. <strong>Acts of Contempt & Wilful Disobedience Observed by AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That the contemnors had full knowledge of the Tribunal order and yet deliberately flouted it.</p>
+        `;
+        factsBn = `
+          <p>১. মহামান্য ট্রাইব্যুনাল কর্তৃক ইতিপূর্বে স্থিতাবস্থা / আদেশ জারি করা হইয়াছিল।</p>
+          <p>২. <strong>আদেশ অমান্যের বিবরণ:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. বিবাদীগণ আদেশ অবগত থাকা সত্ত্বেও ইচ্ছাকৃতভাবে তা অমান্য করিয়া অবমাননা করিয়াছেন।</p>
+        `;
+        prayerEn = `
+          The Petitioner prays that contempt proceedings be initiated against the contemnors for willful violation of Tribunal orders.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, ট্রাইব্যুনালের নির্দেশ অমান্যকারী বিবাদীদের বিরুদ্ধে আদালত অবমাননার আইনানুগ ব্যবস্থা গ্রহণে মর্জি হয়।
+        `;
+      } else if (t === 'firstappeal' || t === 'firstappeal_memo') {
+        courtHeaderEn = 'IN THE COURT OF THE APPELLATE AUTHORITY / DL&LRO / ADM (L&LR)';
+        courtHeaderBn = 'মাননীয় বিধিবদ্ধ প্রথম আপিল কর্তৃপক্ষ / ডিএলঅ্যান্ডএলআরও সমীপে';
+        subjectEn = 'MEMORANDUM OF STATUTORY FIRST APPEAL (ORDER 41 CPC / SEC 54 WBLR ACT)';
+        subjectBn = 'বিধিবদ্ধ প্রথম আপিলের স্মারকলিপি (Statutory First Appeal)';
+        factsEn = `
+          <p>1. That the Appellant is severely aggrieved by and dissatisfied with the impugned order passed by ${vals.spioDetails || 'the lower forum'}.</p>
+          <p>2. <strong>Grounds of First Appeal Observed by AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That unless interim protection / stay of the impugned order is granted, the Appellant will suffer irreparable loss and injury.</p>
+        `;
+        factsBn = `
+          <p>১. আপিলকারী নিম্ন কর্তৃপক্ষের তর্কিত আদেশে সংক্ষুব্ধ হইয়া অত্র প্রথম আপিল দায়ের করিতেছেন।</p>
+          <p>২. <strong>প্রথম আপিলের মূল গ্রাউন্ডস ও বিবরণ:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. স্থগিতাদেশ না দিলে আপিলকারীর অপূরণীয় ক্ষতি হইবে।</p>
+        `;
+        prayerEn = `
+          The Appellant prays that Your Honour may graciously be pleased to admit this Statutory First Appeal, stay operation of the impugned order, and grant full relief.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, অত্র প্রথম আপিল গ্রহণ করিয়া বিতর্কিত আদেশের কার্যক্রম স্থগিত পূর্বক আপিলকারীর পক্ষে ন্যায্য প্রতিকার প্রদানে আজ্ঞাবহ হইবেন।
+        `;
+      } else if (t === 'firstappeal_stay') {
+        courtHeaderEn = 'IN THE COURT OF THE APPELLATE AUTHORITY / ADM (L&LR)';
+        courtHeaderBn = 'মাননীয় বিধিবদ্ধ প্রথম আপিল কর্তৃপক্ষ সমীপে ডিক্রি স্থগিতের আবেদন';
+        subjectEn = 'APPLICATION UNDER ORDER 41 RULE 5 OF CPC FOR STAY OF EXECUTION PENDING APPEAL';
+        subjectBn = 'দেওয়ানি কার্যবিধির ৪১ আদেশ ৫ নিয়ম মতে মূল রায় ও ডিক্রি কার্যকর স্থগিতের আবেদন';
+        factsEn = `
+          <p>1. That the Appellant has filed the connected Statutory First Appeal against the lower decree / order.</p>
+          <p>2. <strong>Irreparable Loss & Grounds for Stay Observed by AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That substantial loss will result to the appellant unless stay is granted.</p>
+        `;
+        factsBn = `
+          <p>১. আপিলকারী নিম্ন আদালতের রায় ও ডিক্রির বিরুদ্ধে অত্র প্রথম আপিল দায়ের করিয়াছেন।</p>
+          <p>২. <strong>স্থগিতাদেশের প্রয়োজনীয়তা ও বিবরণ:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. ডিক্রি কার্যকর স্থগিত না করিলে আপিলকারীর অপূরণীয় ক্ষতি হইবে।</p>
+        `;
+        prayerEn = `
+          The Appellant prays that the execution and operation of the lower decree/order be stayed pending disposal of this appeal.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, আপিল চলাকালীন নিম্ন আদালতের রায় ও ডিক্রি কার্যকর স্থগিত রাখিতে আজ্ঞাবহ হইবেন।
+        `;
+      } else if (t === 'firstappeal_addl_evidence') {
+        courtHeaderEn = 'IN THE COURT OF THE APPELLATE AUTHORITY / ADM (L&LR)';
+        courtHeaderBn = 'মাননীয় প্রথম আপিল আদালত সমীপে অতিরিক্ত সাক্ষ্য প্রমাণ দাখিলের আবেদন';
+        subjectEn = 'PETITION UNDER ORDER 41 RULE 27 OF CPC FOR PRODUCTION OF ADDITIONAL EVIDENCE IN APPEAL';
+        subjectBn = 'দেওয়ানি কার্যবিধির ৪১ আদেশ ২৭ নিয়ম মতে আপিল স্তরে অতিরিক্ত প্রামাণ্য দলিল দাখিলের দরখাস্ত';
+        factsEn = `
+          <p>1. That the Appellant seeks to produce vital certified revenue documents in the appellate court.</p>
+          <p>2. <strong>Relevance & Non-availability Earlier Observed by AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That notwithstanding due diligence, the documents could not be produced before the primary authority.</p>
+        `;
+        factsBn = `
+          <p>১. আপিলকারী আপিল নিষ্পত্তির স্বার্থে অতীব প্রয়োজনীয় সরকারি প্রত্যয়িত দলিল দাখিল করিতে চাহেন।</p>
+          <p>২. <strong>দলিলের প্রাসঙ্গিকতা ও পূর্বে দাখিল না পারার কারণ:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. নিম্ন আদালতে যথাযথ চেষ্টা সত্ত্বেও উক্ত দলিল হস্তগত হয় নাই।</p>
+        `;
+        prayerEn = `
+          The Appellant prays for leave to produce the accompanying certified records and deeds as additional evidence in appeal.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, ন্যায়বিচারের স্বার্থে সংযোজিত অতিরিক্ত প্রামাণ্য দলিলসমূহ সাক্ষ্য হিসেবে গ্রহণের অনুমতি দানে আজ্ঞাবহ হইবেন।
+        `;
+      } else if (t === 'barga' || t === 'barga_prevent_evict') {
+        courtHeaderEn = 'BEFORE THE REVENUE OFFICER / BLOCK LAND & LAND REFORMS OFFICER';
+        courtHeaderBn = 'মাননীয় রেভিনিউ অফিসার সমীপে বর্গাদারের বেআইনি উচ্ছেদ রোধের দরখাস্ত';
+        subjectEn = 'APPLICATION UNDER SECTION 17(1) OF THE WEST BENGAL LAND REFORMS ACT, 1955 TO PREVENT ILLEGAL TERMINATION OF CULTIVATION';
+        subjectBn = 'পশ্চিমবঙ্গ ভূমি সংস্কার আইন ১৯৫৫ এর ১৭(১) ধারা মতে জোতদার কর্তৃক বেআইনি উচ্ছেদ রোধের আবেদনপত্র';
+        factsEn = `
+          <p>1. That the Applicant is cultivating the scheduled land as a lawful Bargadar.</p>
+          <p>2. <strong>Threat of Illegal Eviction Observed by AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That under Section 17(1) of the WBLR Act, 1955, no bargadar shall be terminated or evicted except by an order of the Revenue Officer passed on statutory grounds.</p>
+        `;
+        factsBn = `
+          <p>১. দরখাস্তকারী তফশিল বর্ণিত ভূমিতে দীর্ঘকাল যাবৎ বৈধ বর্গাদার হিসেবে চাষাবাদ করিতেছেন।</p>
+          <p>২. <strong>বেআইনি উচ্ছেদের হুমকির বিবরণ:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. পশ্চিমবঙ্গ ভূমি সংস্কার আইন ১৯৫৫ এর ১৭(১) ধারা মতে রেভিনিউ অফিসারের বিধিবদ্ধ আদেশ ব্যতীত কোনো বর্গাদারকে উচ্ছেদ করা সম্পূর্ণ বেআইনি।</p>
+        `;
+        prayerEn = `
+          The Applicant Bargadar prays that the Opposite Party landowner be restrained from evicting or terminating cultivation without due process of law.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, বিধিসম্মত আদেশ ব্যতীত দরখাস্তকারী বর্গাদারকে চাষাবাদ হইতে অন্যায়ভাবে উচ্ছেদ না করিতে জোতদারকে নির্দেশ দানে মর্জি হয়।
+        `;
+      } else if (t === 'barga_recording') {
+        courtHeaderEn = 'BEFORE THE REVENUE OFFICER / BLOCK LAND & LAND REFORMS OFFICER';
+        courtHeaderBn = 'মাননীয় রেভিনিউ অফিসার সমীপে বর্গাদার হিসেবে নাম রেকর্ডভুক্তির আবেদন';
+        subjectEn = 'PETITION UNDER SECTION 21B OF THE WEST BENGAL LAND REFORMS ACT, 1955 FOR RECORDING AS BARGADAR';
+        subjectBn = 'পশ্চিমবঙ্গ ভূমি সংস্কার আইন ১৯৫৫ এর ২১(খ) ধারা মতে চাষি হিসেবে বর্গাদার নাম অন্তর্ভুক্তির দরখাস্ত';
+        factsEn = `
+          <p>1. That the Petitioner is the actual tiller cultivating the scheduled agricultural land.</p>
+          <p>2. <strong>Cultivation Proof & Field Facts Observed by AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That under Section 21B of the WBLR Act, 1955, the person who cultivates land of another person is presumed to be a bargadar and entitled to be recorded in the ROR.</p>
+        `;
+        factsBn = `
+          <p>১. দরখাস্তকারী তফশিল বর্ণিত জমিতে প্রকৃত চাষি হিসেবে চাষাবাদ করিতেছেন।</p>
+          <p>২. <strong>চাষাবাদের প্রামাণ্য বিবরণ:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. পশ্চিমবঙ্গ ভূমি সংস্কার আইন ১৯৫৫ এর ২১(খ) ধারা অনুসারে অপরের জমি চাষকারী ব্যক্তি বর্গাদার বলিয়া গণ্য হইবেন এবং খতিয়ানে নাম এন্ট্রি পাইবার অধিকারী।</p>
+        `;
+        prayerEn = `
+          The Petitioner prays that upon holding spot inquiry, the name of the Petitioner be recorded as Bargadar in respect of the scheduled land in the ROR.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, সরজমিন তদন্তপূর্বক তফশিল বর্ণিত জমিতে দরখাস্তকারীর নাম বিধিবদ্ধ বর্গাদার হিসেবে রেকর্ডভুক্ত করিতে আজ্ঞাবহ হইবেন।
+        `;
+      } else if (t === 'barga_produce_share') {
+        courtHeaderEn = 'BEFORE THE REVENUE OFFICER / BLOCK LAND & LAND REFORMS OFFICER';
+        courtHeaderBn = 'মাননীয় রেভিনিউ অফিসার সমীপে উৎপন্ন ফসলের অংশ জমাদানের দরখাস্ত';
+        subjectEn = 'PETITION UNDER SECTION 16 OF THE WEST BENGAL LAND REFORMS ACT, 1955 FOR TENDER & DEPOSIT OF PRODUCE SHARE';
+        subjectBn = 'পশ্চিমবঙ্গ ভূমি সংস্কার আইন ১৯৫৫ এর ১৬ ধারা মতে জোতদারের ফসলের হিস্যা জমা প্রদানের আবেদন';
+        factsEn = `
+          <p>1. That the Applicant Bargadar harvested the seasonal paddy / crops from the scheduled land.</p>
+          <p>2. <strong>Refusal of Landowner to Accept Produce Observed by AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That the landowner refused to receive the share or grant receipt, obligating tender before the Revenue Officer under Section 16 of the Act.</p>
+        `;
+        factsBn = `
+          <p>১. দরখাস্তকারী তফশিল বর্ণিত জমি হইতে মৌসুমী ফসল উৎপাদন করিয়াছেন।</p>
+          <p>২. <strong>জোতদার কর্তৃক ফসল গ্রহণে অস্বীকৃতির বিবরণ:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. জোতদার ফসল গ্রহণ বা রসিদ প্রদানে অস্বীকার করায় ধারা ১৬ মতে রেভিনিউ অফিসারের সমীপে জমা প্রদান আবশ্যক হইয়াছে।</p>
+        `;
+        prayerEn = `
+          The Bargadar prays that the tendered share of produce or its market price be accepted and deposited in the office, granting statutory receipt.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, ফসলের বিধিসম্মত ন্যায্য হিস্যা সরকারি কোষাগারে জমা গ্রহণ করিয়া আইনানুগ রসিদ প্রদান করিতে আজ্ঞাবহ হইবেন।
+        `;
+      } else {
+        // barga_surrender
+        courtHeaderEn = 'BEFORE THE REVENUE OFFICER / BLOCK LAND & LAND REFORMS OFFICER';
+        courtHeaderBn = 'মাননীয় রেভিনিউ অফিসার সমীপে বর্গা সমর্পণ যাচাইয়ের আবেদন';
+        subjectEn = 'VERIFICATION APPLICATION UNDER SECTION 20B OF WBLR ACT, 1955 REGARDING VOLUNTARY SURRENDER OF BARGA';
+        subjectBn = 'পশ্চিমবঙ্গ ভূমি সংস্কার আইন ১৯৫৫ এর ২০(খ) ধারা মতে বর্গা অধিকার স্বেচ্ছায় সমর্পণ বা প্রত্যাহারের সত্যতা যাচাই আবেদন';
+        factsEn = `
+          <p>1. That an alleged surrender of cultivation has been represented regarding the scheduled land.</p>
+          <p>2. <strong>Circumstances of Alleged Surrender Observed by AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That Section 20B of the WBLR Act mandates statutory personal verification by the Revenue Officer to determine whether the surrender is voluntary and genuine.</p>
+        `;
+        factsBn = `
+          <p>১. তফশিলভুক্ত জমিতে বর্গা চাষ সমর্পণ বা প্রত্যাহারের দাবি উত্থাপিত হইয়াছে।</p>
+          <p>২. <strong>সমর্পণ সংক্রান্ত ঘটনাবলী:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. ধারা ২০(খ) অনুসারে রেভিনিউ অফিসার কর্তৃক নিরপেক্ষ যাচাই আবশ্যক যে উক্ত সমর্পণ স্বেচ্ছাপ্রণোদিত কিনা।</p>
+        `;
+        prayerEn = `
+          The Applicant prays that statutory verification be conducted to determine whether the alleged surrender of barga cultivation was voluntary and lawful.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, সংশ্লিষ্ট বর্গাদারকে ব্যক্তিগত তলব পূর্বক বর্গা সমর্পণ স্বেচ্ছাপ্রণোদিত কিনা তাহা বিধিসম্মতভাবে যাচাই করিতে আজ্ঞাবহ হইবেন।
+        `;
       }
 
       let html = `<div style="font-family:'Times New Roman', serif; line-height: 1.8; color: #111;">`;
 
       // 1. Forum / Bench Header
-      if (t === 'rti') {
+      if (isRti) {
         html += `
           <div style="background: #f8fafc; border: 1.5px solid #0284c7; padding: 12px 16px; margin-bottom: 16px; border-radius: 6px;">
             <div style="font-weight: bold; font-size: 13px; color: #0369a1; text-transform: uppercase;">TO:</div>
@@ -721,14 +1605,16 @@ export const AiStudio: React.FC<AiStudioProps> = ({
             <div style="font-size: 12.5px; color: #475569; margin-top: 2px;">${vals.authorityAddress}</div>
           </div>
         `;
-      } else if (t === 'rtifirstappeal') {
+      } else if (isRtiAppeal) {
         html += `
           <div style="background: #faf5ff; border: 1.5px solid #7c3aed; padding: 12px 16px; margin-bottom: 16px; border-radius: 6px;">
-            <div style="font-weight: bold; font-size: 12.5px; color: #6d28d9; text-transform: uppercase;">BEFORE THE FIRST APPELLATE AUTHORITY (FAA) u/s 19(1) RTI ACT, 2005</div>
+            <div style="font-weight: bold; font-size: 12.5px; color: #6d28d9; text-transform: uppercase;">
+              ${t === 'rti_sec19_3' || t === 'rti_sec18_20' ? 'BEFORE THE STATE INFORMATION COMMISSION' : 'BEFORE THE FIRST APPELLATE AUTHORITY (FAA) u/s 19 RTI ACT'}
+            </div>
             <div style="font-weight: bold; font-size: 15px; color: #0f172a; margin-top: 2px;">${vals.forum}</div>
             <div style="font-size: 12.5px; color: #475569;">Address: ${vals.authorityAddress}</div>
             <div style="font-size: 12.5px; color: #b91c1c; margin-top: 6px; padding-top: 4px; border-top: 1px dashed #cbd5e1;">
-              <strong>Impugned SPIO Details:</strong> ${vals.spioDetails}
+              <strong>Concerned SPIO / Authority Details:</strong> ${vals.spioDetails}
             </div>
           </div>
         `;
@@ -1242,10 +2128,10 @@ export const AiStudio: React.FC<AiStudioProps> = ({
               <div className="text-[11px] font-bold text-slate-500 uppercase mb-1.5 flex items-center justify-between">
                 <label htmlFor="case-form-type-select" className="flex items-center gap-1.5 cursor-pointer text-slate-700 dark:text-slate-300">
                   <Filter className="w-3.5 h-3.5 text-violet-600" />
-                  <span>Select Case Form Type (মামলার ধরন অনুযায়ী ড্রাফটিং বিকল্প)</span>
+                  <span>Select Case Form Type (মামলার বিষয় ও ধরন নির্বাচন)</span>
                 </label>
                 <span className="text-[10px] text-violet-600 dark:text-violet-400 font-bold uppercase bg-violet-50 dark:bg-violet-950/60 px-2 py-0.5 rounded border border-violet-200 dark:border-violet-800/60">
-                  {selectedCategory.toUpperCase()} Active
+                  {selectedCategory.replace(/_/g, ' ').toUpperCase()} Active
                 </span>
               </div>
               <div className="relative">
@@ -1355,7 +2241,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
             <div className={`lg:col-span-5 space-y-4 ${mobileView === 'preview' ? 'hidden lg:block' : 'block'}`}>
               <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-sm space-y-3.5">
                 <div className="text-xs font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400 border-b border-slate-100 dark:border-slate-800 pb-2 flex items-center justify-between">
-                  <span>1. Select Language & Template</span>
+                  <span>1. Select Language {!isRtiCategory ? '& Sub Type' : ''}</span>
                   <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded">
                     Live Auto-Draft
                   </span>
@@ -1387,53 +2273,55 @@ export const AiStudio: React.FC<AiStudioProps> = ({
                   </div>
                 </div>
 
-                {/* Drafting Options for Form Type as a Dropdown List */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label htmlFor="drafting-template-select" className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase cursor-pointer">
-                      Drafting Options for {selectedCategory.toUpperCase()} (ড্রাফটিং বিকল্প)
-                    </label>
-                    <span className="text-[10px] text-violet-600 dark:text-violet-400 font-bold bg-violet-50 dark:bg-violet-950/60 px-2 py-0.5 rounded">
-                      {allowedTemplates.length} option{allowedTemplates.length > 1 ? 's' : ''} available
-                    </span>
-                  </div>
+                {/* Drafting Options for Form Type as a Dropdown List - Completely removed for RTI as requested ("Drafting Options for RTI (ড্রাফটিং বিকল্প) to be removed from DRAFTING WITH AI form") */}
+                {!isRtiCategory && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label htmlFor="drafting-template-select" className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase cursor-pointer">
+                        Select Sub Type & Matter with Sections (উপ-ধরন ও প্রযোজ্য ধারা)
+                      </label>
+                      <span className="text-[10px] text-violet-600 dark:text-violet-400 font-bold bg-violet-50 dark:bg-violet-950/60 px-2 py-0.5 rounded">
+                        {allowedTemplates.length} option{allowedTemplates.length > 1 ? 's' : ''} available
+                      </span>
+                    </div>
 
-                  <div className="relative">
-                    <select
-                      id="drafting-template-select"
-                      value={template}
-                      onChange={e => setTemplate(e.target.value as TemplateType)}
-                      className="w-full appearance-none px-3.5 py-2.5 pr-10 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-600 shadow-xs cursor-pointer"
-                    >
-                      {allowedTemplates.map(t => (
-                        <option key={t.id} value={t.id}>
-                          {language === 'bn' ? `${t.labelBn} (${t.labelEn})` : `${t.labelEn} — ${t.labelBn}`}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="w-4 h-4 text-slate-400 pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2" />
-                  </div>
+                    <div className="relative">
+                      <select
+                        id="drafting-template-select"
+                        value={template}
+                        onChange={e => setTemplate(e.target.value as TemplateType)}
+                        className="w-full appearance-none px-3.5 py-2.5 pr-10 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-600 shadow-xs cursor-pointer"
+                      >
+                        {allowedTemplates.map(t => (
+                          <option key={t.id} value={t.id}>
+                            {language === 'bn' ? `${t.labelBn} (${t.labelEn})` : `${t.labelEn} — ${t.labelBn}`}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="w-4 h-4 text-slate-400 pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2" />
+                    </div>
 
-                  {/* Active Template Description info pill */}
-                  {(() => {
-                    const activeMeta = allowedTemplates.find(t => t.id === template);
-                    if (!activeMeta?.desc) return null;
-                    return (
-                      <div className="mt-2 p-2.5 rounded-lg bg-violet-50/70 dark:bg-violet-950/40 border border-violet-100 dark:border-violet-900 text-[11px] text-violet-800 dark:text-violet-300 flex items-center gap-2">
-                        <FileText className="w-3.5 h-3.5 shrink-0 text-violet-600" />
-                        <span>{activeMeta.desc}</span>
-                      </div>
-                    );
-                  })()}
-                </div>
+                    {/* Active Template Description info pill */}
+                    {(() => {
+                      const activeMeta = allowedTemplates.find(t => t.id === template);
+                      if (!activeMeta?.desc) return null;
+                      return (
+                        <div className="mt-2 p-2.5 rounded-lg bg-violet-50/70 dark:bg-violet-950/40 border border-violet-100 dark:border-violet-900 text-[11px] text-violet-800 dark:text-violet-300 flex items-center gap-2">
+                          <FileText className="w-3.5 h-3.5 shrink-0 text-violet-600" />
+                          <span>{activeMeta.desc}</span>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
 
                 {/* SECTION: Authority / SPIO fields */}
                 <div className="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-800">
                   <div>
                     <label className="block text-[10.5px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
-                      {template === 'rti'
+                      {template === 'rti' || template === 'rti_sec6_1' || template === 'rti_sec7_1'
                         ? 'To: SPIO or Authority (জনতথ্য আধিকারিক / কর্তৃপক্ষ)'
-                        : template === 'rtifirstappeal'
+                        : template === 'rtifirstappeal' || template === 'rti_sec19_1' || template === 'rti_sec19_2' || template === 'rti_sec19_3'
                         ? 'Application Authority / FAA (প্রথম আপিল কর্তৃপক্ষ)'
                         : 'Adjudicating Authority / Forum (আদালত / কর্তৃপক্ষ)'}
                     </label>
@@ -1448,7 +2336,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
 
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                      {template === 'rti' ? 'SPIO Office Address (ঠিকানা)' : 'Authority Office Address (কার্যালয়ের ঠিকানা)'}
+                      {isRtiCategory ? 'SPIO Office Address (ঠিকানা)' : 'Authority Office Address (কার্যালয়ের ঠিকানা)'}
                     </label>
                     <input
                       type="text"
@@ -1460,7 +2348,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
                   </div>
 
                   {/* SPIO Details for First Appeal as requested */}
-                  {(template === 'rtifirstappeal' || template === 'firstappeal') && (
+                  {(template === 'rtifirstappeal' || template === 'rti_sec19_1' || template === 'rti_sec19_2' || template === 'firstappeal') && (
                     <div>
                       <label className="block text-[10px] font-bold text-violet-700 dark:text-violet-400 uppercase mb-1 flex items-center justify-between">
                         <span>SPIO Details (সংশ্লিষ্ট এস.পি.আই.ও.-র বিবরণ)</span>
@@ -1482,7 +2370,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                        {template === 'rti' ? 'Applicant Name (আবেদনকারী)' : 'Petitioner / Appellant Name'}
+                        {isRtiCategory ? 'Applicant Name (আবেদনকারী)' : 'Petitioner / Appellant Name'}
                       </label>
                       <input
                         type="text"
@@ -1533,7 +2421,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
 
                 {/* SECTION: Opposite Party - ONLY when enabled or added via + button */}
                 {/* For RTI: strictly no opposite party. For Misc Case: opposite party added via + button */}
-                {template !== 'rti' && (
+                {!isRtiCategory && (
                   <div className="pt-1">
                     {showOppParty ? (
                       <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700 space-y-1.5">

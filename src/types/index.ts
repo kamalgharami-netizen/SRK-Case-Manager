@@ -11,6 +11,19 @@ export type CaseType =
   | 'certcopy'
   | 'rorpi';
 
+export type DraftingMatterType =
+  | 'rti_sec6_1'
+  | 'rti_sec19_1'
+  | 'rti_sec19_2'
+  | 'lrappeal'
+  | 'limitation'
+  | 'misc'
+  | 'conversion'
+  | 'lrtt'
+  | 'firstappeal'
+  | 'barga'
+  | 'rti';
+
 export interface User {
   id: string;
   name: string;
@@ -228,7 +241,7 @@ export interface MessageItem {
 
 export interface SampleDraftItem {
   id: string;
-  category: 'chain' | 'mutation' | 'misc' | 'lrappeal' | 'firstappeal' | 'rti' | 'conversion' | 'lrtt' | 'general';
+  category: 'chain' | 'mutation' | 'misc' | 'lrappeal' | 'firstappeal' | 'rti' | 'conversion' | 'lrtt' | 'general' | 'limitation' | 'barga';
   title: string;
   description: string;
   templateText: string;
