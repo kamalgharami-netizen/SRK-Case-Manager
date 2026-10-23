@@ -74,7 +74,7 @@ const MainAppContent: React.FC = () => {
     return true;
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<'branding' | 'vault' | 'chainSample' | 'backup'>('branding');
+  const [settingsTab, setSettingsTab] = useState<'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup'>('chambers');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Mobile Bottom Sheet for Case Categories
@@ -304,7 +304,7 @@ const MainAppContent: React.FC = () => {
       currentPage !== 'dashboard'
   );
 
-  const handleOpenSettings = (tab: 'branding' | 'vault' | 'chainSample' | 'backup' = 'branding') => {
+  const handleOpenSettings = (tab: 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup' = 'chambers') => {
     setSettingsTab(tab);
     setSettingsOpen(true);
     pushHistoryState({ modal: 'settings', tab });

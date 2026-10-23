@@ -13,7 +13,6 @@ import {
   FileText,
   RotateCcw,
   Sparkles,
-  ShieldCheck,
   Check,
   ChevronRight,
   Laptop,
@@ -38,7 +37,7 @@ export const BackupPathModal: React.FC = () => {
     language
   } = useApp();
 
-  const [customPath, setCustomPath] = useState(backupStoragePath || 'C:/SRK_Case_Backups');
+  const [customPath, setCustomPath] = useState(backupStoragePath || 'C:/Case_Backups');
   const [isChangingPath, setIsChangingPath] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showDriveExplorer, setShowDriveExplorer] = useState(false);
@@ -53,7 +52,7 @@ export const BackupPathModal: React.FC = () => {
   // Keep customPath in sync with context when modal opens or path changes
   useEffect(() => {
     if (isOpen) {
-      setCustomPath(backupStoragePath || 'C:/SRK_Case_Backups');
+      setCustomPath(backupStoragePath || 'C:/Case_Backups');
       setShowDriveExplorer(false);
       setShowSubfolderPrompt(false);
       setSubfolderInput('');
@@ -128,7 +127,7 @@ export const BackupPathModal: React.FC = () => {
       setCustomPath(chosenPath);
       showToast(`Selected directory: ${cleanFolder}`, 'success');
     } catch {
-      setCustomPath('C:/SRK_Case_Backups');
+      setCustomPath('C:/Case_Backups');
     }
   };
 
@@ -146,7 +145,7 @@ export const BackupPathModal: React.FC = () => {
     } else {
       const isWindows = typeof navigator !== 'undefined' && /win/i.test(navigator.userAgent);
       const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9_\-\s]/g, '_');
-      const resolved = isWindows ? `C:/SRK_Case_Backups/${cleanName}` : `/Documents/SRK_Backups`;
+      const resolved = isWindows ? `C:/Case_Backups/${cleanName}` : `/Documents/Chamber_Backups`;
       setCustomPath(resolved);
       showToast(`Directory set for backup vault`, 'info');
     }
@@ -166,7 +165,7 @@ export const BackupPathModal: React.FC = () => {
 
   const handleSavePathAndProceed = async () => {
     let finalPath = customPath.trim();
-    if (!finalPath) finalPath = 'C:/SRK_Case_Backups';
+    if (!finalPath) finalPath = 'C:/Case_Backups';
     // Clean up any extraneous strings or formatting
     finalPath = finalPath.replace(/^Directory:\s*/i, '').replace(/\\/g, '/');
 
@@ -195,19 +194,19 @@ export const BackupPathModal: React.FC = () => {
   const storagePresets = [
     {
       label: 'Local Disk C: (Default Vault)',
-      path: 'C:/SRK_Case_Backups',
+      path: 'C:/Case_Backups',
       icon: <Laptop className="w-3.5 h-3.5 text-blue-600" />,
       desc: 'Standard Windows Local Drive'
     },
     {
       label: 'Documents Folder',
-      path: 'C:/Users/Advocate/Documents/SRK_Chamber_Data',
+      path: 'C:/Users/Advocate/Documents/Chamber_Data',
       icon: <Folder className="w-3.5 h-3.5 text-indigo-600" />,
       desc: 'Advocate User Documents'
     },
     {
       label: 'Desktop Folder',
-      path: 'C:/Users/Advocate/Desktop/SRK_Case_Backups',
+      path: 'C:/Users/Advocate/Desktop/Case_Backups',
       icon: <FolderOpen className="w-3.5 h-3.5 text-emerald-600" />,
       desc: 'Instant Desktop Access'
     },
@@ -219,20 +218,20 @@ export const BackupPathModal: React.FC = () => {
     },
     {
       label: 'Mobile Internal Storage',
-      path: '/storage/emulated/0/Documents/SRK_Case_Backups',
+      path: '/storage/emulated/0/Documents/Case_Backups',
       icon: <Smartphone className="w-3.5 h-3.5 text-purple-600" />,
       desc: 'Android Documents Directory'
     },
     {
       label: 'Mobile Downloads Vault',
-      path: '/storage/emulated/0/Download/SRK_Legal_Backups',
+      path: '/storage/emulated/0/Download/Legal_Backups',
       icon: <Smartphone className="w-3.5 h-3.5 text-cyan-600" />,
       desc: 'Direct Device Downloads'
     }
   ];
 
   // Example filename preview
-  const previewFileName = `SRK_Backup_${(activeCompany?.name || 'Chamber').replace(/[^a-zA-Z0-9]/g, '_')}_2026-10-19_14-30-00.json`;
+  const previewFileName = `Backup_${(activeCompany?.name || 'Chamber').replace(/[^a-zA-Z0-9]/g, '_')}_2026-10-19_14-30-00.json`;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-150">
@@ -301,7 +300,7 @@ export const BackupPathModal: React.FC = () => {
                 </span>
               </div>
               <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-800/60 font-mono text-xs font-bold text-slate-800 dark:text-slate-200 break-all">
-                {backupStoragePath || 'C:/SRK_Case_Backups'}
+                {backupStoragePath || 'C:/Case_Backups'}
               </div>
               <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center justify-between">
                 <span>
@@ -312,18 +311,6 @@ export const BackupPathModal: React.FC = () => {
                   Timestamp Included
                 </span>
               </div>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400 space-y-1.5">
-              <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>Backup Archive Rules &amp; Portability:</span>
-              </div>
-              <ul className="list-disc pl-5 space-y-1 text-[11px]">
-                <li>A complete timestamped JSON file with date and time mentioned will be created.</li>
-                <li>All data is saved offline and stored in history logs for instant restore.</li>
-                <li>You can proceed to current path or change the destination path via Browse.</li>
-              </ul>
             </div>
 
             {/* Actions */}
@@ -379,7 +366,7 @@ export const BackupPathModal: React.FC = () => {
                     required
                     value={customPath}
                     onChange={e => setCustomPath(e.target.value)}
-                    placeholder="e.g. C:/SRK_Case_Backups or D:/Legal_Chamber_Vault"
+                    placeholder="e.g. C:/Case_Backups or D:/Legal_Chamber_Vault"
                     className="w-full pl-9 pr-3 py-2.5 text-xs font-mono font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600 shadow-inner"
                   />
                 </div>
@@ -472,43 +459,6 @@ export const BackupPathModal: React.FC = () => {
                 <CheckCircle2 className="w-4 h-4" />
                 <span>{isProcessing ? 'Processing...' : 'Save Storage Path & Proceed'}</span>
               </button>
-            </div>
-          </div>
-        )}
-
-        {/* Stored Backup History with Date & Time */}
-        {backupHistory.length > 0 && (
-          <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center justify-between">
-              <span>Recent Stored Backups ({backupHistory.length})</span>
-              <span className="text-[10px] text-slate-400">Date &amp; Time Recorded</span>
-            </div>
-            <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-              {backupHistory.slice(0, 5).map(b => (
-                <div
-                  key={b.id}
-                  className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 text-[11px] flex items-center justify-between gap-2"
-                >
-                  <div className="min-w-0">
-                    <div className="font-mono font-bold text-slate-800 dark:text-slate-200 truncate">
-                      {b.fileName}
-                    </div>
-                    <div className="text-[10px] text-slate-500 flex items-center gap-2 mt-0.5">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-slate-400" />
-                        <span>{b.formattedDate}</span>
-                      </span>
-                      <span>·</span>
-                      <span>{b.casesCount} cases</span>
-                      <span>·</span>
-                      <span className="capitalize text-indigo-600 dark:text-indigo-400 font-semibold">{b.type}</span>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 shrink-0">
-                    {b.sizeKb} KB
-                  </span>
-                </div>
-              ))}
             </div>
           </div>
         )}

@@ -1521,7 +1521,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                   className="w-full py-2.5 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-colors"
                 >
                   <Sparkles className="w-4 h-4" />
-                  <span>Proceed to AI Drafting Studio</span>
+                  <span>Proceed to DRAFTING WITH AI</span>
                 </button>
               )}
 
@@ -1584,7 +1584,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
               )}
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">
-              CHAMBER CASE ENTRY · {(activeCompany?.name || 'SRK LEGAL CHAMBER').toUpperCase()}
+              CHAMBER CASE ENTRY · {(activeCompany?.name || 'LEGAL CHAMBER').toUpperCase()}
             </p>
           </div>
         </div>
@@ -1597,10 +1597,10 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
               type="button"
               onClick={handleTriggerAiDraft}
               className="px-3.5 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="Open AI Drafting Studio for this Case"
+              title="Open DRAFTING WITH AI for this Case"
             >
               <Sparkles className="w-4 h-4" />
-              <span>AI Drafting Studio</span>
+              <span>DRAFTING WITH AI</span>
             </button>
           )}
 
@@ -3623,10 +3623,10 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
               type="button"
               onClick={handleTriggerAiDraft}
               className="px-3.5 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="Open AI Drafting Studio for this Case"
+              title="Open DRAFTING WITH AI for this Case"
             >
               <Sparkles className="w-4 h-4" />
-              <span>AI Drafting Studio</span>
+              <span>DRAFTING WITH AI</span>
             </button>
           )}
 

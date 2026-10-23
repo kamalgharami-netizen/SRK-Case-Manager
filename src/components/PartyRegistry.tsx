@@ -80,7 +80,7 @@ export const PartyRegistry: React.FC = () => {
           </style>
         </head>
         <body>
-          <h2>${activeCompany?.name || 'SRK Legal Chamber'}</h2>
+          <h2>${activeCompany?.name || 'Legal Chamber'}</h2>
           <div style="text-align: center; font-size: 12px; color: #555;">CHAMBER CLIENT & PARTY DIRECTORY (মক্কেল ও পক্ষ তালিকা)</div>
           <hr />
           <table>
@@ -119,7 +119,7 @@ export const PartyRegistry: React.FC = () => {
     }
     safeOpenWhatsApp(
       p.phone,
-      `Hello ${p.name}, greeting from ${activeCompany?.name || 'SRK Legal Chamber'}. Please contact our chamber regarding your pending land matter.`
+      `Hello ${p.name}, greeting from ${activeCompany?.name || 'Legal Chamber'}. Please contact our chamber regarding your pending land matter.`
     );
   };
 

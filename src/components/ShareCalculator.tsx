@@ -257,15 +257,15 @@ export const FARAYEZ_EXTRA_RELATIVES = [
 export const ShareCalculator: React.FC = () => {
   const { activeCompany, showToast } = useApp();
 
-  // Two Phase Architecture: 1. Muslim Farayez, 2. Share Calculator
+  // Two Phase Architecture: Part 1: Share Calculator, Part 2: Muslim Farayez
   const [activePhase, setActivePhase] = useState<CalculatorPhase>('share');
 
-  // Sub-tabs inside Part 2 (Share Calculator) matching Image 1:
+  // Sub-tabs inside Part 1 (Share Calculator):
   // 1. Land Share Calculator, 2. Unit Converter, 3. Standard Math
   const [activeSubTab, setActiveSubTab] = useState<CalculatorSubTab>('land-share');
 
   // =========================================================
-  // PART 2 / TAB 1: LAND SHARE CALCULATOR (EXACTLY AS IN IMAGES)
+  // PART 1 / TAB 1: LAND SHARE CALCULATOR
   // =========================================================
   const [areaPlotValue, setAreaPlotValue] = useState<string>('15');
   const [areaPlotUnit, setAreaPlotUnit] = useState<string>('decimal'); // default শতক / Decimal
@@ -391,7 +391,7 @@ export const ShareCalculator: React.FC = () => {
         </head>
         <body>
           <div style="text-align: center;">
-            <h2>${activeCompany?.name || 'SRK Legal Chamber'}</h2>
+            <h2>${activeCompany?.name || 'Legal Chamber'}</h2>
             <div><strong>পশ্চিমবঙ্গ ভূমি ও রাজস্ব আদালত স্বীকৃত ১০,০০০ অংশ ও হিস্যা নির্ধারণ সনদপত্র</strong></div>
             <div style="font-size: 12px; color: #555;">West Bengal Statutory 10,000 Land Share & 16-Ana Apportionment Sheet</div>
             <div style="font-size: 11px; color: #777; margin-top: 4px;">তারিখ: ${new Date().toLocaleDateString('bn-BD', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
@@ -630,7 +630,7 @@ export const ShareCalculator: React.FC = () => {
   }, [coPlotValue, coPlotUnit, coPortions]);
 
   // =========================================================
-  // PART 1: MUSLIM FARAYEZ WITH DYNAMIC "+" ADD MORE BUTTON
+  // PART 2: MUSLIM FARAYEZ WITH DYNAMIC "+" ADD MORE BUTTON
   // =========================================================
   const [farayezTotal, setFarayezTotal] = useState<string>('50');
   const [farayezUnit, setFarayezUnit] = useState<string>('decimal');
@@ -908,7 +908,7 @@ export const ShareCalculator: React.FC = () => {
         </head>
         <body>
           <div style="text-align: center;">
-            <h2>${activeCompany?.name || 'SRK Legal Chamber'}</h2>
+            <h2>${activeCompany?.name || 'Legal Chamber'}</h2>
             <div><strong>সুন্নি হানাফি আইন অনুসারে মুসলিম ফারায়েজ বণ্টন সনদপত্র</strong></div>
             <div style="font-size: 12px; color: #555;">Hanafi Sunni Inheritance Distribution (16-Ana & WB Land Units)</div>
             <div style="font-size: 11px; color: #777; margin-top: 4px;">সম্পত্তির পরিমাণ: ${parseFloat(farayezTotal || '0').toLocaleString('en-IN')} ${LAND_UNIT_OPTIONS.find(u => u.key === farayezUnit || u.key === farayezUnit.toLowerCase() || (farayezUnit === 'Satak' && u.key === 'decimal'))?.label || (farayezUnit === 'inr' ? 'টাকা / নগদ অর্থ' : farayezUnit)} | মৃত ব্যক্তি: ${deceasedGender === 'male' ? 'পুরুষ (মরহুম)' : 'নারী (মরহুমা)'}</div>
@@ -941,7 +941,7 @@ export const ShareCalculator: React.FC = () => {
             </tbody>
           </table>
           <div style="margin-top: 36px; text-align: right; font-size: 11px;">
-            Certified under Sunni Hanafi Jurisprudence · SRK Case Manager
+            Certified under Sunni Hanafi Jurisprudence
           </div>
         </body>
       </html>
@@ -956,45 +956,7 @@ export const ShareCalculator: React.FC = () => {
       {/* ========================================================= */}
       <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 sm:p-4 shadow-xs">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          {/* Phase 1 Button: Muslim Farayez */}
-          <button
-            type="button"
-            onClick={() => setActivePhase('farayez')}
-            className={`p-3 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${
-              activePhase === 'farayez'
-                ? 'bg-teal-600 text-white border-teal-600 shadow-md ring-2 ring-teal-500/30'
-                : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-teal-500'
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              <div
-                className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm ${
-                  activePhase === 'farayez'
-                    ? 'bg-white/20 text-white'
-                    : 'bg-teal-100 dark:bg-teal-950 text-teal-600'
-                }`}
-              >
-                <Scale className="w-5 h-5" />
-              </div>
-              <div className="text-left">
-                <div className="text-[10px] uppercase font-extrabold tracking-wider opacity-80">
-                  PART 1
-                </div>
-                <div className="text-sm font-black">MUSLIM FARAYEZ</div>
-              </div>
-            </div>
-            <span
-              className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                activePhase === 'farayez'
-                  ? 'bg-white/20 text-white'
-                  : 'bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-300'
-              }`}
-            >
-              মুসলিম ফারায়েজ
-            </span>
-          </button>
-
-          {/* Phase 2 Button: Share Calculator */}
+          {/* Phase 1 Button: Share Calculator */}
           <button
             type="button"
             onClick={() => setActivePhase('share')}
@@ -1016,7 +978,7 @@ export const ShareCalculator: React.FC = () => {
               </div>
               <div className="text-left">
                 <div className="text-[10px] uppercase font-extrabold tracking-wider opacity-80">
-                  PART 2
+                  PART 1
                 </div>
                 <div className="text-sm font-black">SHARE CALCULATOR</div>
               </div>
@@ -1031,11 +993,49 @@ export const ShareCalculator: React.FC = () => {
               হিস্যা ক্যালকুলেটর
             </span>
           </button>
+
+          {/* Phase 2 Button: Muslim Farayez */}
+          <button
+            type="button"
+            onClick={() => setActivePhase('farayez')}
+            className={`p-3 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${
+              activePhase === 'farayez'
+                ? 'bg-teal-600 text-white border-teal-600 shadow-md ring-2 ring-teal-500/30'
+                : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-teal-500'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <div
+                className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm ${
+                  activePhase === 'farayez'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-teal-100 dark:bg-teal-950 text-teal-600'
+                }`}
+              >
+                <Scale className="w-5 h-5" />
+              </div>
+              <div className="text-left">
+                <div className="text-[10px] uppercase font-extrabold tracking-wider opacity-80">
+                  PART 2
+                </div>
+                <div className="text-sm font-black">MUSLIM FARAYEZ</div>
+              </div>
+            </div>
+            <span
+              className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                activePhase === 'farayez'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-300'
+              }`}
+            >
+              মুসলিম ফারায়েজ
+            </span>
+          </button>
         </div>
       </div>
 
       {/* ========================================================= */}
-      {/* PHASE 1: MUSLIM FARAYEZ WITH "+" ADD MORE HEIRS BUTTON */}
+      {/* PART 2: MUSLIM FARAYEZ WITH "+" ADD MORE HEIRS BUTTON */}
       {/* ========================================================= */}
       {activePhase === 'farayez' && (
         <div className="space-y-4">
@@ -1341,7 +1341,7 @@ export const ShareCalculator: React.FC = () => {
       )}
 
       {/* ========================================================= */}
-      {/* PHASE 2: SHARE CALCULATOR (ORGANIZED AS IN THE IMAGES) */}
+      {/* PART 1: SHARE CALCULATOR (ORGANIZED AS IN THE IMAGES) */}
       {/* ========================================================= */}
       {activePhase === 'share' && (
         <div className="space-y-4">

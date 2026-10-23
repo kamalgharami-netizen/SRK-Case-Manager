@@ -40,9 +40,9 @@ function generateStatutoryDraft(
   const showOppParty = formValues?.showOppParty ?? (template !== 'rti' && template !== 'misc10000');
   const showCaseRef = formValues?.showCaseRef ?? false;
 
-  const adv = advocateName || 'Adv. S. R. Khan';
-  const chName = companyName || 'SRK Legal Chamber & Associates';
-  const bar = barCouncil || 'WB/1482/2012';
+  const adv = advocateName || 'Advocate';
+  const chName = companyName || 'Legal Chamber';
+  const bar = barCouncil || 'WB/Chamber';
 
   const titleMap: Record<string, { en: string; bn: string; act: string }> = {
     misc10000: {
@@ -360,7 +360,7 @@ Ensure:
 
 // Server-side AI drafting proxy using Gemini with multi-tier model fallback and statutory engine
 app.post('/api/ai/draft', async (req, res) => {
-  const { template, draftLang, formValues, companyName, barCouncil, advocateName } = req.body;
+  const { template, draftLang, formValues, companyName, barCouncil, advocateName, vaultFormatReference, vaultDraftTitle } = req.body;
   const apiKey = process.env.GEMINI_API_KEY;
 
   // If no API key configured, use instant statutory generator
@@ -386,7 +386,21 @@ Parameters:
 - Case / Reference: ${formValues?.showCaseRef ? `Case/Memo No: ${formValues?.caseNumber || ''}, Date: ${formValues?.caseDate || ''}` : 'None'}
 - Property Schedule (সম্পত্তির তপশীল বিবরণ): ${formValues?.showLandSchedule ? `Mouza/JL: ${formValues?.mouzaJl || ''}, Khatian/Dag: ${formValues?.khatianDag || ''}, Area/Class: ${formValues?.landAreaClass || ''}, Deed/Document: ${formValues?.deedNoDate || ''}` : 'EXCLUDED (Do not include land schedule unless explicitly provided)'}
 - Facts Observed by AI: ${formValues?.customFacts || 'The applicant has legally acquired the property through a registered deed of conveyance and is in continuous possession.'}
-- Advocate: ${advocateName || 'Adv. S. R. Khan'} (${companyName || 'SRK Legal Chamber'}, Bar Reg: ${barCouncil || 'WB/Chamber'})
+- Advocate: ${advocateName || 'Advocate'} (${companyName || 'Legal Chamber'}, Bar Reg: ${barCouncil || 'WB/Chamber'})
+
+${vaultFormatReference ? `
+CRITICAL DIRECTIVE - INTERNAL DOCUMENT VAULT FORMAT MANDATE:
+The application matter is assumed to follow the chamber's internal draft format attached in Document Vault: "${vaultDraftTitle || template}".
+Internal Vault Draft Reference Format:
+"""
+${vaultFormatReference}
+"""
+You MUST strictly model this generated draft after the above Document Vault draft format:
+- Adopt the exact cause title, heading, and court salutation structure.
+- Sequence the statement of facts and legal grounds in the precise numbered layout and style of the vault format.
+- Align the prayer clauses with the specific statutory reliefs demonstrated in the vault template.
+- Use the deponent verification and signature block format from the vault draft.
+` : ''}
 
 IMPORTANT INSTRUCTIONS:
 1. Terminology: Always use "সম্পত্তির তপশীল বিবরণ" in Bengali for Land/Property Schedule everywhere. Never use "জমির তফসিল".

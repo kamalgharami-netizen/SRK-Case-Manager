@@ -31,7 +31,9 @@ import {
   FileSearch,
   FolderGit2,
   Send,
-  Gavel
+  Gavel,
+  ChevronDown,
+  Archive
 } from 'lucide-react';
 
 export type DraftLanguage = 'english' | 'bengali' | 'bilingual';
@@ -153,6 +155,15 @@ export const CASE_TEMPLATES_MAP: Record<
   ]
 };
 
+export const CASE_FORM_TYPE_OPTIONS: { id: CaseType; labelEn: string; labelBn: string }[] = [
+  { id: 'rti', labelEn: 'RTI Matter (u/s 6(1) & 19(1))', labelBn: 'তথ্য জানার অধিকার (RTI)' },
+  { id: 'misc', labelEn: 'Misc Case & 10000 Share (u/s 50A)', labelBn: 'বিবিধ মোকদ্দমা ও ১০,০০০ হিস্যা (Misc Case)' },
+  { id: 'lrappeal', labelEn: 'LR Appeal (u/s 54 WBLR Act)', labelBn: 'এল.আর. আপিল ধারা ৫৪ (LR Appeal)' },
+  { id: 'firstappeal', labelEn: 'Statutory First Appeal (CPC / Sec 54)', labelBn: 'বিধিবদ্ধ প্রথম আপিল (First Appeal)' },
+  { id: 'conversion', labelEn: 'Land Conversion (u/s 4C WBLR Act)', labelBn: 'বাস্তু রূপান্তর ধারা ৪সি (Conversion)' },
+  { id: 'lrtt', labelEn: 'WBLRTT Tribunal Appeal / Application', labelBn: 'ভূমি সংস্কার ট্রাইব্যুনাল (WBLRTT Tribunal)' }
+];
+
 export const ALL_TEMPLATES_LIST: { id: TemplateType; labelEn: string; labelBn: string; category: string }[] = [
   { id: 'rti', labelEn: 'RTI Application u/s 6(1)', labelBn: 'তথ্য জানার অধিকার দরখাস্ত (৬(১) ধারা)', category: 'RTI' },
   { id: 'rtifirstappeal', labelEn: 'RTI First Appeal u/s 19(1)', labelBn: 'আর.টি.আই. প্রথম আপিল (১৯(১) ধারা)', category: 'RTI' },
@@ -169,7 +180,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
   prefilledCase = null,
   onBack
 }) => {
-  const { activeCompany, activeUser, showToast, language } = useApp();
+  const { activeCompany, activeUser, showToast, language, sampleDrafts } = useApp();
 
   const [activeTab, setActiveTab] = useState<'draft' | 'learning'>('draft');
 
@@ -214,6 +225,52 @@ export const AiStudio: React.FC<AiStudioProps> = ({
   const [draftLang, setDraftLang] = useState<DraftLanguage>(() => {
     return language === 'bn' ? 'bengali' : 'bilingual';
   });
+
+  // Resolve matching internal draft format attached in Document Vault according to present application matter
+  const activeVaultDraftRef = useMemo(() => {
+    const vaultFiles = activeCompany?.vaultFiles || [];
+    const matter = (selectedCategory || 'rti').toLowerCase();
+
+    // 1. Check custom uploaded vault files attached to Document Vault
+    const relevantVaultFiles = vaultFiles.filter(vf => {
+      const cat = (vf.category || '').toLowerCase();
+      const nm = (vf.name || '').toLowerCase();
+      return (
+        cat.includes(matter) ||
+        nm.includes(matter) ||
+        (matter === 'misc' && (nm.includes('share') || nm.includes('50a') || cat.includes('misc') || cat.includes('petition'))) ||
+        (matter === 'lrappeal' && (nm.includes('appeal') || nm.includes('54') || cat.includes('appeal'))) ||
+        (matter === 'firstappeal' && (nm.includes('first') || nm.includes('appeal'))) ||
+        (matter === 'conversion' && (nm.includes('conversion') || nm.includes('4c'))) ||
+        (matter === 'lrtt' && (nm.includes('tribunal') || nm.includes('lrtt') || nm.includes('oa'))) ||
+        (matter === 'rti' && nm.includes('rti'))
+      );
+    });
+
+    // 2. Check sample drafts attached to Document Vault
+    const matchingSample = (sampleDrafts || []).find(sd => {
+      if (template === 'misc10000' && sd.category === 'misc') return true;
+      if (template === 'lrappeal' && (sd.category === 'lrappeal' || sd.id.includes('lrappeal'))) return true;
+      if (template === 'firstappeal' && (sd.category === 'firstappeal' || sd.category === 'lrappeal')) return true;
+      if (template === 'sec5delay' && (sd.id.includes('delay') || sd.templateText.includes('Section 5'))) return true;
+      if (template === 'conversion' && sd.category === 'conversion') return true;
+      if (template === 'rti' && (sd.category === 'rti' || sd.id.includes('rti_sec6'))) return true;
+      if (template === 'rtifirstappeal' && (sd.category === 'rti' || sd.id.includes('rti'))) return true;
+      if (sd.category === selectedCategory) return true;
+      return false;
+    });
+
+    const title = matchingSample?.title || (relevantVaultFiles.length > 0 ? relevantVaultFiles[0].name : `${selectedCategory.toUpperCase()} Statutory Master Format`);
+    const formatText = matchingSample?.templateText || '';
+
+    return {
+      title,
+      formatText,
+      sampleId: matchingSample?.id,
+      vaultFilesCount: relevantVaultFiles.length,
+      isInternalVaultAttached: Boolean(matchingSample || relevantVaultFiles.length > 0)
+    };
+  }, [selectedCategory, template, activeCompany?.vaultFiles, sampleDrafts]);
 
   // Keep draftLang updated if global language switches
   useEffect(() => {
@@ -927,7 +984,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
               ${lang === 'bengali' ? 'আবেদনকারী / আপিলকারী' : 'Petitioner / Applicant'}<br/><br/>
               Through Advocate<br/>
               <strong>${activeUser?.name || 'Advocate'}</strong><br/>
-              ${activeCompany?.name || 'SRK Legal Chamber'}<br/>
+              ${activeCompany?.name || 'Legal Chamber'}<br/>
               <span style="font-size: 11px; color: #555;">Bar Reg: ${activeCompany?.barCouncil || 'WB/Chamber'}</span>
             </div>
           </div>
@@ -1019,7 +1076,9 @@ export const AiStudio: React.FC<AiStudioProps> = ({
           formValues: currentFormValues,
           companyName: activeCompany?.name,
           barCouncil: activeCompany?.barCouncil,
-          advocateName: activeUser?.name
+          advocateName: activeUser?.name,
+          vaultFormatReference: activeVaultDraftRef.formatText,
+          vaultDraftTitle: activeVaultDraftRef.title
         })
       });
 
@@ -1027,7 +1086,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
         const data = await res.json();
         if (data.success && data.draftHtml) {
           setGeneratedDraft(data.draftHtml);
-          showToast('AI Smart Draft generated successfully with Gemini AI', 'success');
+          showToast(`AI Smart Draft modeled on Document Vault format: ${activeVaultDraftRef.title}`, 'success');
           setIsAiLoading(false);
           // On mobile, switch to preview after generation so user sees result
           if (window.innerWidth < 1024) {
@@ -1104,7 +1163,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
           clearInterval(interval);
           setIsScanning(false);
           setLearnedPatterns({
-            chamberHeader: `${activeCompany?.name || 'SRK Legal Chamber'}, Alipore Judges Court Bar`,
+            chamberHeader: `${activeCompany?.name || 'Legal Chamber'}`,
             prayerStyle: 'Formal Prayer with sub-clauses (a, b, c) and interim protection clause',
             citationStyle: 'WBLR Act 1955 & RTI Act 2005 format',
             totalDocsLearned: folderFiles.length
@@ -1135,7 +1194,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
             )}
             <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
               <Brain className="w-5 h-5 text-violet-600 shrink-0" />
-              <span>AI Drafting Studio (আইনি ড্রাফটিং স্টুডিও)</span>
+              <span>DRAFTING WITH AI (আইনি ড্রাফটিং)</span>
             </h1>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -1177,113 +1236,89 @@ export const AiStudio: React.FC<AiStudioProps> = ({
 
       {activeTab === 'draft' && (
         <>
-          {/* CATEGORY FILTER: "according to form type only show the options for ai drafting in the rti, misc case, lr appeal case or any others" */}
+          {/* CATEGORY FILTER: Select Case Form Type dropdown list */}
           {!lockCaseType ? (
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 shadow-xs">
-              <div className="text-[11px] font-bold text-slate-500 uppercase mb-2 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3.5 shadow-xs">
+              <div className="text-[11px] font-bold text-slate-500 uppercase mb-1.5 flex items-center justify-between">
+                <label htmlFor="case-form-type-select" className="flex items-center gap-1.5 cursor-pointer text-slate-700 dark:text-slate-300">
                   <Filter className="w-3.5 h-3.5 text-violet-600" />
                   <span>Select Case Form Type (মামলার ধরন অনুযায়ী ড্রাফটিং বিকল্প)</span>
-                </span>
-                <span className="text-[10px] text-violet-600 font-semibold uppercase bg-violet-50 dark:bg-violet-950/60 px-2 py-0.5 rounded">
-                  Showing {selectedCategory.toUpperCase()} Options Only
+                </label>
+                <span className="text-[10px] text-violet-600 dark:text-violet-400 font-bold uppercase bg-violet-50 dark:bg-violet-950/60 px-2 py-0.5 rounded border border-violet-200 dark:border-violet-800/60">
+                  {selectedCategory.toUpperCase()} Active
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
-                <button
-                  type="button"
-                  onClick={() => setSelectedCategory('rti')}
-                  className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1.5 ${
-                    selectedCategory === 'rti'
-                      ? 'bg-teal-600 text-white shadow-xs'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                  }`}
+              <div className="relative">
+                <select
+                  id="case-form-type-select"
+                  value={selectedCategory}
+                  onChange={e => {
+                    const nextCat = e.target.value as CaseType;
+                    setSelectedCategory(nextCat);
+                    if (CASE_TEMPLATES_MAP[nextCat]?.length > 0) {
+                      setTemplate(CASE_TEMPLATES_MAP[nextCat][0].id);
+                    }
+                  }}
+                  className="w-full appearance-none px-3.5 py-2.5 pr-10 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-600 shadow-xs cursor-pointer"
                 >
-                  <FileSearch className="w-3.5 h-3.5" />
-                  <span>RTI Matter (তথ্য অধিকার)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedCategory('misc')}
-                  className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1.5 ${
-                    selectedCategory === 'misc'
-                      ? 'bg-purple-600 text-white shadow-xs'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  <FolderGit2 className="w-3.5 h-3.5" />
-                  <span>Misc Case (মিস কেস / ১০,০০০ হিস্যা)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedCategory('lrappeal')}
-                  className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1.5 ${
-                    selectedCategory === 'lrappeal'
-                      ? 'bg-emerald-600 text-white shadow-xs'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>LR Appeal (এল.আর. আপিল ধারা ৫৪)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedCategory('firstappeal')}
-                  className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1.5 ${
-                    selectedCategory === 'firstappeal'
-                      ? 'bg-indigo-600 text-white shadow-xs'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  <Gavel className="w-3.5 h-3.5" />
-                  <span>First Appeal (বিধিবদ্ধ প্রথম আপিল)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedCategory('conversion')}
-                  className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1.5 ${
-                    selectedCategory === 'conversion'
-                      ? 'bg-amber-600 text-white shadow-xs'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Conversion (বাস্তু রূপান্তর ৪সি)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedCategory('lrtt')}
-                  className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1.5 ${
-                    selectedCategory === 'lrtt'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  <Building2 className="w-3.5 h-3.5" />
-                  <span>WBLRTT Tribunal (ট্রাইব্যুনাল আপিল)</span>
-                </button>
+                  {CASE_FORM_TYPE_OPTIONS.map(opt => (
+                    <option key={opt.id} value={opt.id}>
+                      {language === 'bn' ? `${opt.labelBn} (${opt.labelEn})` : `${opt.labelEn} — ${opt.labelBn}`}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2" />
+              </div>
+
+              {/* Document Vault Draft Format Auto-Sync Status */}
+              <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2.5 flex-wrap">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-6 h-6 rounded-md bg-violet-100 dark:bg-violet-950/80 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
+                    <Archive className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                      Document Vault Format:
+                    </span>{' '}
+                    <span className="text-[11px] font-semibold text-violet-700 dark:text-violet-400 underline decoration-violet-300">
+                      {activeVaultDraftRef.title}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" />
+                    <span>Vault Formats Synced</span>
+                  </span>
+                  <span className="text-[10.5px] text-slate-500 dark:text-slate-400 hidden sm:inline">
+                    (Matter assumed internally)
+                  </span>
+                </div>
               </div>
             </div>
           ) : (
-            <div className="bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800/60 rounded-xl p-3 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-violet-600 animate-pulse" />
-                <span className="text-xs font-bold text-violet-900 dark:text-violet-200">
-                  Drafting Form Adjusted to: {initialCaseType.toUpperCase()} {prefilledCase?.subType ? `· ${prefilledCase.subType}` : 'Case'}
-                </span>
-                <span className="text-[11px] text-violet-700 dark:text-violet-400">
-                  (Tailored to {prefilledCase?.subType || initialCaseType.toUpperCase()} menu &amp; sub-menu)
-                </span>
+            <div className="bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800/60 rounded-xl p-3 space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-violet-600 animate-pulse" />
+                  <span className="text-xs font-bold text-violet-900 dark:text-violet-200">
+                    Drafting Form Adjusted to: {initialCaseType.toUpperCase()} {prefilledCase?.subType ? `· ${prefilledCase.subType}` : 'Case'}
+                  </span>
+                </div>
+                {onBack && (
+                  <button
+                    type="button"
+                    onClick={onBack}
+                    className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white dark:bg-slate-800 border border-violet-300 dark:border-violet-700 hover:bg-violet-100 text-violet-800 dark:text-violet-300 flex items-center gap-1 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" /> Return to Menu
+                  </button>
+                )}
               </div>
-              {onBack && (
-                <button
-                  type="button"
-                  onClick={onBack}
-                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white dark:bg-slate-800 border border-violet-300 dark:border-violet-700 hover:bg-violet-100 text-violet-800 dark:text-violet-300 flex items-center gap-1 cursor-pointer"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" /> Return to Menu
-                </button>
-              )}
+              <div className="flex items-center gap-2 pt-1.5 border-t border-violet-200/60 dark:border-violet-800/60 text-[11px] text-violet-800 dark:text-violet-300">
+                <Archive className="w-3.5 h-3.5 shrink-0 text-violet-600" />
+                <span>Document Vault Format: <strong>{activeVaultDraftRef.title}</strong> (Assumed for {initialCaseType.toUpperCase()})</span>
+              </div>
             </div>
           )}
 
@@ -1326,107 +1361,70 @@ export const AiStudio: React.FC<AiStudioProps> = ({
                   </span>
                 </div>
 
-                {/* Language Selection Buttons */}
+                {/* Drafting Language Dropdown List */}
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1.5 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
+                  <label htmlFor="drafting-language-select" className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1.5 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 cursor-pointer">
                       <Languages className="w-3.5 h-3.5 text-violet-600" />
                       <span>Drafting Language (ভাষার ধরন)</span>
                     </span>
                     <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-400">
-                      {draftLang === 'bilingual'
-                        ? 'উভয় ভাষা (Dual Language)'
-                        : draftLang === 'bengali'
-                        ? 'বাংলা (Bengali)'
-                        : 'English (ইংরেজি)'}
+                      {draftLang === 'english' ? 'English (ইংরেজি)' : draftLang === 'bengali' ? 'বাংলা (Bengali)' : 'Bilingual (উভয় ভাষা)'}
                     </span>
                   </label>
-                  <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-lg">
-                    <button
-                      type="button"
-                      onClick={() => handleGenerate('english')}
-                      className={`py-2 text-xs font-bold rounded-md transition-all cursor-pointer text-center ${
-                        draftLang === 'english'
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                      }`}
+                  <div className="relative">
+                    <select
+                      id="drafting-language-select"
+                      value={draftLang}
+                      onChange={e => handleGenerate(e.target.value as DraftLanguage)}
+                      className="w-full appearance-none px-3.5 py-2.5 pr-10 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-600 shadow-xs cursor-pointer"
                     >
-                      English
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleGenerate('bengali')}
-                      className={`py-2 text-xs font-bold rounded-md transition-all cursor-pointer text-center ${
-                        draftLang === 'bengali'
-                          ? 'bg-emerald-600 text-white shadow-sm'
-                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      বাংলা
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleGenerate('bilingual')}
-                      className={`py-2 text-xs font-bold rounded-md transition-all cursor-pointer text-center ${
-                        draftLang === 'bilingual'
-                          ? 'bg-violet-600 text-white shadow-sm'
-                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      Both (উভয়)
-                    </button>
+                      <option value="english">English (ইংরেজি)</option>
+                      <option value="bengali">বাংলা (Bengali)</option>
+                      <option value="bilingual">English + বাংলা (Dual / উভয় ভাষা)</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-400 pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2" />
                   </div>
                 </div>
 
-                {/* Template Select filtered strictly by case/form type */}
+                {/* Drafting Options for Form Type as a Dropdown List */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-[11px] font-bold text-slate-500 uppercase">
+                    <label htmlFor="drafting-template-select" className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase cursor-pointer">
                       Drafting Options for {selectedCategory.toUpperCase()} (ড্রাফটিং বিকল্প)
                     </label>
                     <span className="text-[10px] text-violet-600 dark:text-violet-400 font-bold bg-violet-50 dark:bg-violet-950/60 px-2 py-0.5 rounded">
-                      {allowedTemplates.length} option{allowedTemplates.length > 1 ? 's' : ''} only
+                      {allowedTemplates.length} option{allowedTemplates.length > 1 ? 's' : ''} available
                     </span>
                   </div>
 
-                  {/* Quick Selectable Option Cards for this specific form type */}
-                  <div className="space-y-1.5 mb-2">
-                    {allowedTemplates.map(t => {
-                      const isSelected = template === t.id;
-                      return (
-                        <button
-                          key={t.id}
-                          type="button"
-                          onClick={() => setTemplate(t.id)}
-                          className={`w-full p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-2.5 ${
-                            isSelected
-                              ? 'border-violet-600 bg-violet-50/80 dark:bg-violet-950/50 ring-1 ring-violet-500/50 text-violet-950 dark:text-violet-100 shadow-xs'
-                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 text-slate-800 dark:text-slate-200'
-                          }`}
-                        >
-                          <div
-                            className={`mt-0.5 w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
-                              isSelected
-                                ? 'border-violet-600 bg-violet-600 text-white'
-                                : 'border-slate-400 dark:border-slate-600'
-                            }`}
-                          >
-                            {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs font-bold leading-tight">
-                              {language === 'bn' ? t.labelBn : t.labelEn}
-                            </div>
-                            {'desc' in t && t.desc && (
-                              <div className="text-[10.5px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-                                {t.desc}
-                              </div>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
+                  <div className="relative">
+                    <select
+                      id="drafting-template-select"
+                      value={template}
+                      onChange={e => setTemplate(e.target.value as TemplateType)}
+                      className="w-full appearance-none px-3.5 py-2.5 pr-10 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-600 shadow-xs cursor-pointer"
+                    >
+                      {allowedTemplates.map(t => (
+                        <option key={t.id} value={t.id}>
+                          {language === 'bn' ? `${t.labelBn} (${t.labelEn})` : `${t.labelEn} — ${t.labelBn}`}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-400 pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2" />
                   </div>
+
+                  {/* Active Template Description info pill */}
+                  {(() => {
+                    const activeMeta = allowedTemplates.find(t => t.id === template);
+                    if (!activeMeta?.desc) return null;
+                    return (
+                      <div className="mt-2 p-2.5 rounded-lg bg-violet-50/70 dark:bg-violet-950/40 border border-violet-100 dark:border-violet-900 text-[11px] text-violet-800 dark:text-violet-300 flex items-center gap-2">
+                        <FileText className="w-3.5 h-3.5 shrink-0 text-violet-600" />
+                        <span>{activeMeta.desc}</span>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* SECTION: Authority / SPIO fields */}
@@ -1921,7 +1919,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
             >
               <div>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 gap-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                       <FileText className="w-4 h-4 text-violet-600" />
                       Legal Draft Preview
@@ -1936,6 +1934,12 @@ export const AiStudio: React.FC<AiStudioProps> = ({
                       }`}
                     >
                       {draftLang === 'bilingual' ? 'Dual Language (উভয় ভাষা)' : draftLang}
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-md font-mono font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 flex items-center gap-1">
+                      <Archive className="w-3 h-3 text-violet-600" />
+                      <span className="truncate max-w-[140px]" title={activeVaultDraftRef.title}>
+                        Vault: {activeVaultDraftRef.title}
+                      </span>
                     </span>
                   </div>
 

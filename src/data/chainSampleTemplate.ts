@@ -50,7 +50,7 @@ Date: {{TODAY_DATE}}`;
 export function generateChainDeedText(
   caseItem: CaseItem,
   template: string,
-  chamberName: string = 'SRK Legal Chamber',
+  chamberName: string = 'Legal Chamber',
   barCouncil: string = 'WB/Bar',
   city: string = 'Kolkata'
 ): string {

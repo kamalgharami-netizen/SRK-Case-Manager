@@ -28,7 +28,7 @@ export const CommunicationCenter: React.FC = () => {
 
   const applyTemplate = (type: string) => {
     const partyName = selectedParty?.name || 'Client';
-    const chamberName = activeCompany?.name || 'SRK Legal Chamber';
+    const chamberName = activeCompany?.name || 'Legal Chamber';
 
     let msg = '';
     if (type === 'hearing') {

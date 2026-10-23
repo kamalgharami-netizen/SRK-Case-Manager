@@ -2,36 +2,40 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   Settings,
+  Building2,
+  Plus,
+  Users,
+  ShieldAlert,
+  SlidersHorizontal,
+  Sun,
+  Palette,
+  Archive,
   Download,
   Upload,
-  Building2,
-  Shield,
-  RotateCcw,
-  CheckCircle2,
-  Image as ImageIcon,
-  Palette,
-  Sparkles,
   Trash2,
-  Link as LinkIcon,
-  Save,
-  FileText,
-  Archive,
-  Plus,
-  Search,
-  Eye,
-  Copy,
-  Edit2,
-  FileCode,
-  Brain,
-  Filter,
-  Check,
   LogOut,
   FolderOpen,
-  X
+  Eye,
+  X,
+  AlertTriangle,
+  Check,
+  CheckCircle2,
+  UserPlus,
+  Activity,
+  RotateCcw,
+  Sparkles,
+  Cpu,
+  Layers,
+  Type,
+  LayoutGrid,
+  List,
+  ArrowRight,
+  Image as ImageIcon,
+  Search
 } from 'lucide-react';
 import { CompanyLogo, BADGE_OPTIONS, COLOR_OPTIONS } from './CompanyLogo';
-import { DEFAULT_CHAIN_SAMPLE_TEMPLATE } from '../data/chainSampleTemplate';
-import { SampleDraftItem, VaultFile } from '../types';
+import { THEME_OPTIONS } from '../data/themes';
+import { VaultFile, Role } from '../types';
 
 export const VAULT_CATEGORIES = [
   'Mutation Petitions & Orders',
@@ -47,23 +51,42 @@ export const VAULT_CATEGORIES = [
   'General Legal Formats & Affidavits'
 ];
 
+export type SettingsTab = 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup';
+
 interface BackupModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialTab?: 'branding' | 'vault' | 'backup';
+  initialTab?: SettingsTab;
 }
 
 export const BackupModal: React.FC<BackupModalProps> = ({
   isOpen,
   onClose,
-  initialTab = 'branding'
+  initialTab = 'chambers'
 }) => {
   const {
+    companies,
     activeCompany,
+    activeUser,
+    selectCompany,
+    deleteCompany,
+    openChamberSetup,
+    updateCompanyDetails,
+    addUser,
+    deleteUser,
+    theme,
+    setTheme,
+    viewDensity,
+    setViewDensity,
+    viewMode,
+    setViewMode,
+    fontSize,
+    setFontSize,
+    highContrast,
+    setHighContrast,
+    resetViewPreferences,
     exportCompanyJson,
     restoreCompany,
-    updateCompanyDetails,
-    deleteCompany,
     showToast,
     addVaultFile,
     deleteVaultFile,
@@ -74,35 +97,39 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     clearAllBackupLog,
     triggerManualBackupRequest,
     setIsSelectBackupPathModalOpen,
-    appVersion,
-    appBuildDate,
-    forceAppUpdateAndReplace
+    language,
+    t
   } = useApp();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const vaultUploadInputRef = useRef<HTMLInputElement>(null);
 
-  const [activeTab, setActiveTab] = useState<'branding' | 'vault' | 'backup'>(initialTab);
+  const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
 
-  // Vault Tab state - category dropdown selection without 'All'
+  // Vault Tab state - category dropdown selection strictly without 'All'
   const [selectedVaultCategory, setSelectedVaultCategory] = useState<string>(VAULT_CATEGORIES[0]);
   const [fileSearch, setFileSearch] = useState('');
 
   // Preview popup state
   const [previewVaultFile, setPreviewVaultFile] = useState<VaultFile | null>(null);
 
+  // Company delete confirmation state
+  const [showDeleteCompanyConfirm, setShowDeleteCompanyConfirm] = useState(false);
+
+  // Add Member state inside Team tab
+  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [newMemberName, setNewMemberName] = useState('');
+  const [newMemberEmail, setNewMemberEmail] = useState('');
+  const [newMemberPhone, setNewMemberPhone] = useState('');
+  const [newMemberRole, setNewMemberRole] = useState<Role>('Junior Advocate');
+  const [newMemberPasscode, setNewMemberPasscode] = useState('');
+
   useEffect(() => {
     if (initialTab) {
       setActiveTab(initialTab);
     }
   }, [initialTab, isOpen]);
-
-  useEffect(() => {
-    if (activeCompany) {
-      setChainSampleDraft(activeCompany.chainSampleTemplate || DEFAULT_CHAIN_SAMPLE_TEMPLATE);
-    }
-  }, [activeCompany]);
 
   if (!isOpen || !activeCompany) return null;
 
@@ -141,7 +168,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   const handleSelectBadge = (badgeId: string) => {
     updateCompanyDetails({
       logoBadge: badgeId as any,
-      logoUrl: undefined // Switch back to insignia badge
+      logoUrl: undefined
     });
   };
 
@@ -157,7 +184,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   // Vault File Upload Handler
   const handleVaultFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploaded = e.target.files;
-    if (!uploaded) return;
+    if (!uploaded || uploaded.length === 0) return;
 
     Array.from(uploaded).forEach(f => {
       const ext = f.name.split('.').pop()?.toLowerCase();
@@ -181,17 +208,68 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         aiTrackedCategory: selectedVaultCategory
       });
     });
-    showToast(`Files saved to "${selectedVaultCategory}". Tracked by AI exclusively for this category.`);
+
+    showToast(`Files uploaded under "${selectedVaultCategory}". Tracked by AI exclusively for this category.`);
+    if (vaultUploadInputRef.current) {
+      vaultUploadInputRef.current.value = '';
+    }
   };
 
-  // Filtered vault files for currently selected dropdown category
   const vaultFiles = activeCompany?.vaultFiles || [];
   const filteredFiles = vaultFiles.filter(f => {
     const matchCat = f.category === selectedVaultCategory || f.aiTrackedCategory === selectedVaultCategory;
     const q = fileSearch.toLowerCase().trim();
-    const matchSearch = !q || f.name.toLowerCase().includes(q) || f.category.toLowerCase().includes(q);
+    const matchSearch = !q || f.name.toLowerCase().includes(q);
     return matchCat && matchSearch;
   });
+
+  const handleDeleteChamber = () => {
+    const name = activeCompany.name;
+    deleteCompany(activeCompany.id);
+    setShowDeleteCompanyConfirm(false);
+    onClose();
+    showToast(`Chamber "${name}" deleted.`);
+  };
+
+  const handleCreateMember = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMemberName.trim()) {
+      showToast('Member name is required', 'error');
+      return;
+    }
+    if (!newMemberEmail.trim()) {
+      showToast('Email address is required', 'error');
+      return;
+    }
+    const cleanPasscode = newMemberPasscode.replace(/\D/g, '').slice(0, 4) || '1234';
+
+    const ok = addUser({
+      name: newMemberName.trim(),
+      email: newMemberEmail.trim().toLowerCase(),
+      phone: newMemberPhone.trim(),
+      role: newMemberRole,
+      password: cleanPasscode,
+      passcode: cleanPasscode,
+      isMain: false
+    });
+
+    if (ok) {
+      setIsAddMemberOpen(false);
+      setNewMemberName('');
+      setNewMemberEmail('');
+      setNewMemberPhone('');
+      setNewMemberRole('Junior Advocate');
+      setNewMemberPasscode('');
+      showToast(`Added ${newMemberName} to chamber team`);
+    }
+  };
+
+  const roleColors: Record<Role, string> = {
+    Admin: 'bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300',
+    'Junior Advocate': 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300',
+    Clerk: 'bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-300',
+    Accountant: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300'
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
@@ -204,10 +282,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-slate-100">
-                Chamber Settings &amp; Configuration
+                Settings (সেটিংস ও কনফিগারেশন)
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Manage firm brand identity, Document Vault, and data backups.
+                Manage firm workspaces, switch chambers, team staff, display preferences, Document Vault, and data backups.
               </p>
             </div>
           </div>
@@ -235,54 +313,556 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           </div>
         </div>
 
-        {/* Tab Navigator */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 p-2 bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 shrink-0 text-xs font-bold">
+        {/* Unified Tab Navigator */}
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 p-2 bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 shrink-0 text-xs font-bold">
           <button
             type="button"
-            onClick={() => setActiveTab('branding')}
-            className={`py-2 px-3 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-2 ${
-              activeTab === 'branding'
+            onClick={() => setActiveTab('chambers')}
+            className={`py-2 px-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${
+              activeTab === 'chambers'
                 ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs font-extrabold'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
+            title="Chambers, + Firm & Switch"
           >
-            <Sparkles className="w-4 h-4 text-amber-500" />
-            <span>Logo &amp; Brand</span>
+            <Building2 className="w-3.5 h-3.5 text-blue-600" />
+            <span className="truncate">Chambers &amp; Switch</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('team')}
+            className={`py-2 px-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${
+              activeTab === 'team'
+                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs font-extrabold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+            }`}
+            title="Team & Chamber Staff"
+          >
+            <Users className="w-3.5 h-3.5 text-indigo-600" />
+            <span className="truncate">Team &amp; Staff</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('display')}
+            className={`py-2 px-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${
+              activeTab === 'display'
+                ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-xs font-extrabold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+            }`}
+            title="Display & View Settings"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-600" />
+            <span className="truncate">Display &amp; View</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('branding')}
+            className={`py-2 px-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${
+              activeTab === 'branding'
+                ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-xs font-extrabold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+            }`}
+            title="Logo & Brand Crest"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            <span className="truncate">Logo &amp; Brand</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('vault')}
-            className={`py-2 px-3 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-2 ${
+            className={`py-2 px-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${
               activeTab === 'vault'
-                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs font-extrabold'
+                ? 'bg-white dark:bg-slate-900 text-violet-600 dark:text-violet-400 shadow-xs font-extrabold'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
+            title="Document Vault"
           >
-            <Archive className="w-4 h-4 text-indigo-500" />
-            <span>Document Vault</span>
+            <Archive className="w-3.5 h-3.5 text-violet-600" />
+            <span className="truncate">Document Vault</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('backup')}
-            className={`py-2 px-3 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-2 ${
+            className={`py-2 px-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${
               activeTab === 'backup'
                 ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs font-extrabold'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
+            title="Data Backup & Storage"
           >
-            <Download className="w-4 h-4 text-emerald-500" />
-            <span>Data Backup</span>
+            <Download className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="truncate">Data Backup</span>
           </button>
         </div>
 
         {/* Modal Body */}
         <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-5">
-          {/* TAB 1: Logo & Branding */}
+          {/* TAB 1: Chambers & Workspaces (+ Firm & Switch) */}
+          {activeTab === 'chambers' && (
+            <div className="space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900">
+                <div className="flex items-center gap-3">
+                  <CompanyLogo company={activeCompany} size="lg" />
+                  <div>
+                    <div className="text-xs font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wider">
+                      Currently Active Chamber (বর্তমান সক্রিয় চেম্বার)
+                    </div>
+                    <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100">
+                      {activeCompany.name}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {activeCompany.city}, {activeCompany.state} · {activeCompany.cases?.length || 0} Cases · {activeCompany.users?.length || 0} Members
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    openChamberSetup();
+                  }}
+                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer transition-colors shrink-0"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>+ Register New Firm (+ নতুন ফার্ম)</span>
+                </button>
+              </div>
+
+              {/* Chamber Workspaces Switch List */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Building2 className="w-4 h-4 text-blue-600" />
+                    <span>Switch Chamber Workspace ({companies.length} Registered)</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {companies.map(c => {
+                    const isActive = c.id === activeCompany.id;
+                    return (
+                      <div
+                        key={c.id}
+                        className={`p-4 rounded-xl border transition-all flex flex-col justify-between space-y-3 ${
+                          isActive
+                            ? 'border-blue-600 bg-blue-50/40 dark:bg-blue-950/30 ring-2 ring-blue-600/40 shadow-xs'
+                            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-400'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-2.5 min-w-0">
+                            <CompanyLogo company={c} size="md" />
+                            <div className="min-w-0">
+                              <div className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                                {c.name}
+                              </div>
+                              <div className="text-[11px] text-slate-500 truncate">
+                                {c.city} · {c.type}
+                              </div>
+                              <div className="text-[10px] font-mono text-slate-400 mt-0.5">
+                                Reg: {c.barCouncil || 'WB/Chamber'} · {c.cases?.length || 0} cases
+                              </div>
+                            </div>
+                          </div>
+
+                          {isActive ? (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-600 text-white shrink-0">
+                              Active
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                selectCompany(c.id);
+                                showToast(`Switched workspace to "${c.name}"`);
+                              }}
+                              className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1 shadow-2xs cursor-pointer shrink-0"
+                            >
+                              <span>Switch</span>
+                              <ArrowRight className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+
+                        {!isActive && (
+                          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (confirm(`Permanently delete chamber "${c.name}"?`)) {
+                                  deleteCompany(c.id);
+                                }
+                              }}
+                              className="text-[11px] text-slate-400 hover:text-rose-600 flex items-center gap-1 font-semibold cursor-pointer"
+                            >
+                              <Trash2 className="w-3 h-3 text-rose-500" />
+                              <span>Delete Chamber</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: Team & Chamber Staff (Shifted to Settings!) */}
+          {activeTab === 'team' && (
+            <div className="space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900">
+                <div>
+                  <div className="text-xs font-bold text-indigo-900 dark:text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <ShieldAlert className="w-4 h-4 text-indigo-600" />
+                    <span>Chamber Team &amp; Staff (টিম ও স্টাফ ম্যানেজমেন্ট)</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    Manage associate advocates, junior advocates, clerks, and accountants for {activeCompany.name}.
+                  </p>
+                </div>
+
+                {activeUser?.role === 'Admin' && (
+                  <button
+                    type="button"
+                    onClick={() => setIsAddMemberOpen(!isAddMemberOpen)}
+                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer transition-colors shrink-0"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    <span>{isAddMemberOpen ? 'Cancel' : '+ Add Chamber Member'}</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Add Member Form */}
+              {isAddMemberOpen && (
+                <form
+                  onSubmit={handleCreateMember}
+                  className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/30 dark:bg-indigo-950/20 space-y-3"
+                >
+                  <div className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+                    New Member Registration
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                        Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newMemberName}
+                        onChange={e => setNewMemberName(e.target.value)}
+                        placeholder="e.g. Adv. Amit Sen"
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                        Email Address *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={newMemberEmail}
+                        onChange={e => setNewMemberEmail(e.target.value)}
+                        placeholder="sen.advocate@gmail.com"
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                        Mobile Phone
+                      </label>
+                      <input
+                        type="tel"
+                        value={newMemberPhone}
+                        onChange={e => setNewMemberPhone(e.target.value)}
+                        placeholder="9830012345"
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                        Role Designation
+                      </label>
+                      <select
+                        value={newMemberRole}
+                        onChange={e => setNewMemberRole(e.target.value as Role)}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-semibold"
+                      >
+                        <option value="Junior Advocate">Junior Advocate</option>
+                        <option value="Clerk">Clerk / Muhuri</option>
+                        <option value="Accountant">Accountant</option>
+                        <option value="Admin">Admin / Partner</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2">
+                    <div className="text-[11px] text-slate-500">
+                      Default 4-digit passcode: <strong>1234</strong>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsAddMemberOpen(false)}
+                        className="px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-1.5 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white"
+                      >
+                        Save Member
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              )}
+
+              {/* Members Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {(activeCompany.users || []).map(u => (
+                  <div
+                    key={u.id}
+                    className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-full bg-blue-700 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                        {u.name.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5 truncate">
+                          <span>{u.name}</span>
+                          {u.isMain && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">
+                              Lead
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-slate-500 truncate">
+                          {u.email} {u.phone ? `· ${u.phone}` : ''}
+                        </div>
+                        <div className="mt-1">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${roleColors[u.role]}`}>
+                            {u.role}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {!u.isMain && activeUser?.role === 'Admin' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm(`Remove ${u.name} from chamber staff?`)) {
+                            deleteUser(u.id);
+                            showToast(`Removed ${u.name}`);
+                          }
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg cursor-pointer transition-colors"
+                        title="Remove User"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: Display & View Settings (Shifted to Settings!) */}
+          {activeTab === 'display' && (
+            <div className="space-y-6 text-xs sm:text-sm">
+              <div className="p-4 rounded-xl bg-cyan-50/70 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-900 flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <div className="text-xs font-bold text-cyan-900 dark:text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <SlidersHorizontal className="w-4 h-4 text-cyan-600" />
+                    <span>Display &amp; View Settings (ডিসপ্লে ও ভিউ কনফিগারেশন)</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    Customize courtroom theme, reading typography scale, case cards density, and high contrast.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={resetViewPreferences}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-700 dark:text-slate-300 flex items-center gap-1 cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset to Defaults</span>
+                </button>
+              </div>
+
+              {/* Theme Modes */}
+              <div className="space-y-2.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Sun className="w-4 h-4 text-amber-500" />
+                  <span>Courtroom Color Theme (কালার থিম)</span>
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  {THEME_OPTIONS.map(opt => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setTheme(opt.id)}
+                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        theme === opt.id
+                          ? 'border-blue-600 bg-blue-50/70 dark:bg-blue-950/50 ring-2 ring-blue-600 font-bold shadow-xs'
+                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span
+                          className="w-5 h-5 rounded-full border shadow-2xs"
+                          style={{ backgroundColor: opt.bgHex }}
+                        />
+                        {theme === opt.id && <Check className="w-3.5 h-3.5 text-blue-600 stroke-[3]" />}
+                      </div>
+                      <div className="text-xs font-bold text-slate-900 dark:text-slate-100">{opt.name}</div>
+                      <div className="text-[10px] text-slate-500">{opt.nameBn}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Information Density & View Mode */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Layers className="w-4 h-4 text-blue-600" />
+                    <span>View Density (তথ্য ঘনত্ব)</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setViewDensity('comfortable')}
+                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                        viewDensity === 'comfortable'
+                          ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 ring-2 ring-blue-600/30'
+                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600'
+                      }`}
+                    >
+                      Comfortable (স্বাচ্ছন্দ্যময়)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewDensity('compact')}
+                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                        viewDensity === 'compact'
+                          ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 ring-2 ring-blue-600/30'
+                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600'
+                      }`}
+                    >
+                      Compact (সংক্ষিপ্ত)
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <LayoutGrid className="w-4 h-4 text-emerald-600" />
+                    <span>Case Layout Mode (কেস ভিউ মোড)</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('grid')}
+                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                        viewMode === 'grid'
+                          ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 ring-2 ring-blue-600/30'
+                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600'
+                      }`}
+                    >
+                      <LayoutGrid className="w-3.5 h-3.5" />
+                      <span>Grid Cards</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('table')}
+                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                        viewMode === 'table'
+                          ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 ring-2 ring-blue-600/30'
+                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600'
+                      }`}
+                    >
+                      <List className="w-3.5 h-3.5" />
+                      <span>Table Rows</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Font Scale & High Contrast */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Type className="w-4 h-4 text-purple-600" />
+                    <span>Font Size (ফন্ট সাইজ)</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFontSize('normal')}
+                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                        fontSize === 'normal'
+                          ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 ring-2 ring-blue-600/30'
+                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600'
+                      }`}
+                    >
+                      Standard (100%)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFontSize('large')}
+                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                        fontSize === 'large'
+                          ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 ring-2 ring-blue-600/30'
+                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600'
+                      }`}
+                    >
+                      Large (110%)
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Eye className="w-4 h-4 text-amber-500" />
+                    <span>High Contrast Accessibility</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setHighContrast(!highContrast)}
+                    className={`w-full p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
+                      highContrast
+                        ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 ring-2 ring-emerald-600/30'
+                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600'
+                    }`}
+                  >
+                    <span>High Contrast Mode</span>
+                    <span>{highContrast ? 'Enabled (সক্রিয়)' : 'Disabled'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: Logo & Branding */}
           {activeTab === 'branding' && (
             <div className="space-y-5">
-              {/* Active Firm Profile with Dynamic Logo */}
               <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 flex items-center gap-4">
                 <CompanyLogo company={activeCompany} size="xl" />
                 <div className="min-w-0 flex-1 space-y-0.5 text-xs">
@@ -301,7 +881,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                 </div>
               </div>
 
-              {/* Custom Logo Upload (Vyapar App style) */}
+              {/* Custom Logo Upload */}
               <div className="p-4 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-850/50 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
@@ -392,543 +972,197 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   ))}
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* TAB 2: Document Vault & Samples (Shifted to Settings!) */}
-          {activeTab === 'vault' && (
-            <div className="space-y-5">
-              {/* Notice Banner */}
-              <div className="p-3.5 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-xs text-indigo-950 dark:text-indigo-200 flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Archive className="w-4 h-4 text-indigo-600 shrink-0" />
-                  <span>
-                    <strong>Document Vault &amp; Sample Formats:</strong> Centralized repository stored in Settings. You can store, customize, or generate ANY type of legal format or deed for drafting with AI.
-                  </span>
-                </div>
+              {/* Delete Chamber Workspace Option */}
+              <div className="pt-4 border-t border-rose-200 dark:border-rose-900/60">
+                <div className="p-4 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/30 flex items-center justify-between gap-3 flex-wrap">
+                  <div>
+                    <div className="text-xs font-bold text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
+                      <AlertTriangle className="w-4 h-4 text-rose-600" />
+                      <span>Delete Chamber Workspace (চেম্বার মুছুন)</span>
+                    </div>
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Permanently delete "{activeCompany.name}" and its local cases from browser storage.
+                    </div>
+                  </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setAiPromptOpen(!aiPromptOpen)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs cursor-pointer transition-colors"
-                  >
-                    <Brain className="w-3.5 h-3.5" />
-                    <span>AI Format Generator</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingDraftId(null);
-                      setDraftTitle('');
-                      setDraftCategory('general');
-                      setDraftDescription('');
-                      setDraftText('');
-                      setIsEditingDraft(true);
-                    }}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs cursor-pointer transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>+ New Format</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* AI Draft Prompt Drawer */}
-              {aiPromptOpen && (
-                <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-950/30 space-y-2.5 animate-in fade-in duration-150">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
-                      <Brain className="w-4 h-4 text-indigo-600" />
-                      <span>Formulate Any Legal Format or Deed with AI</span>
-                    </label>
+                  {!showDeleteCompanyConfirm ? (
                     <button
                       type="button"
-                      onClick={() => setAiPromptOpen(false)}
-                      className="text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
+                      onClick={() => setShowDeleteCompanyConfirm(true)}
+                      className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
                     >
-                      ✕ Close
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete Workspace</span>
                     </button>
-                  </div>
-                  <input
-                    type="text"
-                    value={aiPrompt}
-                    onChange={e => setAiPrompt(e.target.value)}
-                    placeholder="e.g., Draft an objection petition under Sec 50A for erroneous khatian recording, or Title Partition Deed format..."
-                    className="w-full p-2.5 rounded-lg border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                  />
-                  <div className="flex justify-end gap-2">
-                    <button
-                      type="button"
-                      disabled={aiGenerating || !aiPrompt.trim()}
-                      onClick={handleGenerateAiFormat}
-                      className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
-                    >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>{aiGenerating ? 'Formulating...' : 'Generate Format with AI & Save to Vault'}</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Sub-Tabs: Sample Drafts vs Uploaded Documents */}
-              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
-                <div className="flex items-center gap-2 text-xs font-bold">
-                  <button
-                    type="button"
-                    onClick={() => setVaultSubTab('samples')}
-                    className={`pb-1 px-3 border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
-                      vaultSubTab === 'samples'
-                        ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
-                        : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>Sample Drafts &amp; Formats ({sampleDrafts.length})</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setVaultSubTab('files')}
-                    className={`pb-1 px-3 border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
-                      vaultSubTab === 'files'
-                        ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
-                        : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    <Archive className="w-3.5 h-3.5" />
-                    <span>Uploaded Vault Documents ({vaultFiles.length})</span>
-                  </button>
-                </div>
-
-                {vaultSubTab === 'samples' && (
-                  <button
-                    type="button"
-                    onClick={resetSampleDrafts}
-                    className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer font-semibold"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                    <span>Reset Standard Templates</span>
-                  </button>
-                )}
-              </div>
-
-              {/* Subtab View 1: Sample Formats */}
-              {vaultSubTab === 'samples' && (
-                <div className="space-y-4">
-                  {/* Category filters & Search */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {sampleCategories.map(cat => (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => setSampleCategoryFilter(cat.id)}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                            sampleCategoryFilter === cat.id
-                              ? 'bg-indigo-600 text-white shadow-2xs font-bold'
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-                          }`}
-                        >
-                          {cat.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="relative min-w-[200px]">
-                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        value={sampleSearch}
-                        onChange={e => setSampleSearch(e.target.value)}
-                        placeholder="Search sample formats..."
-                        className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-600"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Add / Edit Format Modal Inline */}
-                  {isEditingDraft && (
-                    <form
-                      onSubmit={handleSaveSampleDraft}
-                      className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/40 dark:bg-indigo-950/30 space-y-3"
-                    >
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
-                          <Edit2 className="w-3.5 h-3.5 text-indigo-600" />
-                          <span>{editingDraftId ? 'Edit Format in Vault' : 'Add New Legal Format / Deed Template'}</span>
-                        </h4>
-                        <button
-                          type="button"
-                          onClick={() => setIsEditingDraft(false)}
-                          className="text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div className="sm:col-span-2 space-y-1">
-                          <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Format Title</label>
-                          <input
-                            type="text"
-                            required
-                            value={draftTitle}
-                            onChange={e => setDraftTitle(e.target.value)}
-                            placeholder="e.g., Section 50 Mutation Petition Format..."
-                            className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Category</label>
-                          <select
-                            value={draftCategory}
-                            onChange={e => setDraftCategory(e.target.value as any)}
-                            className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs"
-                          >
-                            <option value="chain">Chain of Title</option>
-                            <option value="mutation">Mutation</option>
-                            <option value="misc">Misc Case</option>
-                            <option value="lrappeal">LR Appeal</option>
-                            <option value="lrtt">WBLRTT Tribunal</option>
-                            <option value="firstappeal">First Appeal</option>
-                            <option value="rti">RTI</option>
-                            <option value="conversion">Conversion</option>
-                            <option value="general">General / Custom</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Description</label>
-                        <input
-                          type="text"
-                          value={draftDescription}
-                          onChange={e => setDraftDescription(e.target.value)}
-                          placeholder="Brief description of this legal format..."
-                          className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                          Template Text &amp; Placeholders (use {'{{CASE_NO}}'}, {'{{PARTY}}'}, {'{{MOUZA}}'}, {'{{DAG}}'}, etc.)
-                        </label>
-                        <textarea
-                          rows={8}
-                          required
-                          value={draftText}
-                          onChange={e => setDraftText(e.target.value)}
-                          className="w-full p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 font-mono text-xs leading-relaxed"
-                          placeholder="Enter legal template text..."
-                        />
-                      </div>
-
-                      <div className="flex justify-end gap-2 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => setIsEditingDraft(false)}
-                          className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
-                        >
-                          <Save className="w-3.5 h-3.5" />
-                          <span>Save Format to Vault</span>
-                        </button>
-                      </div>
-                    </form>
-                  )}
-
-                  {/* Sample formats list */}
-                  <div className="grid grid-cols-1 gap-3">
-                    {filteredSamples.map(item => (
-                      <div
-                        key={item.id}
-                        className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs hover:border-indigo-500 transition-colors space-y-2"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="space-y-0.5">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                                {item.title}
-                              </span>
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
-                                {item.category}
-                              </span>
-                              {item.aiAssisted && (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-violet-50 dark:bg-violet-950 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 flex items-center gap-1">
-                                  <Sparkles className="w-2.5 h-2.5" /> AI Generated
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                              {item.description}
-                            </p>
-                          </div>
-
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => setPreviewSampleDraft(item)}
-                              className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold cursor-pointer"
-                              title="Preview Full Draft Template"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                navigator.clipboard.writeText(item.templateText);
-                                showToast('Template format copied to clipboard!');
-                              }}
-                              className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold cursor-pointer"
-                              title="Copy Template"
-                            >
-                              <Copy className="w-3.5 h-3.5" />
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => handleOpenEditSampleDraft(item)}
-                              className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold cursor-pointer"
-                              title="Edit Format"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-
-                            {item.id.startsWith('sd_') && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (confirm(`Delete format "${item.title}"?`)) {
-                                    deleteSampleDraft(item.id);
-                                  }
-                                }}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs cursor-pointer"
-                                title="Delete Format"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Collapsible/Preview snippet */}
-                        <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 text-[11px] font-mono text-slate-600 dark:text-slate-300 max-h-24 overflow-y-auto whitespace-pre-wrap leading-relaxed shadow-inner">
-                          {item.templateText.slice(0, 300)}...
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Subtab View 2: Uploaded Documents */}
-              {vaultSubTab === 'files' && (
-                <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {fileCategories.map(cat => (
-                        <button
-                          key={cat}
-                          type="button"
-                          onClick={() => setFileCategoryFilter(cat)}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                            fileCategoryFilter === cat
-                              ? 'bg-indigo-600 text-white shadow-2xs font-bold'
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-                          }`}
-                        >
-                          {cat}
-                        </button>
-                      ))}
-                    </div>
-
+                  ) : (
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => vaultUploadInputRef.current?.click()}
-                        className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
+                        onClick={() => setShowDeleteCompanyConfirm(false)}
+                        className="px-3 py-1 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-semibold cursor-pointer"
                       >
-                        <Upload className="w-3.5 h-3.5" />
-                        <span>Upload Documents</span>
+                        Cancel
                       </button>
-                      <input
-                        ref={vaultUploadInputRef}
-                        type="file"
-                        multiple
-                        className="hidden"
-                        onChange={handleVaultFileUpload}
-                      />
-                    </div>
-                  </div>
-
-                  {filteredFiles.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {filteredFiles.map(f => (
-                        <div
-                          key={f.id}
-                          className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs hover:border-indigo-500 transition-colors flex flex-col justify-between space-y-2"
-                        >
-                          <div className="flex items-start gap-2.5">
-                            <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 shrink-0">
-                              <Archive className="w-4 h-4" />
-                            </div>
-                            <div className="min-w-0">
-                              <div className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate" title={f.name}>
-                                {f.name}
-                              </div>
-                              <div className="text-[10px] text-slate-500 mt-0.5">
-                                {f.category} · {f.size}
-                              </div>
-                              <div className="text-[10px] font-mono text-slate-400 mt-0.5">
-                                Uploaded: {f.date}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                            <button
-                              type="button"
-                              onClick={() => setPreviewVaultFile(f)}
-                              className="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
-                            >
-                              <Eye className="w-3.5 h-3.5" /> Preview Document
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (confirm(`Delete "${f.name}" from Vault?`)) {
-                                  deleteVaultFile(f.id);
-                                }
-                              }}
-                              className="text-slate-400 hover:text-rose-600 p-1 cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="p-8 text-center text-xs text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-850/40">
-                      No files in Vault under "{fileCategoryFilter}". Click "Upload Documents" to store registered deeds, orders, and khatians.
+                      <button
+                        type="button"
+                        onClick={handleDeleteChamber}
+                        className="px-3.5 py-1.5 rounded-lg bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs animate-pulse"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Confirm Permanent Delete</span>
+                      </button>
                     </div>
                   )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: Document Vault (Shifted to Settings!) */}
+          {activeTab === 'vault' && (
+            <div className="space-y-4">
+              <div className="p-3.5 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-xs text-indigo-950 dark:text-indigo-200 space-y-1">
+                <div className="flex items-center gap-2 font-bold text-indigo-900 dark:text-indigo-300">
+                  <Archive className="w-4 h-4 text-indigo-600" />
+                  <span>Document Vault (দলিল ভল্ট) — Category-Specific AI Tracking</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-indigo-900/80 dark:text-indigo-300/80">
+                  Select a category from the dropdown to upload documents and sample formats. The AI will strictly track and isolate uploaded samples to that specific category and will not blend them with any other case type.
+                </p>
+              </div>
+
+              {/* Category Selector Dropdown (strictly NO "All" option) & Upload Bar */}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                  <div className="md:col-span-2 space-y-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>Select Target Document Category (শ্রেণী নির্বাচন করুন):</span>
+                    </label>
+                    <select
+                      value={selectedVaultCategory}
+                      onChange={e => setSelectedVaultCategory(e.target.value)}
+                      className="w-full px-3 py-2 text-xs font-bold rounded-lg border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600 cursor-pointer shadow-xs"
+                    >
+                      {VAULT_CATEGORIES.map(cat => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => vaultUploadInputRef.current?.click()}
+                      className="w-full py-2 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer transition-colors"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Upload to "{selectedVaultCategory.split(' ')[0]}"</span>
+                    </button>
+                    <input
+                      ref={vaultUploadInputRef}
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={handleVaultFileUpload}
+                    />
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-900/60 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
+                    <Cpu className="w-4 h-4 text-indigo-500 animate-pulse" />
+                    <span className="text-[11px] font-semibold">
+                      AI Scope: <strong>{selectedVaultCategory}</strong> only. Isolated from other categories.
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-200 font-bold">
+                    {filteredFiles.length} {filteredFiles.length === 1 ? 'file' : 'files'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Search Within Selected Category */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={fileSearch}
+                  onChange={e => setFileSearch(e.target.value)}
+                  placeholder={`Search documents in ${selectedVaultCategory}...`}
+                  className="w-full pl-8 pr-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-600"
+                />
+              </div>
+
+              {/* Documents Grid */}
+              {filteredFiles.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {filteredFiles.map(f => (
+                    <div
+                      key={f.id}
+                      className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs hover:border-indigo-500 transition-colors flex flex-col justify-between space-y-2.5"
+                    >
+                      <div className="flex items-start gap-2.5">
+                        <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 shrink-0">
+                          <Archive className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate" title={f.name}>
+                            {f.name}
+                          </div>
+                          <div className="text-[10px] text-slate-500 mt-0.5">
+                            {f.size} · Uploaded: {f.date}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="p-1.5 rounded-lg bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 text-[10px] text-indigo-800 dark:text-indigo-300 font-medium flex items-center gap-1.5">
+                        <Cpu className="w-3 h-3 text-indigo-600 shrink-0" />
+                        <span className="truncate">Tracked by AI for <strong>{f.aiTrackedCategory || f.category}</strong></span>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewVaultFile(f)}
+                          className="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Preview</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (confirm(`Delete "${f.name}" from Vault?`)) {
+                              deleteVaultFile(f.id);
+                              showToast(`Deleted "${f.name}"`);
+                            }
+                          }}
+                          className="text-slate-400 hover:text-rose-600 p-1 cursor-pointer transition-colors"
+                          title="Delete Document"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 text-center text-xs text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-850/40 space-y-2">
+                  <Archive className="w-8 h-8 mx-auto text-slate-400" />
+                  <div>No documents stored under "{selectedVaultCategory}".</div>
+                  <div className="text-[11px] text-slate-400">
+                    Click "Upload to {selectedVaultCategory.split(' ')[0]}" to store files for AI tracking in this category.
+                  </div>
                 </div>
               )}
             </div>
           )}
 
-          {/* TAB 3: Chain Sample (Exclusive Master Draft configured in Settings) */}
-          {activeTab === 'chainSample' && (
-            <div className="space-y-4">
-              <div className="p-3.5 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs text-blue-900 dark:text-blue-200 space-y-1">
-                <div className="font-bold flex items-center gap-1.5 text-blue-800 dark:text-blue-300">
-                  <LinkIcon className="w-4 h-4 text-blue-600" />
-                  <span>Chain Sample Master Draft (চেইন দলিল নমুনা খসড়া)</span>
-                </div>
-                <p className="text-[11px] leading-relaxed text-blue-800/80 dark:text-blue-200/80">
-                  This master format serves as the template source for <strong>Mutation, Misc Case, LR Appeal, and LRTT</strong> case chain deed creation. It is exclusively stored in this Settings menu as "Chain Sample" and will not show in other menus. It binds dynamically with the particular case's information.
-                </p>
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <label className="font-bold text-slate-700 dark:text-slate-300">
-                    Master Template Text (নমুনা খসড়া ফরম্যাট)
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setChainSampleDraft(DEFAULT_CHAIN_SAMPLE_TEMPLATE);
-                      showToast('Reset to West Bengal Standard Sample Draft');
-                    }}
-                    className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                    <span>Reset Default Sample</span>
-                  </button>
-                </div>
-
-                <textarea
-                  value={chainSampleDraft}
-                  onChange={e => setChainSampleDraft(e.target.value)}
-                  rows={14}
-                  className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-mono text-xs leading-relaxed focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-inner"
-                  placeholder="Enter chain deed template format..."
-                />
-              </div>
-
-              {/* Dynamic Placeholders Helper */}
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-[11px] text-slate-600 dark:text-slate-400 space-y-1.5">
-                <div className="font-bold text-slate-800 dark:text-slate-200">
-                  Dynamic Placeholders Injected for Particular Case:
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 font-mono text-[10px]">
-                  <span className="p-1 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                    {`{{CASE_NO}}`} (Case No)
-                  </span>
-                  <span className="p-1 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                    {`{{PARTY}}`} (Petitioner)
-                  </span>
-                  <span className="p-1 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                    {`{{OPP}}`} (Opposite Party)
-                  </span>
-                  <span className="p-1 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                    {`{{FORUM}}`} (BL&amp;LRO/Court)
-                  </span>
-                  <span className="p-1 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                    {`{{MOUZA}}`} (Mouza Name)
-                  </span>
-                  <span className="p-1 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                    {`{{JL}}`} (J.L. No)
-                  </span>
-                  <span className="p-1 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                    {`{{KHATIAN}}`} (Khatian No)
-                  </span>
-                  <span className="p-1 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                    {`{{DAG}}`} (Dag / Plot)
-                  </span>
-                  <span className="p-1 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                    {`{{AREA}}`} (Quantum)
-                  </span>
-                  <span className="p-1 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                    {`{{CHAIN_DEEDS_TABLE}}`}
-                  </span>
-                  <span className="p-1 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                    {`{{CHAIN_DEED_NARRATIVE}}`}
-                  </span>
-                  <span className="p-1 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                    {`{{CHAMBER_NAME}}`}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    updateCompanyDetails({ chainSampleTemplate: chainSampleDraft });
-                    showToast('Chain Sample Master Draft saved in Settings!');
-                  }}
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-2 shadow-md cursor-pointer transition-colors"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>Save Chain Sample Template</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 4: Data Backup & Restore */}
+          {/* TAB 6: Data Backup & Restore */}
           {activeTab === 'backup' && (
             <div className="space-y-4">
               <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -948,7 +1182,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-800/60 font-mono text-xs font-bold text-slate-800 dark:text-slate-200 break-all shadow-inner">
-                    {backupStoragePath || 'C:/SRK_Case_Backups'}
+                    {backupStoragePath || 'C:/Case_Backups'}
                   </div>
                   <button
                     type="button"
@@ -1016,24 +1250,38 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                 </button>
               </div>
 
-              {/* Stored Backups History with Date and Time mentioned */}
-              {backupHistory.length > 0 && (
-                <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2">
-                  <div className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between">
-                    <span>Stored Backups Log (তারিখ ও সময়সহ সংরক্ষিত ব্যাকআপ)</span>
-                    <span className="text-[11px] text-slate-400 font-mono">{backupHistory.length} files</span>
-                  </div>
-                  <div className="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+              {/* Stored Backups History with Date, Time and Deletion Option */}
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                <div className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between">
+                  <span>Stored Backups Log (তারিখ ও সময়সহ সংরক্ষিত ব্যাকআপ)</span>
+                  {backupHistory.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm('Are you sure you want to delete all stored backup history records? (আপনার সংরক্ষিত সব ব্যাকআপ লগ মুছে ফেলতে চান?)')) {
+                          clearAllBackupLog();
+                        }
+                      }}
+                      className="text-[11px] text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Clear All Backups</span>
+                    </button>
+                  )}
+                </div>
+
+                {backupHistory.length > 0 ? (
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                     {backupHistory.map(b => (
                       <div
                         key={b.id}
-                        className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-xs flex items-center justify-between gap-3"
+                        className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-xs flex items-center justify-between gap-3 group"
                       >
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <div className="font-mono font-bold text-slate-800 dark:text-slate-200 truncate">
                             {b.fileName}
                           </div>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5">
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5 flex-wrap">
                             <span>Date &amp; Time: <strong className="text-slate-700 dark:text-slate-300">{b.formattedDate}</strong></span>
                             <span>·</span>
                             <span>Path: <span className="font-mono">{b.storagePath}</span></span>
@@ -1041,14 +1289,33 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                             <span className="capitalize text-blue-600 dark:text-blue-400 font-semibold">{b.type}</span>
                           </div>
                         </div>
-                        <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 shrink-0">
-                          {b.sizeKb} KB
-                        </span>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                            {b.sizeKb} KB
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm(`Delete backup record "${b.fileName}"?`)) {
+                                deleteBackupLogEntry(b.id);
+                              }
+                            }}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                            title="Delete this backup entry"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="p-4 text-center text-xs text-slate-500 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+                    No backups logged yet. Manual and auto backups will record here with date and time.
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -1081,7 +1348,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         </div>
       </div>
 
-      {/* Vault Document Preview Popup with Close Option */}
+      {/* Vault Document Preview Popup */}
       {previewVaultFile && (
         <div className="fixed inset-0 z-60 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-150">
           <div className="w-full max-w-xl bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 my-8">
@@ -1118,7 +1385,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   {previewVaultFile.name}
                 </div>
                 <div className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-                  Document stored securely in chamber vault. Certified copy, khatian schedule, or case annexure available for chamber reference.
+                  Document stored securely in chamber vault under <strong>{previewVaultFile.category}</strong>. Tracked by AI exclusively for this specific domain.
                 </div>
               </div>
             </div>
@@ -1130,63 +1397,6 @@ export const BackupModal: React.FC<BackupModalProps> = ({
               <button
                 type="button"
                 onClick={() => setPreviewVaultFile(null)}
-                className="px-5 py-2 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-900 text-white cursor-pointer transition-colors shadow-xs"
-              >
-                Close (বন্ধ করুন)
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Sample Draft Template Preview Popup with Close Option */}
-      {previewSampleDraft && (
-        <div className="fixed inset-0 z-60 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-150">
-          <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 my-8 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-start justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 shrink-0">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
-                    {previewSampleDraft.title}
-                  </h3>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    Category: <span className="uppercase font-semibold text-blue-600">{previewSampleDraft.category}</span> · {previewSampleDraft.description}
-                  </div>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPreviewSampleDraft(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
-                title="Close Draft Preview"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-mono text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed max-h-96 overflow-y-auto shadow-inner">
-              {previewSampleDraft.templateText}
-            </div>
-
-            <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText(previewSampleDraft.templateText);
-                  showToast('Template copied to clipboard!');
-                }}
-                className="px-4 py-2 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer flex items-center gap-1.5"
-              >
-                <Copy className="w-3.5 h-3.5" />
-                <span>Copy Format</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPreviewSampleDraft(null)}
                 className="px-5 py-2 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-900 text-white cursor-pointer transition-colors shadow-xs"
               >
                 Close (বন্ধ করুন)

@@ -40,7 +40,7 @@ interface DashboardProps {
   onOpenNewCase: (type: CaseType) => void;
   onViewCaseDetail: (caseId: string) => void;
   onOpenChainDeed?: (c: CaseItem) => void;
-  onOpenSettings?: (tab?: 'branding' | 'vault' | 'chainSample' | 'backup') => void;
+  onOpenSettings?: (tab?: 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup') => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({

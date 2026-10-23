@@ -172,6 +172,22 @@ interface AppContextType {
   forceAppUpdateAndReplace: () => Promise<void>;
 }
 
+export const isDemoOrLegacyCompany = (c: any): boolean => {
+  if (!c || typeof c !== 'object') return true;
+  if (c.id === 'c_srk_chamber_main') return true;
+  const name = String(c.name || '').toLowerCase();
+  if (
+    name.includes('s.r. khan') ||
+    name.includes('sr khan') ||
+    name.includes('khan legal chamber') ||
+    name.includes('demo company') ||
+    name.includes('sample company')
+  ) {
+    return true;
+  }
+  return false;
+};
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -181,7 +197,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.companies && Array.isArray(parsed.companies)) {
-          return parsed.companies;
+          // Strictly purge S.R. Khan Legal Chamber & Associates and any demo company
+          const validCompanies = parsed.companies.filter((c: Company) => !isDemoOrLegacyCompany(c));
+          if (validCompanies.length !== parsed.companies.length) {
+            try {
+              localStorage.setItem(
+                STORAGE_KEY,
+                JSON.stringify({
+                  ...parsed,
+                  companies: validCompanies,
+                  activeCompanyId: validCompanies.length > 0 ? (validCompanies.some((x: Company) => x.id === parsed.activeCompanyId) ? parsed.activeCompanyId : validCompanies[0].id) : null,
+                  activeUserId: validCompanies.length > 0 ? parsed.activeUserId : null
+                })
+              );
+              if (validCompanies.length === 0) {
+                localStorage.removeItem('srk_first_time_setup_done');
+              }
+            } catch {}
+          }
+          return validCompanies;
         }
       }
     } catch (e) {
@@ -196,12 +230,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('srk_case_manager_v4') || localStorage.getItem('srk_case_manager_v3');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.activeCompanyId) {
+        const validCompanies = (parsed.companies || []).filter((c: Company) => !isDemoOrLegacyCompany(c));
+        if (validCompanies.length === 0) return null;
+        if (parsed.activeCompanyId && validCompanies.some((c: Company) => c.id === parsed.activeCompanyId)) {
           return parsed.activeCompanyId;
         }
-        if (parsed.companies && parsed.companies.length > 0) {
-          return parsed.companies[0].id;
-        }
+        return validCompanies[0].id;
       }
     } catch {}
     return null;
@@ -212,11 +246,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('srk_case_manager_v4') || localStorage.getItem('srk_case_manager_v3');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if ('activeUserId' in parsed) {
-          return parsed.activeUserId; // can be null if explicitly logged out
-        }
-        if (parsed.companies && parsed.companies.length > 0 && parsed.companies[0].users?.length > 0) {
-          return parsed.companies[0].users[0].id;
+        const validCompanies = (parsed.companies || []).filter((c: Company) => !isDemoOrLegacyCompany(c));
+        if (validCompanies.length === 0) return null;
+        const targetComp = validCompanies.find((c: Company) => c.id === parsed.activeCompanyId) || validCompanies[0];
+        if (targetComp && targetComp.users && targetComp.users.length > 0) {
+          if (parsed.activeUserId && targetComp.users.some((u: User) => u.id === parsed.activeUserId)) {
+            return parsed.activeUserId;
+          }
+          return targetComp.users[0].id;
         }
       }
     } catch {}
@@ -283,7 +320,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (stored && stored.trim()) return stored;
     } catch {}
     const isMobile = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
-    return isMobile ? '/storage/emulated/0/Documents/SRK_Case_Backups' : 'C:/SRK_Case_Backups';
+    return isMobile ? '/storage/emulated/0/Documents/Case_Backups' : 'C:/Case_Backups';
   });
 
   const [isBackupPathConfigured, setIsBackupPathConfigured] = useState<boolean>(true);
@@ -511,7 +548,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       createdAt: Date.now()
     };
 
-    const targetBackupPath = (details as any).backupStoragePath || backupStoragePath || 'C:/SRK_Case_Backups';
+    const targetBackupPath = (details as any).backupStoragePath || backupStoragePath || 'C:/Case_Backups';
     if ((details as any).backupStoragePath) {
       setBackupStoragePathState(targetBackupPath);
       setIsBackupPathConfigured(true);
@@ -584,7 +621,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const setBackupStoragePath = (path: string) => {
-    const clean = path.trim() || 'C:/SRK_Case_Backups';
+    const clean = path.trim() || 'C:/Case_Backups';
     setBackupStoragePathState(clean);
     setIsBackupPathConfigured(true);
     try {
@@ -612,7 +649,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }): Promise<BackupLogEntry | null> => {
     if (!activeCompany) return null;
     const type = options?.type || 'manual';
-    const targetPath = options?.customPath || backupStoragePath || 'C:/SRK_Case_Backups';
+    const targetPath = options?.customPath || backupStoragePath || 'C:/Case_Backups';
     const now = new Date();
     const timestamp = now.getTime();
     const formattedDate = now.toLocaleString('en-IN', {
@@ -625,10 +662,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       hour12: true
     });
 
+    const isAutoBackup = type === 'auto-close' || type === 'scheduled';
     const safeName = (activeCompany.name || 'Chamber').replace(/[^a-zA-Z0-9]/g, '_');
     const dStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const tStr = `${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;
-    const fileName = `SRK_Backup_${safeName}_${dStr}_${tStr}.json`;
+
+    // Auto backup modifies existing file / data with new; Manual backup creates a new timestamped file
+    const fileName = isAutoBackup
+      ? `Backup_${safeName}_AutoBackup.json`
+      : `Backup_${safeName}_${dStr}_${tStr}.json`;
 
     const updatedCompany: Company = {
       ...activeCompany,
@@ -653,27 +695,63 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const jsonStr = JSON.stringify(payload, null, 2);
     const sizeKb = Math.round((jsonStr.length / 1024) * 10) / 10;
 
-    const logEntry: BackupLogEntry = {
-      id: 'bk_' + timestamp + '_' + Math.random().toString(36).substr(2, 4),
-      timestamp,
-      formattedDate,
-      fileName,
-      storagePath: targetPath,
-      casesCount: activeCompany.cases?.length || 0,
-      sizeKb,
-      type
-    };
-
     setCompanies(prev =>
       prev.map(c => (c.id === activeCompany.id ? updatedCompany : c))
     );
 
-    const updatedHistory = [logEntry, ...backupHistory.filter(b => b.id !== logEntry.id)].slice(0, 50);
+    let updatedHistory: BackupLogEntry[];
+    let logEntry: BackupLogEntry;
+
+    if (isAutoBackup) {
+      // Once auto backup then the existing data would be modified with new
+      const existingAutoIndex = backupHistory.findIndex(b => b.type === 'auto-close' || b.type === 'scheduled');
+      if (existingAutoIndex !== -1) {
+        logEntry = {
+          ...backupHistory[existingAutoIndex],
+          timestamp,
+          formattedDate,
+          fileName,
+          storagePath: targetPath,
+          casesCount: activeCompany.cases?.length || 0,
+          sizeKb,
+          type
+        };
+        updatedHistory = [...backupHistory];
+        updatedHistory[existingAutoIndex] = logEntry;
+      } else {
+        logEntry = {
+          id: 'bk_auto_' + safeName,
+          timestamp,
+          formattedDate,
+          fileName,
+          storagePath: targetPath,
+          casesCount: activeCompany.cases?.length || 0,
+          sizeKb,
+          type
+        };
+        updatedHistory = [logEntry, ...backupHistory].slice(0, 50);
+      }
+    } else {
+      // Manual backup: new file and new log record created
+      logEntry = {
+        id: 'bk_' + timestamp + '_' + Math.random().toString(36).substr(2, 4),
+        timestamp,
+        formattedDate,
+        fileName,
+        storagePath: targetPath,
+        casesCount: activeCompany.cases?.length || 0,
+        sizeKb,
+        type: 'manual'
+      };
+      updatedHistory = [logEntry, ...backupHistory].slice(0, 50);
+    }
+
     setBackupHistory(updatedHistory);
 
     try {
       localStorage.setItem('srk_backup_history', JSON.stringify(updatedHistory));
       localStorage.setItem('srk_persistent_vault_latest', jsonStr);
+      localStorage.setItem('srk_auto_backup_latest', jsonStr);
       localStorage.setItem(`srk_last_backup_${activeCompany.id}`, String(timestamp));
     } catch (e) {
       console.warn('Storage save warning during backup:', e);
@@ -694,7 +772,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
 
     if (type === 'manual') {
-      showToast(`Manual backup saved to: ${targetPath} (${formattedDate})`, 'success');
+      showToast(`Manual backup saved: ${fileName}`, 'success');
     }
 
     return logEntry;
@@ -933,8 +1011,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         candidateCompanies = [targetPayload];
       }
 
+      candidateCompanies = candidateCompanies.filter((c: Company) => !isDemoOrLegacyCompany(c));
+
       if (candidateCompanies.length === 0) {
-        showToast('Invalid backup file data structure', 'error');
+        showToast('No valid chamber data found in backup', 'error');
         return false;
       }
 

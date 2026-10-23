@@ -1503,7 +1503,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                 type="button"
                 onClick={() => onOpenAiDraft(type)}
                 className="px-3.5 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 border-b-3 border-b-violet-800 active:translate-y-0.5 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
-                title={`Open AI Drafting Studio for ${meta.title}`}
+                title={`Open DRAFTING WITH AI for ${meta.title}`}
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>{language === 'bn' ? 'এআই ড্রাফট' : 'AI Draft'}</span>

@@ -64,7 +64,7 @@ interface SidebarProps {
   onNavigate: (page: NavPage) => void;
   isOpen: boolean;
   onClose: () => void;
-  onOpenSettings: (tab?: 'branding' | 'vault' | 'backup') => void;
+  onOpenSettings: (tab?: 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup') => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -374,25 +374,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
 
                 <button
-                  onClick={() => {
-                    onOpenSettings('vault');
-                    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-                      onClose();
-                    }
-                  }}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-blue-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all cursor-pointer"
-                  title="Document Vault"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Archive className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                    <span>{t.documentVault}</span>
-                  </div>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/70 dark:border-slate-700 font-bold">
-                    {activeCompany?.vaultFiles?.length || 0}
-                  </span>
-                </button>
-
-                <button
                   onClick={() => handleNav('timeline')}
                   className={navItemClass('timeline')}
                 >
@@ -430,18 +411,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </span>
                 </button>
 
-                {activeUser?.role === 'Admin' && (
-                  <button
-                    onClick={() => handleNav('users')}
-                    className={navItemClass('users')}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <ShieldAlert className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      <span>{t.advocateTeam}</span>
-                    </div>
-                  </button>
-                )}
-
                 <button
                   onClick={() => handleNav('wblract')}
                   className={navItemClass('wblract')}
@@ -465,28 +434,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </div>
 
-          {/* Display & Theme Preferences */}
-          <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2">
-            <div className="flex items-center justify-between px-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              <span className="flex items-center gap-1.5">
-                <SlidersHorizontal className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                <span>{t.displayPreferences}</span>
-              </span>
-              <button
-                type="button"
-                onClick={openViewModal}
-                className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline font-semibold cursor-pointer"
-              >
-                Configure
-              </button>
-            </div>
-
-            {/* Theme Dropdown for Variety of Themes */}
-            <ThemeDropdown variant="sidebar" />
-          </div>
         </div>
 
-        {/* Theme-aware Footer with Logout Option */}
+        {/* Theme-aware Footer with Settings & Logout */}
         <div className={`p-3 border-t space-y-2 ${sidebarHeaderFooterClass}`}>
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 px-1">
             <div className="flex items-center gap-1.5">
@@ -498,38 +448,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           <div className="grid grid-cols-2 gap-1.5 pt-1">
             <button
-              onClick={openChamberSetup}
-              className="flex items-center justify-center gap-1 py-1.5 px-2 text-[11px] font-semibold rounded-lg bg-white dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-300 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shadow-2xs"
-              title="Register New Chamber"
-            >
-              <Plus className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-              <span>+ Firm</span>
-            </button>
-
-            <button
-              onClick={switchCompany}
-              className="flex items-center justify-center gap-1 py-1.5 px-2 text-[11px] font-semibold rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shadow-2xs"
-              title="Switch Firm Workspace"
-            >
-              <Building2 className="w-3 h-3 text-amber-500" />
-              <span>Switch</span>
-            </button>
-
-            <button
               onClick={() => onOpenSettings('branding')}
-              className="flex items-center justify-center gap-1 py-1.5 px-2 text-[11px] font-semibold rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shadow-2xs"
-              title="Chamber Settings & Preferences"
+              className="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-bold rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shadow-2xs"
+              title="Chamber Settings & Configuration"
             >
-              <Settings className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+              <Settings className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               <span>Settings</span>
             </button>
 
             <button
               onClick={logoutUser}
-              className="flex items-center justify-center gap-1 py-1.5 px-2 text-[11px] font-bold rounded-lg bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-600 hover:text-white text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/80 transition-colors cursor-pointer shadow-2xs"
+              className="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-bold rounded-xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-600 hover:text-white text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/80 transition-colors cursor-pointer shadow-2xs"
               title="Logout from Current Session"
             >
-              <LogOut className="w-3 h-3" />
+              <LogOut className="w-3.5 h-3.5" />
               <span>Logout</span>
             </button>
           </div>

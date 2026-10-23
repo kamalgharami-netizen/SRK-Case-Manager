@@ -93,7 +93,7 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
   const [logoColor, setLogoColor] = useState('#2563EB');
 
   // Compulsory Data Storage Path for initial registration
-  const [regStoragePath, setRegStoragePath] = useState<string>(backupStoragePath || 'C:/SRK_Case_Backups');
+  const [regStoragePath, setRegStoragePath] = useState<string>(backupStoragePath || 'C:/Case_Backups');
   const regFolderInputRef = useRef<HTMLInputElement>(null);
 
   const handleBrowseRegFolder = async () => {
@@ -215,7 +215,7 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
         logoUrl,
         logoBadge,
         logoColor,
-        backupStoragePath: regStoragePath.trim() || 'C:/SRK_Case_Backups'
+        backupStoragePath: regStoragePath.trim() || 'C:/Case_Backups'
       },
       {
         name: adminName.trim(),
@@ -769,7 +769,7 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
                     required
                     value={regStoragePath}
                     onChange={e => setRegStoragePath(e.target.value)}
-                    placeholder="e.g. C:/SRK_Case_Backups or D:/Legal_Chamber_Vault"
+                    placeholder="e.g. C:/Case_Backups or D:/Legal_Chamber_Vault"
                     className="w-full pl-9 pr-3 py-2 text-xs font-mono font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                   />
                 </div>
@@ -787,10 +787,10 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
               <div className="flex flex-wrap gap-1.5 pt-1">
                 <span className="text-[10px] text-slate-500 font-bold self-center mr-1">Quick Presets:</span>
                 {[
-                  'C:/SRK_Case_Backups',
+                  'C:/Case_Backups',
                   'D:/Legal_Chamber_Vault',
-                  'C:/Users/Advocate/Documents/SRK_Chamber_Data',
-                  '/storage/emulated/0/Documents/SRK_Case_Backups'
+                  'C:/Users/Advocate/Documents/Chamber_Data',
+                  '/storage/emulated/0/Documents/Case_Backups'
                 ].map(p => (
                   <button
                     key={p}

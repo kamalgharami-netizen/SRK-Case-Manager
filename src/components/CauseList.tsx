@@ -139,7 +139,7 @@ export const CauseList: React.FC = () => {
         </head>
         <body>
           <div style="text-align: center;">
-            <h2>${activeCompany?.name || 'SRK Legal Chamber'}</h2>
+            <h2>${activeCompany?.name || 'Legal Chamber'}</h2>
             <div>${activeCompany?.address || ''}, ${activeCompany?.city || ''}</div>
             <div style="font-size: 12px; color: #555;">Bar Council Reg: ${activeCompany?.barCouncil || ''}</div>
           </div>
@@ -182,7 +182,7 @@ export const CauseList: React.FC = () => {
             </tbody>
           </table>
           <div style="margin-top: 30px; text-align: right; font-size: 11px;">
-            Prepared by SRK Case Manager · Chamber Copy
+            Prepared by Chamber Copy
           </div>
         </body>
       </html>

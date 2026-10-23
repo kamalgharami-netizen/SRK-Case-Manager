@@ -8,7 +8,7 @@ import { ThemeDropdown } from './ThemeDropdown';
 interface HeaderProps {
   onToggleSidebar: () => void;
   isSidebarOpen?: boolean;
-  onOpenSettings: (tab?: 'branding' | 'vault' | 'backup') => void;
+  onOpenSettings: (tab?: 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup') => void;
   onOpenShareCalculator?: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
@@ -94,9 +94,9 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         <button
-          onClick={switchCompany}
-          className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-blue-500 bg-slate-50 dark:bg-slate-800/60 text-left transition-colors max-w-[140px] sm:max-w-[220px]"
-          title="Switch Chamber Workspace"
+          onClick={() => onOpenSettings('chambers')}
+          className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-blue-500 bg-slate-50 dark:bg-slate-800/60 text-left transition-colors max-w-[140px] sm:max-w-[220px] cursor-pointer"
+          title="Chamber Settings & Switch Workspace"
         >
           <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 shrink-0" />
           <div className="min-w-0">
@@ -104,7 +104,7 @@ export const Header: React.FC<HeaderProps> = ({
               {activeCompany?.city || 'Kolkata'} Office
             </div>
             <div className="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 truncate">
-              Switch Chamber
+              Switch &amp; Settings
             </div>
           </div>
         </button>
