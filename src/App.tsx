@@ -147,9 +147,21 @@ const MainAppContent: React.FC = () => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       // Execute auto-backup on closing
       performBackup({ type: 'auto-close' });
-      e.preventDefault();
-      e.returnValue = 'Are you sure you want to close the app? All data will be automatically backed up.';
-      return e.returnValue;
+
+      // In Electron Windows desktop environment, never block with preventDefault / returnValue
+      // as that prevents the Windows app window from closing!
+      const isElectron =
+        typeof window !== 'undefined' &&
+        (!!(window as any).electronAPI ||
+          !!(window as any).electron ||
+          !!(window as any).ipcRenderer ||
+          navigator.userAgent.toLowerCase().includes('electron'));
+
+      if (!isElectron) {
+        e.preventDefault();
+        e.returnValue = 'Are you sure you want to close the app? All data will be automatically backed up.';
+        return e.returnValue;
+      }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);

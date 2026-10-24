@@ -37,6 +37,14 @@ export const ExitConfirmationModal: React.FC<ExitConfirmationModalProps> = ({
         w.electronAPI.closeApp();
         return;
       }
+      if (w.electronAPI?.exitApp) {
+        w.electronAPI.exitApp();
+        return;
+      }
+      if (w.electron?.closeApp) {
+        w.electron.closeApp();
+        return;
+      }
       if (w.electron?.close) {
         w.electron.close();
         return;
@@ -44,6 +52,13 @@ export const ExitConfirmationModal: React.FC<ExitConfirmationModalProps> = ({
       if (w.ipcRenderer?.send) {
         w.ipcRenderer.send('app-close');
         return;
+      }
+      if (w.require) {
+        try {
+          const { ipcRenderer } = w.require('electron');
+          ipcRenderer.send('app-close');
+          return;
+        } catch {}
       }
       if (w.nw?.App?.quit) {
         w.nw.App.quit();
@@ -63,7 +78,11 @@ export const ExitConfirmationModal: React.FC<ExitConfirmationModalProps> = ({
 
   const handleConfirm = async () => {
     setIsProcessing(true);
-    await onConfirm();
+    try {
+      await onConfirm();
+    } catch (e) {
+      console.warn('Exit confirmation error:', e);
+    }
     triggerDirectClose();
     setIsProcessing(false);
     setHasExited(true);

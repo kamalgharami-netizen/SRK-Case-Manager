@@ -805,15 +805,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const confirmAppExit = () => {
     performBackup({ type: 'auto-close' });
-    showToast(`All data auto-backed up to: ${backupStoragePath}. Session closed safely.`, 'info');
-    setIsExitConfirmOpen(false);
-    logoutUser();
 
     // Safely close desktop Windows / Electron / PWA app window
     try {
       const w = window as any;
       if (w.electronAPI?.closeApp) {
         w.electronAPI.closeApp();
+        return;
+      }
+      if (w.electronAPI?.exitApp) {
+        w.electronAPI.exitApp();
+        return;
+      }
+      if (w.electron?.closeApp) {
+        w.electron.closeApp();
         return;
       }
       if (w.electron?.close) {
