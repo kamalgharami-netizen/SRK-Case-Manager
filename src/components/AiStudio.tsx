@@ -419,6 +419,19 @@ export const ALL_TEMPLATES_LIST: { id: TemplateType; section: string; labelEn: s
   { id: 'barga_surrender', section: '[Sec 20B]', labelEn: 'Barga Surrender Verification', labelBn: 'বর্গা অধিকার সমর্পণ বা প্রত্যাহারের যাচাই', category: 'Barga' }
 ];
 
+function normalizeDraftingCategory(cat?: CaseType | DraftingMatterType | 'all' | null): DraftingMatterType {
+  if (!cat || cat === 'all' || cat === 'mutation') {
+    return 'rti_sec6_1';
+  }
+  if (cat === 'rti') {
+    return 'rti_sec6_1';
+  }
+  if (cat === 'certcopy' || cat === 'rorpi') {
+    return 'misc';
+  }
+  return cat as DraftingMatterType;
+}
+
 export const AiStudio: React.FC<AiStudioProps> = ({
   initialCaseType = 'all',
   lockCaseType = false,
@@ -431,11 +444,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
 
   // Active category filter: defaults to initialCaseType or 'rti_sec6_1'
   const [selectedCategory, setSelectedCategory] = useState<DraftingMatterType>(() => {
-    if (initialCaseType && initialCaseType !== 'all' && initialCaseType !== 'mutation') {
-      if (initialCaseType === 'rti') return 'rti_sec6_1';
-      return initialCaseType;
-    }
-    return 'rti_sec6_1';
+    return normalizeDraftingCategory(initialCaseType);
   });
 
   // Mobile View state (for small screens < 1024px)
@@ -444,7 +453,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
   // Synchronize when initialCaseType prop changes
   useEffect(() => {
     if (initialCaseType && initialCaseType !== 'all' && initialCaseType !== 'mutation') {
-      const cat = initialCaseType === 'rti' ? 'rti_sec6_1' : initialCaseType;
+      const cat = normalizeDraftingCategory(initialCaseType);
       setSelectedCategory(cat);
       if (CASE_TEMPLATES_MAP[cat]?.length > 0) {
         setTemplate(CASE_TEMPLATES_MAP[cat][0].id);
@@ -597,7 +606,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
   useEffect(() => {
     if (prefilledCase) {
       if (prefilledCase.type && prefilledCase.type !== 'mutation') {
-        setSelectedCategory(prefilledCase.type);
+        setSelectedCategory(normalizeDraftingCategory(prefilledCase.type));
       }
       if (prefilledCase.party) setPartyName(prefilledCase.party);
       if (prefilledCase.applicants?.[0]?.name) setPartyName(prefilledCase.applicants[0].name);
@@ -2139,7 +2148,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
                   id="case-form-type-select"
                   value={selectedCategory}
                   onChange={e => {
-                    const nextCat = e.target.value as CaseType;
+                    const nextCat = e.target.value as DraftingMatterType;
                     setSelectedCategory(nextCat);
                     if (CASE_TEMPLATES_MAP[nextCat]?.length > 0) {
                       setTemplate(CASE_TEMPLATES_MAP[nextCat][0].id);
