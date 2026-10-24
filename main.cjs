@@ -1,6 +1,7 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("path");
 
+let mainWindow = null;
 let isQuitting = false;
 
 function createWindow() {
@@ -18,26 +19,57 @@ function createWindow() {
     }
   });
 
+  mainWindow = win;
+
   win.loadFile(path.join(__dirname, "dist", "index.html"));
 
-  // Ensure window closes cleanly when user clicks OS title bar 'X'
+  // Intercept window close from OS titlebar 'X' or Alt+F4 to show confirmation popup
   win.on("close", (event) => {
     if (!isQuitting) {
-      isQuitting = true;
+      event.preventDefault();
+
+      let notifiedRenderer = false;
       try {
-        if (!win.isDestroyed()) {
-          win.destroy();
+        if (win.webContents && !win.webContents.isDestroyed()) {
+          win.webContents.send("show-exit-confirmation");
+          notifiedRenderer = true;
         }
       } catch (err) {
-        console.warn("Window destroy error on close:", err);
+        console.warn("Could not dispatch show-exit-confirmation to webContents:", err);
       }
-      app.quit();
-      app.exit(0);
+
+      // Fallback if renderer is unresponsive or closed
+      if (!notifiedRenderer) {
+        const choice = dialog.showMessageBoxSync(win, {
+          type: "question",
+          buttons: ["Yes, Close App", "No, Stay in App"],
+          defaultId: 1,
+          cancelId: 1,
+          title: "SRK Case Manager - Confirm Exit",
+          message: "Are you sure you want to close the app?",
+          detail: "All chamber data and records will be automatically backed up."
+        });
+
+        if (choice === 0) {
+          isQuitting = true;
+          try {
+            if (!win.isDestroyed()) {
+              win.destroy();
+            }
+          } catch (e) {}
+          app.quit();
+          app.exit(0);
+        }
+      }
     }
+  });
+
+  win.on("closed", () => {
+    mainWindow = null;
   });
 }
 
-// Ensure app closes immediately without being blocked by beforeunload
+// When user confirms close in the in-app confirmation popup
 ipcMain.on("app-close", () => {
   isQuitting = true;
   BrowserWindow.getAllWindows().forEach((win) => {

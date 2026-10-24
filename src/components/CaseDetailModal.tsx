@@ -273,35 +273,12 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {!isCertOrRorPi && ['mutation', 'misc'].includes(caseItem.type) && (
-              <button
-                onClick={() => onOpenChainDeed && onOpenChainDeed(caseItem)}
-                className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
-                title="Make or View Chain Deed Statement"
-              >
-                <LinkIcon className="w-3.5 h-3.5" />
-                <span>Chain Deed</span>
-              </button>
-            )}
-            {!isCertOrRorPi && caseItem.type !== 'mutation' && caseItem.type !== 'lrappeal' && caseItem.type !== 'lrtt' && onOpenAiDraft && (
-              <button
-                onClick={() => {
-                  onClose();
-                  onOpenAiDraft(caseItem.type, caseItem);
-                }}
-                className="px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
-                title={`Draft ${caseItem.type.toUpperCase()} petition using AI with case data`}
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>AI Draft ({caseItem.type.toUpperCase()})</span>
-              </button>
-            )}
             <button
               onClick={printCaseSummary}
               className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold flex items-center gap-1 cursor-pointer"
-              title={isCertOrRorPi ? 'Print Application / Delivery Slip' : 'Print Case Dossier'}
+              title={isCertOrRorPi ? 'Print Application / Delivery Slip' : 'Print Case File'}
             >
-              <Printer className="w-4 h-4" /> {isCertOrRorPi ? 'Print Slip' : 'Print Dossier'}
+              <Printer className="w-4 h-4" /> {isCertOrRorPi ? 'Print Slip' : 'Print Case File'}
             </button>
             <button
               onClick={() => {
@@ -666,46 +643,6 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
           </div>
         )}
 
-        {/* Chain Deed Making Box (Exclusive to Mutation and Misc) */}
-        {['mutation', 'misc'].includes(caseItem.type) && (
-          <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/30 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 flex items-center justify-center shrink-0 shadow-2xs">
-                  <LinkIcon className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold text-blue-950 dark:text-blue-200">
-                    Chain of Title Deed Making (ধারাবাহিক চেইন দলিল)
-                  </h3>
-                  <p className="text-[11px] text-blue-800/80 dark:text-blue-300/80">
-                    Format sourced from Settings &gt; Chain Sample. Prepared specifically for {caseItem.caseNo}.
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => onOpenChainDeed && onOpenChainDeed(caseItem)}
-                className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Open Chain Deed Maker</span>
-              </button>
-            </div>
-
-            {caseItem.chainDeedDraft ? (
-              <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-900 text-xs font-mono text-slate-700 dark:text-slate-300 max-h-36 overflow-y-auto whitespace-pre-wrap leading-relaxed shadow-inner">
-                {caseItem.chainDeedDraft.slice(0, 450)}...
-              </div>
-            ) : (
-              <div className="text-[11px] text-blue-900/70 dark:text-blue-300/70 flex items-center gap-1.5">
-                <span>• Recorded via deeds in this case: <strong>{caseItem.chainLinks?.length || 0}</strong>. Click "Open Chain Deed Maker" to generate or edit the full sequential title statement.</span>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Diary entries */}
         {diaryEntries.length > 0 && (
           <div className="space-y-2">
@@ -740,7 +677,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
         {/* Footer Actions with prominent Close button */}
         <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
           <div className="text-xs text-slate-500 font-mono">
-            {caseItem.caseNo || caseItem.appNo || 'Case Dossier'} · {caseItem.party}
+            {caseItem.caseNo || caseItem.appNo || 'Case File'} · {caseItem.party}
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -749,14 +686,14 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
               className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
             >
               <Printer className="w-4 h-4" />
-              <span>{isCertOrRorPi ? 'Print Slip' : 'Print Dossier'}</span>
+              <span>{isCertOrRorPi ? 'Print Slip' : 'Print Case File'}</span>
             </button>
             <button
               type="button"
               onClick={onClose}
               className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs shadow-md transition-colors cursor-pointer"
             >
-              Close Dossier (বন্ধ করুন)
+              Close (বন্ধ করুন)
             </button>
           </div>
         </div>

@@ -2542,7 +2542,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
                       className="w-full py-2 px-3 rounded-lg border border-dashed border-blue-300 dark:border-blue-800 hover:border-blue-500 text-blue-700 dark:text-blue-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer bg-blue-50/30 dark:bg-blue-950/20"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>+ Add Land Schedule (সম্পত্তির তপশীল বিবরণ যোগ করুন)</span>
+                      <span>+ Add Schedule</span>
                     </button>
                   )}
                 </div>

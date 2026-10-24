@@ -21,8 +21,24 @@ const api = {
     } catch (e) {
       console.warn("Failed to send app-minimize ipc:", e);
     }
+  },
+  onExitRequested: (callback) => {
+    try {
+      ipcRenderer.on("show-exit-confirmation", callback);
+    } catch (e) {
+      console.warn("Failed to register onExitRequested:", e);
+    }
   }
 };
+
+// Dispatch DOM event when main process requests exit confirmation popup
+ipcRenderer.on("show-exit-confirmation", () => {
+  try {
+    window.dispatchEvent(new CustomEvent("srk-request-exit"));
+  } catch (e) {
+    console.warn("Failed to dispatch srk-request-exit event:", e);
+  }
+});
 
 try {
   contextBridge.exposeInMainWorld("electronAPI", api);

@@ -250,7 +250,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   const isCertOrRorPi = isCertCopy || isRorPi;
   const isDocketBased = isMisc || isLrAppeal || isFirstAppeal || isRti;
   const isGrnOmitted = isMisc || isLrAppeal || isRti;
-  const isChainDeedHidden = isMisc || isRti || isFirstAppeal || isCertCopy || isRorPi || isLrAppeal || isLrtt;
+  const isChainDeedHidden = true;
   const isMutation = type === 'mutation';
 
   // Search box for updating existing data through deed no, app no / docket no, applicant name, case no
@@ -419,20 +419,9 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
 
   // Sub-collections
   const [landSchedules, setLandSchedules] = useState<LandSchedule[]>(
-    editingCase?.landSchedules || [
-      {
-        id: 'ls_init',
-        district: 'North 24 Parganas',
-        block: 'Rajarhat',
-        mouza: '',
-        jl: '',
-        khatian: '',
-        dag: '',
-        area: '',
-        unit: 'acre',
-        classification: 'Bastu'
-      }
-    ]
+    editingCase?.landSchedules && editingCase.landSchedules.length > 0
+      ? editingCase.landSchedules
+      : []
   );
 
   const [applicants, setApplicants] = useState<Applicant[]>(
@@ -561,6 +550,8 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
 
     if (targetCase.landSchedules && targetCase.landSchedules.length > 0) {
       setLandSchedules(targetCase.landSchedules);
+    } else {
+      setLandSchedules([]);
     }
     if (targetCase.applicants && targetCase.applicants.length > 0) {
       setApplicants(targetCase.applicants);
@@ -645,20 +636,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     setBrokerName('');
     setBrokerPhone('');
     setChainLinks([]);
-    setLandSchedules([
-      {
-        id: 'ls_init_' + Date.now(),
-        district: 'North 24 Parganas',
-        block: 'Rajarhat',
-        mouza: '',
-        jl: '',
-        khatian: '',
-        dag: '',
-        area: '',
-        unit: 'acre',
-        classification: 'Bastu'
-      }
-    ]);
+    setLandSchedules([]);
     setApplicants([
       { id: 'app_' + Date.now(), name: '', father: '', age: '', address: '', phone: '' }
     ]);
@@ -810,10 +788,10 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       ...prev,
       {
         id: 'ls_' + Date.now(),
-        district: landSchedules[0]?.district || 'North 24 Parganas',
-        block: landSchedules[0]?.block || 'Rajarhat',
-        mouza: landSchedules[0]?.mouza || '',
-        jl: landSchedules[0]?.jl || '',
+        district: prev[0]?.district || district || 'North 24 Parganas',
+        block: prev[0]?.block || (wbDistricts[district] ? wbDistricts[district][0] : 'Rajarhat') || 'Rajarhat',
+        mouza: prev[0]?.mouza || '',
+        jl: prev[0]?.jl || '',
         khatian: '',
         dag: '',
         area: '',
@@ -1482,64 +1460,11 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
               </p>
             </div>
 
-            {!isChainDeedHidden && (
-              <div className="p-3.5 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs text-blue-900 dark:text-blue-200 space-y-1">
-                <div className="font-bold flex items-center gap-1.5 text-blue-800 dark:text-blue-300">
-                  <LinkIcon className="w-4 h-4 text-blue-600" />
-                  <span>Make &amp; Print Chain Deed (ধারাবাহিক চেইন দলিল তৈরি)</span>
-                </div>
-                <p className="text-[11px] leading-relaxed text-blue-800/80 dark:text-blue-200/80">
-                  Generate and print the complete, case-specific title statement chronologically from record owner to applicant using AI and Data Vault samples.
-                </p>
-              </div>
-            )}
-
-            <div className="space-y-2 pt-2">
-              {!isChainDeedHidden && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const saved = postSaveCase;
-                    setPostSaveCase(null);
-                    setActiveChainDeedModalCase(saved);
-                  }}
-                  className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-colors"
-                >
-                  <LinkIcon className="w-4 h-4" />
-                  <span>Proceed to Make &amp; Print Chain Deed</span>
-                </button>
-              )}
-
-              {postSaveCase.type !== 'mutation' && postSaveCase.type !== 'misc' && postSaveCase.type !== 'firstappeal' && postSaveCase.type !== 'certcopy' && postSaveCase.type !== 'rorpi' && postSaveCase.type !== 'lrappeal' && postSaveCase.type !== 'lrtt' && onOpenAiDraft && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const saved = postSaveCase;
-                    setPostSaveCase(null);
-                    onOpenAiDraft(saved.type, saved);
-                  }}
-                  className="w-full py-2.5 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-colors"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>Proceed to DRAFTING WITH AI</span>
-                </button>
-              )}
-
-              {!isCertOrRorPi && postSaveCase.type !== 'lrappeal' && postSaveCase.type !== 'lrtt' && (
-                <button
-                  type="button"
-                  onClick={handlePrintDossier}
-                  className="w-full py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center gap-2 shadow-xs cursor-pointer transition-colors"
-                >
-                  <Printer className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span>Print Case Dossier</span>
-                </button>
-              )}
-
+            <div className="pt-2">
               <button
                 type="button"
                 onClick={() => onSaved(postSaveCase, false)}
-                className="w-full py-2 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+                className="w-full py-2.5 px-4 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-colors"
               >
                 <span>Return to Case Dashboard</span>
               </button>
@@ -1589,46 +1514,8 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
           </div>
         </div>
 
-        {/* Action Buttons: Save, Update, Cancel, Print, Make Chain Deed, AI Drafting */}
+        {/* Action Buttons: Save, Update, Cancel */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Requirement 5: AI Drafting Option (Removed for Mutation, Misc, First Appeal, Certified Copy, ROR/PI, LR Appeal and LRTT) */}
-          {type !== 'mutation' && type !== 'misc' && type !== 'firstappeal' && type !== 'lrappeal' && type !== 'lrtt' && !isCertOrRorPi && onOpenAiDraft && (
-            <button
-              type="button"
-              onClick={handleTriggerAiDraft}
-              className="px-3.5 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="Open DRAFTING WITH AI for this Case"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span>DRAFTING WITH AI</span>
-            </button>
-          )}
-
-          {/* Requirement 20: Make Chain Deed direct button (Removed for RTI, First Appeal, Certified Copy, ROR/PI, LR Appeal, and LRTT) */}
-          {!isChainDeedHidden && (
-            <button
-              type="button"
-              onClick={handleOpenChainDeedDirectly}
-              className="px-3 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 text-xs font-bold shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="Make and print case-only Chain of Title statement"
-            >
-              <Scroll className="w-4 h-4 text-indigo-600" />
-              <span>Make Chain Deed</span>
-            </button>
-          )}
-
-          {/* Requirement 19: Print Dossier button (Removed for Certified Copy, ROR/PI, LR Appeal, and LRTT) */}
-          {!isCertOrRorPi && type !== 'lrappeal' && type !== 'lrtt' && (
-            <button
-              type="button"
-              onClick={handlePrintDossier}
-              className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold shadow-2xs flex items-center gap-1.5 cursor-pointer"
-              title="Print Case Dossier (Excluding broker/muhuri)"
-            >
-              <Printer className="w-4 h-4" />
-              <span>Print Dossier</span>
-            </button>
-          )}
 
           {/* Requirement 18: Update Button */}
           {isEditingExisting && (
@@ -2759,14 +2646,14 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             className="px-3 py-1.5 text-xs font-bold rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 hover:bg-blue-100 border border-blue-200 dark:border-blue-800 flex items-center gap-1.5 cursor-pointer shadow-2xs"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>+ Add Schedule (আরেকটি তপশীল যোগ করুন)</span>
+            <span>+ Add Schedule</span>
           </button>
         </div>
 
         <div className="space-y-3">
-          {landSchedules.length === 0 && (isRti || isFirstAppeal) && (
+          {landSchedules.length === 0 && (
             <div className="p-3.5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-center text-xs text-slate-500 dark:text-slate-400">
-              No land schedule attached (Not compulsory for {isFirstAppeal ? 'First Appeal' : 'RTI'}). Click <strong>+ Add Schedule</strong> above only if this case relates to a specific land plot.
+              No land schedule attached. Click <strong>+ Add Schedule</strong> above to add a property schedule.
             </div>
           )}
           {landSchedules.map((sched, idx) => (
@@ -2778,15 +2665,13 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                 <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
                   Schedule #{idx + 1} {(isRti || isFirstAppeal) ? '(Optional)' : ''}
                 </div>
-                {(landSchedules.length > 1 || isRti || isFirstAppeal) && (
-                  <button
-                    type="button"
-                    onClick={() => removeLandSchedule(idx)}
-                    className="text-xs text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" /> Remove Schedule
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => removeLandSchedule(idx)}
+                  className="text-xs text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Remove Schedule
+                </button>
               </div>
 
               {isRorPi ? (
@@ -3618,39 +3503,6 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         </button>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {type !== 'mutation' && type !== 'misc' && type !== 'firstappeal' && type !== 'lrappeal' && type !== 'lrtt' && !isCertOrRorPi && onOpenAiDraft && (
-            <button
-              type="button"
-              onClick={handleTriggerAiDraft}
-              className="px-3.5 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="Open DRAFTING WITH AI for this Case"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span>DRAFTING WITH AI</span>
-            </button>
-          )}
-
-          {!isChainDeedHidden && (
-            <button
-              type="button"
-              onClick={handleOpenChainDeedDirectly}
-              className="px-3.5 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-            >
-              <Scroll className="w-4 h-4 text-indigo-600" />
-              <span>Make Chain Deed</span>
-            </button>
-          )}
-
-          {!isCertOrRorPi && type !== 'lrappeal' && type !== 'lrtt' && (
-            <button
-              type="button"
-              onClick={handlePrintDossier}
-              className="px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-            >
-              <Printer className="w-4 h-4" />
-              <span>Print Dossier</span>
-            </button>
-          )}
 
           {isEditingExisting && (
             <button

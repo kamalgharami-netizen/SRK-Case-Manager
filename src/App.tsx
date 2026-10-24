@@ -168,6 +168,36 @@ const MainAppContent: React.FC = () => {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [performBackup]);
 
+  // Listen for Electron close signal from OS title bar 'X' or Alt+F4 to show confirmation popup
+  useEffect(() => {
+    const handleExitRequest = () => {
+      setIsExitConfirmOpen(true);
+    };
+
+    window.addEventListener('srk-request-exit', handleExitRequest);
+
+    const w = window as any;
+    if (w.electronAPI?.onExitRequested) {
+      w.electronAPI.onExitRequested(handleExitRequest);
+    }
+
+    return () => {
+      window.removeEventListener('srk-request-exit', handleExitRequest);
+    };
+  }, [setIsExitConfirmOpen]);
+
+  // Keyboard shortcut Ctrl+Q / Cmd+Q to prompt close confirmation popup
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'q' || e.key === 'Q')) {
+        e.preventDefault();
+        setIsExitConfirmOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setIsExitConfirmOpen]);
+
   // Sync Hardware / Browser / Gesture Back Button on Mobile
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
@@ -536,10 +566,6 @@ const MainAppContent: React.FC = () => {
                     pushHistoryState({ modal: 'case-detail', id });
                   }}
                   onEditCase={handleEditCase}
-                  onOpenChainDeed={c => {
-                    setChainDeedCaseId(c.id);
-                    pushHistoryState({ modal: 'chain-deed', id: c.id });
-                  }}
                 />
               )}
 
@@ -552,10 +578,6 @@ const MainAppContent: React.FC = () => {
                     pushHistoryState({ modal: 'case-detail', id });
                   }}
                   onEditCase={handleEditCase}
-                  onOpenChainDeed={c => {
-                    setChainDeedCaseId(c.id);
-                    pushHistoryState({ modal: 'chain-deed', id: c.id });
-                  }}
                 />
               )}
 
@@ -568,11 +590,6 @@ const MainAppContent: React.FC = () => {
                     pushHistoryState({ modal: 'case-detail', id });
                   }}
                   onEditCase={handleEditCase}
-                  onOpenChainDeed={c => {
-                    setChainDeedCaseId(c.id);
-                    pushHistoryState({ modal: 'chain-deed', id: c.id });
-                  }}
-                  onOpenAiDraft={handleOpenAiDraft}
                 />
               )}
 
@@ -585,7 +602,6 @@ const MainAppContent: React.FC = () => {
                     pushHistoryState({ modal: 'case-detail', id });
                   }}
                   onEditCase={handleEditCase}
-                  onOpenAiDraft={handleOpenAiDraft}
                 />
               )}
 
@@ -598,7 +614,6 @@ const MainAppContent: React.FC = () => {
                     pushHistoryState({ modal: 'case-detail', id });
                   }}
                   onEditCase={handleEditCase}
-                  onOpenAiDraft={handleOpenAiDraft}
                 />
               )}
 
@@ -611,11 +626,6 @@ const MainAppContent: React.FC = () => {
                     pushHistoryState({ modal: 'case-detail', id });
                   }}
                   onEditCase={handleEditCase}
-                  onOpenChainDeed={c => {
-                    setChainDeedCaseId(c.id);
-                    pushHistoryState({ modal: 'chain-deed', id: c.id });
-                  }}
-                  onOpenAiDraft={handleOpenAiDraft}
                 />
               )}
 
@@ -628,11 +638,6 @@ const MainAppContent: React.FC = () => {
                     pushHistoryState({ modal: 'case-detail', id });
                   }}
                   onEditCase={handleEditCase}
-                  onOpenChainDeed={c => {
-                    setChainDeedCaseId(c.id);
-                    pushHistoryState({ modal: 'chain-deed', id: c.id });
-                  }}
-                  onOpenAiDraft={handleOpenAiDraft}
                 />
               )}
 

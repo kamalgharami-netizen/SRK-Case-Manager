@@ -5,7 +5,6 @@ import {
   Plus,
   Trash2,
   Printer,
-  Building,
   CheckCircle2,
   Scale,
   ArrowRightLeft,
@@ -46,19 +45,20 @@ export interface LandUnitOption {
   label: string;
   short: string;
   sqft: number;
+  banglaDesc?: string;
 }
 
 export const LAND_UNIT_OPTIONS: LandUnitOption[] = [
-  { key: 'katha', label: 'কাঠা (Katha - 720 sq ft)', short: 'কাঠা', sqft: 720 },
-  { key: 'chittak', label: 'ছটাক (Chhatak - 45 sq ft)', short: 'ছটাক', sqft: 45 },
-  { key: 'sqft', label: 'বর্গফুট (Sq Ft)', short: 'ব.ফু.', sqft: 1 },
-  { key: 'decimal', label: 'শতক (Decimal - 435.6 sq ft)', short: 'শতক', sqft: 435.6 },
-  { key: 'bigha', label: 'বিঘা (Bigha - 20 katha)', short: 'বিঘা', sqft: 14400 },
-  { key: 'acre', label: 'একর (Acre - 100 dec)', short: 'একর', sqft: 43560 },
-  { key: 'ganda', label: 'গণ্ডা (Ganda - 2.25 sq ft)', short: 'গণ্ডা', sqft: 2.25 },
-  { key: 'kara', label: 'কড়া (Kara)', short: 'কড়া', sqft: 0.5625 },
-  { key: 'kranti', label: 'ক্রান্তি (Kranti)', short: 'ক্রান্তি', sqft: 0.1875 },
-  { key: 'til', label: 'তিল / পাই (Til)', short: 'তিল/পাই', sqft: 0.009375 }
+  { key: 'katha', label: 'কাঠা (Katha - 720 sq ft)', short: 'কাঠা', sqft: 720, banglaDesc: '১ কাঠা = ৭২০ ব.ফু.' },
+  { key: 'chittak', label: 'ছটাক (Chhatak - 45 sq ft)', short: 'ছটাক', sqft: 45, banglaDesc: '১ ছটাক = ৪৫ ব.ফু.' },
+  { key: 'sqft', label: 'বর্গফুট (Sq Ft)', short: 'ব.ফু.', sqft: 1, banglaDesc: '১ ব.ফু. = ১ ব.ফু.' },
+  { key: 'decimal', label: 'শতক (Decimal - 435.6 sq ft)', short: 'শতক', sqft: 435.6, banglaDesc: '১ শতক = ৪৩৫.৬ ব.ফু.' },
+  { key: 'bigha', label: 'বিঘা (Bigha - 20 katha)', short: 'বিঘা', sqft: 14400, banglaDesc: '১ বিঘা = ১৪,৪০০ ব.ফু.' },
+  { key: 'acre', label: 'একর (Acre - 100 dec)', short: 'একর', sqft: 43560, banglaDesc: '১ একর = ৪৩,৫৬০ ব.ফু.' },
+  { key: 'ganda', label: 'গণ্ডা (Ganda - 2.25 sq ft)', short: 'গণ্ডা', sqft: 2.25, banglaDesc: '১ গণ্ডা = ২.২৫ ব.ফু.' },
+  { key: 'kara', label: 'কড়া (Kara)', short: 'কড়া', sqft: 0.5625, banglaDesc: '১ কড়া = ০.৫৬২৫ ব.ফু.' },
+  { key: 'kranti', label: 'ক্রান্তি (Kranti)', short: 'ক্রান্তি', sqft: 0.1875, banglaDesc: '১ ক্রান্তি = ০.১৮৭৫ ব.ফু.' },
+  { key: 'til', label: 'তিল / পাই (Til)', short: 'তিল/পাই', sqft: 0.009375, banglaDesc: '১ তিল = ০.০০৯৩৭৫ ব.ফু.' }
 ];
 
 export const UNIT_LABELS: Record<string, string> = {
@@ -205,7 +205,7 @@ export function sqftToWbArea(totalSqft: number): {
 
 export type CalculatorPhase = 'farayez' | 'share';
 
-export type CalculatorSubTab = 'land-share' | 'unit-converter' | 'standard-math';
+export type CalculatorSubTab = 'land-share' | 'unit-converter';
 
 export interface OwnedAreaLine {
   id: string;
@@ -213,27 +213,16 @@ export interface OwnedAreaLine {
   unitKey: string;
 }
 
+export interface UnitConverterLine {
+  id: string;
+  amount: string;
+  unitKey: string;
+}
+
 export interface FarayezExtraHeir {
   id: string;
   type: string;
   count: number;
-}
-
-export interface WbCoSharerPortion {
-  id: string;
-  label: string;
-  mode: 'area' | 'share';
-  bigha: number;
-  katha: number;
-  chittak: number;
-  satak: number;
-  sqft: number;
-  ana: number;
-  gandaShare: number;
-  karaShare: number;
-  krantiShare: number;
-  paiShare: number;
-  share10000Input?: number;
 }
 
 // Extra heir options for Muslim Farayez
@@ -261,7 +250,7 @@ export const ShareCalculator: React.FC = () => {
   const [activePhase, setActivePhase] = useState<CalculatorPhase>('share');
 
   // Sub-tabs inside Part 1 (Share Calculator):
-  // 1. Land Share Calculator, 2. Unit Converter, 3. Standard Math
+  // 1. Land Share Calculator, 2. Unit Converter
   const [activeSubTab, setActiveSubTab] = useState<CalculatorSubTab>('land-share');
 
   // =========================================================
@@ -451,183 +440,178 @@ export const ShareCalculator: React.FC = () => {
   };
 
   // =========================================================
-  // PART 2 / TAB 2: LIVE UNIT CONVERTER
+  // PART 1 / TAB 2: LIVE UNIT CONVERTER (MULTI-LINE "+" CALCULATOR)
   // =========================================================
-  const [convAmount, setConvAmount] = useState<string>('1');
-  const [convBaseUnit, setConvBaseUnit] = useState<string>('katha');
-
-  const convBaseSqft = useMemo(() => {
-    const val = parseFloat(convAmount) || 0;
-    const opt = LAND_UNIT_OPTIONS.find(u => u.key === convBaseUnit);
-    return val * (opt ? opt.sqft : 720);
-  }, [convAmount, convBaseUnit]);
-
-  // =========================================================
-  // PART 2 / TAB 3: STANDARD MATH & CO-SHARERS
-  // =========================================================
-  const [stdMode, setStdMode] = useState<'10000-to-area' | 'ana-to-10000' | 'co-sharer'>('10000-to-area');
-
-  // 10,000 to area
-  const [s2aPlotValue, setS2aPlotValue] = useState<string>('50');
-  const [s2aPlotUnit, setS2aPlotUnit] = useState<string>('decimal');
-  const [s2aShare10000, setS2aShare10000] = useState<string>('1339.15');
-
-  const s2aComputed = useMemo(() => {
-    const plotVal = parseFloat(s2aPlotValue) || 0;
-    const shareVal = parseFloat(s2aShare10000) || 0;
-    if (plotVal <= 0 || shareVal <= 0) return null;
-    const opt = LAND_UNIT_OPTIONS.find(u => u.key === s2aPlotUnit);
-    const plotSqft = plotVal * (opt ? opt.sqft : WB_AREA_SQFT.decimal);
-    const targetSqft = (plotSqft * shareVal) / 10000;
-    const targetDecimal = targetSqft / WB_AREA_SQFT.decimal;
-    const targetWbArea = sqftToWbArea(targetSqft);
-    const target16Ana = fractionToWbShare(shareVal / 10000);
-    return { targetSqft, targetDecimal, targetWbArea, target16Ana };
-  }, [s2aPlotValue, s2aPlotUnit, s2aShare10000]);
-
-  // 16-Ana to 10000
-  const [a2sAna, setA2sAna] = useState<number>(2);
-  const [a2sGanda, setA2sGanda] = useState<number>(2);
-  const [a2sKara, setA2sKara] = useState<number>(3);
-  const [a2sKranti, setA2sKranti] = useState<number>(1);
-  const [a2sTil, setA2sTil] = useState<number>(12);
-  const [a2sPlotValue, setA2sPlotValue] = useState<string>('15');
-  const [a2sPlotUnit, setA2sPlotUnit] = useState<string>('decimal');
-
-  const a2sComputed = useMemo(() => {
-    const frac = wbShareToFraction(a2sAna, a2sGanda, a2sKara, a2sKranti, 0, a2sTil);
-    const share10000 = frac * 10000;
-    const lrKhatian = frac.toFixed(4);
-    const plotVal = parseFloat(a2sPlotValue) || 0;
-    const opt = LAND_UNIT_OPTIONS.find(u => u.key === a2sPlotUnit);
-    const plotSqft = plotVal * (opt ? opt.sqft : WB_AREA_SQFT.decimal);
-    const targetSqft = plotSqft * frac;
-    const targetDecimal = targetSqft / WB_AREA_SQFT.decimal;
-    const targetWbArea = sqftToWbArea(targetSqft);
-    return { share10000, lrKhatian, frac, targetSqft, targetDecimal, targetWbArea };
-  }, [a2sAna, a2sGanda, a2sKara, a2sKranti, a2sTil, a2sPlotValue, a2sPlotUnit]);
-
-  // Co-Sharers Partition state
-  const [coPlotValue, setCoPlotValue] = useState<string>('50');
-  const [coPlotUnit, setCoPlotUnit] = useState<string>('satak');
-  const [coPortions, setCoPortions] = useState<WbCoSharerPortion[]>([
-    {
-      id: 'cp_1',
-      label: 'Co-Sharer 1 (অংশীদার ১)',
-      mode: 'area',
-      bigha: 0,
-      katha: 5,
-      chittak: 0,
-      satak: 0,
-      sqft: 0,
-      ana: 4,
-      gandaShare: 0,
-      karaShare: 0,
-      krantiShare: 0,
-      paiShare: 0
-    },
-    {
-      id: 'cp_2',
-      label: 'Co-Sharer 2 (অংশীদার ২)',
-      mode: 'area',
-      bigha: 0,
-      katha: 3,
-      chittak: 8,
-      satak: 0,
-      sqft: 0,
-      ana: 3,
-      gandaShare: 0,
-      karaShare: 0,
-      krantiShare: 0,
-      paiShare: 0
-    }
+  const [convLines, setConvLines] = useState<UnitConverterLine[]>([
+    { id: 'cl_1', amount: '1', unitKey: 'katha' }
   ]);
+  const [copiedUnitKey, setCopiedUnitKey] = useState<string | null>(null);
 
-  const addCoPortion = () => {
-    setCoPortions(prev => [
+  const addConvLine = () => {
+    setConvLines(prev => [
       ...prev,
       {
-        id: 'cp_' + Date.now(),
-        label: `Co-Sharer ${prev.length + 1} (অংশীদার ${prev.length + 1})`,
-        mode: 'area',
-        bigha: 0,
-        katha: 1,
-        chittak: 0,
-        satak: 0,
-        sqft: 0,
-        ana: 1,
-        gandaShare: 0,
-        karaShare: 0,
-        krantiShare: 0,
-        paiShare: 0
+        id: 'cl_' + Date.now(),
+        amount: '1',
+        unitKey: prev.length === 1 ? 'chittak' : 'decimal'
       }
     ]);
   };
 
-  const removeCoPortion = (id: string) => {
-    if (coPortions.length <= 1) return;
-    setCoPortions(prev => prev.filter(p => p.id !== id));
+  const removeConvLine = (id: string) => {
+    if (convLines.length <= 1) return;
+    setConvLines(prev => prev.filter(l => l.id !== id));
   };
 
-  const updateCoPortion = (id: string, updates: Partial<WbCoSharerPortion>) => {
-    setCoPortions(prev => prev.map(p => (p.id === id ? { ...p, ...updates } : p)));
+  const updateConvLine = (id: string, updates: Partial<UnitConverterLine>) => {
+    setConvLines(prev => prev.map(l => (l.id === id ? { ...l, ...updates } : l)));
   };
 
-  // Co-Sharer Dag calculation
-  const coSharerResult = useMemo(() => {
-    const val = parseFloat(coPlotValue) || 0;
-    const opt = LAND_UNIT_OPTIONS.find(u => u.key === coPlotUnit);
-    const totalSqft = val * (opt ? opt.sqft : WB_AREA_SQFT.satak);
-    if (totalSqft <= 0) return null;
+  const resetConvLines = () => {
+    setConvLines([
+      { id: 'cl_1', amount: '1', unitKey: 'katha' }
+    ]);
+  };
 
-    let sumPortionSqft = 0;
-    const computedPortions = coPortions.map(p => {
-      let portionSqft = 0;
-      if (p.mode === 'area') {
-        portionSqft =
-          (p.bigha || 0) * WB_AREA_SQFT.bigha +
-          (p.katha || 0) * WB_AREA_SQFT.katha +
-          (p.chittak || 0) * WB_AREA_SQFT.chittak +
-          (p.satak || 0) * WB_AREA_SQFT.satak +
-          (p.sqft || 0);
-      } else {
-        const frac = wbShareToFraction(p.ana, p.gandaShare, p.karaShare, p.krantiShare, p.paiShare, 0);
-        portionSqft = totalSqft * frac;
-      }
-      sumPortionSqft += portionSqft;
-      const frac = portionSqft / totalSqft;
-      const share10000 = frac * 10000;
-      const wbShare = fractionToWbShare(frac);
-      const wbArea = sqftToWbArea(portionSqft);
+  // Computations for each individual conversion line
+  const computedConvLines = useMemo(() => {
+    return convLines.map(line => {
+      const val = parseFloat(line.amount) || 0;
+      const opt = LAND_UNIT_OPTIONS.find(u => u.key === line.unitKey);
+      const sqft = val * (opt ? opt.sqft : WB_AREA_SQFT.katha);
+      const satak = sqft / WB_AREA_SQFT.decimal;
+      const katha = sqft / WB_AREA_SQFT.katha;
+      const bigha = sqft / WB_AREA_SQFT.bigha;
       return {
-        ...p,
-        portionSqft,
-        portionDecimal: portionSqft / WB_AREA_SQFT.satak,
-        share10000,
-        wbShare,
-        wbArea
+        ...line,
+        val,
+        optLabel: opt ? opt.label : line.unitKey,
+        sqft,
+        satak,
+        katha,
+        bigha
       };
     });
+  }, [convLines]);
 
-    const residualSqft = Math.max(0, totalSqft - sumPortionSqft);
-    const residualFraction = residualSqft / totalSqft;
-    const residual10000 = residualFraction * 10000;
-    const residualDecimal = residualSqft / WB_AREA_SQFT.satak;
-    const residualWbArea = sqftToWbArea(residualSqft);
-    const residual16Ana = fractionToWbShare(residualFraction);
+  // Combined Total Square Feet
+  const totalConvSqft = useMemo(() => {
+    return computedConvLines.reduce((acc, l) => acc + l.sqft, 0);
+  }, [computedConvLines]);
 
-    return {
-      totalSqft,
-      totalDecimal: totalSqft / WB_AREA_SQFT.satak,
-      computedPortions,
-      sumPortionSqft,
-      residualSqft,
-      residualDecimal,
-      residual10000,
-      residualWbArea,
-      residual16Ana
-    };
-  }, [coPlotValue, coPlotUnit, coPortions]);
+  const totalConvSatak = totalConvSqft / WB_AREA_SQFT.decimal;
+  const totalConvAcre = totalConvSqft / WB_AREA_SQFT.acre;
+  const totalConvBigha = totalConvSqft / WB_AREA_SQFT.bigha;
+  const totalConvKatha = totalConvSqft / WB_AREA_SQFT.katha;
+  const totalConvWbArea = useMemo(() => sqftToWbArea(totalConvSqft), [totalConvSqft]);
+
+  const copyUnitValue = (key: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedUnitKey(key);
+    showToast(`Copied ${text} to clipboard`);
+    setTimeout(() => setCopiedUnitKey(null), 1800);
+  };
+
+  const printUnitConversionSheet = () => {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Land Unit Conversion Sheet</title>
+          <style>
+            body { font-family: 'Times New Roman', serif; padding: 36px; color: #111; line-height: 1.5; font-size: 13px; }
+            h2, h3 { margin: 0 0 4px 0; color: #1E3A8A; }
+            hr { border: none; border-top: 1.5px solid #1E3A8A; margin: 10px 0 14px 0; }
+            .box { background: #F8FAFC; border: 1px solid #CBD5E1; padding: 12px; border-radius: 6px; margin-bottom: 16px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 12px; }
+            th, td { border: 1px solid #777; padding: 8px; text-align: left; }
+            th { background: #E2E8F0; font-weight: bold; }
+            .mono { font-family: monospace; font-size: 12px; }
+            .highlight { background: #EFF6FF; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <div style="text-align: center;">
+            <h2>${activeCompany?.name || 'Legal Chamber'}</h2>
+            <div><strong>পশ্চিমবঙ্গ ভূমি পরিমাপ ও রূপান্তর সনদপত্র (Land Measurement & Conversion Sheet)</strong></div>
+            <div style="font-size: 11px; color: #777; margin-top: 4px;">তারিখ: ${new Date().toLocaleDateString('bn-BD', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+          </div>
+          <hr />
+
+          <div class="box">
+            <div><strong>মোট রূপান্তর পরিমাণ (Total Combined Area):</strong> ${totalConvSqft.toLocaleString('en-IN', { maximumFractionDigits: 2 })} Sq.Ft. = <strong>${totalConvSatak.toFixed(4)} শতক / Decimal</strong></div>
+            <div style="margin-top: 4px;"><strong>পরম্পরাগত হিসাব (Traditional):</strong> ${totalConvWbArea.formatted}</div>
+          </div>
+
+          ${computedConvLines.length > 1 ? `
+          <h3>ইনপুট বিবরণী (Input Breakdown):</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>পরিমাণ ও একক (Input)</th>
+                <th>বর্গফুট (Sq.Ft.)</th>
+                <th>শতক (Satak)</th>
+                <th>কাঠা (Katha)</th>
+                <th>শতকরা অংশ (%)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${computedConvLines.map((l, i) => `
+                <tr>
+                  <td>${i + 1}</td>
+                  <td><strong>${l.amount}</strong> ${l.optLabel}</td>
+                  <td class="mono">${l.sqft.toLocaleString('en-IN', { maximumFractionDigits: 1 })}</td>
+                  <td class="mono">${l.satak.toFixed(4)}</td>
+                  <td class="mono">${l.katha.toFixed(4)}</td>
+                  <td class="mono">${totalConvSqft > 0 ? ((l.sqft / totalConvSqft) * 100).toFixed(2) : '0.00'}%</td>
+                </tr>
+              `).join('')}
+              <tr class="highlight">
+                <td colspan="2"><strong>সর্বমোট (Grand Total)</strong></td>
+                <td class="mono">${totalConvSqft.toLocaleString('en-IN', { maximumFractionDigits: 1 })}</td>
+                <td class="mono">${totalConvSatak.toFixed(4)}</td>
+                <td class="mono">${totalConvKatha.toFixed(4)}</td>
+                <td class="mono">100.00%</td>
+              </tr>
+            </tbody>
+          </table>
+          <br />
+          ` : ''}
+
+          <h3>পশ্চিমবঙ্গ প্রমিত ১০টি এককে রূপান্তর (Equivalent Across 10 Standard Units):</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>একক (Unit)</th>
+                <th>মান (Converted Value)</th>
+                <th>হিসাবের মানদণ্ড (Standard Factor)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${LAND_UNIT_OPTIONS.map(opt => {
+                const equiv = totalConvSqft / opt.sqft;
+                return `
+                  <tr>
+                    <td><strong>${opt.label}</strong></td>
+                    <td class="mono" style="font-size: 13px; color: #1E3A8A;"><strong>${equiv >= 1000 ? equiv.toLocaleString('en-IN', { maximumFractionDigits: 4 }) : equiv.toFixed(4)}</strong></td>
+                    <td>1 ${opt.key} = ${opt.sqft} Sq.Ft. (${opt.banglaDesc})</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+
+          <div style="margin-top: 40px; display: flex; justify-content: space-between; font-size: 11px;">
+            <div>West Bengal Revenue Land Converter Standard</div>
+            <div>রাজস্ব আইনজীবী / মোহরার স্বাক্ষর: _________________________</div>
+          </div>
+        </body>
+      </html>
+    `;
+    printHtmlContent(html);
+  };
 
   // =========================================================
   // PART 2: MUSLIM FARAYEZ WITH DYNAMIC "+" ADD MORE BUTTON
@@ -1386,13 +1370,12 @@ export const ShareCalculator: React.FC = () => {
               </button>
             </div>
 
-            {/* Top 3 Sub-Tabs matching Image 1:
-                1. Land Share Calculator, 2. Unit Converter, 3. Standard Math */}
-            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-center text-xs">
+            {/* Top Sub-Tabs: 1. Land Share Calculator, 2. Unit Converter */}
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-center text-xs">
               <button
                 type="button"
                 onClick={() => setActiveSubTab('land-share')}
-                className={`py-2 px-1 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                className={`py-2 px-2 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   activeSubTab === 'land-share'
                     ? 'bg-blue-600 text-white shadow-xs'
                     : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
@@ -1405,7 +1388,7 @@ export const ShareCalculator: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveSubTab('unit-converter')}
-                className={`py-2 px-1 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                className={`py-2 px-2 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   activeSubTab === 'unit-converter'
                     ? 'bg-blue-600 text-white shadow-xs'
                     : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
@@ -1413,19 +1396,6 @@ export const ShareCalculator: React.FC = () => {
               >
                 <ArrowRightLeft className="w-3.5 h-3.5" />
                 <span>2. Unit Converter</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveSubTab('standard-math')}
-                className={`py-2 px-1 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  activeSubTab === 'standard-math'
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
-                }`}
-              >
-                <Building className="w-3.5 h-3.5" />
-                <span>3. Standard Math</span>
               </button>
             </div>
           </div>
@@ -1678,385 +1648,271 @@ export const ShareCalculator: React.FC = () => {
           )}
 
           {/* ========================================================= */}
-          {/* TAB 2: LIVE UNIT CONVERTER (ALL 10 UNITS FROM IMAGE 2) */}
+          {/* TAB 2: LIVE UNIT CONVERTER (MULTI-LINE "+" CALCULATOR) */}
           {/* ========================================================= */}
           {activeSubTab === 'unit-converter' && (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-xs space-y-4">
-              <div className="border-b border-slate-100 dark:border-slate-800 pb-2 flex items-center justify-between">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
-                  <ArrowRightLeft className="w-4 h-4" />
-                  <span>2. Live Land Measurement Converter (ভূমি পরিমাপ রূপান্তরক)</span>
-                </span>
-                <span className="text-[11px] text-slate-400 font-mono">West Bengal Standard</span>
-              </div>
-
-              {/* Input unit & amount */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                    Enter Quantity (পরিমাণ):
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    value={convAmount}
-                    onChange={e => setConvAmount(e.target.value)}
-                    placeholder="1"
-                    className="w-full px-3 py-2 text-sm font-mono font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                    Select Input Unit (একক নির্বাচন):
-                  </label>
-                  <select
-                    value={convBaseUnit}
-                    onChange={e => setConvBaseUnit(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold cursor-pointer"
-                  >
-                    {LAND_UNIT_OPTIONS.map(opt => (
-                      <option key={opt.key} value={opt.key}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Equivalent output grid across all 10 units */}
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
-                <div className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">
-                  Equivalent Measurements (সমপরিমাণ পরিমাপ):
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-                  {LAND_UNIT_OPTIONS.map(opt => {
-                    const equivalent = convBaseSqft / opt.sqft;
-                    const isSelected = opt.key === convBaseUnit;
-                    return (
-                      <div
-                        key={opt.key}
-                        className={`p-2.5 rounded-xl border text-left transition-all ${
-                          isSelected
-                            ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 ring-1 ring-blue-500'
-                            : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-750'
-                        }`}
-                      >
-                        <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 truncate">
-                          {opt.label}
-                        </div>
-                        <div className="text-sm font-mono font-black text-slate-900 dark:text-slate-100 mt-0.5 truncate">
-                          {equivalent >= 1000
-                            ? equivalent.toLocaleString('en-IN', { maximumFractionDigits: 3 })
-                            : equivalent.toFixed(4)}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ========================================================= */}
-          {/* TAB 3: STANDARD MATH (REVERSE 10000, 16-ANA & CO-SHARERS) */}
-          {/* ========================================================= */}
-          {activeSubTab === 'standard-math' && (
             <div className="space-y-4">
               <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-xs space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5 gap-2">
-                  <span className="text-xs font-extrabold uppercase tracking-wider text-purple-700 dark:text-purple-400 flex items-center gap-1.5">
-                    <Building className="w-4 h-4 text-purple-600" />
-                    <span>3. Standard Math &amp; Partition Tools</span>
-                  </span>
-
-                  <div className="inline-flex rounded-xl border border-slate-200 dark:border-slate-700 p-0.5 bg-slate-100 dark:bg-slate-800 text-xs font-bold self-start sm:self-auto">
+                <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                      <ArrowRightLeft className="w-4 h-4" />
+                      <span>2. Live Land Measurement Converter (ভূমি পরিমাপ রূপান্তরক)</span>
+                    </span>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      West Bengal Standard · ১ বিঘা = ২০ কাঠা, ১ কাঠা = ১৬ ছটাক = ৭২০ ব.ফু., ১ শতক = ৪৩৫.৬ ব.ফু.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setStdMode('10000-to-area')}
-                      className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                        stdMode === '10000-to-area' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600'
-                      }`}
+                      onClick={printUnitConversionSheet}
+                      className="px-3 py-1.5 text-xs font-bold rounded-xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+                      title="Print Conversion Certificate"
                     >
-                      10000 ➔ Area
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setStdMode('ana-to-10000')}
-                      className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                        stdMode === 'ana-to-10000' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600'
-                      }`}
-                    >
-                      16-Ana ➔ 10000
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setStdMode('co-sharer')}
-                      className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                        stdMode === 'co-sharer' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600'
-                      }`}
-                    >
-                      Co-Sharer Dag
+                      <Printer className="w-3.5 h-3.5" />
+                      <span>Print Conversion Slip</span>
                     </button>
                   </div>
                 </div>
 
-                {/* Sub-mode A: 10,000 Share to Land Area */}
-                {stdMode === '10000-to-area' && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                          Total Plot Quantity (দাগের মোট জমি)
-                        </label>
-                        <input
-                          type="number"
-                          step="any"
-                          value={s2aPlotValue}
-                          onChange={e => setS2aPlotValue(e.target.value)}
-                          className="w-full px-3 py-2 text-sm font-mono font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                          Plot Unit (একক)
-                        </label>
-                        <select
-                          value={s2aPlotUnit}
-                          onChange={e => setS2aPlotUnit(e.target.value)}
-                          className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold"
-                        >
-                          {LAND_UNIT_OPTIONS.map(opt => (
-                            <option key={opt.key} value={opt.key}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase mb-1">
-                          10,000 Share (দশ হাজারী হিস্যা)
-                        </label>
-                        <input
-                          type="number"
-                          step="any"
-                          value={s2aShare10000}
-                          onChange={e => setS2aShare10000(e.target.value)}
-                          className="w-full px-3 py-2 text-sm font-mono font-bold rounded-xl border border-emerald-400 bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-300"
-                        />
-                      </div>
-                    </div>
-
-                    {s2aComputed && (
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2">
-                        <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200">
-                          <div className="text-[10px] font-bold text-emerald-700 uppercase">শতক (Decimal)</div>
-                          <div className="text-lg font-black font-mono text-emerald-900 mt-1">
-                            {s2aComputed.targetDecimal.toFixed(4)} শতক
-                          </div>
-                        </div>
-                        <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200">
-                          <div className="text-[10px] font-bold text-blue-700 uppercase">Square Feet</div>
-                          <div className="text-sm font-black font-mono text-blue-900 mt-1">
-                            {s2aComputed.targetSqft.toFixed(2)} Sq.Ft.
-                          </div>
-                        </div>
-                        <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200">
-                          <div className="text-[10px] font-bold text-purple-700 uppercase">Traditional Format</div>
-                          <div className="text-sm font-bold text-purple-900 mt-1">
-                            {s2aComputed.targetWbArea.formatted}
-                          </div>
-                        </div>
-                        <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200">
-                          <div className="text-[10px] font-bold text-amber-700 uppercase">16-Ana Equivalent</div>
-                          <div className="text-xs font-bold text-amber-900 mt-1">
-                            {s2aComputed.target16Ana.formatted}
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                {/* Section: Multi-line Input rows with "+" Option */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase">
+                      Enter Measurements (পরিমাপ ও একক ইনপুট):
+                    </label>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Total Items: <strong>{convLines.length}</strong>
+                    </span>
                   </div>
-                )}
 
-                {/* Sub-mode B: 16-Ana to 10,000 Share */}
-                {stdMode === 'ana-to-10000' && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-500 mb-1">আনা (0-16)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="16"
-                          value={a2sAna}
-                          onChange={e => setA2sAna(parseFloat(e.target.value) || 0)}
-                          className="w-full px-2.5 py-1.5 text-xs font-mono font-bold rounded-lg border border-purple-300 bg-white dark:bg-slate-800"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-500 mb-1">গণ্ডা (0-19)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="19"
-                          value={a2sGanda}
-                          onChange={e => setA2sGanda(parseFloat(e.target.value) || 0)}
-                          className="w-full px-2.5 py-1.5 text-xs font-mono font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-500 mb-1">কড়া (0-3)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="3"
-                          value={a2sKara}
-                          onChange={e => setA2sKara(parseFloat(e.target.value) || 0)}
-                          className="w-full px-2.5 py-1.5 text-xs font-mono font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-500 mb-1">ক্রান্তি (0-2)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="2"
-                          value={a2sKranti}
-                          onChange={e => setA2sKranti(parseFloat(e.target.value) || 0)}
-                          className="w-full px-2.5 py-1.5 text-xs font-mono font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-500 mb-1">তিল (0-19)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="19"
-                          value={a2sTil}
-                          onChange={e => setA2sTil(parseFloat(e.target.value) || 0)}
-                          className="w-full px-2.5 py-1.5 text-xs font-mono font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2">
-                      <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200">
-                        <div className="text-[10px] font-bold text-purple-700 uppercase">10,000 Share</div>
-                        <div className="text-xl font-black font-mono text-purple-900 mt-1">
-                          {a2sComputed.share10000.toFixed(2)}
-                        </div>
-                      </div>
-                      <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200">
-                        <div className="text-[10px] font-bold text-blue-700 uppercase">LR Khatian</div>
-                        <div className="text-sm font-black font-mono text-blue-900 mt-1">
-                          {a2sComputed.lrKhatian}
-                        </div>
-                      </div>
-                      <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200">
-                        <div className="text-[10px] font-bold text-emerald-700 uppercase">Satak (শতক)</div>
-                        <div className="text-sm font-black font-mono text-emerald-900 mt-1">
-                          {a2sComputed.targetDecimal.toFixed(4)} শতক
-                        </div>
-                      </div>
-                      <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200">
-                        <div className="text-[10px] font-bold text-amber-700 uppercase">Traditional Format</div>
-                        <div className="text-xs font-bold text-amber-900 mt-1">
-                          {a2sComputed.targetWbArea.formatted}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Sub-mode C: Co-Sharers Partition */}
-                {stdMode === 'co-sharer' && (
-                  <div className="space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                          Total Plot Quantity:
-                        </label>
-                        <input
-                          type="number"
-                          step="any"
-                          value={coPlotValue}
-                          onChange={e => setCoPlotValue(e.target.value)}
-                          className="w-24 px-2 py-1 text-xs font-mono font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-                        />
-                        <select
-                          value={coPlotUnit}
-                          onChange={e => setCoPlotUnit(e.target.value)}
-                          className="px-2 py-1 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-                        >
-                          <option value="satak">Satak / Decimal (শতক)</option>
-                          <option value="acre">Acre (একর)</option>
-                          <option value="bigha">Bigha (বিঘা)</option>
-                        </select>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={addCoPortion}
-                        className="px-3 py-1 text-xs font-bold rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 flex items-center gap-1 cursor-pointer"
+                  <div className="space-y-2.5">
+                    {computedConvLines.map((line, idx) => (
+                      <div
+                        key={line.id}
+                        className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 flex flex-col sm:flex-row sm:items-center gap-2.5 transition-all"
                       >
-                        <Plus className="w-3.5 h-3.5" /> + Add Co-Sharer
-                      </button>
-                    </div>
-
-                    <div className="space-y-2">
-                      {coPortions.map(p => (
-                        <div
-                          key={p.id}
-                          className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 flex flex-wrap items-center gap-2"
-                        >
-                          <input
-                            type="text"
-                            value={p.label}
-                            onChange={e => updateCoPortion(p.id, { label: e.target.value })}
-                            className="w-44 px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
-                          />
-                          <div className="flex items-center gap-1.5 text-xs">
-                            <span className="text-[11px] font-bold text-slate-500">কাঠা:</span>
+                        <div className="flex items-center gap-2 flex-1">
+                          <span className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950 px-2 py-1 rounded-lg shrink-0">
+                            #{idx + 1}
+                          </span>
+                          <div className="w-28 sm:w-36 shrink-0">
                             <input
                               type="number"
-                              value={p.katha || ''}
-                              onChange={e => updateCoPortion(p.id, { katha: parseFloat(e.target.value) || 0 })}
+                              step="any"
+                              value={line.amount}
+                              onChange={e => updateConvLine(line.id, { amount: e.target.value })}
                               placeholder="0"
-                              className="w-14 px-2 py-1 text-xs font-mono rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
-                            />
-                            <span className="text-[11px] font-bold text-slate-500">ছটাক:</span>
-                            <input
-                              type="number"
-                              value={p.chittak || ''}
-                              onChange={e => updateCoPortion(p.id, { chittak: parseFloat(e.target.value) || 0 })}
-                              placeholder="0"
-                              className="w-14 px-2 py-1 text-xs font-mono rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                              className="w-full px-3 py-2 text-sm font-mono font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
                             />
                           </div>
-                          {coPortions.length > 1 && (
+                          <div className="flex-1 min-w-[140px]">
+                            <select
+                              value={line.unitKey}
+                              onChange={e => updateConvLine(line.id, { unitKey: e.target.value })}
+                              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-semibold text-slate-800 dark:text-slate-200 cursor-pointer focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+                            >
+                              {LAND_UNIT_OPTIONS.map(opt => (
+                                <option key={opt.key} value={opt.key}>
+                                  {opt.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Inline Conversion Preview */}
+                        <div className="flex items-center justify-between sm:justify-end gap-2 text-xs pl-8 sm:pl-0">
+                          <div className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono text-[11px] text-slate-600 dark:text-slate-300">
+                            <span className="font-bold text-slate-900 dark:text-slate-100">
+                              {line.sqft.toLocaleString('en-IN', { maximumFractionDigits: 1 })}
+                            </span>{' '}
+                            Sq.Ft. ·{' '}
+                            <span className="font-bold text-blue-600 dark:text-blue-400">
+                              {line.satak.toFixed(3)}
+                            </span>{' '}
+                            শতক
+                          </div>
+
+                          {convLines.length > 1 && (
                             <button
                               type="button"
-                              onClick={() => removeCoPortion(p.id)}
-                              className="p-1 text-slate-400 hover:text-rose-600 rounded"
+                              onClick={() => removeConvLine(line.id)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition-colors"
+                              title="Delete Item"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
                           )}
                         </div>
-                      ))}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* + Add Option & Reset Bar */}
+                  <div className="flex flex-wrap items-center gap-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={addConvLine}
+                      className="px-4 py-2 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-[0.99]"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>+ Add Line</span>
+                    </button>
+
+                    {convLines.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={resetConvLines}
+                        className="px-3 py-2 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+                      >
+                        Reset to 1 Item
+                      </button>
+                    )}
+
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      উদাহরণ: ১ কাঠা + ৩ ছটাক + ২০ ব.ফু. (একাধিক জমি একসাথে রূপান্তর করুন)
+                    </span>
+                  </div>
+                </div>
+
+                {/* Total Combined Area Highlight Banner */}
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 dark:from-blue-950/40 dark:via-indigo-950/30 dark:to-blue-950/40 border border-blue-200 dark:border-blue-800 space-y-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <div className="text-[11px] font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wider">
+                        {convLines.length > 1 ? 'Total Combined Measurement (সর্বমোট সমবায়িক পরিমাপ)' : 'Calculated Measurement (পরিমাপ ফলাফল)'}:
+                      </div>
+                      <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white mt-0.5">
+                        {totalConvSqft.toLocaleString('en-IN', { maximumFractionDigits: 2 })} <span className="text-sm font-normal text-slate-600 dark:text-slate-300">Sq.Ft. (বর্গফুট)</span>
+                      </div>
                     </div>
 
-                    {coSharerResult && (
-                      <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-mono space-y-1">
-                        <div className="font-bold text-slate-800 dark:text-slate-200 flex justify-between">
-                          <span>মোট দাগের জমি: {coSharerResult.totalDecimal.toFixed(3)} শতক</span>
-                          <span>বন্টিত জমি: {(coSharerResult.sumPortionSqft / 435.6).toFixed(3)} শতক</span>
-                        </div>
-                        <div className="text-amber-700 dark:text-amber-400 font-bold flex justify-between">
-                          <span>অবশিষ্ট জমি: {coSharerResult.residualDecimal.toFixed(3)} শতক</span>
-                          <span>অবশিষ্ট ১০,০০০ হিস্যা: {coSharerResult.residual10000.toFixed(2)}</span>
-                        </div>
+                    <div className="flex flex-wrap items-center gap-2 font-mono">
+                      <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700 shadow-2xs">
+                        <span className="text-[10px] text-slate-500 block uppercase font-sans font-bold">শতক / Decimal</span>
+                        <span className="text-base font-black text-blue-700 dark:text-blue-300">
+                          {totalConvSatak.toFixed(4)}
+                        </span>
                       </div>
-                    )}
+                      <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700 shadow-2xs">
+                        <span className="text-[10px] text-slate-500 block uppercase font-sans font-bold">কাঠা / Katha</span>
+                        <span className="text-base font-black text-indigo-700 dark:text-indigo-300">
+                          {totalConvKatha.toFixed(4)}
+                        </span>
+                      </div>
+                      <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700 shadow-2xs">
+                        <span className="text-[10px] text-slate-500 block uppercase font-sans font-bold">বিঘা / Bigha</span>
+                        <span className="text-base font-black text-purple-700 dark:text-purple-300">
+                          {totalConvBigha.toFixed(4)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-blue-200/70 dark:border-blue-800/60 flex items-center justify-between text-xs">
+                    <span className="text-slate-600 dark:text-slate-300">
+                      <strong>পরম্পরাগত ভূমি হিসাব:</strong> {totalConvWbArea.formatted}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => copyUnitValue('total_sqft', `${totalConvSqft.toFixed(2)} Sq.Ft. (${totalConvSatak.toFixed(4)} Satak)`)}
+                      className="text-blue-700 dark:text-blue-300 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>{copiedUnitKey === 'total_sqft' ? 'Copied!' : 'Copy Summary'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Equivalent Output Grid Across All 10 Units */}
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">
+                      Equivalent Across 10 Standard Units (পশ্চিমবঙ্গ প্রমিত ১০টি এককে সমপরিমাণ মান):
+                    </div>
+                    <span className="text-[11px] text-slate-400 font-mono">1 Click to Copy</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                    {LAND_UNIT_OPTIONS.map(opt => {
+                      const equivalent = totalConvSqft / opt.sqft;
+                      const formattedVal = equivalent >= 1000
+                        ? equivalent.toLocaleString('en-IN', { maximumFractionDigits: 4 })
+                        : equivalent.toFixed(4);
+                      const isCopied = copiedUnitKey === opt.key;
+
+                      return (
+                        <div
+                          key={opt.key}
+                          onClick={() => copyUnitValue(opt.key, formattedVal)}
+                          className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-750 bg-slate-50/80 dark:bg-slate-800/50 hover:bg-blue-50/50 dark:hover:bg-blue-950/40 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer group text-left relative"
+                          title={`Click to copy ${formattedVal} ${opt.key}`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 truncate">
+                              {opt.label}
+                            </span>
+                            <span className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400">
+                              {isCopied ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                            </span>
+                          </div>
+                          <div className="text-sm font-mono font-black text-slate-900 dark:text-slate-100 mt-1 truncate">
+                            {formattedVal}
+                          </div>
+                          <div className="text-[9px] text-slate-400 dark:text-slate-500 truncate mt-0.5">
+                            {opt.banglaDesc}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Itemized Table if more than 1 item */}
+                {computedConvLines.length > 1 && (
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                    <div className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">
+                      Itemized Input Breakdown (পৃথক ইনপুট বিবরণী):
+                    </div>
+                    <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+                      <table className="w-full text-xs text-left">
+                        <thead className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-700">
+                          <tr>
+                            <th className="p-2.5">#</th>
+                            <th className="p-2.5">ইনপুট পরিমাণ ও একক</th>
+                            <th className="p-2.5">বর্গফুট (Sq.Ft.)</th>
+                            <th className="p-2.5">শতক (Decimal)</th>
+                            <th className="p-2.5">কাঠা (Katha)</th>
+                            <th className="p-2.5">মোটের শতাংশ (%)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono">
+                          {computedConvLines.map((l, i) => (
+                            <tr key={l.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                              <td className="p-2.5 font-bold text-slate-500">{i + 1}</td>
+                              <td className="p-2.5 font-sans font-bold text-slate-800 dark:text-slate-200">
+                                {l.amount} {l.optLabel}
+                              </td>
+                              <td className="p-2.5">{l.sqft.toLocaleString('en-IN', { maximumFractionDigits: 1 })}</td>
+                              <td className="p-2.5 text-blue-600 dark:text-blue-400 font-bold">{l.satak.toFixed(4)}</td>
+                              <td className="p-2.5 text-indigo-600 dark:text-indigo-400">{l.katha.toFixed(4)}</td>
+                              <td className="p-2.5 text-slate-500">
+                                {totalConvSqft > 0 ? ((l.sqft / totalConvSqft) * 100).toFixed(2) : '0.00'}%
+                              </td>
+                            </tr>
+                          ))}
+                          <tr className="bg-blue-50/60 dark:bg-blue-950/30 font-bold text-slate-900 dark:text-slate-100">
+                            <td colSpan={2} className="p-2.5 font-sans">সর্বমোট (Grand Total)</td>
+                            <td className="p-2.5">{totalConvSqft.toLocaleString('en-IN', { maximumFractionDigits: 1 })}</td>
+                            <td className="p-2.5 text-blue-600 dark:text-blue-400">{totalConvSatak.toFixed(4)}</td>
+                            <td className="p-2.5 text-indigo-600 dark:text-indigo-400">{totalConvKatha.toFixed(4)}</td>
+                            <td className="p-2.5">100.00%</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
               </div>
