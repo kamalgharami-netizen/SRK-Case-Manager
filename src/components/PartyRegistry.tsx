@@ -371,7 +371,7 @@ export const PartyRegistry: React.FC = () => {
                   rows={2}
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
-                  placeholder="e.g. Associated with Dag 482 Rajarhat"
+                  placeholder="e.g. Associated with Dag / Case"
                   className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
                 />
               </div>

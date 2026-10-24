@@ -489,7 +489,7 @@ export const CauseList: React.FC = () => {
                   required
                   value={forum}
                   onChange={e => setForum(e.target.value.toUpperCase())}
-                  placeholder="BL&LRO Rajarhat / DL&LRO Alipore"
+                  placeholder="e.g. BL&LRO / DL&LRO / Court"
                   className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 uppercase"
                 />
               </div>

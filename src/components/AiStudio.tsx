@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
-import { CaseType, CaseItem, DraftingMatterType } from '../types';
+import { CaseType, CaseItem, DraftingMatterType, LandSchedule, Respondent } from '../types';
+import { wbDistricts } from '../data/wbDistricts';
+import { WB_LAND_CLASSIFICATIONS } from './CaseEntryForm';
 import {
   Brain,
   FileText,
@@ -19,6 +21,7 @@ import {
   X,
   Building2,
   User,
+  Users,
   MapPin,
   Calendar,
   Hash,
@@ -107,8 +110,10 @@ export interface FormValues {
   address: string;
   contactPhone: string;
   oppParty: string;
+  respondents: Respondent[];
   showOppParty: boolean;
   showLandSchedule: boolean;
+  landSchedules: LandSchedule[];
   showCaseRef: boolean;
   caseNumber: string;
   caseDate: string;
@@ -620,39 +625,124 @@ export const AiStudio: React.FC<AiStudioProps> = ({
     }
   }, [selectedCategory, template]);
 
-  // Form State
-  const [forum, setForum] = useState('To: The State Public Information Officer (SPIO) / BL&LRO, Rajarhat');
-  const [authorityAddress, setAuthorityAddress] = useState('Office of the Block Land & Land Reforms Officer, Rajarhat, North 24 Parganas - 700135');
-  const [spioDetails, setSpioDetails] = useState('State Public Information Officer & Revenue Officer, BL&LRO Office, Rajarhat');
-  const [partyName, setPartyName] = useState('Debashis Chatterjee');
-  const [fatherName, setFatherName] = useState('Late Birendra Nath Chatterjee');
-  const [address, setAddress] = useState('Flat 3B, Greenwood Park, Action Area I, New Town, Kolkata - 700156');
-  const [contactPhone, setContactPhone] = useState('9830012345');
+  // Helpers for text case
+  const toUpper = (s: string) => (s ? s.toUpperCase() : '');
 
-  // Opposite Party (default hidden for RTI and Misc Case as requested)
+  // Form State - initialized empty / dynamic without hardcoded locations
+  const [forum, setForum] = useState('');
+  const [authorityAddress, setAuthorityAddress] = useState('');
+  const [spioDetails, setSpioDetails] = useState('');
+  const [partyName, setPartyName] = useState('');
+  const [fatherName, setFatherName] = useState('');
+  const [address, setAddress] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+
+  // Opposite Party (Respondent[]) - matching CaseEntryForm
   const [showOppParty, setShowOppParty] = useState(false);
-  const [oppParty, setOppParty] = useState('The State of West Bengal, represented by BL&LRO');
+  const [oppParty, setOppParty] = useState('');
+  const [respondents, setRespondents] = useState<Respondent[]>([]);
 
-  // Land Schedule (সম্পত্তির তপশীল বিবরণ) - default hidden for RTI, default shown for Misc Case
+  // Land Schedule (LandSchedule[]) - matching CaseEntryForm
   const [showLandSchedule, setShowLandSchedule] = useState(false);
-  const [mouzaJl, setMouzaJl] = useState('Mouza - Patharghata, J.L. No. - 36');
-  const [khatianDag, setKhatianDag] = useState('L.R. Khatian No. 1428, L.R. Dag No. 482');
-  const [landAreaClass, setLandAreaClass] = useState('Area 0.08 Acre, Classification - Bastu');
-  const [deedNoDate, setDeedNoDate] = useState('Registered Deed No. 04812/2024 dated 04-11-2024');
+  const [landSchedules, setLandSchedules] = useState<LandSchedule[]>([]);
+  const [mouzaJl, setMouzaJl] = useState('');
+  const [khatianDag, setKhatianDag] = useState('');
+  const [landAreaClass, setLandAreaClass] = useState('');
+  const [deedNoDate, setDeedNoDate] = useState('');
 
   // Case Reference (optional via + button)
   const [showCaseRef, setShowCaseRef] = useState(false);
-  const [caseNumber, setCaseNumber] = useState('RTI/BLRO/2024/091');
-  const [caseDate, setCaseDate] = useState('14-10-2024');
+  const [caseNumber, setCaseNumber] = useState('');
+  const [caseDate, setCaseDate] = useState('');
 
   // Facts of the case (observed and drafted by AI)
-  const [customFacts, setCustomFacts] = useState(
-    'Applicant seeks certified copy of Revenue Inspector field inquiry report and spot sketch map submitted in connection with L.R. Khatian No. 1428, Dag No. 482, Mouza Patharghata.'
-  );
+  const [customFacts, setCustomFacts] = useState('');
 
   const [generatedDraft, setGeneratedDraft] = useState<string>('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isObservingFacts, setIsObservingFacts] = useState(false);
+
+  // Respondent handlers matching CaseEntryForm
+  const addRespondent = () => {
+    setRespondents(prev => [
+      ...prev,
+      {
+        id: 'resp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+        name: '',
+        type: 'Private',
+        address: '',
+        phone: ''
+      }
+    ]);
+    setShowOppParty(true);
+  };
+
+  const updateRespondent = (index: number, field: keyof Respondent, value: string) => {
+    setRespondents(prev => {
+      const updated = [...prev];
+      if (updated[index]) {
+        updated[index] = { ...updated[index], [field]: value };
+      }
+      return updated;
+    });
+  };
+
+  const removeRespondent = (index: number) => {
+    setRespondents(prev => {
+      const filtered = prev.filter((_, idx) => idx !== index);
+      if (filtered.length === 0) {
+        setShowOppParty(false);
+      }
+      return filtered;
+    });
+  };
+
+  // Land Schedule handlers matching CaseEntryForm
+  const addLandSchedule = () => {
+    setLandSchedules(prev => [
+      ...prev,
+      {
+        id: 'sched-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+        district: '',
+        block: '',
+        mouza: '',
+        jl: '',
+        khatian: '',
+        dag: '',
+        area: '',
+        unit: 'acre',
+        classification: 'Bastu'
+      }
+    ]);
+    setShowLandSchedule(true);
+  };
+
+  const updateSchedule = (index: number, field: keyof LandSchedule, value: string) => {
+    setLandSchedules(prev => {
+      const updated = [...prev];
+      if (updated[index]) {
+        if (field === 'district') {
+          const availBlocks = wbDistricts[value] || [];
+          const currentBlock = updated[index].block;
+          const newBlock = availBlocks.includes(currentBlock) ? currentBlock : '';
+          updated[index] = { ...updated[index], district: value, block: newBlock };
+        } else {
+          updated[index] = { ...updated[index], [field]: value };
+        }
+      }
+      return updated;
+    });
+  };
+
+  const removeSchedule = (index: number) => {
+    setLandSchedules(prev => {
+      const filtered = prev.filter((_, idx) => idx !== index);
+      if (filtered.length === 0) {
+        setShowLandSchedule(false);
+      }
+      return filtered;
+    });
+  };
 
   // Folder Learning state
   const [folderFiles, setFolderFiles] = useState<string[]>([]);
@@ -676,8 +766,20 @@ export const AiStudio: React.FC<AiStudioProps> = ({
       if (prefilledCase.applicants?.[0]?.father) setFatherName(prefilledCase.applicants[0].father);
       if (prefilledCase.applicants?.[0]?.address) setAddress(prefilledCase.applicants[0].address);
       if (prefilledCase.applicants?.[0]?.phone) setContactPhone(prefilledCase.applicants[0].phone);
-      if (prefilledCase.opp) {
+      if (prefilledCase.respondents && prefilledCase.respondents.length > 0) {
+        setRespondents(prefilledCase.respondents);
+        setShowOppParty(true);
+      } else if (prefilledCase.opp) {
         setOppParty(prefilledCase.opp);
+        setRespondents([
+          {
+            id: 'resp-' + Date.now(),
+            name: prefilledCase.opp,
+            type: 'Private',
+            address: '',
+            phone: ''
+          }
+        ]);
         if (prefilledCase.type !== 'rti') setShowOppParty(true);
       }
       if (prefilledCase.forum) setForum(prefilledCase.forum);
@@ -755,6 +857,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
         }
       }
       if (prefilledCase.landSchedules && prefilledCase.landSchedules.length > 0) {
+        setLandSchedules(prefilledCase.landSchedules);
         const s = prefilledCase.landSchedules[0];
         setMouzaJl(s.mouza ? `Mouza - ${s.mouza}, J.L. No. - ${s.jl || ''}` : '');
         setKhatianDag(`L.R. Khatian No. ${s.khatian || ''}, L.R. Dag No. ${s.dag || ''}`);
@@ -771,21 +874,27 @@ export const AiStudio: React.FC<AiStudioProps> = ({
     }
   }, [prefilledCase, showToast]);
 
-  // Whenever template changes, set smart defaults per template requirements
+  // Whenever template changes, set smart dynamic authority and facts without hardcoded locations
   useEffect(() => {
+    const selectedDist = landSchedules[0]?.district || '';
+    const selectedBlk = landSchedules[0]?.block || '';
+    const distSuffix = selectedDist ? `, ${selectedDist}` : '';
+    const blkSuffix = selectedBlk ? `, ${selectedBlk}` : '';
+
     if (template === 'rti' || template === 'rti_sec6_1' || template === 'rti_sec7_1') {
-      setForum(prev => (prev.toLowerCase().includes('court') || prev.toLowerCase().includes('collector') ? 'To: The State Public Information Officer (SPIO) / BL&LRO, Rajarhat' : prev));
-      setAuthorityAddress('Office of the Block Land & Land Reforms Officer, Rajarhat, North 24 Parganas - 700135');
+      setForum(`To: The State Public Information Officer (SPIO) / BL&LRO${blkSuffix}`);
+      setAuthorityAddress(`Office of the Block Land & Land Reforms Officer${blkSuffix}${distSuffix}`);
+      setSpioDetails(`State Public Information Officer & Revenue Officer, BL&LRO Office${blkSuffix}`);
       setShowOppParty(false); // RTI has NO opposite party
       if (!prefilledCase?.grounds) {
         setCustomFacts(
-          'The applicant requires certified copy of the spot verification report and order-sheet of the Revenue Inspector in respect of L.R. Khatian No. 1428, Dag No. 482. Requisite RTI fee has been paid.'
+          'The applicant requires certified copy of the spot verification report, field inquiry notes, and order-sheet of the Revenue Inspector in respect of the scheduled property. Requisite statutory RTI fee has been paid.'
         );
       }
     } else if (template === 'rtifirstappeal' || template === 'rti_sec19_1') {
-      setForum('Before the First Appellate Authority (FAA) & District Land & Land Reforms Officer (DL&LRO)');
-      setAuthorityAddress('Administrative Building, Barasat, North 24 Parganas - 700124');
-      setSpioDetails('State Public Information Officer & Revenue Officer, Office of the BL&LRO Rajarhat');
+      setForum(`Before the First Appellate Authority (FAA) & District Land & Land Reforms Officer (DL&LRO)${distSuffix}`);
+      setAuthorityAddress(`Office of the District Land & Land Reforms Officer${distSuffix}`);
+      setSpioDetails(`State Public Information Officer & Revenue Officer, Office of the BL&LRO${blkSuffix}`);
       setShowOppParty(false); // RTI appeal has SPIO details
       setShowCaseRef(true);
       if (!prefilledCase?.grounds) {
@@ -794,9 +903,9 @@ export const AiStudio: React.FC<AiStudioProps> = ({
         );
       }
     } else if (template === 'rti_sec19_2') {
-      setForum('Before the First Appellate Authority (FAA) & District Land & Land Reforms Officer (DL&LRO)');
-      setAuthorityAddress('Administrative Building, Barasat, North 24 Parganas - 700124');
-      setSpioDetails('State Public Information Officer & Revenue Officer, Office of the BL&LRO Rajarhat');
+      setForum(`Before the First Appellate Authority (FAA) & District Land & Land Reforms Officer (DL&LRO)${distSuffix}`);
+      setAuthorityAddress(`Office of the District Land & Land Reforms Officer${distSuffix}`);
+      setSpioDetails(`State Public Information Officer & Revenue Officer, Office of the BL&LRO${blkSuffix}`);
       setShowOppParty(false);
       setShowCaseRef(true);
       if (!prefilledCase?.grounds) {
@@ -804,28 +913,49 @@ export const AiStudio: React.FC<AiStudioProps> = ({
           'The SPIO has issued notice to disclose personal and confidential land transaction records of the Appellant third party without providing adequate opportunity of hearing under Section 11 of the RTI Act, 2005.'
         );
       }
-    } else if (template === 'misc10000' || template === 'misc_share10000') {
-      setForum('Before the Ld. Revenue Officer / Block Land & Land Reforms Officer, Rajarhat');
-      setAuthorityAddress('Office of the BL&LRO, Rajarhat');
-      setShowOppParty(false); // Default hidden, user can add via + button
-      setOppParty('The State of West Bengal, represented by BL&LRO');
+    } else if (template === 'rti_sec19_3' || template === 'rti_sec18_20') {
+      setForum('Before the West Bengal State Information Commission (SIC)');
+      setAuthorityAddress('Khadya Bhavan, 11A, Mirza Ghalib Street, Kolkata - 700087');
+      setSpioDetails(`State Public Information Officer & First Appellate Authority${distSuffix}`);
+      setShowOppParty(false);
+      setShowCaseRef(true);
       if (!prefilledCase?.grounds) {
         setCustomFacts(
-          'The total recorded shares in Dag No. 482 in Mouza Patharghata do not aggregate to 10,000 parts, leading to mathematical mismatch and system lock on the Banglarbhumi portal. Correction of shares u/s 50A WBLR Act is required.'
+          'Statutory proceeding before the State Information Commission on grounds of persistent non-compliance and violation of statutory provisions of the RTI Act, 2005.'
+        );
+      }
+    } else if (template === 'misc10000' || template === 'misc_share10000') {
+      setForum(`Before the Ld. Revenue Officer / Block Land & Land Reforms Officer${blkSuffix}`);
+      setAuthorityAddress(`Office of the Block Land & Land Reforms Officer${blkSuffix}${distSuffix}`);
+      setShowOppParty(false);
+      if (!prefilledCase?.grounds) {
+        setCustomFacts(
+          'The total recorded shares in the scheduled Dag do not aggregate to 10,000 parts on the Banglarbhumi portal, leading to mathematical mismatch and system lock. Correction of shares u/s 50A WBLR Act is required.'
         );
       }
     } else if (template === 'misc_barga_revoke') {
-      setForum('Before the Ld. Revenue Officer / Block Land & Land Reforms Officer, Rajarhat');
-      setAuthorityAddress('Office of the BL&LRO, Rajarhat');
+      setForum(`Before the Ld. Revenue Officer / Block Land & Land Reforms Officer${blkSuffix}`);
+      setAuthorityAddress(`Office of the Block Land & Land Reforms Officer${blkSuffix}${distSuffix}`);
       setShowOppParty(true);
+      if (respondents.length === 0) {
+        setRespondents([
+          {
+            id: 'resp-barga-' + Date.now(),
+            name: 'The Recorded Bargadar',
+            type: 'Private',
+            address: '',
+            phone: ''
+          }
+        ]);
+      }
       if (!prefilledCase?.grounds) {
         setCustomFacts(
           'Petition for revocation and de-recording of wrongful Bargadar entry from the L.R. Khatian. The opposite party has never cultivated the land nor tendered any crop share, and the Petitioner personally cultivates the scheduled land.'
         );
       }
     } else if (template === 'misc_name_rect') {
-      setForum('Before the Ld. Revenue Officer / Block Land & Land Reforms Officer, Rajarhat');
-      setAuthorityAddress('Office of the BL&LRO, Rajarhat');
+      setForum(`Before the Ld. Revenue Officer / Block Land & Land Reforms Officer${blkSuffix}`);
+      setAuthorityAddress(`Office of the Block Land & Land Reforms Officer${blkSuffix}${distSuffix}`);
       setShowOppParty(false);
       if (!prefilledCase?.grounds) {
         setCustomFacts(
@@ -833,8 +963,8 @@ export const AiStudio: React.FC<AiStudioProps> = ({
         );
       }
     } else if (template === 'misc_share_area_rect') {
-      setForum('Before the Ld. Revenue Officer / Block Land & Land Reforms Officer, Rajarhat');
-      setAuthorityAddress('Office of the BL&LRO, Rajarhat');
+      setForum(`Before the Ld. Revenue Officer / Block Land & Land Reforms Officer${blkSuffix}`);
+      setAuthorityAddress(`Office of the Block Land & Land Reforms Officer${blkSuffix}${distSuffix}`);
       setShowOppParty(false);
       if (!prefilledCase?.grounds) {
         setCustomFacts(
@@ -842,8 +972,8 @@ export const AiStudio: React.FC<AiStudioProps> = ({
         );
       }
     } else if (template === 'misc_rslr_mapping') {
-      setForum('Before the Ld. Revenue Officer / Block Land & Land Reforms Officer, Rajarhat');
-      setAuthorityAddress('Office of the BL&LRO, Rajarhat');
+      setForum(`Before the Ld. Revenue Officer / Block Land & Land Reforms Officer${blkSuffix}`);
+      setAuthorityAddress(`Office of the Block Land & Land Reforms Officer${blkSuffix}${distSuffix}`);
       setShowOppParty(false);
       if (!prefilledCase?.grounds) {
         setCustomFacts(
@@ -851,8 +981,8 @@ export const AiStudio: React.FC<AiStudioProps> = ({
         );
       }
     } else if (template === 'misc_class_porcha_rect') {
-      setForum('Before the Ld. Revenue Officer / Block Land & Land Reforms Officer, Rajarhat');
-      setAuthorityAddress('Office of the BL&LRO, Rajarhat');
+      setForum(`Before the Ld. Revenue Officer / Block Land & Land Reforms Officer${blkSuffix}`);
+      setAuthorityAddress(`Office of the Block Land & Land Reforms Officer${blkSuffix}${distSuffix}`);
       setShowOppParty(false);
       if (!prefilledCase?.grounds) {
         setCustomFacts(
@@ -860,8 +990,8 @@ export const AiStudio: React.FC<AiStudioProps> = ({
         );
       }
     } else if (template === 'misc_vested_ceiling') {
-      setForum('Before the Ld. Revenue Officer / Block Land & Land Reforms Officer, Rajarhat');
-      setAuthorityAddress('Office of the BL&LRO, Rajarhat');
+      setForum(`Before the Ld. Revenue Officer / Block Land & Land Reforms Officer${blkSuffix}`);
+      setAuthorityAddress(`Office of the Block Land & Land Reforms Officer${blkSuffix}${distSuffix}`);
       setShowOppParty(false);
       if (!prefilledCase?.grounds) {
         setCustomFacts(
@@ -869,8 +999,8 @@ export const AiStudio: React.FC<AiStudioProps> = ({
         );
       }
     } else if (template === 'misc_other_petition') {
-      setForum('Before the Ld. Revenue Officer / Block Land & Land Reforms Officer, Rajarhat');
-      setAuthorityAddress('Office of the BL&LRO, Rajarhat');
+      setForum(`Before the Ld. Revenue Officer / Block Land & Land Reforms Officer${blkSuffix}`);
+      setAuthorityAddress(`Office of the Block Land & Land Reforms Officer${blkSuffix}${distSuffix}`);
       setShowOppParty(false);
       if (!prefilledCase?.grounds) {
         setCustomFacts(
@@ -878,14 +1008,24 @@ export const AiStudio: React.FC<AiStudioProps> = ({
         );
       }
     } else if (template.startsWith('misc')) {
-      setForum('Before the Ld. Revenue Officer / Block Land & Land Reforms Officer, Rajarhat');
-      setAuthorityAddress('Office of the BL&LRO, Rajarhat');
+      setForum(`Before the Ld. Revenue Officer / Block Land & Land Reforms Officer${blkSuffix}`);
+      setAuthorityAddress(`Office of the Block Land & Land Reforms Officer${blkSuffix}${distSuffix}`);
       setShowOppParty(false);
     } else if (template === 'lrappeal' || template.startsWith('lrappeal')) {
-      setForum('In the Court of the Ld. District Land & Land Reforms Officer (DL&LRO), North 24 Parganas');
-      setAuthorityAddress('Collectorate Compound, Barasat');
+      setForum(`In the Court of the Ld. District Land & Land Reforms Officer (DL&LRO)${distSuffix}`);
+      setAuthorityAddress(`Office of the District Land & Land Reforms Officer / Collector${distSuffix}`);
       setShowOppParty(true);
-      setOppParty('The State of West Bengal & Ors.');
+      if (respondents.length === 0) {
+        setRespondents([
+          {
+            id: 'resp-state-' + Date.now(),
+            name: 'The State of West Bengal, represented by BL&LRO',
+            type: 'State',
+            address: '',
+            phone: ''
+          }
+        ]);
+      }
       setShowCaseRef(true);
       if (!prefilledCase?.grounds) {
         setCustomFacts(
@@ -893,11 +1033,21 @@ export const AiStudio: React.FC<AiStudioProps> = ({
         );
       }
     } else if (template === 'firstappeal' || template.startsWith('firstappeal')) {
-      setForum('In the Court of the Appellate Authority / Additional District Magistrate (ADM L&LR)');
-      setAuthorityAddress('District Collectorate, Barasat');
-      setSpioDetails('Ld. Primary Adjudicating Officer / Revenue Officer, Rajarhat');
+      setForum(`In the Court of the Ld. Appellate Authority / Additional District Magistrate (ADM L&LR)${distSuffix}`);
+      setAuthorityAddress(`Office of the Additional District Magistrate and District Collector${distSuffix}`);
+      setSpioDetails(`Ld. Primary Adjudicating Officer / Revenue Officer${blkSuffix}`);
       setShowOppParty(true);
-      setOppParty('The State of West Bengal & Ors.');
+      if (respondents.length === 0) {
+        setRespondents([
+          {
+            id: 'resp-state-' + Date.now(),
+            name: 'The State of West Bengal & Ors.',
+            type: 'State',
+            address: '',
+            phone: ''
+          }
+        ]);
+      }
       setShowCaseRef(true);
       if (!prefilledCase?.grounds) {
         setCustomFacts(
@@ -905,19 +1055,29 @@ export const AiStudio: React.FC<AiStudioProps> = ({
         );
       }
     } else if (template === 'sec5delay' || template.startsWith('sec5') || template.startsWith('sec14')) {
-      setForum('In the Court of the Ld. District Land & Land Reforms Officer (DL&LRO)');
-      setAuthorityAddress('District Collectorate, Barasat');
+      setForum(`In the Court of the Ld. District Land & Land Reforms Officer (DL&LRO)${distSuffix}`);
+      setAuthorityAddress(`Office of the District Land & Land Reforms Officer / Collector${distSuffix}`);
       setShowOppParty(true);
-      setOppParty('The State of West Bengal');
+      if (respondents.length === 0) {
+        setRespondents([
+          {
+            id: 'resp-state-' + Date.now(),
+            name: 'The State of West Bengal',
+            type: 'State',
+            address: '',
+            phone: ''
+          }
+        ]);
+      }
       setShowCaseRef(true);
       if (!prefilledCase?.grounds) {
         setCustomFacts(
-          'Certified copy of the impugned order was received late and the appellant was afflicted with severe medical ailments. The delay of 45 days is bona fide and not intentional, requiring condonation u/s 5 Limitation Act.'
+          'Certified copy of the impugned order was received late and the appellant was afflicted with severe medical ailments. The delay is bona fide and not intentional, requiring condonation u/s 5 Limitation Act.'
         );
       }
     } else if (template === 'conversion' || template.startsWith('conv')) {
-      setForum('Before the Collector / District Land & Land Reforms Officer (DL&LRO)');
-      setAuthorityAddress('Office of the DL&LRO, North 24 Parganas');
+      setForum(`Before the Collector / District Land & Land Reforms Officer (DL&LRO)${distSuffix}`);
+      setAuthorityAddress(`Office of the District Land & Land Reforms Officer${distSuffix}`);
       setShowOppParty(false);
       setShowLandSchedule(true);
       if (!prefilledCase?.grounds) {
@@ -927,19 +1087,39 @@ export const AiStudio: React.FC<AiStudioProps> = ({
       }
     } else if (template.startsWith('lrtt')) {
       setForum('Before the West Bengal Land Reforms Tenancy Tribunal (WBLRTT)');
-      setAuthorityAddress('Salt Lake, Kolkata');
+      setAuthorityAddress('Bikash Bhavan, Salt Lake, Kolkata - 700091');
       setShowOppParty(true);
-      setOppParty('The State of West Bengal & Ors.');
+      if (respondents.length === 0) {
+        setRespondents([
+          {
+            id: 'resp-state-' + Date.now(),
+            name: 'The State of West Bengal & Ors.',
+            type: 'State',
+            address: '',
+            phone: ''
+          }
+        ]);
+      }
       setShowLandSchedule(true);
       setShowCaseRef(true);
     } else if (template.startsWith('barga')) {
-      setForum('Before the Ld. Revenue Officer & Special Officer (Barga), BL&LRO Office');
-      setAuthorityAddress('Office of the BL&LRO, Rajarhat');
+      setForum(`Before the Ld. Revenue Officer & Special Officer (Barga), BL&LRO Office${blkSuffix}`);
+      setAuthorityAddress(`Office of the Block Land & Land Reforms Officer${blkSuffix}${distSuffix}`);
       setShowOppParty(true);
-      setOppParty('The Recorded Land Owner / Raityat');
+      if (respondents.length === 0) {
+        setRespondents([
+          {
+            id: 'resp-barga-' + Date.now(),
+            name: 'The Recorded Land Owner / Raityat',
+            type: 'Private',
+            address: '',
+            phone: ''
+          }
+        ]);
+      }
       setShowLandSchedule(true);
     }
-  }, [template, prefilledCase]);
+  }, [template, prefilledCase, landSchedules]);
 
   // Current form values packaged
   const currentFormValues: FormValues = useMemo(
@@ -952,8 +1132,10 @@ export const AiStudio: React.FC<AiStudioProps> = ({
       address,
       contactPhone,
       oppParty,
+      respondents,
       showOppParty,
       showLandSchedule,
+      landSchedules,
       showCaseRef,
       caseNumber,
       caseDate,
@@ -972,8 +1154,10 @@ export const AiStudio: React.FC<AiStudioProps> = ({
       address,
       contactPhone,
       oppParty,
+      respondents,
       showOppParty,
       showLandSchedule,
+      landSchedules,
       showCaseRef,
       caseNumber,
       caseDate,
@@ -2014,22 +2198,53 @@ export const AiStudio: React.FC<AiStudioProps> = ({
             </div>
           </div>
         `;
-      } else if (vals.showOppParty && vals.oppParty) {
+      } else if (vals.showOppParty && (vals.respondents?.length > 0 || vals.oppParty)) {
+        const renderRespondentsEn = () => {
+          if (vals.respondents && vals.respondents.length > 0) {
+            return vals.respondents.map((r, i) => `
+              <div style="margin-bottom: 5px;">
+                <strong>${vals.respondents.length > 1 ? `${i + 1}. ` : ''}${r.name || '[Opposite Party / Respondent]'}</strong>
+                <span style="font-size: 11px; color: #475569;">(${r.type})</span>
+                ${r.address ? `<br/><span style="font-size: 11px; color: #334155;">Notice Address: ${r.address}</span>` : ''}
+                ${r.phone ? `<br/><span style="font-size: 11px; color: #64748b;">Phone: ${r.phone}</span>` : ''}
+              </div>
+            `).join('');
+          }
+          return `<div><strong>${vals.oppParty}</strong></div>`;
+        };
+
+        const renderRespondentsBn = () => {
+          if (vals.respondents && vals.respondents.length > 0) {
+            return vals.respondents.map((r, i) => `
+              <div style="margin-bottom: 5px;">
+                <strong>${vals.respondents.length > 1 ? `${i + 1}. ` : ''}${r.name || '[বিবাদী / প্রতিপক্ষ]'}</strong>
+                <span style="font-size: 11px; color: #475569;">(${r.type === 'State' ? 'পশ্চিমবঙ্গ সরকার' : r.type === 'Govt Dept' ? 'সরকারি দপ্তর' : 'ব্যক্তিগত'})</span>
+                ${r.address ? `<br/><span style="font-size: 11px; color: #334155;">ঠিকানা: ${r.address}</span>` : ''}
+                ${r.phone ? `<br/><span style="font-size: 11px; color: #64748b;">মোবাইল: ${r.phone}</span>` : ''}
+              </div>
+            `).join('');
+          }
+          return `<div><strong>${vals.oppParty}</strong></div>`;
+        };
+
         if (lang === 'english') {
           html += `
             <div style="margin-bottom: 14px; font-size: 12.5px;">
               <div style="display: flex; justify-content: space-between;">
                 <div>
-                  <strong>${vals.partyName}</strong><br/>
-                  S/o ${vals.fatherName}<br/>
-                  Residing at ${vals.address}
+                  <strong>${vals.partyName || '[Petitioner / Appellant]'}</strong><br/>
+                  ${vals.fatherName ? `S/o: ${vals.fatherName}<br/>` : ''}
+                  Residing at: ${vals.address || '[Address]'}
+                  ${vals.contactPhone ? `<br/>Contact: ${vals.contactPhone}` : ''}
                 </div>
                 <div style="text-align: right; font-weight: bold;">... Petitioner / Appellant</div>
               </div>
               <div style="text-align: center; margin: 6px 0; font-style: italic; font-weight: bold;">- VERSUS -</div>
               <div style="display: flex; justify-content: space-between;">
-                <div><strong>${vals.oppParty}</strong></div>
-                <div style="text-align: right; font-weight: bold;">... Opposite Party / Respondent</div>
+                <div>
+                  ${renderRespondentsEn()}
+                </div>
+                <div style="text-align: right; font-weight: bold;">... Opposite Party / Respondent(s)</div>
               </div>
             </div>
           `;
@@ -2038,15 +2253,18 @@ export const AiStudio: React.FC<AiStudioProps> = ({
             <div style="margin-bottom: 14px; font-size: 13px;">
               <div style="display: flex; justify-content: space-between;">
                 <div>
-                  <strong>${vals.partyName}</strong><br/>
-                  পিতা: ${vals.fatherName}<br/>
-                  ঠিকানা: ${vals.address}
+                  <strong>${vals.partyName || '[আবেদনকারী / আপিলকারী]'}</strong><br/>
+                  ${vals.fatherName ? `পিতা/স্বামী: ${vals.fatherName}<br/>` : ''}
+                  ঠিকানা: ${vals.address || '[ঠিকানা]'}
+                  ${vals.contactPhone ? `<br/>মোবাইল: ${vals.contactPhone}` : ''}
                 </div>
                 <div style="text-align: right; font-weight: bold; color: #1E3A8A;">... আবেদনকারী / আপিলকারী</div>
               </div>
               <div style="text-align: center; margin: 6px 0; font-weight: bold;">— বনাম —</div>
               <div style="display: flex; justify-content: space-between;">
-                <div><strong>${vals.oppParty}</strong></div>
+                <div>
+                  ${renderRespondentsBn()}
+                </div>
                 <div style="text-align: right; font-weight: bold; color: #475569;">... বিবাদী / প্রতিপক্ষ</div>
               </div>
             </div>
@@ -2056,14 +2274,17 @@ export const AiStudio: React.FC<AiStudioProps> = ({
             <div style="margin-bottom: 16px; font-size: 12.5px; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;">
               <div style="display: flex; justify-content: space-between;">
                 <div>
-                  <strong>${vals.partyName}</strong> (পিতা: ${vals.fatherName})<br/>
-                  <span style="color: #475569;">Address / ঠিকানা: ${vals.address}</span>
+                  <strong>${vals.partyName || '[Petitioner / Applicant]'}</strong> ${vals.fatherName ? `(পিতা: ${vals.fatherName})` : ''}<br/>
+                  <span style="color: #475569;">Address / ঠিকানা: ${vals.address || '[Address]'}</span>
+                  ${vals.contactPhone ? `<br/><span style="color: #64748b;">Phone: ${vals.contactPhone}</span>` : ''}
                 </div>
                 <div style="text-align: right; font-weight: bold;">... Petitioner / আবেদনকারী</div>
               </div>
               <div style="text-align: center; margin: 6px 0; font-weight: bold; font-style: italic; color: #64748b;">— VERSUS / বনাম —</div>
               <div style="display: flex; justify-content: space-between;">
-                <div><strong>${vals.oppParty}</strong></div>
+                <div>
+                  ${renderRespondentsEn()}
+                </div>
                 <div style="text-align: right; font-weight: bold;">... Opposite Party / প্রতিপক্ষ</div>
               </div>
             </div>
@@ -2158,25 +2379,74 @@ export const AiStudio: React.FC<AiStudioProps> = ({
 
       // 5. Land Schedule (সম্পত্তির তপশীল বিবরণ) - ONLY IF REQUIRED OR ADDED VIA + BUTTON
       if (vals.showLandSchedule) {
-        html += `
-          <div style="margin: 16px 0; padding: 10px; border: 1px solid #777; font-size: 12px; background: #FAFBFD;">
-            <div style="text-align: center; font-weight: bold; margin-bottom: 6px; text-decoration: underline; color: #1e3a8a;">
-              ${
-                lang === 'bengali'
-                  ? 'সম্পত্তির তপশীল বিবরণ (SCHEDULE OF PROPERTY)'
-                  : lang === 'bilingual'
-                  ? 'SCHEDULE OF PROPERTY / সম্পত্তির তপশীল বিবরণ'
-                  : 'SCHEDULE OF PROPERTY REFERRED TO ABOVE (সম্পত্তির তপশীল বিবরণ)'
-              }
+        if (vals.landSchedules && vals.landSchedules.length > 0) {
+          html += `
+            <div style="margin: 16px 0; border: 1.5px solid #1e3a8a; background: #FAFBFD; border-radius: 4px; overflow: hidden;">
+              <div style="background: #1e3a8a; color: white; padding: 6px 10px; font-weight: bold; text-align: center; font-size: 12.5px; text-transform: uppercase;">
+                ${
+                  lang === 'bengali'
+                    ? 'তপশীল সম্পত্তির বিবরণ (SCHEDULE OF PROPERTY)'
+                    : lang === 'bilingual'
+                    ? 'SCHEDULE OF PROPERTY / সম্পত্তির তপশীল বিবরণ'
+                    : 'SCHEDULE OF PROPERTY REFERRED TO ABOVE (তপশীল বিবরণ)'
+                }
+              </div>
+              <div style="overflow-x: auto; padding: 6px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
+                  <thead>
+                    <tr style="background: #f1f5f9; border-bottom: 1.5px solid #94a3b8;">
+                      <th style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center;">#</th>
+                      <th style="padding: 5px 6px; border: 1px solid #cbd5e1;">District & Block</th>
+                      <th style="padding: 5px 6px; border: 1px solid #cbd5e1;">Mouza & J.L.</th>
+                      <th style="padding: 5px 6px; border: 1px solid #cbd5e1;">Khatian</th>
+                      <th style="padding: 5px 6px; border: 1px solid #cbd5e1;">Dag No.</th>
+                      <th style="padding: 5px 6px; border: 1px solid #cbd5e1;">Area & Unit</th>
+                      <th style="padding: 5px 6px; border: 1px solid #cbd5e1;">Classification</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${vals.landSchedules.map((s, idx) => `
+                      <tr style="border-bottom: 1px solid #e2e8f0; ${idx % 2 === 1 ? 'background: #f8fafc;' : ''}">
+                        <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold;">${idx + 1}</td>
+                        <td style="padding: 5px 6px; border: 1px solid #cbd5e1;">${s.district || '—'}${s.block ? `, ${s.block}` : ''}</td>
+                        <td style="padding: 5px 6px; border: 1px solid #cbd5e1;">${s.mouza || '—'}${s.jl ? ` (J.L. ${s.jl})` : ''}</td>
+                        <td style="padding: 5px 6px; border: 1px solid #cbd5e1; font-family: monospace;">${s.khatian || '—'}</td>
+                        <td style="padding: 5px 6px; border: 1px solid #cbd5e1; font-family: monospace; font-weight: bold;">${s.dag || '—'}</td>
+                        <td style="padding: 5px 6px; border: 1px solid #cbd5e1; font-family: monospace;">${s.area || '—'} ${s.unit || ''}</td>
+                        <td style="padding: 5px 6px; border: 1px solid #cbd5e1; font-weight: 500;">${s.classification || '—'}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+                ${vals.deedNoDate ? `
+                  <div style="margin-top: 6px; font-size: 11px; color: #334155;">
+                    <strong>Registered Deed / Chain Reference (দলিল নম্বর ও তারিখ):</strong> ${vals.deedNoDate}
+                  </div>
+                ` : ''}
+              </div>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
-              <div><strong>District & Mouza (মৌজা ও জে.এল.):</strong> ${vals.mouzaJl}</div>
-              <div><strong>Khatian & Dag (খতিয়ান ও দাগ):</strong> ${vals.khatianDag}</div>
-              <div><strong>Area & Class (জমির পরিমাণ ও শ্রেণি):</strong> ${vals.landAreaClass}</div>
-              <div><strong>Deed / Document (দলিল নম্বর ও তারিখ):</strong> ${vals.deedNoDate}</div>
+          `;
+        } else {
+          html += `
+            <div style="margin: 16px 0; padding: 10px; border: 1px solid #777; font-size: 12px; background: #FAFBFD;">
+              <div style="text-align: center; font-weight: bold; margin-bottom: 6px; text-decoration: underline; color: #1e3a8a;">
+                ${
+                  lang === 'bengali'
+                    ? 'সম্পত্তির তপশীল বিবরণ (SCHEDULE OF PROPERTY)'
+                    : lang === 'bilingual'
+                    ? 'SCHEDULE OF PROPERTY / সম্পত্তির তপশীল বিবরণ'
+                    : 'SCHEDULE OF PROPERTY REFERRED TO ABOVE (সম্পত্তির তপশীল বিবরণ)'
+                }
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
+                <div><strong>District & Mouza (মৌজা ও জে.এল.):</strong> ${vals.mouzaJl || '—'}</div>
+                <div><strong>Khatian & Dag (খতিয়ান ও দাগ):</strong> ${vals.khatianDag || '—'}</div>
+                <div><strong>Area & Class (জমির পরিমাণ ও শ্রেণি):</strong> ${vals.landAreaClass || '—'}</div>
+                <div><strong>Deed / Document (দলিল নম্বর ও তারিখ):</strong> ${vals.deedNoDate || '—'}</div>
+              </div>
             </div>
-          </div>
-        `;
+          `;
+        }
       }
 
       // 6. Prayer
@@ -2683,7 +2953,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
                       type="text"
                       value={forum}
                       onChange={e => setForum(e.target.value)}
-                      placeholder="e.g. To: The State Public Information Officer (SPIO) & BL&LRO, Rajarhat"
+                      placeholder="e.g. To: The State Public Information Officer (SPIO) / BL&LRO"
                       className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium"
                     />
                   </div>
@@ -2696,7 +2966,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
                       type="text"
                       value={authorityAddress}
                       onChange={e => setAuthorityAddress(e.target.value)}
-                      placeholder="e.g. Office of the BL&LRO, Rajarhat, North 24 Parganas"
+                      placeholder="e.g. Office of the Block Land & Land Reforms Officer"
                       className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
                     />
                   </div>
@@ -2712,7 +2982,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
                         type="text"
                         value={spioDetails}
                         onChange={e => setSpioDetails(e.target.value)}
-                        placeholder="e.g. State Public Information Officer & Revenue Officer, BL&LRO Office Rajarhat"
+                        placeholder="e.g. State Public Information Officer & Revenue Officer, BL&LRO Office"
                         className="w-full px-2.5 py-1.5 text-xs rounded border border-violet-200 dark:border-violet-900 bg-violet-50/40 dark:bg-violet-950/20 font-medium"
                       />
                     </div>
@@ -2730,6 +3000,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
                         type="text"
                         value={partyName}
                         onChange={e => setPartyName(e.target.value)}
+                        placeholder="Applicant / Petitioner Name"
                         className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium"
                       />
                     </div>
@@ -2741,6 +3012,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
                         type="text"
                         value={fatherName}
                         onChange={e => setFatherName(e.target.value)}
+                        placeholder="Father / Husband Name"
                         className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
                       />
                     </div>
@@ -2755,6 +3027,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
                         type="text"
                         value={address}
                         onChange={e => setAddress(e.target.value)}
+                        placeholder="Full residential address"
                         className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
                       />
                     </div>
@@ -2766,129 +3039,372 @@ export const AiStudio: React.FC<AiStudioProps> = ({
                         type="text"
                         value={contactPhone}
                         onChange={e => setContactPhone(e.target.value)}
-                        placeholder="98300..."
-                        className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                        placeholder="Mobile / Phone"
+                        className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* SECTION: Opposite Party - ONLY when enabled or added via + button */}
-                {/* For RTI: strictly no opposite party. For Misc Case: opposite party added via + button */}
+                {/* SECTION: Opposite Party - ONLY when not RTI */}
                 {!isRtiCategory && (
-                  <div className="pt-1">
-                    {showOppParty ? (
-                      <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700 space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <label className="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase">
-                            Opposite Party (বিবাদী / প্রতিপক্ষ)
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => setShowOppParty(false)}
-                            className="text-[10px] text-red-500 hover:text-red-700 flex items-center gap-0.5 cursor-pointer font-semibold"
-                          >
-                            <X className="w-3 h-3" /> Remove
-                          </button>
-                        </div>
-                        <input
-                          type="text"
-                          value={oppParty}
-                          onChange={e => setOppParty(e.target.value)}
-                          placeholder="e.g. The State of West Bengal, represented by BL&LRO"
-                          className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-                        />
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                        <span className="text-[11px] font-bold uppercase text-slate-700 dark:text-slate-300">
+                          Opposite Party / Respondent (বিবাদী / প্রতিপক্ষ)
+                        </span>
+                        {respondents.length > 0 && (
+                          <span className="text-[10px] text-slate-400 font-normal">
+                            ({respondents.length})
+                          </span>
+                        )}
                       </div>
-                    ) : (
                       <button
                         type="button"
-                        onClick={() => setShowOppParty(true)}
-                        className="w-full py-2 px-3 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 hover:border-violet-500 text-slate-600 dark:text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer bg-slate-50/50 dark:bg-slate-800/40"
+                        onClick={addRespondent}
+                        className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 hover:bg-rose-100 border border-rose-200 dark:border-rose-900 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
                       >
-                        <Plus className="w-3.5 h-3.5 text-violet-600" />
-                        <span>+ Add Opposite Party (বিবাদী / প্রতিপক্ষ যোগ করুন)</span>
+                        <Plus className="w-3 h-3" />
+                        <span>+ Add Respondent &amp; Address</span>
                       </button>
+                    </div>
+
+                    {respondents.length === 0 ? (
+                      <div className="py-2.5 px-3 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-center text-xs text-slate-500 dark:text-slate-400">
+                        No opposite party currently added. Use <strong>+ Add Respondent &amp; Address</strong> above if notice is to be served.
+                      </div>
+                    ) : (
+                      <div className="space-y-2.5">
+                        {respondents.map((r, i) => (
+                          <div
+                            key={r.id}
+                            className="p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 space-y-2 shadow-2xs"
+                          >
+                            <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+                              <span className="flex items-center gap-1.5">
+                                <span className="w-4 h-4 rounded-full bg-rose-100 text-rose-700 text-[10px] flex items-center justify-center font-bold">
+                                  {i + 1}
+                                </span>
+                                <span>Opposite Party #{i + 1}</span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => removeRespondent(i)}
+                                className="text-rose-600 hover:text-rose-700 p-0.5 rounded cursor-pointer"
+                                title="Remove Respondent"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
+                                  Respondent Name / Authority *
+                                </label>
+                                <input
+                                  type="text"
+                                  value={r.name}
+                                  onChange={e => updateRespondent(i, 'name', toUpper(e.target.value))}
+                                  placeholder="e.g. Sri Subhas Sen / Authority"
+                                  className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold uppercase"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
+                                  Category / Type
+                                </label>
+                                <select
+                                  value={r.type}
+                                  onChange={e => updateRespondent(i, 'type', e.target.value as any)}
+                                  className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                                >
+                                  <option value="Private">Private Party / Co-sharer / Vendor</option>
+                                  <option value="Govt Dept">Govt Dept / BL&amp;LRO</option>
+                                  <option value="State">State of West Bengal</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
+                                  Contact Phone (Optional)
+                                </label>
+                                <input
+                                  type="text"
+                                  value={r.phone || ''}
+                                  onChange={e => updateRespondent(i, 'phone', e.target.value)}
+                                  placeholder="Phone / Mobile"
+                                  className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
+                                Notice Service Address (নোটিশ প্রেরণের সম্পূর্ণ ঠিকানা) *
+                              </label>
+                              <input
+                                type="text"
+                                value={r.address}
+                                onChange={e => updateRespondent(i, 'address', toUpper(e.target.value))}
+                                placeholder="Full residential or official address for summons / notice"
+                                className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 uppercase"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
                 )}
 
-                {/* SECTION: Land Schedule (সম্পত্তির তপশীল বিবরণ) - Default shown for Misc, optional via + for RTI & First Appeal */}
-                <div className="pt-1">
-                  {showLandSchedule ? (
-                    <div className="p-3 bg-blue-50/40 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-900/60 space-y-2">
-                      <div className="flex items-center justify-between pb-1 border-b border-blue-100 dark:border-blue-900/40">
-                        <span className="text-[11px] font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5" />
-                          <span>Property Schedule (সম্পত্তির তপশীল বিবরণ)</span>
+                {/* SECTION: Land Schedule (সম্পত্তির তপশীল বিবরণ) - Matching CaseEntryForm */}
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      <span className="text-[11px] font-bold uppercase text-blue-700 dark:text-blue-300">
+                        Property Schedule Details (জমির তপশীল বিবরণ)
+                      </span>
+                      {landSchedules.length > 0 && (
+                        <span className="text-[10px] text-slate-400 font-normal">
+                          ({landSchedules.length})
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => setShowLandSchedule(false)}
-                          className="text-[10px] text-red-500 hover:text-red-700 flex items-center gap-0.5 cursor-pointer font-semibold"
-                        >
-                          <Trash2 className="w-3 h-3" /> Remove Schedule
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-[9.5px] font-bold text-slate-500 uppercase mb-0.5">
-                            Mouza & JL (মৌজা ও জে.এল.)
-                          </label>
-                          <input
-                            type="text"
-                            value={mouzaJl}
-                            onChange={e => setMouzaJl(e.target.value)}
-                            className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[9.5px] font-bold text-slate-500 uppercase mb-0.5">
-                            Khatian & Dag (খতিয়ান ও দাগ)
-                          </label>
-                          <input
-                            type="text"
-                            value={khatianDag}
-                            onChange={e => setKhatianDag(e.target.value)}
-                            className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-[9.5px] font-bold text-slate-500 uppercase mb-0.5">
-                            Area & Class (পরিমাণ ও শ্রেণি)
-                          </label>
-                          <input
-                            type="text"
-                            value={landAreaClass}
-                            onChange={e => setLandAreaClass(e.target.value)}
-                            className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[9.5px] font-bold text-slate-500 uppercase mb-0.5">
-                            Deed No & Date (দলিল)
-                          </label>
-                          <input
-                            type="text"
-                            value={deedNoDate}
-                            onChange={e => setDeedNoDate(e.target.value)}
-                            className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
-                          />
-                        </div>
-                      </div>
+                      )}
                     </div>
-                  ) : (
                     <button
                       type="button"
-                      onClick={() => setShowLandSchedule(true)}
-                      className="w-full py-2 px-3 rounded-lg border border-dashed border-blue-300 dark:border-blue-800 hover:border-blue-500 text-blue-700 dark:text-blue-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer bg-blue-50/30 dark:bg-blue-950/20"
+                      onClick={addLandSchedule}
+                      className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 hover:bg-blue-100 border border-blue-200 dark:border-blue-900 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
                     >
-                      <Plus className="w-3.5 h-3.5" />
+                      <Plus className="w-3 h-3" />
                       <span>+ Add Schedule</span>
                     </button>
+                  </div>
+
+                  {landSchedules.length === 0 ? (
+                    <div className="py-2.5 px-3 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-center text-xs text-slate-500 dark:text-slate-400">
+                      No property schedule currently added. Click <strong>+ Add Schedule</strong> above to specify land details.
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {landSchedules.map((sched, idx) => (
+                        <div
+                          key={sched.id}
+                          className="p-3 bg-blue-50/40 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-900/60 space-y-2.5 shadow-2xs"
+                        >
+                          <div className="flex items-center justify-between pb-1.5 border-b border-blue-100 dark:border-blue-900/40">
+                            <span className="text-xs font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
+                              <span className="w-4 h-4 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-[10px] flex items-center justify-center font-bold">
+                                {idx + 1}
+                              </span>
+                              <span>Property Schedule #{idx + 1}</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removeSchedule(idx)}
+                              className="text-rose-600 hover:text-rose-700 p-0.5 rounded cursor-pointer"
+                              title="Remove Schedule"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
+                                District (জেলা)
+                              </label>
+                              <select
+                                value={sched.district}
+                                onChange={e => updateSchedule(idx, 'district', e.target.value)}
+                                className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                              >
+                                <option value="">-- Select District (জেলা) --</option>
+                                {Object.keys(wbDistricts)
+                                  .sort()
+                                  .map(d => (
+                                    <option key={d} value={d}>
+                                      {d}
+                                    </option>
+                                  ))}
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
+                                Block (ব্লক / থানা)
+                              </label>
+                              <select
+                                value={sched.block}
+                                onChange={e => updateSchedule(idx, 'block', e.target.value)}
+                                className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                              >
+                                <option value="">-- Select Block (ব্লক) --</option>
+                                {(wbDistricts[sched.district] || []).map(b => (
+                                  <option key={b} value={b}>
+                                    {b}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
+                                Mouza Name (মৌজা)
+                              </label>
+                              <input
+                                type="text"
+                                value={sched.mouza}
+                                onChange={e => updateSchedule(idx, 'mouza', toUpper(e.target.value))}
+                                placeholder="e.g. Mouza Name"
+                                className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 uppercase"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
+                                J.L. No (জে.এল)
+                              </label>
+                              <input
+                                type="text"
+                                value={sched.jl}
+                                onChange={e => updateSchedule(idx, 'jl', toUpper(e.target.value))}
+                                placeholder="J.L."
+                                className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono uppercase"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
+                                Khatian (খতিয়ান)
+                              </label>
+                              <input
+                                type="text"
+                                value={sched.khatian}
+                                onChange={e => updateSchedule(idx, 'khatian', toUpper(e.target.value))}
+                                placeholder="Khatian"
+                                className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono uppercase"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
+                                Dag No (দাগ)
+                              </label>
+                              <input
+                                type="text"
+                                value={sched.dag}
+                                onChange={e => updateSchedule(idx, 'dag', toUpper(e.target.value))}
+                                placeholder="Dag"
+                                className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono font-bold uppercase"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
+                                Area (পরিমাণ)
+                              </label>
+                              <input
+                                type="text"
+                                value={sched.area}
+                                onChange={e => updateSchedule(idx, 'area', toUpper(e.target.value))}
+                                placeholder="0.00"
+                                className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono uppercase"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
+                                Unit (একক)
+                              </label>
+                              <select
+                                value={sched.unit}
+                                onChange={e => updateSchedule(idx, 'unit', e.target.value as any)}
+                                className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                              >
+                                <option value="acre">Acre (একর)</option>
+                                <option value="satak">Satak / Decimal (শতক)</option>
+                                <option value="bigha">Bigha (বিঘা)</option>
+                                <option value="katha">Katha (কাঠা)</option>
+                                <option value="sqft">Sq. Ft.</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              {(() => {
+                                const isPredefined = WB_LAND_CLASSIFICATIONS.some(
+                                  c => c.value !== 'Other' && c.value.toLowerCase() === (sched.classification || '').toLowerCase()
+                                );
+                                return (
+                                  <>
+                                    <div className="flex items-center justify-between mb-0.5">
+                                      <label className="block text-[10px] font-bold text-slate-500 uppercase">
+                                        Class (শ্রেণি)
+                                      </label>
+                                      {!isPredefined && sched.classification && (
+                                        <button
+                                          type="button"
+                                          onClick={() => updateSchedule(idx, 'classification', 'Bastu')}
+                                          className="text-[9px] text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                        >
+                                          List
+                                        </button>
+                                      )}
+                                    </div>
+                                    <select
+                                      value={isPredefined ? (WB_LAND_CLASSIFICATIONS.find(c => c.value.toLowerCase() === (sched.classification || '').toLowerCase())?.value || sched.classification) : 'Other'}
+                                      onChange={e => {
+                                        const val = e.target.value;
+                                        if (val === 'Other') {
+                                          updateSchedule(idx, 'classification', '');
+                                        } else {
+                                          updateSchedule(idx, 'classification', val);
+                                        }
+                                      }}
+                                      className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold cursor-pointer"
+                                    >
+                                      {WB_LAND_CLASSIFICATIONS.map(c => (
+                                        <option key={c.value} value={c.value}>
+                                          {c.label}
+                                        </option>
+                                      ))}
+                                    </select>
+
+                                    {(!isPredefined || sched.classification === 'Other' || sched.classification === '') && (
+                                      <input
+                                        type="text"
+                                        value={sched.classification === 'Other' ? '' : sched.classification}
+                                        onChange={e => updateSchedule(idx, 'classification', toUpper(e.target.value))}
+                                        placeholder="নিজে লিখুন..."
+                                        className="mt-1 w-full px-2 py-0.5 text-xs rounded border border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-slate-800 font-semibold uppercase"
+                                      />
+                                    )}
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Deed No & Date reference below schedule */}
+                      <div className="pt-1">
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
+                          Registered Deed No &amp; Date (রেজিস্টার্ড দলিল নম্বর ও তারিখ — প্রযোজ্য হইলে)
+                        </label>
+                        <input
+                          type="text"
+                          value={deedNoDate}
+                          onChange={e => setDeedNoDate(e.target.value)}
+                          placeholder="e.g. Registered Deed No. ... / 2024 dated DD-MM-YYYY"
+                          className="w-full px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-mono"
+                        />
+                      </div>
+                    </div>
                   )}
                 </div>
 

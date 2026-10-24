@@ -88,8 +88,8 @@ export const ChainDeedModal: React.FC<ChainDeedModalProps> = ({
 
   function generateInitialText(cItem: CaseItem, links: ChainLink[], lang: 'bn' | 'en') {
     const s = cItem.landSchedules?.[0] || {
-      district: 'South 24 Parganas',
-      block: 'Rajarhat',
+      district: '—',
+      block: '—',
       mouza: '—',
       jl: '—',
       khatian: '—',
@@ -725,7 +725,7 @@ ${recitals}
                           type="text"
                           value={sro}
                           onChange={e => setSro(e.target.value)}
-                          placeholder="e.g. ADSR Rajarhat"
+                          placeholder="e.g. ADSR Office"
                           className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         />
                       </div>

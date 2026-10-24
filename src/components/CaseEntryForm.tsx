@@ -406,7 +406,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   );
   const [applicantAdsr, setApplicantAdsr] = useState(editingCase?.applicantAdsr || editingCase?.adsr || '');
   const [district, setDistrict] = useState(
-    editingCase?.district || editingCase?.landSchedules?.[0]?.district || 'North 24 Parganas'
+    editingCase?.district || editingCase?.landSchedules?.[0]?.district || ''
   );
 
   // Requirement 10: Broker / Muhuri Name & Phone (Omitted from client/court prints; shown only in report & entry)
@@ -540,7 +540,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     setApplicantDeedYear(targetCase.applicantDeedYear || targetCase.deedYear || '');
     setApplicantDeedType(targetCase.applicantDeedType || 'সাফ কোবালা (Sale / Kobala)');
     setApplicantAdsr(targetCase.applicantAdsr || targetCase.adsr || '');
-    setDistrict(targetCase.district || targetCase.landSchedules?.[0]?.district || 'North 24 Parganas');
+    setDistrict(targetCase.district || targetCase.landSchedules?.[0]?.district || '');
     setBrokerName(targetCase.brokerName || '');
     setBrokerPhone(targetCase.brokerPhone || '');
 
@@ -626,7 +626,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     setParty('');
     setOpp('');
     setGrnNo('');
-    setDistrict('North 24 Parganas');
+    setDistrict('');
     setHearingList([{ id: 'hd_init', date: '', stage: 'Hearing / Inquiry' }]);
     setNextDate('');
     setApplicantDeedNo('');
@@ -782,23 +782,26 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
     showToast(`Linked to Party Ledger: ${selectedParty.name}`);
   };
 
-  // Requirement 12: Land Schedule Details with + option to add more schedule
   const addLandSchedule = () => {
-    setLandSchedules(prev => [
-      ...prev,
-      {
-        id: 'ls_' + Date.now(),
-        district: prev[0]?.district || district || 'North 24 Parganas',
-        block: prev[0]?.block || (wbDistricts[district] ? wbDistricts[district][0] : 'Rajarhat') || 'Rajarhat',
-        mouza: prev[0]?.mouza || '',
-        jl: prev[0]?.jl || '',
-        khatian: '',
-        dag: '',
-        area: '',
-        unit: 'acre',
-        classification: 'Bastu'
-      }
-    ]);
+    setLandSchedules(prev => {
+      const parentDistrict = prev[0]?.district || district || '';
+      const parentBlock = prev[0]?.block || (parentDistrict && wbDistricts[parentDistrict] ? wbDistricts[parentDistrict][0] : '') || '';
+      return [
+        ...prev,
+        {
+          id: 'ls_' + Date.now(),
+          district: parentDistrict,
+          block: parentBlock,
+          mouza: prev[0]?.mouza || '',
+          jl: prev[0]?.jl || '',
+          khatian: '',
+          dag: '',
+          area: '',
+          unit: 'acre',
+          classification: 'Bastu'
+        }
+      ];
+    });
     showToast('New property schedule added');
   };
 
@@ -1172,7 +1175,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       applicantDeedType: isRorPi ? '' : applicantDeedType,
       applicantAdsr: isRorPi ? '' : applicantAdsr.trim(),
       adsr: isRorPi ? '' : applicantAdsr.trim(),
-      district: isRorPi ? (landSchedules[0]?.district || district || 'North 24 Parganas') : district.trim(),
+      district: isRorPi ? (landSchedules[0]?.district || district || '') : district.trim(),
       ainNo: isCertCopy ? appNo.trim() : undefined,
       rorPiNo: isRorPi ? appNo.trim() : undefined,
       brokerName: isRorPi ? '' : brokerName.trim(),
@@ -1875,6 +1878,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                   onChange={e => setDistrict(e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-blue-600"
                 >
+                  <option value="">-- Select District (জেলা নির্বাচন করুন) --</option>
                   {Object.keys(wbDistricts)
                     .sort()
                     .map(d => (
@@ -1894,7 +1898,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                   type="text"
                   value={applicantAdsr}
                   onChange={e => setApplicantAdsr(toUpper(e.target.value))}
-                  placeholder="e.g. ADSR Rajarhat / Bidhannagar"
+                  placeholder="e.g. ADSR Office / Sub-Registry"
                   className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-medium uppercase focus:outline-none focus:ring-1 focus:ring-blue-600"
                 />
               </div>
@@ -2445,7 +2449,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                       type="text"
                       value={applicantAdsr}
                       onChange={e => setApplicantAdsr(toUpper(e.target.value))}
-                      placeholder="e.g. ADSR Rajarhat / Cossipore"
+                      placeholder="e.g. ADSR Office / Sub-Registry"
                       className="w-full px-2.5 py-1.5 text-xs rounded border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 uppercase"
                     />
                   </div>
@@ -2687,6 +2691,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                         onChange={e => updateSchedule(idx, 'district', e.target.value)}
                         className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
                       >
+                        <option value="">-- Select District (জেলা) --</option>
                         {Object.keys(wbDistricts)
                           .sort()
                           .map(d => (
@@ -2706,6 +2711,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                         onChange={e => updateSchedule(idx, 'block', e.target.value)}
                         className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
                       >
+                        <option value="">-- Select Block (ব্লক) --</option>
                         {(wbDistricts[sched.district] || []).map(b => (
                           <option key={b} value={b}>
                             {b}
@@ -2826,6 +2832,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                         onChange={e => updateSchedule(idx, 'district', e.target.value)}
                         className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
                       >
+                        <option value="">-- Select District (জেলা) --</option>
                         {Object.keys(wbDistricts)
                           .sort()
                           .map(d => (
@@ -2845,6 +2852,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                         onChange={e => updateSchedule(idx, 'block', e.target.value)}
                         className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
                       >
+                        <option value="">-- Select Block (ব্লক) --</option>
                         {(wbDistricts[sched.district] || []).map(b => (
                           <option key={b} value={b}>
                             {b}
@@ -2861,7 +2869,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                         type="text"
                         value={sched.mouza}
                         onChange={e => updateSchedule(idx, 'mouza', toUpper(e.target.value))}
-                        placeholder="e.g. Patharghata / Sarisha"
+                        placeholder="e.g. Mouza Name"
                         className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 uppercase"
                       />
                     </div>
@@ -3254,7 +3262,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                           type="text"
                           value={cl.registrationOffice || ''}
                           onChange={e => updateChainLink(i, 'registrationOffice', toUpper(e.target.value))}
-                          placeholder="e.g. A.D.S.R. Rajarhat"
+                          placeholder="e.g. A.D.S.R. Office"
                           className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 uppercase"
                         />
                       </div>
@@ -3425,7 +3433,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                           type="text"
                           value={cl.registrationOffice || ''}
                           onChange={e => updateChainLink(i, 'registrationOffice', toUpper(e.target.value))}
-                          placeholder="e.g. Pradhan, Patharghata Gram Panchayat"
+                          placeholder="e.g. Pradhan, Local Gram Panchayat"
                           className="w-full px-2.5 py-1.5 text-xs rounded border border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900 uppercase"
                         />
                       </div>
