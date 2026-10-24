@@ -68,10 +68,17 @@ export type TemplateType =
   | 'sec14_exclusion'
   // Misc Cases & 10000 Share u/s 50A
   | 'misc_share10000'
+  | 'misc_barga_revoke'
+  | 'misc_name_rect'
+  | 'misc_share_area_rect'
+  | 'misc_rslr_mapping'
   | 'misc_record_rect'
   | 'misc_demarcation'
+  | 'misc_class_porcha_rect'
+  | 'misc_vested_ceiling'
   | 'misc_delete_wrong'
   | 'misc_reopen_hear'
+  | 'misc_other_petition'
   // Land Conversion u/s 4C
   | 'conv_sec4c'
   | 'conv_regularize'
@@ -221,38 +228,87 @@ export const CASE_TEMPLATES_MAP: Record<string, TemplateOption[]> = {
   misc: [
     {
       id: 'misc_share10000',
-      section: '[Sec 50A]',
-      labelEn: 'Rectification of 10,000-Share Anomaly in Computerized ROR',
+      section: '[Sec 50A WBLR Act]',
+      labelEn: '10000 Share Overlapping / Share Problem (Sec 50A)',
       labelBn: '১০,০০০ হিস্যা বৈষম্য নিরসন ও খতিয়ান সংশোধন (ধারা ৫০ক)',
-      desc: 'Petition to RO for re-apportioning 10,000 fractional share parts and unlocking khatian'
+      desc: 'Petition to RO for re-apportioning 10,000 fractional share parts and unlocking khatian on Banglarbhumi'
+    },
+    {
+      id: 'misc_barga_revoke',
+      section: '[Sec 50 / 21B]',
+      labelEn: 'Barga Revoke / De-recording of Bargadar (Sec 50 / 21B)',
+      labelBn: 'বর্গা রেকর্ড রদ ও অননুমোদিত বর্গাদার কর্তন (ধারা ৫০ / ২১খ)',
+      desc: 'Petition for de-recording / revoking wrongful or non-existent bargadar recording from Rayati Khatian upon inquiry'
+    },
+    {
+      id: 'misc_name_rect',
+      section: '[Sec 50 / 51A]',
+      labelEn: 'Name Correction / Title Rectification in ROR (Sec 50)',
+      labelBn: 'রায়তের নাম, পিতার নাম ও পদবী ত্রুটি সংশোধন (ধারা ৫০)',
+      desc: 'Correction of clerical spelling errors in Rayat Name, Parent/Spouse Name, or Surname in computerized Khatian'
+    },
+    {
+      id: 'misc_share_area_rect',
+      section: '[Sec 50 / 50A]',
+      labelEn: 'Share Correction / Area Rectification (Sec 50 / 50A)',
+      labelBn: 'অংশ ও পরিমাণ ত্রুটি সংশোধন (ধারা ৫০ / ৫০ক)',
+      desc: 'Rectification of mathematical discrepancy between purchased title deed quantum and computerized Khatian area/share'
+    },
+    {
+      id: 'misc_rslr_mapping',
+      section: '[Sec 50 / LR Manual]',
+      labelEn: 'RS to LR Conveyance / Transfer Mapping (Sec 50)',
+      labelBn: 'আর.এস. হইতে এল.আর. দাগ-খতিয়ান হস্তান্তর সমন্বয় (ধারা ৫০)',
+      desc: 'Petition for establishing chronological RS-LR trace mapping and recording Rayat in LR Khatian'
     },
     {
       id: 'misc_record_rect',
       section: '[Sec 50 / 51A(4)]',
-      labelEn: 'Misc Petition for Correction of Clerical / Printing Errors in Khatian',
-      labelBn: 'খতিয়ানের করণিক ও মুদ্রণ প্রমাদ সংশোধনের আবেদন',
-      desc: 'Correction of spelling, share fractions, and area entries in computerized ROR'
+      labelEn: 'Record Correction / Erroneous Record Rectification (Sec 50 / 51A)',
+      labelBn: 'ভুল রেকর্ড সংশোধন ও শুদ্ধ রৈয়তি খতিয়ান প্রণয়ন (ধারা ৫০ / ৫১ক)',
+      desc: 'Comprehensive petition for correcting erroneous entries, wrong khatian links, or omissions in computerized ROR'
     },
     {
       id: 'misc_demarcation',
-      section: '[Sec 50 / Manual R 28]',
-      labelEn: 'Misc Application for Demarcation & Boundary Settlement of Dag',
-      labelBn: 'দাগের সীমানা চিহ্নিতকরণ ও ডিমারকেশন আবেদন',
-      desc: 'Fixation of boundaries and spot demarcating of plot by official Amine/Surveyor'
+      section: '[Rule 28 WBLR Manual]',
+      labelEn: 'Boundary Dispute / Demarcation & Survey (Rule 28 Manual)',
+      labelBn: 'সীমানা বিবাদ ও দাগের ডিমারকেশন / পরিমাপ আবেদন (২৮ বিধি)',
+      desc: 'Fixation of boundaries, plot measurement, and spot demarcating of plot by official Amine/Surveyor'
+    },
+    {
+      id: 'misc_class_porcha_rect',
+      section: '[Sec 50 / 4C]',
+      labelEn: 'Classification Correction / Porcha Rectification (Sec 50)',
+      labelBn: 'জমির শ্রেণি সংশোধন ও কম্পিউটার পর্চা ত্রুটি নিরসন (ধারা ৫০)',
+      desc: 'Correction of wrongly entered land classification in computerized Porcha based on physical character and field verification'
+    },
+    {
+      id: 'misc_vested_ceiling',
+      section: '[Sec 14T / 14Z / 50A]',
+      labelEn: 'Vested Land / Ceiling Objection & Release (Sec 14T / 14Z)',
+      labelBn: 'ভেস্টেড জমি / সিলিং আপত্তি নিরসন ও খতিয়ান অবমুক্তি (ধারা ১৪টি/১৪জেড)',
+      desc: 'Objection against wrongful recording of land as State Vested / Ceiling Surplus and petition for release of raiyati title'
     },
     {
       id: 'misc_delete_wrong',
       section: '[Sec 50A]',
-      labelEn: 'Application to Expunge Wrong Co-Sharer / Erroneous Entry from ROR',
-      labelBn: 'খতিয়ানে অনধিকার ব্যক্তির ভুল নাম কর্তন দরখাস্ত',
-      desc: 'Striking off erroneous co-sharer entered without deed or inheritance'
+      labelEn: 'Expunge Wrong Co-Sharer / Erroneous Entry from ROR (Sec 50A)',
+      labelBn: 'খতিয়ানে অনধিকার ব্যক্তির ভুল নাম কর্তন দরখাস্ত (ধারা ৫০ক)',
+      desc: 'Striking off fraudulent or unauthorized stranger co-sharer entered without deed or lineage'
     },
     {
       id: 'misc_reopen_hear',
-      section: '[Sec 50 / Natural Justice]',
-      labelEn: 'Petition to Reopen Misc Hearing Heard Ex-Parte',
-      labelBn: 'একতরফা শুনানি আদেশ প্রত্যাহার ও পুনর্বিবেচনার আবেদন',
-      desc: 'Recalling ex-parte order passed without serving statutory hearing notice'
+      section: '[Natural Justice / Sec 50]',
+      labelEn: 'Recall Ex-Parte Misc Order & Reopen Hearing (Natural Justice)',
+      labelBn: 'একতরফা শুনানি আদেশ প্রত্যাহার ও পুনর্বিবেচনার আবেদন (প্রাকৃতিক ন্যায়বিচার)',
+      desc: 'Recalling ex-parte order passed without serving statutory hearing notice under principles of natural justice'
+    },
+    {
+      id: 'misc_other_petition',
+      section: '[Sec 50 WBLR Act]',
+      labelEn: 'Other Miscellaneous Revenue Petition (Sec 50)',
+      labelBn: 'অন্যান্য বিবিধ রাজস্ব আবেদনপত্র (ধারা ৫০)',
+      desc: 'General miscellaneous petition before Revenue Officer / BL&LRO for revenue inquiry and administrative relief'
     }
   ],
   conversion: [
@@ -395,10 +451,17 @@ export const ALL_TEMPLATES_LIST: { id: TemplateType; section: string; labelEn: s
   { id: 'sec14_exclusion', section: '[Sec 14]', labelEn: 'Exclusion of Time u/s 14', labelBn: 'সময় গণনা বাদ দেওয়ার আবেদন (১৪ ধারা)', category: 'Limitation' },
   // Misc
   { id: 'misc_share10000', section: '[Sec 50A]', labelEn: '10000-Share Anomaly u/s 50A', labelBn: '১০,০০০ হিস্যা বৈষম্য সংশোধন (৫০ক ধারা)', category: 'Misc' },
+  { id: 'misc_barga_revoke', section: '[Sec 50 / 21B]', labelEn: 'Barga Revoke / De-recording', labelBn: 'বর্গা রেকর্ড রদ ও কর্তন (৫০/২১খ ধারা)', category: 'Misc' },
+  { id: 'misc_name_rect', section: '[Sec 50]', labelEn: 'Name Correction in ROR', labelBn: 'রায়তের নাম ও পদবী সংশোধন (৫০ ধারা)', category: 'Misc' },
+  { id: 'misc_share_area_rect', section: '[Sec 50 / 50A]', labelEn: 'Share & Area Rectification', labelBn: 'অংশ ও পরিমাণ ত্রুটি সংশোধন (৫০/৫০ক ধারা)', category: 'Misc' },
+  { id: 'misc_rslr_mapping', section: '[Sec 50]', labelEn: 'RS to LR Conveyance Mapping', labelBn: 'আর.এস. হইতে এল.আর. সমন্বয় (৫০ ধারা)', category: 'Misc' },
   { id: 'misc_record_rect', section: '[Sec 50]', labelEn: 'Clerical Error Rectification', labelBn: 'খতিয়ান করণিক ভুল সংশোধন (৫০ ধারা)', category: 'Misc' },
   { id: 'misc_demarcation', section: '[Demarcation]', labelEn: 'Plot Demarcation Petition', labelBn: 'দাগের সীমানা চিহ্নিতকরণ আবেদন', category: 'Misc' },
+  { id: 'misc_class_porcha_rect', section: '[Sec 50 / 4C]', labelEn: 'Classification Correction', labelBn: 'জমির শ্রেণি সংশোধন (৫০/৪সি ধারা)', category: 'Misc' },
+  { id: 'misc_vested_ceiling', section: '[Sec 14T / 14Z]', labelEn: 'Vested Land / Ceiling Objection', labelBn: 'ভেস্টেড জমি / সিলিং আপত্তি (১৪টি/১৪জেড)', category: 'Misc' },
   { id: 'misc_delete_wrong', section: '[Sec 50A]', labelEn: 'Expunge Erroneous Entry', labelBn: 'অনধিকার ব্যক্তির নাম কর্তন', category: 'Misc' },
   { id: 'misc_reopen_hear', section: '[Reopen]', labelEn: 'Reopen Ex-Parte Hearing', labelBn: 'একতরফা আদেশ পুনর্বিবেচনা', category: 'Misc' },
+  { id: 'misc_other_petition', section: '[Sec 50]', labelEn: 'Other Misc Petition', labelBn: 'অন্যান্য বিবিধ রাজস্ব দরখাস্ত (৫০ ধারা)', category: 'Misc' },
   // Conversion
   { id: 'conv_sec4c', section: '[Sec 4C]', labelEn: 'Conversion Petition u/s 4C', labelBn: 'বাস্তু শ্রেণি রূপান্তর দরখাস্ত (৪সি ধারা)', category: 'Conversion' },
   { id: 'conv_regularize', section: '[Sec 4C(6)]', labelEn: 'Conversion Regularization', labelBn: 'অননুমোদিত ব্যবহারের নিয়মিতকরণ', category: 'Conversion' },
@@ -628,16 +691,64 @@ export const AiStudio: React.FC<AiStudioProps> = ({
       } else if (prefilledCase.subType) {
         const st = prefilledCase.subType;
         if (st.includes('10000')) {
+          setTemplate('misc_share10000');
           setCustomFacts(
             'The total recorded shares in the scheduled Dag do not aggregate to 10,000 parts on the Banglarbhumi portal, causing a mathematical lock. Rectification of share allotment u/s 50/50A WBLR Act is required.'
           );
-        } else if (st.includes('Record') || st.includes('Name') || st.includes('RS to LR') || st.includes('Erroneous')) {
+        } else if (st.includes('Barga') || st.includes('বর্গা')) {
+          setTemplate('misc_barga_revoke');
           setCustomFacts(
-            `Application for ${st} under Section 50/51A of the West Bengal Land Reforms Act, 1955 to rectify clerical/recording error in the computerized L.R. Khatian on the basis of registered title deeds and RS-LR trace verification.`
+            'Petition for de-recording of wrongfully or erroneously recorded Bargadar from the scheduled land as no barga cultivation ever existed and applicant is in personal cultivation.'
           );
-        } else if (st.includes('Boundary')) {
+        } else if (st.includes('Name') || st.includes('নাম')) {
+          setTemplate('misc_name_rect');
           setCustomFacts(
-            'Application for demarcation and boundary verification through official Amin/Revenue Inspector survey to resolve plot boundary discrepancy.'
+            'Application for correction of clerical spelling of Rayat name, parent name, and surname in the computerized L.R. Khatian in accordance with registered title deeds and official identity documents.'
+          );
+        } else if (st.includes('Share Correction') || st.includes('Area Rectification') || st.includes('অংশ ও পরিমাণ')) {
+          setTemplate('misc_share_area_rect');
+          setCustomFacts(
+            'Application for correction of fractional share and net area calculation in computerized L.R. Khatian to reflect genuine deed quantum.'
+          );
+        } else if (st.includes('RS to LR') || st.includes('আর.এস. হইতে এল.আর.')) {
+          setTemplate('misc_rslr_mapping');
+          setCustomFacts(
+            'Application for establishing RS to LR conveyance transfer mapping and updating corresponding L.R. Khatian based on ancestral RS Record-of-Rights and valid link deeds.'
+          );
+        } else if (st.includes('Record Correction') || st.includes('Erroneous Record') || st.includes('ভুল রেকর্ড')) {
+          setTemplate('misc_record_rect');
+          setCustomFacts(
+            'Application under Section 50/51A of WBLR Act, 1955 for correction of erroneous recording and issuance of corrected Rayati Khatian on the basis of title deeds and trace map.'
+          );
+        } else if (st.includes('Boundary') || st.includes('Demarcation') || st.includes('সীমানা')) {
+          setTemplate('misc_demarcation');
+          setCustomFacts(
+            'Application under Section 50 read with Rule 28 of WBLR Manual 1991 for official demarcation and boundary pillar fixation through Government Amine / Surveyor.'
+          );
+        } else if (st.includes('Classification') || st.includes('Porcha') || st.includes('শ্রেণি')) {
+          setTemplate('misc_class_porcha_rect');
+          setCustomFacts(
+            'Application for rectification of wrongly recorded classification in computerized Porcha to Bastu/Danga based on spot inspection and physical nature of land.'
+          );
+        } else if (st.includes('Vested') || st.includes('Ceiling') || st.includes('ভেস্টেড')) {
+          setTemplate('misc_vested_ceiling');
+          setCustomFacts(
+            'Objection against wrongful recording of rayat land as vested and petition for de-vesting and restoration of rayat khatian under Section 14T/14Z and Section 50A.'
+          );
+        } else if (st.includes('Expunge') || st.includes('অনধিকার')) {
+          setTemplate('misc_delete_wrong');
+          setCustomFacts(
+            'Application under Section 50A of WBLR Act to expunge fraudulent and unauthorized stranger entry from computerized Khatian.'
+          );
+        } else if (st.includes('Reopen') || st.includes('একতরফা')) {
+          setTemplate('misc_reopen_hear');
+          setCustomFacts(
+            'Petition to recall ex-parte order passed without notice and reopen hearing on merits in compliance with natural justice.'
+          );
+        } else if (st.includes('Other') || st.includes('অন্যান্য')) {
+          setTemplate('misc_other_petition');
+          setCustomFacts(
+            'Miscellaneous petition under Section 50 of the West Bengal Land Reforms Act, 1955 before the Revenue Officer for inquiry and necessary administrative relief.'
           );
         } else if (st.toLowerCase().includes('first appeal') && prefilledCase.type === 'rti') {
           setTemplate('rtifirstappeal');
@@ -666,7 +777,6 @@ export const AiStudio: React.FC<AiStudioProps> = ({
       setForum(prev => (prev.toLowerCase().includes('court') || prev.toLowerCase().includes('collector') ? 'To: The State Public Information Officer (SPIO) / BL&LRO, Rajarhat' : prev));
       setAuthorityAddress('Office of the Block Land & Land Reforms Officer, Rajarhat, North 24 Parganas - 700135');
       setShowOppParty(false); // RTI has NO opposite party
-      setShowLandSchedule(prefilledCase?.landSchedules?.length ? true : false);
       if (!prefilledCase?.grounds) {
         setCustomFacts(
           'The applicant requires certified copy of the spot verification report and order-sheet of the Revenue Inspector in respect of L.R. Khatian No. 1428, Dag No. 482. Requisite RTI fee has been paid.'
@@ -699,23 +809,83 @@ export const AiStudio: React.FC<AiStudioProps> = ({
       setAuthorityAddress('Office of the BL&LRO, Rajarhat');
       setShowOppParty(false); // Default hidden, user can add via + button
       setOppParty('The State of West Bengal, represented by BL&LRO');
-      setShowLandSchedule(true); // Misc Case has land schedule by default!
       if (!prefilledCase?.grounds) {
         setCustomFacts(
           'The total recorded shares in Dag No. 482 in Mouza Patharghata do not aggregate to 10,000 parts, leading to mathematical mismatch and system lock on the Banglarbhumi portal. Correction of shares u/s 50A WBLR Act is required.'
+        );
+      }
+    } else if (template === 'misc_barga_revoke') {
+      setForum('Before the Ld. Revenue Officer / Block Land & Land Reforms Officer, Rajarhat');
+      setAuthorityAddress('Office of the BL&LRO, Rajarhat');
+      setShowOppParty(true);
+      if (!prefilledCase?.grounds) {
+        setCustomFacts(
+          'Petition for revocation and de-recording of wrongful Bargadar entry from the L.R. Khatian. The opposite party has never cultivated the land nor tendered any crop share, and the Petitioner personally cultivates the scheduled land.'
+        );
+      }
+    } else if (template === 'misc_name_rect') {
+      setForum('Before the Ld. Revenue Officer / Block Land & Land Reforms Officer, Rajarhat');
+      setAuthorityAddress('Office of the BL&LRO, Rajarhat');
+      setShowOppParty(false);
+      if (!prefilledCase?.grounds) {
+        setCustomFacts(
+          'The recorded name and parentage in the computerized L.R. Khatian has been distorted by inadvertent clerical typographical error. Rectification is prayed based on registered title deeds and official identity credentials.'
+        );
+      }
+    } else if (template === 'misc_share_area_rect') {
+      setForum('Before the Ld. Revenue Officer / Block Land & Land Reforms Officer, Rajarhat');
+      setAuthorityAddress('Office of the BL&LRO, Rajarhat');
+      setShowOppParty(false);
+      if (!prefilledCase?.grounds) {
+        setCustomFacts(
+          'Mathematical discrepancy between purchased land area in registered title deed and fractional share recorded in computerized L.R. Khatian. Re-apportionment and correction of area is sought u/s 50A of WBLR Act.'
+        );
+      }
+    } else if (template === 'misc_rslr_mapping') {
+      setForum('Before the Ld. Revenue Officer / Block Land & Land Reforms Officer, Rajarhat');
+      setAuthorityAddress('Office of the BL&LRO, Rajarhat');
+      setShowOppParty(false);
+      if (!prefilledCase?.grounds) {
+        setCustomFacts(
+          'Application for establishing RS to LR conveyance transfer mapping and updating corresponding L.R. Khatian based on ancestral RS Record-of-Rights and unbroken chain deeds.'
+        );
+      }
+    } else if (template === 'misc_class_porcha_rect') {
+      setForum('Before the Ld. Revenue Officer / Block Land & Land Reforms Officer, Rajarhat');
+      setAuthorityAddress('Office of the BL&LRO, Rajarhat');
+      setShowOppParty(false);
+      if (!prefilledCase?.grounds) {
+        setCustomFacts(
+          'The scheduled land is settled homestead (Bastu / Danga) on ground, but is erroneously recorded as agricultural (Sali) in the computerized Porcha. Spot verification through Revenue Inspector is prayed.'
+        );
+      }
+    } else if (template === 'misc_vested_ceiling') {
+      setForum('Before the Ld. Revenue Officer / Block Land & Land Reforms Officer, Rajarhat');
+      setAuthorityAddress('Office of the BL&LRO, Rajarhat');
+      setShowOppParty(false);
+      if (!prefilledCase?.grounds) {
+        setCustomFacts(
+          'The scheduled plot has been erroneously marked as vested / 14Z without serving statutory Section 14T notice. Total holding is strictly within statutory ceiling and de-vesting is prayed.'
+        );
+      }
+    } else if (template === 'misc_other_petition') {
+      setForum('Before the Ld. Revenue Officer / Block Land & Land Reforms Officer, Rajarhat');
+      setAuthorityAddress('Office of the BL&LRO, Rajarhat');
+      setShowOppParty(false);
+      if (!prefilledCase?.grounds) {
+        setCustomFacts(
+          'Miscellaneous revenue petition under Section 50 of the West Bengal Land Reforms Act, 1955 before the Revenue Officer for inquiry, spot inspection, and appropriate administrative relief.'
         );
       }
     } else if (template.startsWith('misc')) {
       setForum('Before the Ld. Revenue Officer / Block Land & Land Reforms Officer, Rajarhat');
       setAuthorityAddress('Office of the BL&LRO, Rajarhat');
       setShowOppParty(false);
-      setShowLandSchedule(true);
     } else if (template === 'lrappeal' || template.startsWith('lrappeal')) {
       setForum('In the Court of the Ld. District Land & Land Reforms Officer (DL&LRO), North 24 Parganas');
       setAuthorityAddress('Collectorate Compound, Barasat');
       setShowOppParty(true);
       setOppParty('The State of West Bengal & Ors.');
-      setShowLandSchedule(true);
       setShowCaseRef(true);
       if (!prefilledCase?.grounds) {
         setCustomFacts(
@@ -1277,6 +1447,181 @@ export const AiStudio: React.FC<AiStudioProps> = ({
         `;
         prayerBn = `
           অতএব প্রার্থনা, নোটিশবিহীন একতরফা আদেশটি প্রত্যাহার পূর্বক উভয় পক্ষের উপস্থিতিতে পুনর্বিবেচনায় আজ্ঞাবহ হইবেন।
+        `;
+      } else if (t === 'misc_barga_revoke') {
+        courtHeaderEn = 'BEFORE THE REVENUE OFFICER / BLOCK LAND & LAND REFORMS OFFICER';
+        courtHeaderBn = 'মাননীয় রেভিনিউ অফিসার সমীপে বর্গা রেকর্ড রদের বিবিধ আবেদন';
+        subjectEn = 'MISC PETITION UNDER SECTION 50 READ WITH SECTION 21B & 14(1) OF WBLR ACT, 1955 FOR REVOCATION & DE-RECORDING OF WRONGFUL BARGA ENTRY';
+        subjectBn = 'পশ্চিমবঙ্গ ভূমি সংস্কার আইন ১৯৫৫ এর ৫০ ও ২১খ ধারা মতে ভুল বর্গা রেকর্ড রদ ও বর্গাদার নাম কর্তন দরখাস্ত';
+        factsEn = `
+          <p>1. That the Petitioner is the lawful absolute owner, recorded raiyat, and in continuous physical cultivating possession of the scheduled land.</p>
+          <p>2. That the opposite party has been wrongfully or erroneously entered as a Bargadar in the remarks column of the computerized L.R. Khatian without any spot inquiry or notification to the Petitioner.</p>
+          <p>3. <strong>Specific Grounds for Barga Revocation Observed by Counsel / AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>4. That the opposite party has never cultivated the scheduled land nor tendered any crop produce share under Section 16 of the WBLR Act, and the Petitioner cultivates the plot personally with family labour.</p>
+          <p>5. That the wrongful barga entry casts an illegal cloud over the Petitioner's title and prevents statutory mutation and updating of records.</p>
+        `;
+        factsBn = `
+          <p>১. দরখাস্তকারী তফশিল বর্ণিত ভূমির নিরঙ্কুশ ও বৈধ রেকর্ডীয় মালিক এবং জমিতে নিরবচ্ছিন্ন চাষাবাদে প্রত্যক্ষ দখলদার।</p>
+          <p>২. প্রতিপক্ষের নাম কোনো বাস্তব চাষাবাদ বা বিধিবদ্ধ সরজমিন তদন্ত ব্যতিরেকে ভুলবশত / বেআইনিভাবে এল.আর. খতিয়ানের মন্তব্য কলামে বর্গাদার হিসেবে রেকর্ডভুক্ত হইয়াছে।</p>
+          <p>৩. <strong>বর্গা রেকর্ড রদের সুনির্দিষ্ট কারণ ও বিবরণ:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৪. প্রতিপক্ষ কখনো অত্র জমিতে বর্গাচাষ করেন নাই কিংবা আইনের ১৬ ধারা মতে কোনো ফসলের ভাগও প্রদান করেন নাই; দরখাস্তকারী স্বয়ং নিজ পরিবারবর্গ দ্বারা জমিতে চাষাবাদ পরিচালনা করিতেছেন।</p>
+          <p>৫. উক্ত ভুল বর্গা রেকর্ড দরখাস্তকারীর স্বত্বে অন্যায় বাধা সৃষ্টি করিতেছে এবং কম্পিউটার খতিয়ান হালনাগাদে প্রতিবন্ধকতা তৈরি করিয়াছে।</p>
+        `;
+        prayerEn = `
+          The Petitioner prays that Your Honour may graciously be pleased to initiate field inquiry through the Revenue Inspector, cancel and expunge the wrongful barga recording from the computerized L.R. Khatian, and confirm the Petitioner's unencumbered Rayati possession.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, রাজস্ব পরিদর্শক দ্বারা সরজমিন তদন্ত পূর্বক খতিয়ানের মন্তব্য কলাম হইতে প্রতিপক্ষের অবৈধ বর্গা রেকর্ড অবিলম্বে রদ ও কর্তন করিয়া দরখাস্তকারীর নিরঙ্কুশ রৈয়তি স্বত্ব বহাল রাখিতে আজ্ঞাবহ হইবেন।
+        `;
+      } else if (t === 'misc_name_rect') {
+        courtHeaderEn = 'BEFORE THE REVENUE OFFICER / BLOCK LAND & LAND REFORMS OFFICER';
+        courtHeaderBn = 'মাননীয় রেভিনিউ অফিসার সমীপে নাম ও পদবী সংশোধনের বিবিধ আবেদন';
+        subjectEn = 'MISC APPLICATION UNDER SECTION 50 OF WBLR ACT, 1955 FOR CORRECTION OF SPELLING / PARENTAGE / SURNAME IN KHATIAN';
+        subjectBn = 'পশ্চিমবঙ্গ ভূমি সংস্কার আইন ১৯৫৫ এর ৫০ ধারা মতে কম্পিউটারাইজড খতিয়ানে নাম, পিতার নাম ও পদবী সংশোধনের আবেদন';
+        factsEn = `
+          <p>1. That the Petitioner is the absolute owner and recorded raiyat of the scheduled property by virtue of Registered Deed / Ancestral Inheritance.</p>
+          <p>2. <strong>Name & Parentage Rectification Details Observed by AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That in the computerized L.R. Khatian on Banglarbhumi, the name / father's name / surname of the Petitioner has been erroneously spelled or distorted due to inadvertent typographical data entry error.</p>
+          <p>4. That the Petitioner's official identity credentials (Aadhaar, Voter ID/EPIC) and registered title deed confirm the correct particulars without any ambiguity.</p>
+        `;
+        factsBn = `
+          <p>১. দরখাস্তকারী রেজিস্টার্ড দলিল / উত্তরাধিকার সূত্রে তফশিল বর্ণিত সম্পত্তির নিরঙ্কুশ মালিক ও রৈয়ত।</p>
+          <p>২. <strong>নাম ও পদবী সংশোধনের সুনির্দিষ্ট বিবরণ:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. 'বাংলার ভূমি' অনলাইন পোর্টালে ডেটা এন্ট্রি করণিক প্রমাদবশত দরখাস্তকারীর নাম / পিতার নাম / পদবীর বানান বিকৃত বা ভুলভাবে লিপিবদ্ধ হইয়াছে।</p>
+          <p>৪. দরখাস্তকারীর সরকারি পরিচয়পত্র (আধার, ভোটার কার্ড) ও মূল রেজিস্টার্ড দলিলের সহিত খতিয়ানের বানান সংগতিপূর্ণ করিয়া সংশোধন করা আবশ্যক।</p>
+        `;
+        prayerEn = `
+          The Petitioner prays that Your Honour may kindly be pleased to verify the registered title deed and statutory identity credentials, and order rectification of the petitioner's name and parentage in the computerized L.R. Khatian.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, পরিচয়পত্র ও মূল দলিল দৃষ্টে কম্পিউটারাইজড খতিয়ানে দরখাস্তকারীর নাম, পিতার নাম ও পদবীর ভুল বানান সংশোধন করিতে আজ্ঞাবহ হইবেন।
+        `;
+      } else if (t === 'misc_share_area_rect') {
+        courtHeaderEn = 'BEFORE THE REVENUE OFFICER / BLOCK LAND & LAND REFORMS OFFICER';
+        courtHeaderBn = 'মাননীয় রেভিনিউ অফিসার সমীপে অংশ ও পরিমাণ ত্রুটি সংশোধনের আবেদন';
+        subjectEn = 'MISC PETITION UNDER SECTION 50 READ WITH SECTION 50A OF WBLR ACT, 1955 FOR RECTIFICATION OF FRACTIONAL SHARE & LAND AREA';
+        subjectBn = 'পশ্চিমবঙ্গ ভূমি সংস্কার আইন ১৯৫৫ এর ৫০ ও ৫০ক ধারা মতে খতিয়ানে অংশ ও জমির পরিমাণ ত্রুটি সংশোধনের বিবিধ আবেদন';
+        factsEn = `
+          <p>1. That the Petitioner is a lawful co-sharer / raiyat in respect of the scheduled Plot / Dag No.</p>
+          <p>2. <strong>Share & Area Discrepancy Observed by AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That while the Petitioner acquired a specific quantum of land under Registered Deed No. ${vals.deedNoDate || 'on record'}, during computerization the fractional share was wrongly calculated, resulting in a deficit in recorded area.</p>
+          <p>4. That the total plot area remains intact on ground and the error is purely arithmetical and clerical, falling squarely within the jurisdiction of the Revenue Officer under Section 50A.</p>
+        `;
+        factsBn = `
+          <p>১. দরখাস্তকারী তফশিল বর্ণিত দাগের একজন বৈধ সহ-অংশীদার ও রৈয়ত।</p>
+          <p>২. <strong>অংশ ও পরিমাণ বৈষম্যের বিশদ বিবরণ:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. দরখাস্তকারী রেজিস্টার্ড দলিলমূলে সুনির্দিষ্ট পরিমাণ জমি খরিদ করা সত্ত্বেও কম্পিউটারাইজেশনের সময় গাণিতিক অংশ ভুলভাবে এন্ট্রি হওয়ায় খতিয়ানে জমির পরিমাণ কম আসিয়াছে।</p>
+          <p>৪. জমিতে মোট দাগের পরিমাণ অটুট রহিয়াছে এবং এই ত্রুটি সম্পূর্ণ গাণিতিক ও করণিক, যাহা ধারা ৫০ক মতে সংশোধনযোগ্য।</p>
+        `;
+        prayerEn = `
+          It is prayed that Your Honour may kindly cause recalculation of the fractional share on the basis of registered title deed and update the recorded area in Khatian in accordance with Section 50A of WBLR Act.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, রেজিস্টার্ড দলিল মোতাবেক সঠিক হিস্যা পুনঃগণনা পূর্বক খতিয়ানে জমির পরিমাণের করণিক ভুল সংশোধন করিতে আজ্ঞাবহ হইবেন।
+        `;
+      } else if (t === 'misc_rslr_mapping') {
+        courtHeaderEn = 'BEFORE THE REVENUE OFFICER / BLOCK LAND & LAND REFORMS OFFICER';
+        courtHeaderBn = 'মাননীয় রেভিনিউ অফিসার সমীপে আর.এস. হইতে এল.আর. হস্তান্তর সমন্বয় আবেদন';
+        subjectEn = 'APPLICATION UNDER SECTION 50 OF WBLR ACT, 1955 FOR RS TO LR CONVEYANCE TRANSFER MAPPING & KHATIAN CORRECTION';
+        subjectBn = 'পশ্চিমবঙ্গ ভূমি সংস্কার আইন ১৯৫৫ এর ৫০ ধারা মতে আর.এস. হইতে এল.আর. দাগ-খতিয়ান হস্তান্তর সমন্বয় ও রেকর্ড হালনাগাদ আবেদন';
+        factsEn = `
+          <p>1. That the scheduled land was originally held and recorded in the name of the predecessor-in-interest in the R.S. Settlement Record-of-Rights.</p>
+          <p>2. <strong>Conveyance & Trace Details Observed by AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That during the LR survey and subsequent digitization, the corresponding LR Dag and Khatian were improperly mapped or left unlinked to the registered conveyance deeds.</p>
+          <p>4. That the petitioner holds unbroken registered link deeds from the recorded RS rayats with continuous peaceful possession on spot.</p>
+        `;
+        factsBn = `
+          <p>১. তফশিল বর্ণিত সম্পত্তি আর.এস. রেকর্ড অব রাইটসে মূল মালিক / পূর্বসূরির নামে যথাযথভাবে রেকর্ডভুক্ত ছিল।</p>
+          <p>২. <strong>হস্তান্তর ও আর.এস.-এল.আর. সমন্বয়ের বিবরণ:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. এল.আর. জরিপ ও কম্পিউটারাইজেশনের সময় আর.এস. দাগ হইতে এল.আর. দাগের সঠিক রূপান্তর বা লিঙ্কিং বাদ পড়িয়া ভুল রেকর্ড সৃষ্টি হইয়াছে।</p>
+          <p>৪. দরখাস্তকারীর নিকট আর.এস. রায়ত হইতে ধারাবাহিক রেজিস্টার্ড ভায়া দলিল এবং ভূমিতে নিরবচ্ছিন্ন প্রত্যক্ষ দখল বিদ্যমান।</p>
+        `;
+        prayerEn = `
+          The Petitioner prays that Your Honour may be pleased to verify the RS-LR comparison trace map, establish the flow of conveyance, and record the Petitioner in the appropriate L.R. Khatian.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, আর.এস. ও এল.আর. তুলনামূলক ট্রেস ম্যাপ ও ধারাবাহিক দলিল যাচাই পূর্বক এল.আর. খতিয়ানে আবেদনকারীর নাম সমন্বয় করিতে আজ্ঞাবহ হইবেন।
+        `;
+      } else if (t === 'misc_class_porcha_rect') {
+        courtHeaderEn = 'BEFORE THE REVENUE OFFICER / BLOCK LAND & LAND REFORMS OFFICER';
+        courtHeaderBn = 'মাননীয় রেভিনিউ অফিসার সমীপে জমির শ্রেণি ও পর্চা সংশোধনের বিবিধ আবেদন';
+        subjectEn = 'MISC PETITION UNDER SECTION 50 OF WBLR ACT, 1955 FOR CORRECTION OF LAND CLASSIFICATION IN COMPUTERIZED PORCHA';
+        subjectBn = 'পশ্চিমবঙ্গ ভূমি সংস্কার আইন ১৯৫৫ এর ৫০ ধারা মতে কম্পিউটারাইজড পর্চায় ভুল শ্রেণি সংশোধন ও হালনাগাদের আবেদন';
+        factsEn = `
+          <p>1. That the Petitioner is the recorded raiyat in possession of the scheduled Dag.</p>
+          <p>2. <strong>Classification Rectification Details Observed by AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That the land on ground is non-agricultural / settled homestead (Bastu / Danga) since decades and is surrounded by developed habitation, but has been inadvertently entered as agricultural (Sali) in the computerized Porcha.</p>
+          <p>4. That spot inspection by the Revenue Inspector will substantiate that the character of the land on spot does not match the erroneously generated entry.</p>
+        `;
+        factsBn = `
+          <p>১. দরখাস্তকারী তফশিলভুক্ত দাগের জমিতে দখলদার ও রেকর্ডীয় মালিক।</p>
+          <p>২. <strong>শ্রেণি প্রমাদের বিশদ বিবরণ:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. জমিতে বাস্তবোচিত দীর্ঘস্থায়ী বাস্তু/ডাঙ্গা অবস্থান থাকা সত্ত্বেও কম্পিউটারে অসাবধানতাবশত কৃষি বা অন্য শ্রেণি হিসেবে ভুল মুদ্রিত হইয়াছে।</p>
+          <p>৪. সরজমিনে রাজস্ব পরিদর্শক দ্বারা তদন্ত করিলে জমির প্রকৃত শ্রেণি ও চরিত্র প্রত্যক্ষ প্রমাণ হইবে।</p>
+        `;
+        prayerEn = `
+          The Petitioner prays that Your Honour may cause a spot verification report and order rectification of the classification entry in the computerized Porcha.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, রাজস্ব পরিদর্শক দ্বারা স্থান পরিদর্শন প্রতিবেদন তলব পূর্বক কম্পিউটার পর্চায় জমির সঠিক শ্রেণি লিপিবদ্ধ করিতে আজ্ঞাবহ হইবেন।
+        `;
+      } else if (t === 'misc_vested_ceiling') {
+        courtHeaderEn = 'BEFORE THE REVENUE OFFICER / BLOCK LAND & LAND REFORMS OFFICER';
+        courtHeaderBn = 'মাননীয় রেভিনিউ অফিসার সমীপে ভেস্টেড রেকর্ড আপত্তি ও অবমুক্তি আবেদন';
+        subjectEn = 'OBJECTION & PETITION UNDER SECTION 50A READ WITH SECTIONS 14T & 14Z OF WBLR ACT, 1955 AGAINST WRONGFUL VESTED ENTRY';
+        subjectBn = 'পশ্চিমবঙ্গ ভূমি সংস্কার আইন ১৯৫৫ এর ১৪টি, ১৪জেড ও ৫০ক ধারা মতে জমিতে ভুল ভেস্টেড এন্ট্রি আপত্তি ও খতিয়ান অবমুক্তি আবেদন';
+        factsEn = `
+          <p>1. That the Petitioner is the bona fide purchaser / rayat of the scheduled property having acquired the same through valid registered conveyance.</p>
+          <p>2. <strong>Vested / Ceiling Particulars Observed by AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That the total land holding of the petitioner and predecessor never exceeded the ceiling limits prescribed under Section 14M of the WBLR Act, 1955.</p>
+          <p>4. That the entry of "Vested / 14Z" in respect of the scheduled plot is arbitrary, without notice of vesting proceeding under Section 14T(3), and hit by the principles of natural justice.</p>
+        `;
+        factsBn = `
+          <p>১. দরখাস্তকারী বৈধ রেজিস্টার্ড দলিলের মাধ্যমে তফশিল বর্ণিত জমি খরিদ করিয়া নিরঙ্কুশ স্বত্ব ও দখলে রহিয়াছেন।</p>
+          <p>২. <strong>ভেস্টেড ও সিলিং সংক্রান্ত বিবরণ:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. দরখাস্তকারী বা তাহার পূর্বসূরির মোট ভূমির পরিমাণ কখনোই ভূমি সংস্কার আইনের ১৪এম ধারার নির্ধারিত সিলিং সীমা অতিক্রম করে নাই।</p>
+          <p>৪. কোনো বিধিবদ্ধ ১৪টি(৩) নোটিশ বা শুনানি ব্যতিরেকে অন্যায়ভাবে খতিয়ানে 'ভেস্টেড' বা '১৪জেড' লিপিবদ্ধ করা হইয়াছে যাহা বাতিলযোগ্য।</p>
+        `;
+        prayerEn = `
+          The Petitioner prays that Your Honour may kindly call for the alleged vesting case records, verify ceiling returns, expunge the wrongful vesting remarks, and restore the Rayati Khatian in favour of the Petitioner.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, তথাকথিত ভেস্টিং কেসের নথি তলব ও সিলিং যাচাই পূর্বক অবৈধ ভেস্টেড এন্ট্রি কর্তন করিয়া আবেদনকারীর নামে রৈয়তি খতিয়ান পুনর্বহাল করিতে আজ্ঞাবহ হইবেন।
+        `;
+      } else if (t === 'misc_other_petition') {
+        courtHeaderEn = 'BEFORE THE REVENUE OFFICER / BLOCK LAND & LAND REFORMS OFFICER';
+        courtHeaderBn = 'মাননীয় রেভিনিউ অফিসার / ব্লক ভূমি ও ভূমি সংস্কার আধিকারিক সমীপে বিবিধ আবেদন';
+        subjectEn = 'MISCELLANEOUS REVENUE PETITION UNDER SECTION 50 OF THE WEST BENGAL LAND REFORMS ACT, 1955';
+        subjectBn = 'পশ্চিমবঙ্গ ভূমি সংস্কার আইন ১৯৫৫ এর ৫০ ধারা মতে বিবিধ রাজস্ব আবেদনপত্র';
+        factsEn = `
+          <p>1. That the Petitioner has lawful interest and title over the scheduled property as described hereinbelow.</p>
+          <p>2. <strong>Case Facts & Grievance Observed by Counsel / AI:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>3. That the statutory intervention of the Revenue Officer is urgently required under Section 50 of the WBLR Act, 1955 to prevent miscarriage of revenue administration.</p>
+        `;
+        factsBn = `
+          <p>১. দরখাস্তকারী নিম্নে বর্ণিত তফশিল সম্পত্তির একজন বৈধ স্বত্বাধিকারী ও স্বার্থসংশ্লিষ্ট ব্যক্তি।</p>
+          <p>২. <strong>ঘটনার বিবরণ ও রাজস্ব অসঙ্গতি:</strong><br/>
+          ${vals.customFacts}</p>
+          <p>৩. রাজস্ব প্রশাসনের যথাযথ প্রয়োগ ও ন্যায়বিচারের স্বার্থে পশ্চিমবঙ্গ ভূমি সংস্কার আইনের ৫০ ধারা মতে রাজস্ব আধিকারিকের সুবিবেচনা একান্ত আবশ্যক।</p>
+        `;
+        prayerEn = `
+          It is therefore prayed that Your Honour may graciously be pleased to admit this Misc Petition, call for official reports from the concerned Revenue Inspector, and pass appropriate statutory orders as deemed fit.
+        `;
+        prayerBn = `
+          অতএব প্রার্থনা, অত্র বিবিধ আবেদনটি গ্রহণ পূর্বক সংশ্লিষ্ট রাজস্ব পরিদর্শকের রিপোর্ট তলব এবং আইনানুযায়ী সুবিহিত আদেশ প্রদানে আজ্ঞাবহ হইবেন।
         `;
       } else if (t === 'conversion' || t === 'conv_sec4c') {
         courtHeaderEn = 'BEFORE THE COLLECTOR / DISTRICT LAND & LAND REFORMS OFFICER';
