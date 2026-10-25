@@ -1,9 +1,8 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Menu, Sun, Moon, Search, Building2, Languages, Scale, ArrowLeft, HardDrive, LogOut, Power, X, Settings, Calculator } from 'lucide-react';
+import { Menu, Search, Building2, Languages, Scale, ArrowLeft, LogOut, Power, X, Settings, Calculator } from 'lucide-react';
 import { CompanyLogo } from './CompanyLogo';
 import { getBackupStatus } from '../types';
-import { ThemeDropdown } from './ThemeDropdown';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -31,16 +30,12 @@ export const Header: React.FC<HeaderProps> = ({
   const {
     activeCompany,
     activeUser,
-    theme,
-    setTheme,
     switchCompany,
     language,
     toggleLanguage,
     t,
     logoutUser,
-    triggerManualBackupRequest,
-    requestAppExit,
-    backupStoragePath
+    requestAppExit
   } = useApp();
 
   const backupStatus = getBackupStatus(activeCompany);
@@ -53,14 +48,14 @@ export const Header: React.FC<HeaderProps> = ({
   }[activeUser?.role || 'Admin'];
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-2 sm:px-4 lg:px-6 flex items-center justify-between gap-2 sm:gap-4">
+    <header className="sticky top-0 z-30 h-16 bg-white/95 backdrop-blur-md border-b border-slate-200 px-2 sm:px-4 lg:px-6 flex items-center justify-between gap-2 sm:gap-4 shadow-2xs">
       {/* Zone 1: Back Button (Mobile/Subpage) + Toggle + Brand Logo Type + Chamber Switcher */}
       <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 min-w-0">
         {canGoBack && onGoBack && (
           <button
             type="button"
             onClick={onGoBack}
-            className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/70 hover:bg-blue-100 dark:hover:bg-blue-900/70 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+            className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer shrink-0"
             title="Go Back to Previous Menu / Option (পেছনে যান)"
             aria-label="Go Back"
           >
@@ -71,8 +66,8 @@ export const Header: React.FC<HeaderProps> = ({
 
         <button
           onClick={onToggleSidebar}
-          className={`p-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
-            isSidebarOpen ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 ring-1 ring-blue-500/30' : ''
+          className={`p-2 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center shrink-0 ${
+            isSidebarOpen ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-500/30' : ''
           }`}
           title={isSidebarOpen ? 'Toggle navigation menu' : 'Open navigation menu'}
           aria-label="Toggle navigation menu"
@@ -83,11 +78,11 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Dynamic legal logo emblem and chamber branding */}
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
           <CompanyLogo company={activeCompany} size="sm" />
-          <div className="text-left leading-tight hidden xs:block sm:block">
-            <div className="text-xs sm:text-sm font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+          <div className="text-left leading-tight hidden sm:block">
+            <div className="text-xs sm:text-sm font-extrabold tracking-tight text-slate-900 truncate">
               SRK Case Manager
             </div>
-            <div className="text-[9px] sm:text-[10px] font-semibold text-blue-600 dark:text-blue-400 truncate max-w-[130px] sm:max-w-[170px]">
+            <div className="text-[9px] sm:text-[10px] font-semibold text-blue-600 truncate max-w-[130px] sm:max-w-[170px]">
               {activeCompany?.name || 'Legal Chamber'}
             </div>
           </div>
@@ -95,15 +90,15 @@ export const Header: React.FC<HeaderProps> = ({
 
         <button
           onClick={() => onOpenSettings('chambers')}
-          className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-blue-500 bg-slate-50 dark:bg-slate-800/60 text-left transition-colors max-w-[140px] sm:max-w-[220px] cursor-pointer"
+          className="hidden md:flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-blue-500 bg-slate-50 text-left transition-colors max-w-[160px] sm:max-w-[220px] cursor-pointer"
           title="Chamber Settings & Switch Workspace"
         >
           <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 shrink-0" />
           <div className="min-w-0">
-            <div className="text-[11px] sm:text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
-              {activeCompany?.city || 'Kolkata'} Office
+            <div className="text-[11px] sm:text-xs font-bold text-slate-900 truncate">
+              {activeCompany?.city || 'Office'}
             </div>
-            <div className="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 truncate">
+            <div className="text-[9px] sm:text-[10px] text-slate-500 truncate">
               Switch &amp; Settings
             </div>
           </div>
@@ -124,50 +119,48 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Zone 3: Actions, Language switcher, Theme & User Profile */}
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+      {/* Zone 3: Actions, Language switcher, Share Calculator & User Profile */}
+      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
         <button
           onClick={toggleLanguage}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-blue-300 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 shadow-xs transition-all cursor-pointer"
+          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-lg border border-blue-300 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 shadow-xs transition-all cursor-pointer"
           title={language === 'en' ? 'বাংলা ভাষায় পরিবর্তন করুন (Switch to Bengali)' : 'Switch to English'}
           aria-label="Switch language English / Bengali"
         >
-          <Languages className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+          <Languages className="w-3.5 h-3.5 text-blue-600" />
           <span className="font-semibold">{language === 'en' ? 'EN' : 'বাংলা'}</span>
           <span className="text-[10px] opacity-60">|</span>
-          <span className="text-[11px] font-normal text-slate-500 dark:text-slate-400">
+          <span className="text-[11px] font-normal text-slate-500">
             {language === 'en' ? 'বাংলা' : 'EN'}
           </span>
         </button>
 
-        {/* Background Theme Dropdown: Variety of Themes */}
-        <ThemeDropdown />
-
-        {/* Manual Backup Button with Path Status */}
-        <button
-          type="button"
-          onClick={triggerManualBackupRequest}
-          className="px-2.5 py-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer shrink-0"
-          title={`Data Backup to: ${backupStoragePath} (ব্যাকআপ সংরক্ষণ)`}
-        >
-          <HardDrive className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-          <span className="hidden sm:inline">Backup</span>
-        </button>
-
-        {/* Share Calculator Button (replaces settings menu in top right corner as requested) */}
+        {/* Share Calculator Button */}
         <button
           type="button"
           onClick={onOpenShareCalculator}
-          className="px-2.5 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-800 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs shrink-0"
+          className="px-2.5 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs shrink-0"
           title={language === 'bn' ? 'হিস্যা ক্যালকুলেটর ও মুসলিম ফারায়েজ (Share Calculator)' : 'Share Calculator & Muslim Farayez'}
         >
-          <Calculator className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-          <span className="hidden sm:inline">{language === 'bn' ? 'হিস্যা ক্যালকুলেটর' : 'Share Calculator'}</span>
+          <Calculator className="w-3.5 h-3.5 text-emerald-600" />
+          <span className="hidden md:inline">{language === 'bn' ? 'হিস্যা ক্যালকুলেটর' : 'Share Calculator'}</span>
+        </button>
+
+        {/* Settings Shortcut Button */}
+        <button
+          type="button"
+          onClick={() => onOpenSettings('display')}
+          className="p-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs shrink-0"
+          title={language === 'bn' ? 'থিম ও ডিসপ্লে সেটিংস (Theme & Display Settings)' : 'Theme & Display Settings'}
+          aria-label="Theme and Display Settings"
+        >
+          <Settings className="w-3.5 h-3.5 text-slate-600" />
+          <span className="hidden lg:inline text-[11px]">Settings</span>
         </button>
 
         <div
           onClick={() => onOpenSettings('branding')}
-          className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800 cursor-pointer group"
+          className="flex items-center gap-2 pl-2 border-l border-slate-200 cursor-pointer group"
           title="User Account & Chamber Settings"
         >
           <div className="w-8 h-8 rounded-full bg-blue-700 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-sm">
@@ -181,7 +174,7 @@ export const Header: React.FC<HeaderProps> = ({
               : 'U'}
           </div>
           <div className="hidden lg:block text-left">
-            <div className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight">
+            <div className="text-xs font-bold text-slate-900 leading-tight">
               {activeUser?.name || 'Advocate'}
             </div>
             <div className="flex items-center gap-1.5 mt-0.5">

@@ -104,88 +104,144 @@ export const ViewingOptionsModal: React.FC = () => {
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* Pure White Theme Card */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
+              {/* Pure White */}
               <button
                 type="button"
                 onClick={() => setTheme('white')}
-                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
+                className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
                   theme === 'white'
-                    ? 'border-blue-600 bg-white text-slate-900 ring-2 ring-blue-500/30 shadow-xs'
-                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/50 hover:border-slate-300'
+                    ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-500/30 shadow-xs'
+                    : 'border-slate-200 bg-white hover:border-slate-300'
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-white border border-slate-300 text-slate-900 flex items-center justify-center font-bold shadow-2xs">
+                  <div className="w-7 h-7 rounded-lg bg-white border border-slate-300 text-slate-900 flex items-center justify-center font-bold shadow-2xs">
                     <Sun className="w-4 h-4 text-amber-500" />
                   </div>
                   {theme === 'white' && (
-                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center">
-                      <Check className="w-3 h-3 stroke-[3]" />
+                    <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center">
+                      <Check className="w-2.5 h-2.5 stroke-[3]" />
                     </span>
                   )}
                 </div>
-                <div className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm">
-                  {language === 'bn' ? 'সাদা থিম (Pure White)' : 'White Theme'}
+                <div className="font-bold text-slate-900 text-xs">
+                  {language === 'bn' ? 'সাদা' : 'White'}
                 </div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                  Pure #FFFFFF paper background for mobile &amp; desktop
+                <div className="text-[10px] text-slate-500 mt-0.5">
+                  #FFFFFF paper
                 </div>
               </button>
 
-              {/* Soft Light Theme Card */}
+              {/* Soft Light */}
               <button
                 type="button"
                 onClick={() => setTheme('light')}
-                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
+                className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
                   theme === 'light'
-                    ? 'border-blue-600 bg-blue-50/70 dark:bg-blue-950/40 ring-2 ring-blue-500/30'
-                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/50 hover:border-slate-300'
+                    ? 'border-blue-600 bg-blue-50/70 ring-2 ring-blue-500/30 shadow-xs'
+                    : 'border-slate-200 bg-white hover:border-slate-300'
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
-                    <Sun className="w-4 h-4 text-amber-600" />
+                  <div className="w-7 h-7 rounded-lg bg-slate-100 text-blue-700 flex items-center justify-center font-bold">
+                    <Sun className="w-4 h-4 text-blue-600" />
                   </div>
                   {theme === 'light' && (
-                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center">
-                      <Check className="w-3 h-3 stroke-[3]" />
+                    <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center">
+                      <Check className="w-2.5 h-2.5 stroke-[3]" />
                     </span>
                   )}
                 </div>
-                <div className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm">
-                  {t.lightTheme}
+                <div className="font-bold text-slate-900 text-xs">
+                  {language === 'bn' ? 'স্লেট লাইট' : 'Soft Light'}
                 </div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                  Soft daylight slate, high contrast
+                <div className="text-[10px] text-slate-500 mt-0.5">
+                  Daylight slate
                 </div>
               </button>
 
-              {/* Dark Theme Card */}
+              {/* Warm Sepia */}
               <button
                 type="button"
-                onClick={() => setTheme('dark')}
-                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
-                  theme === 'dark'
-                    ? 'border-blue-600 bg-blue-50/70 dark:bg-blue-950/40 ring-2 ring-blue-500/30'
-                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/50 hover:border-slate-300'
+                onClick={() => setTheme('sepia')}
+                className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
+                  theme === 'sepia'
+                    ? 'border-amber-600 bg-amber-50/70 ring-2 ring-amber-500/30 shadow-xs'
+                    : 'border-slate-200 bg-[#FBF5E8] hover:border-amber-300'
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-950 text-indigo-300 flex items-center justify-center font-bold">
-                    <Moon className="w-4 h-4 text-indigo-400" />
+                  <div className="w-7 h-7 rounded-lg bg-[#F4E9D4] text-amber-800 flex items-center justify-center font-bold">
+                    <Sun className="w-4 h-4 text-amber-700" />
                   </div>
-                  {theme === 'dark' && (
-                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center">
-                      <Check className="w-3 h-3 stroke-[3]" />
+                  {theme === 'sepia' && (
+                    <span className="w-4 h-4 rounded-full bg-amber-600 text-white flex items-center justify-center">
+                      <Check className="w-2.5 h-2.5 stroke-[3]" />
                     </span>
                   )}
                 </div>
-                <div className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm">
-                  {t.darkTheme}
+                <div className="font-bold text-slate-900 text-xs">
+                  {language === 'bn' ? 'সেপিয়া' : 'Sepia'}
                 </div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                  Midnight courtroom slate, soft on the eyes
+                <div className="text-[10px] text-slate-600 mt-0.5">
+                  Warm parchment
+                </div>
+              </button>
+
+              {/* Courtroom Azure */}
+              <button
+                type="button"
+                onClick={() => setTheme('azure')}
+                className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
+                  theme === 'azure'
+                    ? 'border-sky-600 bg-sky-50 ring-2 ring-sky-500/30 shadow-xs'
+                    : 'border-slate-200 bg-[#F0F7FF] hover:border-sky-300'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-7 h-7 rounded-lg bg-sky-100 text-sky-800 flex items-center justify-center font-bold">
+                    <Sun className="w-4 h-4 text-sky-600" />
+                  </div>
+                  {theme === 'azure' && (
+                    <span className="w-4 h-4 rounded-full bg-sky-600 text-white flex items-center justify-center">
+                      <Check className="w-2.5 h-2.5 stroke-[3]" />
+                    </span>
+                  )}
+                </div>
+                <div className="font-bold text-slate-900 text-xs">
+                  {language === 'bn' ? 'এজুর ব্লু' : 'Azure'}
+                </div>
+                <div className="text-[10px] text-slate-600 mt-0.5">
+                  Sky daylight
+                </div>
+              </button>
+
+              {/* Land Revenue Mint */}
+              <button
+                type="button"
+                onClick={() => setTheme('mint')}
+                className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
+                  theme === 'mint'
+                    ? 'border-emerald-600 bg-emerald-50 ring-2 ring-emerald-500/30 shadow-xs'
+                    : 'border-slate-200 bg-[#F0FDF4] hover:border-emerald-300'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+                    <Sun className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  {theme === 'mint' && (
+                    <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center">
+                      <Check className="w-2.5 h-2.5 stroke-[3]" />
+                    </span>
+                  )}
+                </div>
+                <div className="font-bold text-slate-900 text-xs">
+                  {language === 'bn' ? 'মিন্ট গ্রিন' : 'Mint Paper'}
+                </div>
+                <div className="text-[10px] text-slate-600 mt-0.5">
+                  Land record mint
                 </div>
               </button>
             </div>
@@ -382,8 +438,16 @@ export const ViewingOptionsModal: React.FC = () => {
             </div>
 
             <div className={`p-4 rounded-xl border transition-all ${
-              theme === 'dark' ? 'bg-slate-950 text-slate-100 border-slate-800' : 'bg-white text-slate-900 border-slate-200 shadow-xs'
-            } ${highContrast ? 'border-2 border-slate-900 dark:border-slate-100' : ''}`}>
+              theme === 'sepia'
+                ? 'bg-[#FBF5E8] text-[#291A08] border-[#E2D2BA]'
+                : theme === 'azure'
+                ? 'bg-[#F0F7FF] text-[#0C4A6E] border-[#BAE6FD]'
+                : theme === 'mint'
+                ? 'bg-[#F0FDF4] text-[#064E3B] border-[#BBF7D0]'
+                : theme === 'light'
+                ? 'bg-slate-50 text-slate-900 border-slate-200'
+                : 'bg-white text-slate-900 border-slate-200 shadow-xs'
+            } ${highContrast ? 'border-2 border-slate-900' : ''}`}>
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
@@ -393,12 +457,12 @@ export const ViewingOptionsModal: React.FC = () => {
                     FA/104/2024 · Subrata Roy vs State of WB
                   </div>
                 </div>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-700 border border-amber-500/30">
                   Argument Board
                 </span>
               </div>
-              <div className={`text-slate-500 dark:text-slate-400 ${fontSize === 'large' ? 'text-xs' : 'text-[11px]'} flex flex-wrap gap-x-4 gap-y-1`}>
-                <span><strong>Court:</strong> DL&LRO, Alipore (South 24 Parganas)</span>
+              <div className={`text-slate-500 ${fontSize === 'large' ? 'text-xs' : 'text-[11px]'} flex flex-wrap gap-x-4 gap-y-1`}>
+                <span><strong>Court:</strong> DL&amp;LRO Chamber</span>
                 <span><strong>Next Date:</strong> 24 Oct 2024</span>
                 <span><strong>Category:</strong> Section 54 First Appeal</span>
               </div>

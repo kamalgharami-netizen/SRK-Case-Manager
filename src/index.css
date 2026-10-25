@@ -1,18 +1,17 @@
 @import "tailwindcss";
 
-/* Enforce class-driven dark mode so mobile OS dark mode never overrides White or Light theme */
+/* Enforce class-driven dark mode so mobile OS dark mode never turns anything black */
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
   html {
-    color-scheme: light;
-  }
-  html.dark {
-    color-scheme: dark;
+    color-scheme: light !important;
   }
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     -webkit-tap-highlight-color: transparent;
+    background-color: #ffffff;
+    color: #0f172a;
   }
 }
 
@@ -20,13 +19,26 @@
 html.theme-white,
 html.theme-white body {
   background-color: #ffffff !important;
-  color: #0f172a;
+  color: #0f172a !important;
   color-scheme: light !important;
 }
 
 html.theme-white main,
 html.theme-white .app-shell-bg {
   background-color: #ffffff !important;
+}
+
+/* Soft Light Theme Option (#F8FAFC) */
+html.theme-light,
+html.theme-light body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  color-scheme: light !important;
+}
+
+html.theme-light main,
+html.theme-light .app-shell-bg {
+  background-color: #f8fafc !important;
 }
 
 /* Warm Legal Parchment / Sepia Theme */
@@ -52,96 +64,50 @@ html.theme-sepia .border-slate-300 {
   border-color: #e2d2ba !important;
 }
 
-/* High Court Navy Theme */
-html.theme-navy,
-html.theme-navy body,
-html.theme-navy main,
-html.theme-navy .app-shell-bg {
-  background-color: #071326 !important;
+/* Courtroom Daylight Azure Theme */
+html.theme-azure,
+html.theme-azure body {
+  background-color: #f0f7ff !important;
+  color: #0c4a6e !important;
+  color-scheme: light !important;
 }
-html.theme-navy.dark .dark\:bg-slate-950 {
-  background-color: #071326 !important;
+html.theme-azure main,
+html.theme-azure .app-shell-bg {
+  background-color: #f0f7ff !important;
 }
-html.theme-navy.dark .dark\:bg-slate-900 {
-  background-color: #0d1e38 !important;
+html.theme-azure .bg-white {
+  background-color: #ffffff !important;
 }
-html.theme-navy.dark .dark\:bg-slate-800,
-html.theme-navy.dark .dark\:bg-slate-800\/50,
-html.theme-navy.dark .dark\:bg-slate-800\/60 {
-  background-color: #122849 !important;
+html.theme-azure .bg-slate-50,
+html.theme-azure .bg-slate-100 {
+  background-color: #e0f2fe !important;
 }
-html.theme-navy.dark .dark\:border-slate-800,
-html.theme-navy.dark .dark\:border-slate-700 {
-  border-color: #183561 !important;
-}
-
-/* Land Revenue Emerald Theme */
-html.theme-emerald,
-html.theme-emerald body,
-html.theme-emerald main,
-html.theme-emerald .app-shell-bg {
-  background-color: #022019 !important;
-}
-html.theme-emerald.dark .dark\:bg-slate-950 {
-  background-color: #022019 !important;
-}
-html.theme-emerald.dark .dark\:bg-slate-900 {
-  background-color: #042e25 !important;
-}
-html.theme-emerald.dark .dark\:bg-slate-800,
-html.theme-emerald.dark .dark\:bg-slate-800\/50,
-html.theme-emerald.dark .dark\:bg-slate-800\/60 {
-  background-color: #073f33 !important;
-}
-html.theme-emerald.dark .dark\:border-slate-800,
-html.theme-emerald.dark .dark\:border-slate-700 {
-  border-color: #0e5243 !important;
+html.theme-azure .border-slate-200,
+html.theme-azure .border-slate-300 {
+  border-color: #bae6fd !important;
 }
 
-/* Obsidian OLED Pure Noir Theme */
-html.theme-charcoal,
-html.theme-charcoal body,
-html.theme-charcoal main,
-html.theme-charcoal .app-shell-bg {
-  background-color: #000000 !important;
+/* Land Revenue Mint Theme */
+html.theme-mint,
+html.theme-mint body {
+  background-color: #f0fdf4 !important;
+  color: #064e3b !important;
+  color-scheme: light !important;
 }
-html.theme-charcoal.dark .dark\:bg-slate-950 {
-  background-color: #000000 !important;
+html.theme-mint main,
+html.theme-mint .app-shell-bg {
+  background-color: #f0fdf4 !important;
 }
-html.theme-charcoal.dark .dark\:bg-slate-900 {
-  background-color: #09090b !important;
+html.theme-mint .bg-white {
+  background-color: #ffffff !important;
 }
-html.theme-charcoal.dark .dark\:bg-slate-800,
-html.theme-charcoal.dark .dark\:bg-slate-800\/50,
-html.theme-charcoal.dark .dark\:bg-slate-800\/60 {
-  background-color: #141416 !important;
+html.theme-mint .bg-slate-50,
+html.theme-mint .bg-slate-100 {
+  background-color: #dcfce7 !important;
 }
-html.theme-charcoal.dark .dark\:border-slate-800,
-html.theme-charcoal.dark .dark\:border-slate-700 {
-  border-color: #27272a !important;
-}
-
-/* Chamber Royal Indigo Theme */
-html.theme-indigo,
-html.theme-indigo body,
-html.theme-indigo main,
-html.theme-indigo .app-shell-bg {
-  background-color: #0f0d26 !important;
-}
-html.theme-indigo.dark .dark\:bg-slate-950 {
-  background-color: #0f0d26 !important;
-}
-html.theme-indigo.dark .dark\:bg-slate-900 {
-  background-color: #19163e !important;
-}
-html.theme-indigo.dark .dark\:bg-slate-800,
-html.theme-indigo.dark .dark\:bg-slate-800\/50,
-html.theme-indigo.dark .dark\:bg-slate-800\/60 {
-  background-color: #242055 !important;
-}
-html.theme-indigo.dark .dark\:border-slate-800,
-html.theme-indigo.dark .dark\:border-slate-700 {
-  border-color: #383277 !important;
+html.theme-mint .border-slate-200,
+html.theme-mint .border-slate-300 {
+  border-color: #bbf7d0 !important;
 }
 
 /* Viewing & Display Options Modes */
@@ -184,14 +150,6 @@ main .rounded-xl {
     inset 0 1px 0 0 rgba(255, 255, 255, 0.85);
 }
 
-html.dark main .rounded-2xl,
-html.dark main .rounded-xl {
-  box-shadow:
-    0 10px 24px -4px rgba(0, 0, 0, 0.55),
-    0 3px 0 0 rgba(2, 6, 23, 0.9),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
-}
-
 main button.rounded-xl,
 main button.rounded-lg,
 aside button.rounded-xl,
@@ -203,18 +161,6 @@ header button.rounded-lg {
     0 2px 0 0 rgba(148, 163, 184, 0.28),
     inset 0 1px 0 0 rgba(255, 255, 255, 0.35);
   transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
-}
-
-html.dark main button.rounded-xl,
-html.dark main button.rounded-lg,
-html.dark aside button.rounded-xl,
-html.dark aside button.rounded-lg,
-html.dark header button.rounded-xl,
-html.dark header button.rounded-lg {
-  box-shadow:
-    0 4px 8px rgba(0, 0, 0, 0.45),
-    0 2px 0 0 rgba(2, 6, 23, 0.85),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
 }
 
 main button.rounded-xl:active,

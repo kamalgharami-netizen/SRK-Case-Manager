@@ -348,13 +348,13 @@ export const BackupModal: React.FC<BackupModalProps> = ({
             onClick={() => setActiveTab('display')}
             className={`py-2 px-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${
               activeTab === 'display'
-                ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-xs font-extrabold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                ? 'bg-white text-blue-700 shadow-xs font-extrabold ring-1 ring-blue-200'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
-            title="Display & View Settings"
+            title="Theme & Display Settings (কালার থিম ও ডিসপ্লে)"
           >
-            <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-600" />
-            <span className="truncate">Display &amp; View</span>
+            <Palette className="w-3.5 h-3.5 text-blue-600" />
+            <span className="truncate">Theme &amp; Display</span>
           </button>
 
           <button
@@ -708,11 +708,11 @@ export const BackupModal: React.FC<BackupModalProps> = ({
 
               {/* Theme Modes */}
               <div className="space-y-2.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                  <Sun className="w-4 h-4 text-amber-500" />
-                  <span>Courtroom Color Theme (কালার থিম)</span>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                  <Palette className="w-4 h-4 text-blue-600" />
+                  <span>Courtroom Color Theme (কালার থিম নির্বাচন)</span>
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
                   {THEME_OPTIONS.map(opt => (
                     <button
                       key={opt.id}
@@ -720,8 +720,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                       onClick={() => setTheme(opt.id)}
                       className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                         theme === opt.id
-                          ? 'border-blue-600 bg-blue-50/70 dark:bg-blue-950/50 ring-2 ring-blue-600 font-bold shadow-xs'
-                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300'
+                          ? 'border-blue-600 bg-blue-50/70 ring-2 ring-blue-600 font-bold shadow-xs'
+                          : 'border-slate-200 bg-white hover:border-slate-300'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1.5">
@@ -731,7 +731,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                         />
                         {theme === opt.id && <Check className="w-3.5 h-3.5 text-blue-600 stroke-[3]" />}
                       </div>
-                      <div className="text-xs font-bold text-slate-900 dark:text-slate-100">{opt.name}</div>
+                      <div className="text-xs font-bold text-slate-900">{opt.name}</div>
                       <div className="text-[10px] text-slate-500">{opt.nameBn}</div>
                     </button>
                   ))}

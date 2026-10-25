@@ -33,10 +33,10 @@ import {
   SlidersHorizontal,
   Plus,
   Scroll,
-  FileSpreadsheet
+  FileSpreadsheet,
+  HardDrive
 } from 'lucide-react';
 import { CaseType } from '../types';
-import { ThemeDropdown } from './ThemeDropdown';
 
 export type NavPage =
   | 'dashboard'
@@ -89,7 +89,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     openViewModal,
     openChamberSetup,
     appVersion,
-    forceAppUpdateAndReplace
+    forceAppUpdateAndReplace,
+    triggerManualBackupRequest,
+    backupStoragePath
   } = useApp();
   const [casesOpen, setCasesOpen] = useState(true);
   const [toolsOpen, setToolsOpen] = useState(true);
@@ -104,7 +106,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return `w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
       isActive
         ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/30 font-bold'
-        : 'text-slate-700 dark:text-slate-300 hover:text-blue-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80'
+        : 'text-slate-700 hover:text-blue-700 hover:bg-slate-100/90'
     }`;
   };
 
@@ -113,7 +115,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return `text-[10px] font-mono px-1.5 py-0.5 rounded font-bold ${
       isActive
         ? 'bg-blue-500 text-white'
-        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/70 dark:border-slate-700'
+        : 'bg-slate-100 text-slate-700 border border-slate-200/70'
     }`;
   };
 
@@ -129,14 +131,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ? 'bg-white text-slate-800 border-slate-200'
       : theme === 'light'
       ? 'bg-slate-50 text-slate-800 border-slate-200'
-      : 'bg-slate-900 text-slate-200 border-slate-800';
+      : theme === 'sepia'
+      ? 'bg-[#FBF5E8] text-[#291A08] border-[#E2D2BA]'
+      : theme === 'azure'
+      ? 'bg-sky-50/70 text-slate-800 border-sky-200'
+      : theme === 'mint'
+      ? 'bg-emerald-50/60 text-slate-800 border-emerald-200'
+      : 'bg-white text-slate-800 border-slate-200';
 
   const sidebarHeaderFooterClass =
     theme === 'white'
       ? 'bg-white border-slate-200'
       : theme === 'light'
       ? 'bg-slate-100/80 border-slate-200'
-      : 'bg-slate-950/80 border-slate-800';
+      : theme === 'sepia'
+      ? 'bg-[#F4ECDC] border-[#E2D2BA]'
+      : theme === 'azure'
+      ? 'bg-sky-100/70 border-sky-200'
+      : theme === 'mint'
+      ? 'bg-emerald-100/70 border-emerald-200'
+      : 'bg-white border-slate-200';
 
   return (
     <>
@@ -426,9 +440,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className={navItemClass('messages')}
                 >
                   <div className="flex items-center gap-2.5">
-                    <MessageSquare className="w-4 h-4 text-green-600 dark:text-green-400" />
+                    <MessageSquare className="w-4 h-4 text-green-600" />
                     <span>{t.clientMessaging}</span>
                   </div>
+                </button>
+
+                {/* Main Dashboard Data Backup shifted to Sidebar */}
+                <button
+                  type="button"
+                  onClick={triggerManualBackupRequest}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-indigo-700 hover:bg-indigo-50/90 transition-all cursor-pointer group border border-transparent hover:border-indigo-200"
+                  title={`Data Backup to: ${backupStoragePath} (ব্যাকআপ সংরক্ষণ)`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <HardDrive className="w-4 h-4 text-indigo-600 group-hover:scale-110 transition-transform" />
+                    <span className="font-bold">Data Backup (ব্যাকআপ)</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 font-mono font-bold border border-indigo-200">
+                    Backup
+                  </span>
                 </button>
               </div>
             )}
@@ -436,29 +466,57 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         </div>
 
-        {/* Theme-aware Footer with Settings & Logout */}
-        <div className={`p-3 border-t space-y-2 ${sidebarHeaderFooterClass}`}>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 px-1">
+        {/* Theme-aware Footer with Data Backup Panel, Settings & Logout */}
+        <div className={`p-3 border-t space-y-2.5 ${sidebarHeaderFooterClass}`}>
+          {/* Prominent One-Click Backup Card in Sidebar */}
+          <div className="p-2.5 rounded-xl border border-indigo-200/90 bg-indigo-50/70 shadow-2xs space-y-2">
+            <div className="flex items-center justify-between gap-1.5">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <div className="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                  <HardDrive className="w-3.5 h-3.5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11px] font-extrabold text-indigo-950 truncate">
+                    Data Backup (ব্যাকআপ)
+                  </div>
+                  <div className="text-[9px] text-indigo-700 font-mono truncate">
+                    {backupStoragePath || 'Local Storage'}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={triggerManualBackupRequest}
+              className="w-full py-1.5 px-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-2xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+              title="Immediate manual backup to local storage"
+            >
+              <HardDrive className="w-3.5 h-3.5" />
+              <span>Backup Now (এখনই ব্যাকআপ)</span>
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between text-[11px] text-slate-500 px-1">
             <div className="flex items-center gap-1.5">
-              <Database className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <Database className="w-3.5 h-3.5 text-emerald-600" />
               <span>Offline Local Storage</span>
             </div>
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
           </div>
 
-          <div className="grid grid-cols-2 gap-1.5 pt-1">
+          <div className="grid grid-cols-2 gap-1.5 pt-0.5">
             <button
-              onClick={() => onOpenSettings('branding')}
-              className="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-bold rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer shadow-2xs"
-              title="Chamber Settings & Configuration"
+              onClick={() => onOpenSettings('display')}
+              className="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-bold rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 transition-colors cursor-pointer shadow-2xs"
+              title="Theme & Chamber Settings"
             >
-              <Settings className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <Settings className="w-3.5 h-3.5 text-blue-600" />
               <span>Settings</span>
             </button>
 
             <button
               onClick={logoutUser}
-              className="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-bold rounded-xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-600 hover:text-white text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/80 transition-colors cursor-pointer shadow-2xs"
+              className="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-bold rounded-xl bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 border border-rose-200 transition-colors cursor-pointer shadow-2xs"
               title="Logout from Current Session"
             >
               <LogOut className="w-3.5 h-3.5" />

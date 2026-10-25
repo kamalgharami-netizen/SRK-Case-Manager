@@ -1,18 +1,10 @@
-export type AppTheme =
-  | 'white'
-  | 'light'
-  | 'dark'
-  | 'navy'
-  | 'emerald'
-  | 'sepia'
-  | 'charcoal'
-  | 'indigo';
+export type AppTheme = 'white' | 'light' | 'sepia' | 'azure' | 'mint';
 
 export interface ThemeOption {
   id: AppTheme;
   name: string;
   nameBn: string;
-  category: 'Light' | 'Dark';
+  category: 'Light';
   bgHex: string;
   accentHex: string;
   dotColor: string;
@@ -59,63 +51,27 @@ export const THEME_OPTIONS: ThemeOption[] = [
     descriptionBn: 'পুরোনো দলিল ও বইয়ের উষ্ণ আভা, দীর্ঘ সময়ের ড্রাফটিংয়ে আরাম'
   },
   {
-    id: 'dark',
-    name: 'Midnight Dark',
-    nameBn: 'মিডনাইট ডার্ক',
-    category: 'Dark',
-    bgHex: '#020617',
-    accentHex: '#60A5FA',
-    dotColor: 'bg-slate-950 border-2 border-slate-700',
-    tagline: 'Midnight courtroom slate',
-    description: 'Deep midnight slate with balanced contrast, soft on eyes during evening work',
-    descriptionBn: 'গভীর কালো ও স্লেটের কম্বিনেশন, রাতের কাজের জন্য আদর্শ'
+    id: 'azure',
+    name: 'Courtroom Azure',
+    nameBn: 'কোর্টরুম এজুর ব্লু',
+    category: 'Light',
+    bgHex: '#F0F7FF',
+    accentHex: '#0284C7',
+    dotColor: 'bg-sky-100 border-2 border-sky-300',
+    tagline: 'Fresh sky daylight tone',
+    description: 'Crisp daylight sky-blue tint with deep oceanic accents for high-clarity document handling',
+    descriptionBn: 'স্বচ্ছ আকাশী নীল আভা ও স্পষ্ট রিডিং কনট্রাস্ট'
   },
   {
-    id: 'navy',
-    name: 'High Court Navy',
-    nameBn: 'হাইকোর্ট নেভি ব্লু',
-    category: 'Dark',
-    bgHex: '#071326',
-    accentHex: '#38BDF8',
-    dotColor: 'bg-[#0A192F] border-2 border-[#1E3A8A]',
-    tagline: 'Prestigious bar library navy',
-    description: 'Prestigious bar association deep navy with gold and cyan contrast lines',
-    descriptionBn: 'অভিজাত বার লাইব্রেরি ও হাইকোর্টের প্রফেশনাল ডিপ নেভি ব্লু'
-  },
-  {
-    id: 'emerald',
-    name: 'Land Revenue Emerald',
-    nameBn: 'ভূমি রাজস্ব মরকত সবুজ',
-    category: 'Dark',
-    bgHex: '#022019',
-    accentHex: '#34D399',
-    dotColor: 'bg-[#032B22] border-2 border-[#059669]',
-    tagline: 'BL&LRO forest revenue',
-    description: 'Dedicated Land & Land Reforms record green theme with mint emerald highlights',
-    descriptionBn: 'বিএলঅ্যান্ডএলআরও ও ভূমি রাজস্ব দপ্তরের ক্ল্যাসিক সবুজ থিম'
-  },
-  {
-    id: 'charcoal',
-    name: 'Obsidian OLED Noir',
-    nameBn: 'অ্যাবসোলিউট ব্ল্যাক (OLED)',
-    category: 'Dark',
-    bgHex: '#000000',
-    accentHex: '#F43F5E',
-    dotColor: 'bg-black border-2 border-zinc-700',
-    tagline: 'True black #000000',
-    description: 'Absolute true pitch black for OLED/AMOLED screens with zero battery drain',
-    descriptionBn: 'সম্পূর্ণ খাঁটি কালো ব্যাকগ্রাউন্ড ও সর্বোচ্চ ব্যাটারি সাশ্রয়'
-  },
-  {
-    id: 'indigo',
-    name: 'Chamber Royal Indigo',
-    nameBn: 'রয়্যাল চেম্বার ইন্ডিগো',
-    category: 'Dark',
-    bgHex: '#0F0D26',
-    accentHex: '#A78BFA',
-    dotColor: 'bg-[#151238] border-2 border-[#6366F1]',
-    tagline: 'Senior chamber purple/indigo',
-    description: 'Senior counsel chamber indigo with rich royal violet and lavender accents',
-    descriptionBn: 'অ্যাডভোকেট চেম্বারের রাজকীয় ইন্ডিগো আভা ও ভায়োলেট অ্যাকসেন্ট'
+    id: 'mint',
+    name: 'Land Revenue Mint',
+    nameBn: 'ভূমি রাজস্ব মিন্ট পেপার',
+    category: 'Light',
+    bgHex: '#F0FDF4',
+    accentHex: '#059669',
+    dotColor: 'bg-emerald-100 border-2 border-emerald-300',
+    tagline: 'Pastel emerald paper',
+    description: 'Soothing pastel land record parchment tint, ideal for survey map verification and Khatian entry',
+    descriptionBn: 'চোখের জন্য স্নিগ্ধ হালকা সবুজ কাগজের আভা ও রাজস্ব রেকর্ড ফিল'
   }
 ];

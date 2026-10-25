@@ -354,7 +354,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const toggleHighContrast = () => setHighContrastState(prev => !prev);
 
   const toggleTheme = () =>
-    setThemeState(prev => (prev === 'white' ? 'light' : prev === 'light' ? 'dark' : 'white'));
+    setThemeState(prev => {
+      const order: AppTheme[] = ['white', 'light', 'sepia', 'azure', 'mint'];
+      const idx = order.indexOf(prev);
+      return idx >= 0 && idx < order.length - 1 ? order[idx + 1] : order[0];
+    });
 
   const resetViewPreferences = () => {
     setViewDensityState('comfortable');
@@ -437,12 +441,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [companies, activeCompanyId, activeUserId]);
 
-  // Apply theme to document
+  // Apply light theme to document
   useEffect(() => {
     try {
       localStorage.setItem('srk_theme_v2', theme);
-      const isDark = ['dark', 'navy', 'emerald', 'charcoal', 'indigo'].includes(theme);
-      localStorage.setItem('srk_theme', isDark ? 'dark' : 'light');
+      localStorage.setItem('srk_theme', 'light');
 
       const root = document.documentElement;
       const allThemeClasses = [
@@ -450,6 +453,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         'theme-white',
         'theme-light',
         'theme-sepia',
+        'theme-azure',
+        'theme-mint',
         'theme-navy',
         'theme-emerald',
         'theme-charcoal',
@@ -457,22 +462,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       ];
       allThemeClasses.forEach(cls => root.classList.remove(cls));
 
-      if (isDark) {
-        root.classList.add('dark');
-        if (theme !== 'dark') {
-          root.classList.add(`theme-${theme}`);
-        }
-        root.style.colorScheme = 'dark';
-      } else {
-        if (theme === 'white') {
-          root.classList.add('theme-white');
-        } else if (theme === 'sepia') {
-          root.classList.add('theme-sepia');
-        }
-        root.style.colorScheme = 'light';
-      }
+      // Always remove dark class
+      root.classList.remove('dark');
+      root.classList.add(`theme-${theme}`);
+      root.style.colorScheme = 'light';
 
-      const activeOpt = THEME_OPTIONS.find(t => t.id === theme);
+      const activeOpt = THEME_OPTIONS.find(t => t.id === theme) || THEME_OPTIONS[0];
       const metaTheme = document.querySelector('meta[name="theme-color"]');
       if (metaTheme && activeOpt) {
         metaTheme.setAttribute('content', activeOpt.bgHex);
