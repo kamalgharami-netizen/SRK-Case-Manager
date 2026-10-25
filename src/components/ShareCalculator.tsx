@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
-import { safePrintHtml } from '../utils/printDoc';
 import {
   Calculator,
   Plus,
@@ -350,7 +349,15 @@ export const ShareCalculator: React.FC = () => {
   };
 
   const printHtmlContent = (htmlContent: string) => {
-    safePrintHtml(htmlContent);
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
   };
 
   const printLandShareSheet = () => {
