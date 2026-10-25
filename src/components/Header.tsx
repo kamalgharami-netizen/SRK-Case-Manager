@@ -1,6 +1,6 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Menu, Search, Building2, Languages, Scale, ArrowLeft, LogOut, Power, X, Settings, Calculator } from 'lucide-react';
+import { Menu, Search, Building2, Languages, Scale, ArrowLeft, LogOut, Settings, Calculator } from 'lucide-react';
 import { CompanyLogo } from './CompanyLogo';
 import { getBackupStatus } from '../types';
 
@@ -34,8 +34,7 @@ export const Header: React.FC<HeaderProps> = ({
     language,
     toggleLanguage,
     t,
-    logoutUser,
-    requestAppExit
+    logoutUser
   } = useApp();
 
   const backupStatus = getBackupStatus(activeCompany);
@@ -193,18 +192,6 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <LogOut className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
           <span className="hidden sm:inline">{language === 'bn' ? 'লগআউট' : 'Logout'}</span>
-        </button>
-
-        {/* Desktop Close/Exit App Button - Prompts Confirmation */}
-        <button
-          type="button"
-          onClick={requestAppExit}
-          className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 hover:bg-rose-600 hover:border-rose-600 dark:bg-slate-800 dark:hover:bg-rose-600 text-slate-600 hover:text-white dark:text-slate-300 dark:hover:text-white text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shrink-0"
-          title={language === 'bn' ? 'অ্যাপ বন্ধ করুন' : 'Close App'}
-          aria-label="Close App"
-        >
-          <X className="w-4 h-4 stroke-[2.5]" />
-          <span className="hidden md:inline">Close</span>
         </button>
       </div>
     </header>
