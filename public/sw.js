@@ -1,4 +1,4 @@
-const CACHE_NAME = 'srk-case-manager-v5.0.0';
+const CACHE_NAME = 'srk-case-manager-v5.3.0';
 
 // Install and immediately replace older service worker versions in-place
 self.addEventListener('install', (event) => {
