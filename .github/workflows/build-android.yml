@@ -1,3 +1,4 @@
+
 name: Build SRK Case Manager Android APK
 
 'on':
@@ -21,39 +22,37 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: 'npm'
 
-      - name: Setup Java (JDK 21 - Required for Capacitor 7)
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "21"
 
-      - name: Accept Android SDK Licenses
-        run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-
-      - name: Install dependencies
+      - name: Install project dependencies
         run: npm install --legacy-peer-deps
+
+      - name: Install Capacitor
+        run: npm install --no-save --legacy-peer-deps @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
 
       - name: Build web application
         run: npm run build
 
-      - name: Add and Sync Android platform
+      - name: Create Capacitor configuration
         run: |
-          if [ ! -d "android" ]; then
-            npx cap add android
-          fi
-          npx cap sync android
+          cat > capacitor.config.json <<'EOF'
+          {
+            "appId": "in.srk.casemanage",
+            "appName": "SRK Case Manager",
+            "webDir": "dist"
+          }
+          EOF
 
-      - name: Configure Android Version & Upgrade Settings
-        run: |
-          BUILD_CODE=${{ github.run_number }}
-          VERSION_CODE=$((53000 + BUILD_CODE))
-          sed -i "s/versionCode 1/versionCode ${VERSION_CODE}/" android/app/build.gradle
-          sed -i 's/versionName "1.0"/versionName "5.3.0"/' android/app/build.gradle
-          # Safely configure fullBackupContent without duplicate allowBackup attributes
-          sed -i 's/android:allowBackup="true"/android:allowBackup="true" android:fullBackupContent="true"/' android/app/src/main/AndroidManifest.xml
+      - name: Add Android platform
+        run: npx cap add android
+
+      - name: Sync Android application
+        run: npx cap sync android
 
       - name: Make Gradle executable
         run: chmod +x android/gradlew
