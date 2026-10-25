@@ -3,6 +3,12 @@ import { Company, User, CaseItem, Party, CauseItem, VaultFile, DiaryEntry, Messa
 import { AppLanguage, translations, Translations } from '../data/translations';
 import { INITIAL_SAMPLE_DRAFTS } from '../data/sampleDraftTemplates';
 import { APP_VERSION, APP_BUILD_DATE, APP_RELEASE_NAME } from '../config/version';
+import {
+  harvestAllStorageSources,
+  saveToIndexedDB,
+  loadFromIndexedDB,
+  mergeCompanyLists
+} from '../utils/dataMigration';
 
 const STORAGE_KEY = 'srk_case_manager_v5';
 
@@ -193,68 +199,44 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [companies, setCompanies] = useState<Company[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('srk_case_manager_v4') || localStorage.getItem('srk_case_manager_v3');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.companies && Array.isArray(parsed.companies)) {
-          // Strictly purge S.R. Khan Legal Chamber & Associates and any demo company
-          const validCompanies = parsed.companies.filter((c: Company) => !isDemoOrLegacyCompany(c));
-          if (validCompanies.length !== parsed.companies.length) {
-            try {
-              localStorage.setItem(
-                STORAGE_KEY,
-                JSON.stringify({
-                  ...parsed,
-                  companies: validCompanies,
-                  activeCompanyId: validCompanies.length > 0 ? (validCompanies.some((x: Company) => x.id === parsed.activeCompanyId) ? parsed.activeCompanyId : validCompanies[0].id) : null,
-                  activeUserId: validCompanies.length > 0 ? parsed.activeUserId : null
-                })
-              );
-              if (validCompanies.length === 0) {
-                localStorage.removeItem('srk_first_time_setup_done');
-              }
-            } catch {}
-          }
-          return validCompanies;
-        }
+      const harvest = harvestAllStorageSources();
+      if (harvest.companies.length > 0) {
+        try {
+          localStorage.setItem('srk_first_time_setup_done', 'true');
+          const payload = {
+            companies: harvest.companies,
+            activeCompanyId: harvest.activeCompanyId,
+            activeUserId: harvest.activeUserId,
+            appVersion: APP_VERSION,
+            timestamp: Date.now()
+          };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+          localStorage.setItem('srk_persistent_vault_latest', JSON.stringify(payload));
+          saveToIndexedDB(payload);
+        } catch {}
+        return harvest.companies;
       }
     } catch (e) {
-      console.error('Failed to load companies from localStorage', e);
+      console.error('Failed to harvest and merge companies from storage:', e);
     }
-    // "dont creat any demo company into the app"
     return [];
   });
 
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('srk_case_manager_v4') || localStorage.getItem('srk_case_manager_v3');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const validCompanies = (parsed.companies || []).filter((c: Company) => !isDemoOrLegacyCompany(c));
-        if (validCompanies.length === 0) return null;
-        if (parsed.activeCompanyId && validCompanies.some((c: Company) => c.id === parsed.activeCompanyId)) {
-          return parsed.activeCompanyId;
-        }
-        return validCompanies[0].id;
-      }
+      const harvest = harvestAllStorageSources();
+      if (harvest.activeCompanyId) return harvest.activeCompanyId;
+      if (harvest.companies.length > 0) return harvest.companies[0].id;
     } catch {}
     return null;
   });
 
   const [activeUserId, setActiveUserId] = useState<string | null>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('srk_case_manager_v4') || localStorage.getItem('srk_case_manager_v3');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const validCompanies = (parsed.companies || []).filter((c: Company) => !isDemoOrLegacyCompany(c));
-        if (validCompanies.length === 0) return null;
-        const targetComp = validCompanies.find((c: Company) => c.id === parsed.activeCompanyId) || validCompanies[0];
-        if (targetComp && targetComp.users && targetComp.users.length > 0) {
-          if (parsed.activeUserId && targetComp.users.some((u: User) => u.id === parsed.activeUserId)) {
-            return parsed.activeUserId;
-          }
-          return targetComp.users[0].id;
-        }
+      const harvest = harvestAllStorageSources();
+      if (harvest.activeUserId) return harvest.activeUserId;
+      if (harvest.companies.length > 0 && harvest.companies[0].users && harvest.companies[0].users.length > 0) {
+        return harvest.companies[0].users[0].id;
       }
     } catch {}
     return null;
@@ -425,17 +407,51 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const [toast, setToast] = useState<ToastState | null>(null);
 
-  // Sync to localStorage
+  // Load & merge any durable offline vault records from IndexedDB on startup
+  useEffect(() => {
+    loadFromIndexedDB().then(vaultData => {
+      if (vaultData && Array.isArray(vaultData.companies) && vaultData.companies.length > 0) {
+        setCompanies(prev => {
+          const merged = mergeCompanyLists(prev, vaultData.companies);
+          if (merged.length !== prev.length || JSON.stringify(merged) !== JSON.stringify(prev)) {
+            try {
+              localStorage.setItem('srk_first_time_setup_done', 'true');
+              const payload = {
+                companies: merged,
+                activeCompanyId: activeCompanyId || merged[0].id,
+                activeUserId: activeUserId || merged[0].users?.[0]?.id || null,
+                appVersion: APP_VERSION,
+                timestamp: Date.now()
+              };
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+              localStorage.setItem('srk_persistent_vault_latest', JSON.stringify(payload));
+            } catch {}
+            showToast('Chamber records merged with existing offline vault data', 'success');
+            return merged;
+          }
+          return prev;
+        });
+      }
+    });
+  }, []);
+
+  // Sync to both localStorage & durable IndexedDB
   useEffect(() => {
     try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          companies,
-          activeCompanyId,
-          activeUserId
-        })
-      );
+      const payload = {
+        companies,
+        activeCompanyId,
+        activeUserId,
+        appVersion: APP_VERSION,
+        timestamp: Date.now()
+      };
+      const jsonStr = JSON.stringify(payload);
+      localStorage.setItem(STORAGE_KEY, jsonStr);
+      localStorage.setItem('srk_persistent_vault_latest', jsonStr);
+      if (companies.length > 0) {
+        localStorage.setItem('srk_first_time_setup_done', 'true');
+      }
+      saveToIndexedDB(payload);
     } catch (e) {
       console.error('Failed to save state to localStorage', e);
     }
@@ -498,8 +514,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const activeCompany = companies.find(c => c.id === activeCompanyId) || (companies.length > 0 ? companies[0] : null);
   const activeUser =
-    activeCompany && activeUserId
-      ? activeCompany.users.find(u => u.id === activeUserId) || null
+    activeCompany
+      ? (activeUserId ? activeCompany.users.find(u => u.id === activeUserId) : null) ||
+        activeCompany.users.find(u => u.isMain) ||
+        activeCompany.users[0] ||
+        null
       : null;
 
   const logActivity = (text: string) => {
@@ -1053,11 +1072,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return false;
       }
 
-      setCompanies(candidateCompanies);
+      const merged = mergeCompanyLists(companies, candidateCompanies);
+      setCompanies(merged);
       setActiveCompanyId(matchedComp.id);
       setActiveUserId(matchedUser.id);
       try {
         localStorage.setItem('srk_first_time_setup_done', 'true');
+        const payload = {
+          companies: merged,
+          activeCompanyId: matchedComp.id,
+          activeUserId: matchedUser.id,
+          appVersion: APP_VERSION,
+          timestamp: Date.now()
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        localStorage.setItem('srk_persistent_vault_latest', JSON.stringify(payload));
+        saveToIndexedDB(payload);
       } catch {}
       setIsChamberSetupOpen(false);
       showToast(`Welcome! All data retrieved successfully for "${matchedComp.name}".`, 'success');

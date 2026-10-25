@@ -163,14 +163,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         />
       )}
 
-      {/* Theme-aware Sidebar drawer */}
+      {/* Theme-aware Sidebar drawer - Fixed size for mobile */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 lg:z-30 w-64 sm:w-68 ${sidebarSurfaceClass} border-r flex flex-col shadow-xl lg:shadow-none transition-all duration-300 ease-in-out shrink-0 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full lg:hidden'
+        className={`fixed lg:static inset-y-0 left-0 z-50 lg:z-30 w-[280px] max-w-[85vw] sm:w-[280px] lg:w-64 xl:w-68 h-[100dvh] max-h-[100dvh] ${sidebarSurfaceClass} border-r flex flex-col shadow-2xl lg:shadow-none transition-transform duration-300 ease-in-out shrink-0 ${
+          isOpen ? 'translate-x-0 pointer-events-auto' : '-translate-x-full pointer-events-none lg:pointer-events-auto lg:hidden'
         }`}
       >
-        {/* Brand Header */}
-        <div className={`h-16 px-4 border-b flex items-center justify-between gap-2.5 ${sidebarHeaderFooterClass}`}>
+        {/* Brand Header - Fixed height */}
+        <div className={`h-16 px-4 border-b flex items-center justify-between gap-2.5 shrink-0 ${sidebarHeaderFooterClass}`}>
           <div className="flex items-center gap-2.5 min-w-0">
             <CompanyLogo company={activeCompany} size="sm" />
             <div className="min-w-0">
@@ -183,17 +183,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="lg:hidden p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+            className="lg:hidden p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0 active:scale-95"
             title="Close sidebar"
             aria-label="Close sidebar"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4 stroke-[2.5]" />
           </button>
         </div>
 
-        {/* Scrollable navigation menu */}
-        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4 text-xs">
+        {/* Scrollable navigation menu - touch friendly with momentum scroll */}
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-3 space-y-4 text-xs">
           {/* MAIN */}
           <div className="space-y-1">
             <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
@@ -450,12 +451,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         </div>
 
-        {/* Theme-aware Footer with Backup Now, Settings & Logout */}
-        <div className={`p-3 border-t space-y-2.5 ${sidebarHeaderFooterClass}`}>
+        {/* Theme-aware Footer with Backup Now, Settings & Logout - Fixed height at bottom */}
+        <div className={`p-3 border-t space-y-2.5 shrink-0 ${sidebarHeaderFooterClass}`}>
           {/* Backup Now Option */}
           <button
             type="button"
-            onClick={triggerManualBackupRequest}
+            onClick={() => {
+              triggerManualBackupRequest();
+              if (typeof window !== 'undefined' && window.innerWidth < 1024) onClose();
+            }}
             className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-xs shadow-2xs transition-all cursor-pointer flex items-center justify-center gap-2"
             title={`Immediate manual backup to: ${backupStoragePath || 'Local Storage'}`}
           >
@@ -473,7 +477,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           <div className="grid grid-cols-2 gap-1.5 pt-0.5">
             <button
-              onClick={() => onOpenSettings('display')}
+              type="button"
+              onClick={() => {
+                onOpenSettings('display');
+                if (typeof window !== 'undefined' && window.innerWidth < 1024) onClose();
+              }}
               className="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-bold rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 transition-colors cursor-pointer shadow-2xs"
               title="Theme & Chamber Settings"
             >
@@ -482,7 +490,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
 
             <button
-              onClick={logoutUser}
+              type="button"
+              onClick={() => {
+                logoutUser();
+                if (typeof window !== 'undefined' && window.innerWidth < 1024) onClose();
+              }}
               className="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-bold rounded-xl bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 border border-rose-200 transition-colors cursor-pointer shadow-2xs"
               title="Logout from Current Session"
             >
