@@ -1,3 +1,4 @@
+
 name: Build SRK Case Manager Android APK
 
 'on':
@@ -21,7 +22,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: 'npm'
 
       - name: Setup Java (JDK 21 - Required for Capacitor 7)
         uses: actions/setup-java@v4
@@ -52,7 +52,6 @@ jobs:
           VERSION_CODE=$((53000 + BUILD_CODE))
           sed -i "s/versionCode 1/versionCode ${VERSION_CODE}/" android/app/build.gradle
           sed -i 's/versionName "1.0"/versionName "5.3.0"/' android/app/build.gradle
-          # Safely configure fullBackupContent without duplicate allowBackup attributes
           sed -i 's/android:allowBackup="true"/android:allowBackup="true" android:fullBackupContent="true"/' android/app/src/main/AndroidManifest.xml
 
       - name: Make Gradle executable
