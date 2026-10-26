@@ -44,7 +44,8 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
     retrieveExistingData,
     showToast,
     language,
-    backupStoragePath
+    backupStoragePath,
+    triggerAutoDataMerge
   } = useApp();
 
   const logoFileRef = useRef<HTMLInputElement>(null);
@@ -893,6 +894,29 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
                   </button>
                 </div>
               </div>
+            </div>
+
+            {/* Auto-merge Older APK / Version Data */}
+            <div className="p-3.5 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex items-center justify-between gap-3">
+              <div>
+                <div className="text-xs font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
+                  <Database className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Updated to New APK Version?</span>
+                </div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Scan &amp; auto-merge all existing cases from older APK install
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  triggerAutoDataMerge();
+                  if (onClose && companies.length > 0) onClose();
+                }}
+                className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shrink-0 cursor-pointer shadow-xs transition-colors"
+              >
+                Merge Older Data
+              </button>
             </div>
 
             {/* Optional backup JSON file selection */}

@@ -454,7 +454,7 @@ const MainAppContent: React.FC = () => {
 
   return (
     <div className="h-[100dvh] w-full flex flex-col justify-center bg-white dark:bg-slate-950 overflow-hidden font-sans app-shell-bg">
-      <div className="relative flex h-[90dvh] my-[5dvh] sm:h-screen sm:my-0 w-full bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-hidden border-y border-slate-200/80 dark:border-slate-800 sm:border-y-0 app-shell-bg">
+      <div className="relative flex h-[100dvh] sm:h-screen my-0 w-full bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-hidden app-shell-bg">
         {/* Toast Notification Container */}
         <Toast />
 

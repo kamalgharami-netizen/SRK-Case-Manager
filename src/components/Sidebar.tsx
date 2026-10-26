@@ -163,10 +163,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         />
       )}
 
-      {/* Theme-aware Sidebar drawer - 90% of device height from top to bottom */}
+      {/* Theme-aware Sidebar drawer - Fixed size for mobile, perfectly docked */}
       <aside
-        className={`fixed lg:static top-[5dvh] bottom-[5dvh] left-0 z-50 lg:z-30 w-64 sm:w-68 h-[90dvh] my-auto self-center ${sidebarSurfaceClass} border-r border-y lg:border rounded-r-2xl lg:rounded-2xl shadow-xl lg:shadow-none transition-all duration-300 ease-in-out shrink-0 flex flex-col overflow-hidden ${
-          isOpen ? 'translate-x-0' : '-translate-x-full lg:hidden'
+        className={`fixed lg:static inset-y-0 top-0 bottom-0 left-0 z-50 lg:z-30 w-[280px] max-w-[85vw] lg:w-64 h-full max-h-[100dvh] my-0 ${sidebarSurfaceClass} border-r lg:border rounded-r-2xl lg:rounded-2xl shadow-2xl lg:shadow-none transition-transform duration-300 ease-in-out shrink-0 flex flex-col overflow-hidden ${
+          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 lg:flex'
         }`}
       >
         {/* Brand Header */}

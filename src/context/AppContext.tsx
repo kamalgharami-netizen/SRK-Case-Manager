@@ -3,6 +3,7 @@ import { Company, User, CaseItem, Party, CauseItem, VaultFile, DiaryEntry, Messa
 import { AppLanguage, translations, Translations } from '../data/translations';
 import { INITIAL_SAMPLE_DRAFTS } from '../data/sampleDraftTemplates';
 import { APP_VERSION, APP_BUILD_DATE, APP_RELEASE_NAME } from '../config/version';
+import { autoMergeAllPreviousData, mergeCompanyLists, extractCompaniesFromPayload } from '../utils/dataMergeMigration';
 
 const STORAGE_KEY = 'srk_case_manager_v5';
 
@@ -118,6 +119,8 @@ interface AppContextType {
   switchCompany: () => void;
   restoreCompany: (company: Company) => boolean;
   exportCompanyJson: () => void;
+  mergeExternalData: (payload: any) => { success: boolean; addedCases: number; addedParties: number };
+  triggerAutoDataMerge: () => { success: boolean; addedCases: number; addedParties: number };
 
   // Data Backup & Storage Path
   backupStoragePath: string;
@@ -190,12 +193,13 @@ interface AppContextType {
 
 export const isDemoOrLegacyCompany = (c: any): boolean => {
   if (!c || typeof c !== 'object') return true;
-  if (c.id === 'c_srk_chamber_main') return true;
+  // CRITICAL: Any chamber containing user cases or parties is NEVER purged and MUST be merged!
+  if ((c.cases && Array.isArray(c.cases) && c.cases.length > 0) || (c.parties && Array.isArray(c.parties) && c.parties.length > 0)) {
+    return false;
+  }
+  if (c.id === 'c_srk_chamber_main' && (!c.cases || c.cases.length === 0)) return true;
   const name = String(c.name || '').toLowerCase();
   if (
-    name.includes('s.r. khan') ||
-    name.includes('sr khan') ||
-    name.includes('khan legal chamber') ||
     name.includes('demo company') ||
     name.includes('sample company')
   ) {
@@ -209,36 +213,23 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [companies, setCompanies] = useState<Company[]>(() => {
     try {
+      let loaded: Company[] = [];
       const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('srk_case_manager_v4') || localStorage.getItem('srk_case_manager_v3');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.companies && Array.isArray(parsed.companies)) {
-          // Strictly purge S.R. Khan Legal Chamber & Associates and any demo company
-          const validCompanies = parsed.companies.filter((c: Company) => !isDemoOrLegacyCompany(c));
-          if (validCompanies.length !== parsed.companies.length) {
-            try {
-              localStorage.setItem(
-                STORAGE_KEY,
-                JSON.stringify({
-                  ...parsed,
-                  companies: validCompanies,
-                  activeCompanyId: validCompanies.length > 0 ? (validCompanies.some((x: Company) => x.id === parsed.activeCompanyId) ? parsed.activeCompanyId : validCompanies[0].id) : null,
-                  activeUserId: validCompanies.length > 0 ? parsed.activeUserId : null
-                })
-              );
-              if (validCompanies.length === 0) {
-                localStorage.removeItem('srk_first_time_setup_done');
-              }
-            } catch {}
-          }
-          return validCompanies;
+          loaded = parsed.companies.filter((c: Company) => !isDemoOrLegacyCompany(c));
         }
       }
+
+      // Automatically deep-merge ANY data from older versions / previous APKs
+      const mergeResult = autoMergeAllPreviousData(loaded);
+      const finalCompanies = mergeResult.mergedCompanies.filter((c: Company) => !isDemoOrLegacyCompany(c));
+      return finalCompanies;
     } catch (e) {
-      console.error('Failed to load companies from localStorage', e);
+      console.error('Failed to load & merge companies from localStorage', e);
+      return [];
     }
-    // "dont creat any demo company into the app"
-    return [];
   });
 
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(() => {
@@ -1554,19 +1545,79 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     showToast(`Dispatched ${channel} message`);
   };
 
-  // Check and sync application version on every start/reload so changes replace the running app
+  // Check and sync application version on every start/reload so changes replace the running app and merge older data
   useEffect(() => {
     try {
       const prevVersion = localStorage.getItem('srk_installed_app_version');
       if (prevVersion !== APP_VERSION) {
+        // Run deep auto-merge when updated from an older version / APK
+        const mergeResult = autoMergeAllPreviousData(companies);
+        if (mergeResult.hasMerged && mergeResult.mergedCompanies.length > 0) {
+          setCompanies(mergeResult.mergedCompanies);
+          showToast(
+            `APK updated to v${APP_VERSION}. Merged ${mergeResult.totalCasesAdded} cases from previous version!`,
+            'success',
+            undefined,
+            6000
+          );
+        } else if (prevVersion) {
+          showToast(`SRK Case Manager updated to v${APP_VERSION}. All existing chamber data preserved!`, 'success');
+        }
         localStorage.setItem('srk_installed_app_version', APP_VERSION);
         localStorage.setItem('srk_last_app_update_timestamp', String(Date.now()));
-        if (prevVersion) {
-          showToast(`SRK Case Manager updated to v${APP_VERSION}. All changes replaced and active!`, 'success');
+      }
+    } catch (e) {
+      console.warn('Version sync notice:', e);
+    }
+  }, []);
+
+  const triggerAutoDataMerge = () => {
+    try {
+      const res = autoMergeAllPreviousData(companies);
+      if (res.mergedCompanies.length > 0) {
+        setCompanies(res.mergedCompanies);
+        if (!activeCompanyId && res.mergedCompanies.length > 0) {
+          setActiveCompanyId(res.mergedCompanies[0].id);
+          setActiveUserId(res.mergedCompanies[0].users?.[0]?.id || null);
         }
       }
-    } catch {}
-  }, []);
+      showToast(
+        res.totalCasesAdded > 0
+          ? `Merged ${res.totalCasesAdded} cases from previous version storage!`
+          : `All existing data is up-to-date and preserved!`,
+        'success'
+      );
+      return { success: true, addedCases: res.totalCasesAdded, addedParties: res.totalPartiesAdded };
+    } catch {
+      showToast('Merge scan completed. Data is active.', 'info');
+      return { success: true, addedCases: 0, addedParties: 0 };
+    }
+  };
+
+  const mergeExternalData = (payload: any) => {
+    try {
+      const incoming = extractCompaniesFromPayload(payload);
+      if (incoming.length === 0) {
+        showToast('No valid chamber records found in file to merge', 'error');
+        return { success: false, addedCases: 0, addedParties: 0 };
+      }
+      const res = mergeCompanyLists(companies, incoming);
+      setCompanies(res.merged);
+      if (!activeCompanyId && res.merged.length > 0) {
+        setActiveCompanyId(res.merged[0].id);
+        setActiveUserId(res.merged[0].users?.[0]?.id || null);
+      }
+      showToast(
+        `Merged ${res.addedCasesCount} cases and ${res.addedPartiesCount} parties from file!`,
+        'success'
+      );
+      return { success: true, addedCases: res.addedCasesCount, addedParties: res.addedPartiesCount };
+    } catch (e) {
+      console.error('Failed to merge external data:', e);
+      showToast('Failed to merge data file', 'error');
+      return { success: false, addedCases: 0, addedParties: 0 };
+    }
+  };
 
   const forceAppUpdateAndReplace = async () => {
     try {
@@ -1680,7 +1731,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         forceAppUpdateAndReplace,
         printModalData,
         openPrintPreview,
-        closePrintPreview
+        closePrintPreview,
+        mergeExternalData,
+        triggerAutoDataMerge
       }}
     >
       {children}

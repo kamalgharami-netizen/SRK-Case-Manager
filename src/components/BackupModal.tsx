@@ -98,10 +98,13 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     triggerManualBackupRequest,
     setIsSelectBackupPathModalOpen,
     language,
-    t
+    t,
+    mergeExternalData,
+    triggerAutoDataMerge
   } = useApp();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mergeFileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const vaultUploadInputRef = useRef<HTMLInputElement>(null);
 
@@ -147,6 +150,23 @@ export const BackupModal: React.FC<BackupModalProps> = ({
       }
     };
     reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const handleMergeFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = evt => {
+      try {
+        const parsed = JSON.parse(evt.target?.result as string);
+        mergeExternalData(parsed);
+      } catch {
+        showToast('Invalid backup file JSON', 'error');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1246,6 +1266,54 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                     accept=".json"
                     className="hidden"
                     onChange={handleRestoreFile}
+                  />
+                </button>
+
+                {/* Merge Older APK / Version Data */}
+                <button
+                  type="button"
+                  onClick={triggerAutoDataMerge}
+                  className="p-5 rounded-2xl border border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/30 dark:bg-indigo-950/20 hover:border-indigo-600 hover:bg-indigo-50/60 text-left transition-all group cursor-pointer space-y-2"
+                  title="Scan and merge all cases from older version storage"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Layers className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                      <span>Merge Older APK Data</span>
+                      <span className="text-[10px] font-mono bg-indigo-600 text-white px-1.5 py-0.5 rounded font-bold">Auto</span>
+                    </div>
+                    <div className="text-xs text-slate-500 mt-1">
+                      Scan all previous versions and merge existing cases, clients, and deeds into current app without losing any data.
+                    </div>
+                  </div>
+                </button>
+
+                {/* Merge from Backup JSON File */}
+                <button
+                  type="button"
+                  onClick={() => mergeFileInputRef.current?.click()}
+                  className="p-5 rounded-2xl border border-purple-200 dark:border-purple-800/60 bg-purple-50/30 dark:bg-purple-950/20 hover:border-purple-600 hover:bg-purple-50/60 text-left transition-all group cursor-pointer space-y-2"
+                  title="Merge external JSON file without overwriting"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-purple-600 dark:text-purple-300 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <RotateCcw className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                      Merge Backup JSON File
+                    </div>
+                    <div className="text-xs text-slate-500 mt-1">
+                      Select an exported backup file to safely merge all its cases into your active chamber records.
+                    </div>
+                  </div>
+                  <input
+                    ref={mergeFileInputRef}
+                    type="file"
+                    accept=".json"
+                    className="hidden"
+                    onChange={handleMergeFile}
                   />
                 </button>
               </div>
