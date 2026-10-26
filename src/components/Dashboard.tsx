@@ -34,6 +34,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { CaseType, CaseItem, getStatusTrackingInfo, getBackupStatus } from '../types';
+import { safePrintHtml } from '../utils/printDoc';
 
 interface DashboardProps {
   onNavigate: (page: NavPage) => void;
@@ -189,34 +190,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
     })
     .slice(0, 4);
 
-  const printHtmlContent = (htmlContent: string) => {
-    try {
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = '0';
-      document.body.appendChild(iframe);
-      const doc = iframe.contentWindow?.document || iframe.contentDocument;
-      if (doc) {
-        doc.open();
-        doc.write(htmlContent);
-        doc.close();
-        iframe.contentWindow?.focus();
-        setTimeout(() => {
-          iframe.contentWindow?.print();
-          setTimeout(() => {
-            if (document.body.contains(iframe)) {
-              document.body.removeChild(iframe);
-            }
-          }, 1500);
-        }, 300);
-      }
-    } catch {
-      window.print();
-    }
+  const printHtmlContent = (htmlContent: string, title?: string) => {
+    safePrintHtml(htmlContent, title || 'Active Cases Registry Report');
   };
 
   const exportTrackedCasesCSV = () => {

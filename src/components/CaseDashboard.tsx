@@ -50,6 +50,7 @@ import {
 } from 'lucide-react';
 import { getStatusTrackingInfo } from '../types';
 import { wbDistricts } from '../data/wbDistricts';
+import { safePrintHtml } from '../utils/printDoc';
 
 interface CaseDashboardProps {
   type: CaseType;
@@ -962,34 +963,8 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
     setBatchDeleteModalOpen(false);
   };
 
-  const printHtmlContent = (htmlContent: string) => {
-    try {
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = '0';
-      document.body.appendChild(iframe);
-      const doc = iframe.contentWindow?.document || iframe.contentDocument;
-      if (doc) {
-        doc.open();
-        doc.write(htmlContent);
-        doc.close();
-        iframe.contentWindow?.focus();
-        setTimeout(() => {
-          iframe.contentWindow?.print();
-          setTimeout(() => {
-            if (document.body.contains(iframe)) {
-              document.body.removeChild(iframe);
-            }
-          }, 1500);
-        }, 300);
-      }
-    } catch {
-      window.print();
-    }
+  const printHtmlContent = (htmlContent: string, title?: string) => {
+    safePrintHtml(htmlContent, title || `${meta.title} Report`);
   };
 
   const printCaseSummary = (c: CaseItem) => {
@@ -1139,7 +1114,10 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
         </body>
       </html>
     `;
-    printHtmlContent(html);
+    printHtmlContent(
+      html,
+      `${c.type === 'rorpi' ? 'ROR/PI Application' : c.type === 'certcopy' ? 'Certified Copy' : 'Case File'}: ${c.caseNo || c.appNo || 'File'}`
+    );
   };
 
   const exportFilteredCasesCSV = () => {
@@ -1467,7 +1445,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
         </body>
       </html>
     `;
-    printHtmlContent(html);
+    printHtmlContent(html, `${meta.title} — Registry Report`);
   };
 
   const printFullModuleReport = exportFilteredCasesPDF;

@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { CaseType, CaseItem, DraftingMatterType, LandSchedule, Respondent } from '../types';
 import { wbDistricts } from '../data/wbDistricts';
 import { WB_LAND_CLASSIFICATIONS } from './CaseEntryForm';
+import { safePrintHtml } from '../utils/printDoc';
 import {
   Brain,
   FileText,
@@ -3742,6 +3743,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
                     {generatedDraft && (
                       <>
                         <button
+                          type="button"
                           onClick={copyDraftToClipboard}
                           className="px-2.5 py-1 text-xs font-semibold rounded border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-1 cursor-pointer"
                           title="Copy text to clipboard"
@@ -3749,6 +3751,15 @@ export const AiStudio: React.FC<AiStudioProps> = ({
                           <Copy className="w-3.5 h-3.5" /> Copy
                         </button>
                         <button
+                          type="button"
+                          onClick={() => safePrintHtml(generatedDraft, `Legal Pleading - ${template} - ${draftLang}`)}
+                          className="px-2.5 py-1 text-xs font-bold rounded bg-blue-700 hover:bg-blue-800 text-white flex items-center gap-1 cursor-pointer shadow-xs"
+                          title="Print or Save as PDF"
+                        >
+                          <Printer className="w-3.5 h-3.5" /> Print / PDF
+                        </button>
+                        <button
+                          type="button"
                           onClick={downloadDraftWordDoc}
                           className="px-2.5 py-1 text-xs font-bold rounded bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1 cursor-pointer shadow-xs"
                           title="Export document to MS Word"

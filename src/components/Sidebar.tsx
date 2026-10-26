@@ -163,14 +163,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         />
       )}
 
-      {/* Theme-aware Sidebar drawer */}
+      {/* Theme-aware Sidebar drawer - 90% of device height from top to bottom */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 lg:z-30 w-64 sm:w-68 ${sidebarSurfaceClass} border-r flex flex-col shadow-xl lg:shadow-none transition-all duration-300 ease-in-out shrink-0 ${
+        className={`fixed lg:static top-[5dvh] bottom-[5dvh] left-0 z-50 lg:z-30 w-64 sm:w-68 h-[90dvh] my-auto self-center ${sidebarSurfaceClass} border-r border-y lg:border rounded-r-2xl lg:rounded-2xl shadow-xl lg:shadow-none transition-all duration-300 ease-in-out shrink-0 flex flex-col overflow-hidden ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:hidden'
         }`}
       >
         {/* Brand Header */}
-        <div className={`h-16 px-4 border-b flex items-center justify-between gap-2.5 ${sidebarHeaderFooterClass}`}>
+        <div className={`h-16 px-4 border-b flex items-center justify-between gap-2.5 ${sidebarHeaderFooterClass} shrink-0`}>
           <div className="flex items-center gap-2.5 min-w-0">
             <CompanyLogo company={activeCompany} size="sm" />
             <div className="min-w-0">

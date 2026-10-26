@@ -50,8 +50,8 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
   const logoFileRef = useRef<HTMLInputElement>(null);
   const restoreFileRef = useRef<HTMLInputElement>(null);
 
-  // Check if first-time launch
-  const isFirstLaunch = companies.length === 0 || !localStorage.getItem('srk_first_time_setup_done');
+  // Check if first-time launch - strictly false if any registered company exists
+  const isFirstLaunch = companies.length === 0;
 
   // Views: 'login' | 'create' | 'retrieve' | 'select'
   const [view, setView] = useState<'login' | 'create' | 'retrieve' | 'select'>(

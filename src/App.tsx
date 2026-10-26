@@ -21,6 +21,7 @@ import { ViewingOptionsModal } from './components/ViewingOptionsModal';
 import { ChainDeedModal } from './components/ChainDeedModal';
 import { BackupPathModal } from './components/BackupPathModal';
 import { ExitConfirmationModal } from './components/ExitConfirmationModal';
+import { PrintModal } from './components/PrintModal';
 import { Toast } from './components/Toast';
 import { CaseType, CaseItem, getBackupStatus } from './types';
 import {
@@ -488,6 +489,9 @@ const MainAppContent: React.FC = () => {
 
       {/* Display & Viewing Options Modal */}
       <ViewingOptionsModal />
+
+      {/* On-Screen Print & PDF Device Selectable Preview Modal */}
+      <PrintModal />
 
       {/* Backup Path Configuration & Manual Confirmation Modal */}
       <BackupPathModal />

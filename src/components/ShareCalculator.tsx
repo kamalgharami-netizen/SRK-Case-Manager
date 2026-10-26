@@ -18,6 +18,7 @@ import {
   X,
   Users
 } from 'lucide-react';
+import { safePrintHtml } from '../utils/printDoc';
 
 // ==========================================
 // WEST BENGAL STATUTORY & REVENUE CONSTANTS
@@ -348,16 +349,8 @@ export const ShareCalculator: React.FC = () => {
     setTimeout(() => setCopiedShare(false), 2000);
   };
 
-  const printHtmlContent = (htmlContent: string) => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 250);
+  const printHtmlContent = (htmlContent: string, title: string = 'Calculation Sheet') => {
+    safePrintHtml(htmlContent, title);
   };
 
   const printLandShareSheet = () => {
@@ -436,7 +429,7 @@ export const ShareCalculator: React.FC = () => {
         </body>
       </html>
     `;
-    printHtmlContent(html);
+    printHtmlContent(html, '10,000 Land Share Calculation Sheet');
   };
 
   // =========================================================
@@ -610,7 +603,7 @@ export const ShareCalculator: React.FC = () => {
         </body>
       </html>
     `;
-    printHtmlContent(html);
+    printHtmlContent(html, 'Land Unit Conversion Sheet');
   };
 
   // =========================================================
@@ -930,7 +923,7 @@ export const ShareCalculator: React.FC = () => {
         </body>
       </html>
     `;
-    printHtmlContent(html);
+    printHtmlContent(html, 'Muslim Farayez Inheritance Certificate');
   };
 
   return (

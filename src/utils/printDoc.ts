@@ -1,40 +1,72 @@
 /**
- * Robust cross-browser and iframe-safe printing utility
- * Tries popup window first; if blocked, falls back to hidden iframe printing.
+ * Robust cross-browser, mobile-safe and iframe-safe printing utility
+ * NEVER uses window.open which redirects or opens a new tab on mobile devices.
+ * Dispatches an on-screen Print & PDF preview modal event with direct Device Print & Print to PDF options.
  */
-export function safePrintHtml(fullHtmlDocument: string): void {
-  try {
-    const printWin = window.open('', '_blank');
-    if (printWin) {
-      printWin.document.open();
-      printWin.document.write(fullHtmlDocument);
-      printWin.document.close();
-      // Allow styles to render before triggering print dialog
-      setTimeout(() => {
-        try {
-          printWin.focus();
-          printWin.print();
-        } catch (e) {
-          console.warn('printWin.print() warning:', e);
-        }
-      }, 300);
-      return;
-    }
-  } catch (e) {
-    console.info('window.open blocked, falling back to iframe print:', e);
+
+export interface SafePrintOptions {
+  title?: string;
+  orientation?: 'portrait' | 'landscape';
+  paperSize?: 'a4' | 'legal';
+}
+
+export function safePrintHtml(fullHtmlDocument: string, optionsOrTitle?: string | SafePrintOptions): void {
+  let title = 'Document';
+  let orientation: 'portrait' | 'landscape' = 'portrait';
+  let paperSize: 'a4' | 'legal' = 'a4';
+
+  if (typeof optionsOrTitle === 'string') {
+    title = optionsOrTitle;
+  } else if (optionsOrTitle && typeof optionsOrTitle === 'object') {
+    title = optionsOrTitle.title || 'Document';
+    if (optionsOrTitle.orientation) orientation = optionsOrTitle.orientation;
+    if (optionsOrTitle.paperSize) paperSize = optionsOrTitle.paperSize;
   }
 
-  // Fallback: Use hidden iframe so popup blocker never halts printing
+  // Auto-detect title from <title> tag if available
+  if (title === 'Document') {
+    const titleMatch = fullHtmlDocument.match(/<title>([^<]+)<\/title>/i);
+    if (titleMatch && titleMatch[1]) {
+      title = titleMatch[1].trim();
+    }
+  }
+
+  // Auto-detect landscape orientation from style tag
+  if (orientation === 'portrait' && (fullHtmlDocument.includes('landscape') || fullHtmlDocument.includes('size: landscape'))) {
+    orientation = 'landscape';
+  }
+
+  // Dispatch on-screen Print & PDF modal event so user sees the preview & device selector on screen
+  if (typeof window !== 'undefined') {
+    const event = new CustomEvent('srk-open-print-modal', {
+      detail: {
+        html: fullHtmlDocument,
+        title,
+        orientation,
+        paperSize
+      }
+    });
+    window.dispatchEvent(event);
+  }
+}
+
+/**
+ * Direct print using hidden iframe without opening popup or navigating away
+ */
+export function directIframePrint(fullHtmlDocument: string, title: string = 'Document'): void {
   try {
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.top = '-9999px';
-    iframe.style.left = '-9999px';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = 'none';
-    iframe.id = 'safe-print-frame-' + Date.now();
-    document.body.appendChild(iframe);
+    let iframe = document.getElementById('srk-print-target-iframe') as HTMLIFrameElement;
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.id = 'srk-print-target-iframe';
+      iframe.style.position = 'fixed';
+      iframe.style.top = '-9999px';
+      iframe.style.left = '-9999px';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = 'none';
+      document.body.appendChild(iframe);
+    }
 
     const doc = iframe.contentWindow?.document || iframe.contentDocument;
     if (doc) {
@@ -48,17 +80,13 @@ export function safePrintHtml(fullHtmlDocument: string): void {
           iframe.contentWindow?.print();
         } catch (err) {
           console.warn('Iframe print error:', err);
-        } finally {
-          setTimeout(() => {
-            if (document.body.contains(iframe)) {
-              document.body.removeChild(iframe);
-            }
-          }, 60000); // Clean up after print dialog finishes
+          window.print();
         }
-      }, 400);
+      }, 300);
     }
   } catch (err) {
-    console.error('Safe print fallback failed:', err);
+    console.error('Direct iframe print failed:', err);
+    window.print();
   }
 }
 

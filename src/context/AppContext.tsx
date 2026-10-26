@@ -66,6 +66,22 @@ interface AppContextType {
   isChamberSetupOpen: boolean;
   setIsChamberSetupOpen: (open: boolean) => void;
   openChamberSetup: () => void;
+
+  // Print & PDF Preview Modal
+  printModalData: {
+    isOpen: boolean;
+    html: string;
+    title: string;
+    orientation?: 'portrait' | 'landscape';
+    paperSize?: 'a4' | 'legal';
+  } | null;
+  openPrintPreview: (options: {
+    html: string;
+    title: string;
+    orientation?: 'portrait' | 'landscape';
+    paperSize?: 'a4' | 'legal';
+  }) => void;
+  closePrintPreview: () => void;
   
   // Auth & Company Lifecycle
   createCompany: (
@@ -336,6 +352,51 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [isSelectBackupPathModalOpen, setIsSelectBackupPathModalOpen] = useState(false);
   const [isManualBackupConfirmOpen, setIsManualBackupConfirmOpen] = useState(false);
   const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false);
+
+  // Print & PDF Preview Modal State (on-screen popup without redirects)
+  const [printModalData, setPrintModalData] = useState<{
+    isOpen: boolean;
+    html: string;
+    title: string;
+    orientation?: 'portrait' | 'landscape';
+    paperSize?: 'a4' | 'legal';
+  } | null>(null);
+
+  const openPrintPreview = (options: {
+    html: string;
+    title: string;
+    orientation?: 'portrait' | 'landscape';
+    paperSize?: 'a4' | 'legal';
+  }) => {
+    setPrintModalData({
+      isOpen: true,
+      html: options.html,
+      title: options.title || 'Document',
+      orientation: options.orientation || 'portrait',
+      paperSize: options.paperSize || 'a4'
+    });
+  };
+
+  const closePrintPreview = () => {
+    setPrintModalData(null);
+  };
+
+  // Global event listener for safePrintHtml and print callers
+  useEffect(() => {
+    const handlePrintEvent = (e: any) => {
+      if (e && e.detail) {
+        setPrintModalData({
+          isOpen: true,
+          html: e.detail.html || '',
+          title: e.detail.title || 'Document',
+          orientation: e.detail.orientation || 'portrait',
+          paperSize: e.detail.paperSize || 'a4'
+        });
+      }
+    };
+    window.addEventListener('srk-open-print-modal', handlePrintEvent);
+    return () => window.removeEventListener('srk-open-print-modal', handlePrintEvent);
+  }, []);
 
   const openViewModal = () => setIsViewModalOpen(true);
   const closeViewModal = () => setIsViewModalOpen(false);
@@ -1616,7 +1677,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         appVersion: APP_VERSION,
         appBuildDate: APP_BUILD_DATE,
         appReleaseName: APP_RELEASE_NAME,
-        forceAppUpdateAndReplace
+        forceAppUpdateAndReplace,
+        printModalData,
+        openPrintPreview,
+        closePrintPreview
       }}
     >
       {children}
