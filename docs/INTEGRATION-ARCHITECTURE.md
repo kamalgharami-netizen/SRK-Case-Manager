@@ -60,6 +60,35 @@ Required configuration values to supply during implementation:
 
 No Google credentials have been configured in this repository yet. The Google Drive picker, live sync, conflict handling and sync notifications are not yet implemented. Do not display a connected/synced status until a real Google API operation succeeds.
 
+## Client WhatsApp and SMS automation
+
+The product requirement includes automatic client-facing WhatsApp and SMS reminders, separately from Google Drive sync notifications.
+
+### Required behaviour
+
+- Provide per-client mobile number, preferred channel (WhatsApp, SMS, or both), language, consent status, consent timestamp/source, and opt-out status.
+- Provide configurable reminder rules for hearing dates, next dates, payment due dates, document requests and manually approved case updates.
+- Schedule reminders using the case's saved date and the user's configured local timezone. Re-check that the case/date is still current immediately before dispatch so rescheduled hearings do not trigger stale reminders.
+- Use a durable server-side queue with retries, idempotency keys, delivery-status webhooks and an audit log. Do not send from a background timer that only runs while the Windows or Android app is open.
+- Keep provider credentials on the HTTPS backend only. Never expose API keys in the frontend, APK, EXE or repository.
+- Provide message templates in Bengali and English, preview/approval controls, quiet hours, duplicate prevention, delivery status and a manual pause/disable switch.
+- Do not send sensitive legal case details in notification text by default. Use a neutral reminder and require the user to open the secured app for details.
+- Respect client opt-in and opt-out. WhatsApp-initiated messages outside the active customer-service window must use approved templates. SMS sent in India must follow applicable TRAI/TCCCPR and DLT registration, sender header and content-template requirements.
+- Do not claim a message was delivered based only on an API acceptance response; distinguish queued, submitted, delivered, failed and unknown statuses.
+
+### Provider integration boundary
+
+Implement a provider-neutral messaging interface with separate WhatsApp and SMS adapters. The provider has not yet been selected and no credentials are configured. MSG91 is a candidate because its published documentation exposes both WhatsApp template/session APIs and SMS APIs; final selection requires the user's approval, account onboarding and pricing review. Meta WhatsApp Business Platform plus a separate Indian DLT-compliant SMS gateway is an alternative.
+
+### Required user setup before live sending
+
+- Select and register the WhatsApp Business sender/account with the chosen provider and complete Meta approval/template requirements.
+- Register the sender entity, SMS header and applicable content templates on the relevant DLT portal/provider chain for Indian SMS.
+- Configure backend-only API credentials and delivery-status webhooks.
+- Record and verify each client's consent before enabling automated messages.
+
+The notification scheduler, provider adapters, consent UI, templates, queue and delivery log are not yet implemented. No message may be sent until provider setup and explicit user configuration are complete.
+
 ## Release acceptance checks
 
 - Existing case records survive app restart and app upgrade.
