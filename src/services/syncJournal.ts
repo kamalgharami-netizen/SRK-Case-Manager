@@ -137,6 +137,51 @@ export class SyncJournal<T> {
     return state.conflicts;
   }
 
+  /**
+   * Queue the user's selected conflict version as a new local change before
+   * removing the conflict. The superseded local edit is acknowledged only
+   * after the replacement is safely stored in the outbox.
+   */
+  resolveConflictAndQueue(
+    recordId: string,
+    localChangeId: string,
+    remoteChangeId: string,
+    choice: 'local' | 'remote',
+    deviceId: string,
+    now = Date.now()
+  ): boolean {
+    if (!deviceId || !Number.isFinite(now)) throw new Error('A valid device ID and timestamp are required.');
+    const state = readJson<SyncConflictState<T>>(this.storage, CONFLICT_KEY, {
+      schemaVersion: JOURNAL_SCHEMA,
+      conflicts: [],
+    });
+    if (state.schemaVersion !== JOURNAL_SCHEMA || !Array.isArray(state.conflicts)) {
+      throw new Error('Sync conflict data is unsupported; existing data was left untouched.');
+    }
+    const conflict = state.conflicts.find(item =>
+      item.recordId === recordId &&
+      item.local.changeId === localChangeId &&
+      item.remote.changeId === remoteChangeId
+    );
+    if (!conflict) return false;
+
+    const selected = choice === 'local' ? conflict.local : conflict.remote;
+    const resolution: SyncEnvelope<T> = {
+      ...selected,
+      deviceId,
+      changeId: 'chg_resolution_' + now.toString(36) + '_' + Math.random().toString(36).slice(2, 12),
+      updatedAt: now,
+    };
+
+    // Persist the chosen version first. If anything fails, the conflict remains available.
+    this.enqueue(resolution);
+    if (choice === 'remote') this.acknowledge([conflict.local.changeId]);
+
+    state.conflicts = state.conflicts.filter(item => item !== conflict);
+    this.storage.setItem(CONFLICT_KEY, JSON.stringify(state));
+    return true;
+  }
+
   resolveConflict(recordId: string, localChangeId: string, remoteChangeId: string): boolean {
     const state = readJson<SyncConflictState<T>>(this.storage, CONFLICT_KEY, {
       schemaVersion: JOURNAL_SCHEMA,
