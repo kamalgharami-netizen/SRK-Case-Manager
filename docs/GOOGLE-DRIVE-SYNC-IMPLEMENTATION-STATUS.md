@@ -50,3 +50,10 @@ Live sync is not enabled by this change. The app must not show a connected or sy
 - Added `src/services/applySyncChanges.ts` as a validated, record-level apply primitive for supported collections, company profile fields, and nested diary entries. It preserves unrelated records, validates payload IDs and collection names, and never automatically deletes a company workspace.
 - Added `src/services/applySyncChanges.test.ts` covering collection updates, tombstones, diary changes, workspace-deletion review, invalid payload rejection, and cross-company record isolation. The package test script includes this test file.
 - Applying inbox entries is still not wired to AppContext or a user-facing approval screen. This service is deliberately a safe foundation, not a claim that two-way sync is live.
+
+
+## Local sync status screen
+
+- Added a Sync Status tab to Settings. It reads the local outbox, staged inbox and conflict counts without modifying any stored sync data.
+- The screen explicitly states that Google Drive is not connected and that authentication, secure token storage, folder selection and live two-way transfer are not enabled. It does not display a false connected/synced state.
+- The counts can be refreshed manually. This is a local diagnostic screen only; it does not start a Drive request or apply incoming changes.
