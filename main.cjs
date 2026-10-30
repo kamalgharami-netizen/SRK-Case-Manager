@@ -1,5 +1,55 @@
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("path");
+const fs = require("fs/promises");
+
+
+const TOKEN_FILE = "google-drive-token.enc";
+
+async function getTokenFilePath() {
+  return path.join(app.getPath("userData"), TOKEN_FILE);
+}
+
+function requireSecureTokenStorage() {
+  if (!app.isReady() || !app.safeStorage || !app.safeStorage.isEncryptionAvailable()) {
+    throw new Error("Windows secure token storage is unavailable on this device.");
+  }
+}
+
+ipcMain.handle("srk-token:get", async () => {
+  requireSecureTokenStorage();
+  try {
+    const encrypted = await fs.readFile(await getTokenFilePath());
+    return app.safeStorage.decryptString(encrypted);
+  } catch (error) {
+    if (error && error.code === "ENOENT") return null;
+    throw new Error("Unable to read the encrypted Google Drive token.");
+  }
+});
+
+ipcMain.handle("srk-token:set", async (_event, token) => {
+  requireSecureTokenStorage();
+  if (typeof token !== "string" || token.length < 1 || token.length > 16384) {
+    throw new Error("Invalid Google Drive token value.");
+  }
+  const filePath = await getTokenFilePath();
+  const tempPath = filePath + ".tmp";
+  const encrypted = app.safeStorage.encryptString(token);
+  await fs.writeFile(tempPath, encrypted, { mode: 0o600 });
+  await fs.rename(tempPath, filePath);
+  return true;
+});
+
+ipcMain.handle("srk-token:delete", async () => {
+  requireSecureTokenStorage();
+  try {
+    await fs.unlink(await getTokenFilePath());
+  } catch (error) {
+    if (!error || error.code !== "ENOENT") {
+      throw new Error("Unable to delete the encrypted Google Drive token.");
+    }
+  }
+  return true;
+});
 
 let mainWindow = null;
 let isQuitting = false;
