@@ -42,3 +42,6 @@
 ## Safety status
 
 Live sync is not enabled by this change. The app must not show a connected or synced status until a real authenticated Drive operation succeeds. Existing local records and backup behaviour remain the source of truth until the remaining integration and device tests are complete.
+
+- Added `src/services/googleDriveSyncInbox.ts` to list and download remote change files with bounded pagination, validate envelopes, deduplicate change IDs, and stage incoming changes in a durable local inbox. Concurrent edits to the same record from different devices are saved as explicit conflicts; local pending changes remain untouched. Remote data is staged only and is not automatically applied to live AppContext.
+- Extended `listDriveFiles` with Drive page-token support and added `src/services/googleDriveSyncInbox.test.ts` for staging, conflict detection, inbox deduplication, pagination, and folder validation. The test script now includes four sync test files.
