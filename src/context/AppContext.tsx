@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Company, User, CaseItem, Party, CauseItem, VaultFile, DiaryEntry, MessageItem, SampleDraftItem, BackupLogEntry, FinancialEntry, PartyLedgerEntry } from '../types';
+import { Company, User, CaseItem, Party, CauseItem, VaultFile, DiaryEntry, MessageItem, SampleDraftItem, BackupLogEntry, FinancialEntry, PartyLedgerEntry, OfficeAccount, AccountTransaction } from '../types';
 import { AppLanguage, translations, Translations } from '../data/translations';
 import { INITIAL_SAMPLE_DRAFTS } from '../data/sampleDraftTemplates';
 import { APP_VERSION, APP_BUILD_DATE, APP_RELEASE_NAME } from '../config/version';
@@ -194,6 +194,10 @@ interface AppContextType {
   deleteFinancialEntry: (entryId: string) => void;
   addPartyLedgerEntry: (entry: Omit<PartyLedgerEntry, 'id' | 'createdAt' | 'createdBy'>) => void;
   deletePartyLedgerEntry: (entryId: string) => void;
+  addOfficeAccount: (account: Omit<OfficeAccount, 'id' | 'createdAt'>) => void;
+  addAccountTransaction: (entry: Omit<AccountTransaction, 'id' | 'createdAt' | 'createdBy'>) => void;
+  transferBetweenAccounts: (fromAccountId: string, toAccountId: string, date: string, amount: number, description: string, reference?: string) => void;
+  deleteAccountTransaction: (entryId: string) => void;
 
   // Party Actions
   addParty: (partyData: Omit<Party, 'id' | 'createdAt' | 'createdBy'>) => void;
@@ -1400,6 +1404,54 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     showToast(language === 'bn' ? 'হিসাবের তথ্য মুছে ফেলা হয়েছে' : 'Account entry deleted', 'info');
   };
 
+  // Cash and bank register. Balances are derived from opening balance and transaction history.
+  const addOfficeAccount = (account: Omit<OfficeAccount, 'id' | 'createdAt'>) => {
+    const openingBalance = Number(account.openingBalance);
+    if (!account.name.trim() || !Number.isFinite(openingBalance) || openingBalance < 0) {
+      showToast(language === 'bn' ? 'অ্যাকাউন্টের নাম ও সঠিক Opening Balance দিন' : 'Enter an account name and valid opening balance', 'error');
+      return;
+    }
+    const item: OfficeAccount = { ...account, name: account.name.trim(), openingBalance, id: 'oa_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), createdAt: Date.now() };
+    setCompanies(prev => prev.map(c => c.id !== activeCompanyId ? c : { ...c, officeAccounts: [...(c.officeAccounts || []), item] }));
+    logActivity('Added cash/bank account: ' + item.name);
+    showToast(language === 'bn' ? 'অ্যাকাউন্ট তৈরি হয়েছে' : 'Account created');
+  };
+
+  const addAccountTransaction = (entry: Omit<AccountTransaction, 'id' | 'createdAt' | 'createdBy'>) => {
+    const amount = Number(entry.amount);
+    if (!activeCompany?.officeAccounts?.some(a => a.id === entry.accountId) || !Number.isFinite(amount) || amount <= 0 || !entry.date || !entry.description.trim()) {
+      showToast(language === 'bn' ? 'অ্যাকাউন্ট, তারিখ, বিবরণ ও সঠিক পরিমাণ দিন' : 'Select an account and enter date, description and valid amount', 'error');
+      return;
+    }
+    const item: AccountTransaction = { ...entry, amount, description: entry.description.trim(), id: 'at_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), createdAt: Date.now(), createdBy: activeUser?.id || 'admin' };
+    setCompanies(prev => prev.map(c => c.id !== activeCompanyId ? c : { ...c, accountTransactions: [item, ...(c.accountTransactions || [])] }));
+    logActivity('Recorded account ' + entry.kind + ': ₹' + amount.toFixed(2));
+    showToast(language === 'bn' ? 'লেনদেন সংরক্ষিত হয়েছে' : 'Transaction saved');
+  };
+
+  const transferBetweenAccounts = (fromAccountId: string, toAccountId: string, date: string, amountValue: number, description: string, reference?: string) => {
+    const amount = Number(amountValue);
+    const accounts = activeCompany?.officeAccounts || [];
+    if (fromAccountId === toAccountId || !accounts.some(a => a.id === fromAccountId) || !accounts.some(a => a.id === toAccountId) || !date || !Number.isFinite(amount) || amount <= 0 || !description.trim()) {
+      showToast(language === 'bn' ? 'দুটি আলাদা অ্যাকাউন্ট, তারিখ, বিবরণ ও সঠিক পরিমাণ দিন' : 'Select two different accounts and enter valid transfer details', 'error');
+      return;
+    }
+    const group = 'tr_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+    const common = { date, amount, description: description.trim(), reference, transferGroupId: group, createdAt: Date.now(), createdBy: activeUser?.id || 'admin' };
+    const outgoing: AccountTransaction = { ...common, id: group + '_out', accountId: fromAccountId, kind: 'transfer-out' };
+    const incoming: AccountTransaction = { ...common, id: group + '_in', accountId: toAccountId, kind: 'transfer-in' };
+    setCompanies(prev => prev.map(c => c.id !== activeCompanyId ? c : { ...c, accountTransactions: [incoming, outgoing, ...(c.accountTransactions || [])] }));
+    logActivity('Transferred ₹' + amount.toFixed(2) + ' between accounts');
+    showToast(language === 'bn' ? 'অ্যাকাউন্ট ট্রান্সফার সম্পন্ন হয়েছে' : 'Account transfer recorded');
+  };
+
+  const deleteAccountTransaction = (entryId: string) => {
+    const target = activeCompany?.accountTransactions?.find(x => x.id === entryId);
+    setCompanies(prev => prev.map(c => c.id !== activeCompanyId ? c : { ...c, accountTransactions: (c.accountTransactions || []).filter(x => target?.transferGroupId ? x.transferGroupId !== target.transferGroupId : x.id !== entryId) }));
+    logActivity('Deleted an account transaction');
+    showToast(language === 'bn' ? 'লেনদেন মুছে ফেলা হয়েছে' : 'Transaction deleted', 'info');
+  };
+
   // User Actions
   const addUser = (userData: Omit<User, 'id' | 'createdAt'>): boolean => {
     if (activeCompany?.users.some(u => u.email.toLowerCase() === userData.email.toLowerCase())) {
@@ -1817,6 +1869,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         deleteFinancialEntry,
         addPartyLedgerEntry,
         deletePartyLedgerEntry,
+        addOfficeAccount,
+        addAccountTransaction,
+        transferBetweenAccounts,
+        deleteAccountTransaction,
         addUser,
         deleteUser,
         addCauseItem,
