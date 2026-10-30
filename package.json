@@ -15,7 +15,7 @@
     "dist:win": "npm run build && electron-builder --win nsis --publish never",
     "cap:sync": "cap sync",
     "cap:android": "cap open android",
-    "test": "node --import tsx --test src/services/syncJournal.test.ts src/services/companyChangeTracker.test.ts"
+    "test": "node --import tsx --test src/services/syncJournal.test.ts src/services/companyChangeTracker.test.ts src/services/googleDriveSyncTransport.test.ts"
   },
   "dependencies": {
     "@capacitor/android": "^7.0.0",
