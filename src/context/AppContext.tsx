@@ -7,6 +7,8 @@ import { autoMergeAllPreviousData, mergeCompanyLists, extractCompaniesFromPayloa
 import { SyncJournal } from '../services/syncJournal';
 import { getOrCreateSyncDeviceId } from '../services/driveSyncProtocol';
 import { collectCompanyChanges, createSyncEnvelopes, type TrackedCompany } from '../services/companyChangeTracker';
+import { SyncInbox } from '../services/googleDriveSyncInbox';
+import { applyStagedInboxChanges } from '../services/applyStagedInboxChanges';
 
 const STORAGE_KEY = 'srk_case_manager_v5';
 
@@ -150,6 +152,7 @@ interface AppContextType {
     }
   ) => boolean;
   updateCompanyDetails: (details: Partial<Company>) => boolean;
+  applyStagedSyncChanges: () => { applied: number; skipped: number; manualReview: number; remaining: number } | null;
   selectCompany: (companyId: string) => void;
   deleteCompany: (companyId: string) => void;
   loginUser: (identifier: string, passcodeOrPassword?: string, companyId?: string) => boolean;
@@ -1799,6 +1802,43 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const applyStagedSyncChanges = () => {
+    if (STORAGE_LOAD_FAILED) {
+      showToast('Local data could not be verified. Remote changes were not applied.', 'error');
+      return null;
+    }
+    try {
+      const inbox = new SyncInbox<unknown>(localStorage);
+      const result = applyStagedInboxChanges(
+        companies,
+        inbox,
+        nextCompanies => {
+          // Persist the approved result before inbox acknowledgement.
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            companies: nextCompanies,
+            activeCompanyId,
+            activeUserId,
+            version: APP_VERSION,
+            updatedAt: Date.now()
+          }));
+        }
+      );
+      if (result.applied > 0) {
+        setCompanies(result.companies);
+        showToast(`Applied ${result.applied} remote change(s). ${result.remaining} item(s) remain for review.`, 'success');
+      } else if (result.manualReview > 0 || result.skipped > 0) {
+        showToast(`${result.manualReview} item(s) require manual review; ${result.skipped} item(s) were not applied.`, 'warning');
+      } else {
+        showToast('No staged remote changes to apply.', 'info');
+      }
+      return { applied: result.applied, skipped: result.skipped, manualReview: result.manualReview, remaining: result.remaining };
+    } catch (error) {
+      console.error('Could not apply staged sync changes:', error);
+      showToast('Could not apply remote changes. Staged data was retained for safety.', 'error');
+      return null;
+    }
+  };
+
   const forceAppUpdateAndReplace = async () => {
     try {
       showToast('Clearing stale cache and updating to latest app version...', 'info');
@@ -1859,6 +1899,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         openChamberSetup,
         createCompany,
         updateCompanyDetails,
+        applyStagedSyncChanges,
         selectCompany,
         deleteCompany,
         loginUser,
