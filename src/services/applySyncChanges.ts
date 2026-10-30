@@ -42,7 +42,6 @@ export function applySyncEnvelopes<T extends TrackedCompany>(
         typeof change.deleted !== 'boolean' ||
         (change.deleted ? change.payload !== null : change.payload === null || change.payload === undefined)) {
       skipped += 1;
-      skippedChangeIds.push(change?.changeId || '');
       continue;
     }
 
