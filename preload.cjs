@@ -1,6 +1,11 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 const api = {
+  secureTokenStore: {
+    get: () => ipcRenderer.invoke("srk-token:get"),
+    set: (token) => ipcRenderer.invoke("srk-token:set", token),
+    delete: () => ipcRenderer.invoke("srk-token:delete")
+  },
   closeApp: () => {
     try {
       ipcRenderer.send("app-close");
