@@ -34,7 +34,8 @@ import {
   Plus,
   Scroll,
   FileSpreadsheet,
-  HardDrive
+  HardDrive,
+  Wallet
 } from 'lucide-react';
 import { CaseType } from '../types';
 
@@ -53,6 +54,7 @@ export type NavPage =
   | 'sharecalculator'
   | 'aistudio'
   | 'parties'
+  | 'accounts'
   | 'users'
   | 'wblract'
   | 'vault'
@@ -422,6 +424,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                   <span className={countBadgeClass('parties')}>
                     {activeCompany?.parties?.length || 0}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => handleNav('accounts')}
+                  className={navItemClass('accounts')}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Wallet className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <span>Office Accounts (আয়-ব্যয়)</span>
+                  </div>
+                  <span className={countBadgeClass('accounts')}>
+                    {activeCompany?.financialEntries?.length || 0}
                   </span>
                 </button>
 
