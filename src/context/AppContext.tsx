@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Company, User, CaseItem, Party, CauseItem, VaultFile, DiaryEntry, MessageItem, SampleDraftItem, BackupLogEntry } from '../types';
+import { Company, User, CaseItem, Party, CauseItem, VaultFile, DiaryEntry, MessageItem, SampleDraftItem, BackupLogEntry, FinancialEntry } from '../types';
 import { AppLanguage, translations, Translations } from '../data/translations';
 import { INITIAL_SAMPLE_DRAFTS } from '../data/sampleDraftTemplates';
 import { APP_VERSION, APP_BUILD_DATE, APP_RELEASE_NAME } from '../config/version';
@@ -188,6 +188,10 @@ interface AppContextType {
   deleteCase: (caseId: string) => void;
   batchUpdateCaseStatus: (caseIds: string[], status: string) => void;
   batchDeleteCases: (caseIds: string[]) => void;
+
+  // Office Accounts (non-billing income and expense register)
+  addFinancialEntry: (entry: Omit<FinancialEntry, 'id' | 'createdAt' | 'createdBy'>) => void;
+  deleteFinancialEntry: (entryId: string) => void;
 
   // Party Actions
   addParty: (partyData: Omit<Party, 'id' | 'createdAt' | 'createdBy'>) => void;
@@ -663,6 +667,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       users: [adminUser],
       cases: [],
       parties: [],
+      financialEntries: [],
       vaultFiles: [],
       causeList: [],
       diaryData: {},
@@ -1335,6 +1340,37 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     showToast('Party deleted', 'info');
   };
 
+  // Office Accounts: record actual receipts and expenses only; no invoices or billing documents.
+  const addFinancialEntry = (entry: Omit<FinancialEntry, 'id' | 'createdAt' | 'createdBy'>) => {
+    const amount = Number(entry.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      showToast(language === 'bn' ? 'সঠিক টাকার পরিমাণ লিখুন' : 'Enter a valid amount', 'error');
+      return;
+    }
+    const newEntry: FinancialEntry = {
+      ...entry,
+      amount,
+      id: 'fin_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+      createdAt: Date.now(),
+      createdBy: activeUser?.id || 'admin'
+    };
+    setCompanies(prev => prev.map(c => c.id !== activeCompanyId ? c : {
+      ...c,
+      financialEntries: [newEntry, ...(c.financialEntries || [])]
+    }));
+    logActivity(`Recorded ${entry.kind}: ₹${amount.toFixed(2)} (${entry.category})`);
+    showToast(language === 'bn' ? 'হিসাবের তথ্য সংরক্ষিত হয়েছে' : 'Account entry saved');
+  };
+
+  const deleteFinancialEntry = (entryId: string) => {
+    setCompanies(prev => prev.map(c => c.id !== activeCompanyId ? c : {
+      ...c,
+      financialEntries: (c.financialEntries || []).filter(item => item.id !== entryId)
+    }));
+    logActivity('Deleted an office account entry');
+    showToast(language === 'bn' ? 'হিসাবের তথ্য মুছে ফেলা হয়েছে' : 'Account entry deleted', 'info');
+  };
+
   // User Actions
   const addUser = (userData: Omit<User, 'id' | 'createdAt'>): boolean => {
     if (activeCompany?.users.some(u => u.email.toLowerCase() === userData.email.toLowerCase())) {
@@ -1748,6 +1784,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         batchDeleteCases,
         addParty,
         deleteParty,
+        addFinancialEntry,
+        deleteFinancialEntry,
         addUser,
         deleteUser,
         addCauseItem,
