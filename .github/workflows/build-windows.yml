@@ -1,12 +1,24 @@
-name: Build SRK Case Manager EXE
+name: SRK Case Manager - Windows EXE
 
-'on':
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-windows:
+    name: Build Windows installer
     runs-on: windows-latest
-
+    timeout-minutes: 30
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -16,13 +28,13 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Install dependencies
+      - name: Install project dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Build Windows EXE
+      - name: Build Windows EXE installer
         run: npm run dist:win
 
-      - name: Upload EXE installer
+      - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
           name: SRK-Case-Manager-Windows-EXE
