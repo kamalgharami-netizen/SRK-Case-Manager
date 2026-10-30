@@ -91,7 +91,6 @@ export async function listDriveFolders(
     orderBy: 'name',
   });
   if (pageToken) params.set('pageToken', pageToken);
-  if (options.pageToken) params.set('pageToken', options.pageToken);
   const response = await fetch(`${DRIVE_API}/files?${params}`, {
     headers: authHeaders(options.accessToken),
     signal: options.signal,
@@ -137,6 +136,7 @@ export async function listDriveFiles(
     pageSize: '100',
     orderBy: 'modifiedTime desc',
   });
+  if (options.pageToken) params.set('pageToken', options.pageToken);
   const response = await fetch(`${DRIVE_API}/files?${params}`, {
     headers: authHeaders(options.accessToken),
     signal: options.signal,
