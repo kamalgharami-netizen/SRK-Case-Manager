@@ -1223,13 +1223,13 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   type="button"
                   disabled={syncCounts.staged === 0 || syncCounts.error}
                   onClick={() => {
-                    if (!window.confirm(`Apply ${syncCounts.staged} staged remote change(s) to this device? This action updates local records and cannot be automatically undone. Please ensure you have a current backup.`)) return;
+                    if (!window.confirm(`Apply all eligible ${syncCounts.staged} staged remote change(s) to this device? This applies eligible changes in one operation; it does not show a per-record preview. Conflicting or unsupported changes may remain for manual review. This action updates local records and cannot be automatically undone. Please ensure you have a current backup.`)) return;
                     const result = applyStagedSyncChanges();
                     if (result) refreshSyncCounts();
                   }}
                   className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold"
                 >
-                  Review &amp; Apply Staged Changes
+                  Apply Eligible Staged Changes
                 </button>
               </div>
               <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 space-y-2">
