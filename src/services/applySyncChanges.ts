@@ -52,7 +52,7 @@ export function applySyncEnvelopes<T extends TrackedCompany>(
       if (change.deleted || !isRecord(change.payload)) { skipped += 1; continue; }
       const allowed = ['name', 'type', 'barCouncil', 'gst', 'address', 'city', 'state', 'pin', 'phone', 'email', 'logoUrl', 'logoBadge', 'logoColor'];
       const profile = Object.fromEntries(Object.entries(change.payload).filter(([key]) => allowed.includes(key)));
-      companies[companyIndex] = { ...company, ...profile };
+      companies[companyIndex] = { ...company, ...profile } as T;
       applied += 1;
       continue;
     }
@@ -73,7 +73,7 @@ export function applySyncEnvelopes<T extends TrackedCompany>(
           return [caseId, next];
         }));
         if (!found) { skipped += 1; continue; }
-        companies[companyIndex] = { ...company, diaryData: nextDiary };
+        companies[companyIndex] = { ...company, diaryData: nextDiary } as T;
         applied += 1;
         continue;
       }
@@ -87,7 +87,7 @@ export function applySyncEnvelopes<T extends TrackedCompany>(
       companies[companyIndex] = {
         ...company,
         diaryData: { ...diary, [caseId]: [item, ...existing.filter(entry => !(isRecord(entry) && entry.id === recordId))] },
-      };
+      } as T;
       applied += 1;
       continue;
     }
@@ -97,7 +97,7 @@ export function applySyncEnvelopes<T extends TrackedCompany>(
     if (change.deleted) {
       const next = existing.filter(item => !(isRecord(item) && item.id === recordId));
       if (next.length === existing.length) { skipped += 1; continue; }
-      companies[companyIndex] = { ...company, [collection]: next };
+      companies[companyIndex] = { ...company, [collection]: next } as T;
       applied += 1;
       continue;
     }
@@ -109,7 +109,7 @@ export function applySyncEnvelopes<T extends TrackedCompany>(
     companies[companyIndex] = {
       ...company,
       [collection]: [item, ...existing.filter(entry => !(isRecord(entry) && entry.id === recordId))],
-    };
+    } as T;
     applied += 1;
   }
 
