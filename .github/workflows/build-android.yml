@@ -1,18 +1,24 @@
-name: Build SRK Case Manager Android APK
+name: SRK Case Manager - Android APK
 
-'on':
-  workflow_dispatch:
+on:
   push:
-    branches:
-      - main
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-android:
+    name: Build Android APK
     runs-on: ubuntu-latest
-
+    timeout-minutes: 45
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -27,58 +33,37 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
+          cache: gradle
 
-      - name: Accept Android SDK Licenses
-        run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+      - name: Accept Android SDK licences
+        run: yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --licenses || true
 
-      - name: Install dependencies
+      - name: Install project dependencies
         run: npm install --legacy-peer-deps
-
-      - name: Install Capacitor dependencies
-        run: npm install --legacy-peer-deps @capacitor/core@^7 @capacitor/cli@^7 @capacitor/android@^7
 
       - name: Build web application
         run: npm run build
 
-      - name: Configure Capacitor
-        run: |
-          if [ ! -f capacitor.config.ts ] && [ ! -f capacitor.config.json ] && [ ! -f capacitor.config.js ]; then
-            printf '%s\n' '{"appId":"in.srk.casemanage","appName":"SRK Case Manager","webDir":"dist","server":{"androidScheme":"https"}}' > capacitor.config.json
-          fi
-
-      - name: Setup Persistent Signing Keystore
-        run: |
-          mkdir -p ~/.android
-          if [ -f android-keystore/debug.keystore ]; then
-            cp android-keystore/debug.keystore ~/.android/debug.keystore
-            echo "Persistent signing keystore installed successfully."
-          else
-            echo "Keystore not found, generating deterministic keystore..."
-            keytool -genkeypair -v -keystore ~/.android/debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 15000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
-          fi
-
-      - name: Add and Sync Android platform
+      - name: Add and synchronise Capacitor Android platform
         run: |
           if [ ! -d android ]; then
             npx cap add android
           fi
           npx cap sync android
 
-      - name: Configure Android Version & Upgrade Settings
+      - name: Set Android version
+        shell: bash
         run: |
-          BUILD_CODE=${{ github.run_number }}
-          VERSION_CODE=$((54000 + BUILD_CODE))
-          sed -i -E "s/versionCode [0-9]+/versionCode ${VERSION_CODE}/" android/app/build.gradle
-          sed -i -E 's/versionName "[^"]+"/versionName "5.4.0"/' android/app/build.gradle
-          sed -i 's/android:allowBackup="true"/android:allowBackup="true" android:fullBackupContent="true"/' android/app/src/main/AndroidManifest.xml
+          VERSION="$(node -p "require('./package.json').version")"
+          VERSION_CODE=$((52000 + GITHUB_RUN_NUMBER))
+          sed -i -E "s/versionCode[[:space:]]+[0-9]+/versionCode ${VERSION_CODE}/" android/app/build.gradle
+          sed -i -E "s/versionName[[:space:]]+['\"][^'\"]+['\"]/versionName \"${VERSION}\"/" android/app/build.gradle
 
-      - name: Make Gradle executable
-        run: chmod +x android/gradlew
-
-      - name: Build Android APK
+      - name: Build debug APK
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
