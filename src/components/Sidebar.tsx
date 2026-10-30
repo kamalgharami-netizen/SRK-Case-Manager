@@ -55,6 +55,7 @@ export type NavPage =
   | 'aistudio'
   | 'parties'
   | 'accounts'
+  | 'client-ledger'
   | 'users'
   | 'wblract'
   | 'vault'
@@ -437,6 +438,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                   <span className={countBadgeClass('accounts')}>
                     {activeCompany?.financialEntries?.length || 0}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => handleNav('client-ledger')}
+                  className={navItemClass('client-ledger')}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Users className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <span>Client Ledger (বকেয়া)</span>
+                  </div>
+                  <span className={countBadgeClass('client-ledger')}>
+                    {activeCompany?.partyLedgerEntries?.length || 0}
                   </span>
                 </button>
 
