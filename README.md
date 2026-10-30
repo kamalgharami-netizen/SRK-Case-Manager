@@ -70,6 +70,10 @@ The intended architecture is offline-first:
 
 These three modes require runtime integration and device testing; this README does not claim that all three are already operational.
 
+## Google Drive sync status
+
+Google Drive is the selected cloud provider for the planned cross-device sync. The app must remain offline-first; the Drive folder is selected through Google authorization and the official Picker, not by typing a fake local filesystem path. Live two-way sync, conflict handling, secure token storage and sync notifications are not yet implemented. They require Google Cloud API/OAuth configuration and platform-specific testing. See the integration architecture document for the exact prerequisites. Do not treat a local backup path or a successful build as proof that Google Drive sync is connected.
+
 ## Environment variables
 
 Copy `.env.example` to `.env.local` for local server development and set:
