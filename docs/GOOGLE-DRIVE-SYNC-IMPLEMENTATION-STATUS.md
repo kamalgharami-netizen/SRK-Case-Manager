@@ -21,6 +21,7 @@
 - The adapter never stores access tokens and never accepts client secrets or refresh tokens.
 - The adapter is not yet connected to the UI or AppContext; it cannot initiate sign-in or background sync by itself.
 - Added `src/services/syncJournal.ts`: an append-only local outbox, bounded pending reads, exact-ID acknowledgements, and persistent conflict records/resolution. Corrupt or unsupported journal data fails closed and is not overwritten.
+- Added `src/services/syncJournal.test.ts` with Node's built-in test runner. It covers idempotent enqueue, selective acknowledgements, invalid-entry rejection, fail-closed handling of corrupt data, and explicit conflict resolution. `npm test` is included in the Android validation workflow.
 - The journal is a storage primitive only. AppContext mutations are not yet automatically recorded, and no remote changes are applied to live records.
 
 ## Still required before live Google Drive sync can be enabled
