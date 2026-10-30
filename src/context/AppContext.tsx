@@ -22,7 +22,7 @@ function getInitialStorageState(): any | null {
       if (parsed && typeof parsed === 'object' && Array.isArray(parsed.companies)) {
         // Keep a byte-for-byte recovery copy before the first write after an app-version change.
         const previousVersion = String(parsed.version || localStorage.getItem('srk_installed_app_version') || '');
-        if (previousVersion && previousVersion !== APP_VERSION) {
+        if (previousVersion !== APP_VERSION) {
           try {
             localStorage.setItem(`srk_upgrade_backup_${Date.now()}`, raw);
           } catch (backupError) {
