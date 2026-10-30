@@ -82,12 +82,17 @@ export function applySyncEnvelopes<T extends TrackedCompany>(
         skipped += 1; continue;
       }
       const caseId = change.payload.caseId;
-      const existing = Array.isArray(diary[caseId]) ? diary[caseId] as unknown[] : [];
-      const item = change.payload.item;
-      companies[companyIndex] = {
-        ...company,
-        diaryData: { ...diary, [caseId]: [item, ...existing.filter(entry => !(isRecord(entry) && entry.id === recordId))] },
-      } as T;
+      // A diary entry has one stable ID and must belong to only one case.
+      // Remove it from every old case before inserting the incoming version.
+      const nextDiary = Object.fromEntries(Object.entries(diary).map(([existingCaseId, entries]) => [
+        existingCaseId,
+        Array.isArray(entries)
+          ? entries.filter(entry => !(isRecord(entry) && entry.id === recordId))
+          : entries,
+      ]));
+      const existing = Array.isArray(nextDiary[caseId]) ? nextDiary[caseId] as unknown[] : [];
+      nextDiary[caseId] = [change.payload.item, ...existing];
+      companies[companyIndex] = { ...company, diaryData: nextDiary } as T;
       applied += 1;
       continue;
     }
