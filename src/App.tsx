@@ -351,7 +351,7 @@ const MainAppContent: React.FC = () => {
       currentPage !== 'dashboard'
   );
 
-  const handleOpenSettings = (tab: 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup' = 'chambers') => {
+  const handleOpenSettings = (tab: 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup' | 'sync' = 'chambers') => {
     setSettingsTab(tab);
     setSettingsOpen(true);
     pushHistoryState({ modal: 'settings', tab });
