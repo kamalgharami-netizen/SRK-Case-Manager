@@ -78,7 +78,7 @@ The product requirement includes automatic client-facing WhatsApp and SMS remind
 
 ### Provider integration boundary
 
-Implement a provider-neutral messaging interface with separate WhatsApp and SMS adapters. The provider has not yet been selected and no credentials are configured. MSG91 is a candidate because its published documentation exposes both WhatsApp template/session APIs and SMS APIs; final selection requires the user's approval, account onboarding and pricing review. Meta WhatsApp Business Platform plus a separate Indian DLT-compliant SMS gateway is an alternative.
+Implement a provider-neutral messaging interface with separate WhatsApp and SMS adapters. MSG91 is the selected provider following the user's approval. Its published API supports approved WhatsApp template messages and template-based SMS. Meta WhatsApp Business setup, approved templates, SMS DLT configuration, account onboarding and pricing review are still required before production use.
 
 ### Required user setup before live sending
 
@@ -87,7 +87,15 @@ Implement a provider-neutral messaging interface with separate WhatsApp and SMS 
 - Configure backend-only API credentials and delivery-status webhooks.
 - Record and verify each client's consent before enabling automated messages.
 
-The notification scheduler, provider adapters, consent UI, templates, queue and delivery log are not yet implemented. No message may be sent until provider setup and explicit user configuration are complete.
+### Implementation status
+
+- A server-only MSG91 transport adapter now exists at `messaging/msg91.ts` for the documented SMS Flow API and WhatsApp template API.
+- The adapter reads `MSG91_AUTH_KEY`, `MSG91_SMS_TEMPLATE_ID` and `MSG91_WHATSAPP_INTEGRATED_NUMBER` from server environment variables. The example names are listed in `.env.example`; no real credentials are committed.
+- The adapter is deliberately not exposed as a public Express route. The app currently has no verified remote user-authentication/session system, so adding a public send endpoint would allow unauthorized message abuse. It must only be called from a trusted backend queue worker after authentication, consent and scheduling checks.
+- The scheduler, durable queue, authenticated backend API, consent UI, template-management UI, delivery webhook verification, delivery log and automatic reminders are not yet implemented.
+- A provider acceptance response is not proof of delivery. Delivery must be confirmed through a validated MSG91 delivery webhook.
+
+No message may be sent until provider onboarding, DLT/WhatsApp template setup, secure backend deployment, user authentication and explicit client consent are complete.
 
 ## Release acceptance checks
 
