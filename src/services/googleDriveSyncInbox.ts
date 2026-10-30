@@ -81,7 +81,7 @@ export interface PullResult {
 
 export interface DrivePullDependencies {
   listFiles: (options: { accessToken: string; signal?: AbortSignal; parentId: string; pageToken?: string }) => Promise<{ files: Array<{ id: string; name: string; mimeType: string }>; nextPageToken?: string }>;
-  downloadJson: <T>(options: { accessToken: string; signal?: AbortSignal; fileId: string }) => Promise<T>;
+  downloadJson: (options: { accessToken: string; signal?: AbortSignal; fileId: string }) => Promise<unknown>;
 }
 
 /**
@@ -114,7 +114,7 @@ export async function pullRemoteChanges<T>(
     pages += 1;
     for (const file of page.files) {
       if (!file.name.startsWith('srk-change-') || !file.name.endsWith('.json') || file.mimeType !== 'application/json') continue;
-      const value = await dependencies.downloadJson<unknown>({
+      const value = await dependencies.downloadJson({
         accessToken: options.accessToken,
         signal: options.signal,
         fileId: file.id,
