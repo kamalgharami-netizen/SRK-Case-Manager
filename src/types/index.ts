@@ -215,6 +215,20 @@ export interface FinancialEntry {
   createdBy: string;
 }
 
+export interface PartyLedgerEntry {
+  id: string;
+  partyId: string;
+  partyName: string;
+  date: string;
+  type: 'charge' | 'receipt';
+  amount: number;
+  description: string;
+  paymentMode?: 'Cash' | 'Bank' | 'UPI' | 'Other';
+  reference?: string;
+  createdAt: number;
+  createdBy: string;
+}
+
 export interface VaultFile {
   id: string;
   name: string;
@@ -284,6 +298,7 @@ export interface Company {
   cases: CaseItem[];
   parties: Party[];
   financialEntries?: FinancialEntry[];
+  partyLedgerEntries?: PartyLedgerEntry[];
   vaultFiles: VaultFile[];
   causeList: CauseItem[];
   diaryData: Record<string, DiaryEntry[]>;
