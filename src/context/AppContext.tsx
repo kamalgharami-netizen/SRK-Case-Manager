@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Company, User, CaseItem, Party, CauseItem, VaultFile, DiaryEntry, MessageItem, SampleDraftItem, BackupLogEntry, FinancialEntry } from '../types';
+import { Company, User, CaseItem, Party, CauseItem, VaultFile, DiaryEntry, MessageItem, SampleDraftItem, BackupLogEntry, FinancialEntry, PartyLedgerEntry } from '../types';
 import { AppLanguage, translations, Translations } from '../data/translations';
 import { INITIAL_SAMPLE_DRAFTS } from '../data/sampleDraftTemplates';
 import { APP_VERSION, APP_BUILD_DATE, APP_RELEASE_NAME } from '../config/version';
@@ -192,6 +192,8 @@ interface AppContextType {
   // Office Accounts (non-billing income and expense register)
   addFinancialEntry: (entry: Omit<FinancialEntry, 'id' | 'createdAt' | 'createdBy'>) => void;
   deleteFinancialEntry: (entryId: string) => void;
+  addPartyLedgerEntry: (entry: Omit<PartyLedgerEntry, 'id' | 'createdAt' | 'createdBy'>) => void;
+  deletePartyLedgerEntry: (entryId: string) => void;
 
   // Party Actions
   addParty: (partyData: Omit<Party, 'id' | 'createdAt' | 'createdBy'>) => void;
@@ -1362,6 +1364,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     showToast(language === 'bn' ? 'হিসাবের তথ্য সংরক্ষিত হয়েছে' : 'Account entry saved');
   };
 
+  const addPartyLedgerEntry = (entry: Omit<PartyLedgerEntry, 'id' | 'createdAt' | 'createdBy'>) => {
+    const amount = Number(entry.amount);
+    const partyExists = activeCompany?.parties?.some(p => p.id === entry.partyId);
+    if (!partyExists || !Number.isFinite(amount) || amount <= 0 || !entry.date || !entry.description.trim()) {
+      showToast(language === 'bn' ? 'মক্কেল, তারিখ, বিবরণ ও সঠিক পরিমাণ দিন' : 'Select a party and enter date, description and valid amount', 'error');
+      return;
+    }
+    const newEntry: PartyLedgerEntry = {
+      ...entry, amount, description: entry.description.trim(),
+      id: 'pl_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+      createdAt: Date.now(), createdBy: activeUser?.id || 'admin'
+    };
+    setCompanies(prev => prev.map(c => c.id !== activeCompanyId ? c : {
+      ...c, partyLedgerEntries: [newEntry, ...(c.partyLedgerEntries || [])]
+    }));
+    logActivity(`Client ledger ${entry.type}: ₹${amount.toFixed(2)} for ${entry.partyName}`);
+    showToast(language === 'bn' ? 'মক্কেলের হিসাব সংরক্ষিত হয়েছে' : 'Client ledger entry saved');
+  };
+
+  const deletePartyLedgerEntry = (entryId: string) => {
+    setCompanies(prev => prev.map(c => c.id !== activeCompanyId ? c : {
+      ...c, partyLedgerEntries: (c.partyLedgerEntries || []).filter(item => item.id !== entryId)
+    }));
+    logActivity('Deleted a client ledger entry');
+    showToast(language === 'bn' ? 'মক্কেলের হিসাবের রেকর্ড মুছে ফেলা হয়েছে' : 'Client ledger entry deleted', 'info');
+  };
+
   const deleteFinancialEntry = (entryId: string) => {
     setCompanies(prev => prev.map(c => c.id !== activeCompanyId ? c : {
       ...c,
@@ -1786,6 +1815,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         deleteParty,
         addFinancialEntry,
         deleteFinancialEntry,
+        addPartyLedgerEntry,
+        deletePartyLedgerEntry,
         addUser,
         deleteUser,
         addCauseItem,
