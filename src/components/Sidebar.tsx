@@ -57,6 +57,7 @@ export type NavPage =
   | 'accounts'
   | 'client-ledger'
   | 'cash-bank'
+  | 'financial-reports'
   | 'users'
   | 'wblract'
   | 'vault'
@@ -465,6 +466,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                   <span className={countBadgeClass('cash-bank')}>
                     {activeCompany?.officeAccounts?.length || 0}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => handleNav('financial-reports')}
+                  className={navItemClass('financial-reports')}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <FileSpreadsheet className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                    <span>Financial Reports (আর্থিক রিপোর্ট)</span>
+                  </div>
+                  <span className={countBadgeClass('financial-reports')}>
+                    {(activeCompany?.financialEntries?.length || 0) + (activeCompany?.partyLedgerEntries?.length || 0)}
                   </span>
                 </button>
 
