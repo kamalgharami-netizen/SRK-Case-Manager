@@ -1,9 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { Company, User, CaseItem, Party, CauseItem, VaultFile, DiaryEntry, MessageItem, SampleDraftItem, BackupLogEntry, FinancialEntry, PartyLedgerEntry, OfficeAccount, AccountTransaction } from '../types';
 import { AppLanguage, translations, Translations } from '../data/translations';
 import { INITIAL_SAMPLE_DRAFTS } from '../data/sampleDraftTemplates';
 import { APP_VERSION, APP_BUILD_DATE, APP_RELEASE_NAME } from '../config/version';
 import { autoMergeAllPreviousData, mergeCompanyLists, extractCompaniesFromPayload } from '../utils/dataMergeMigration';
+import { SyncJournal } from '../services/syncJournal';
+import { getOrCreateSyncDeviceId } from '../services/driveSyncProtocol';
+import { collectCompanyChanges, createSyncEnvelopes, type TrackedCompany } from '../services/companyChangeTracker';
 
 const STORAGE_KEY = 'srk_case_manager_v5';
 
@@ -275,6 +278,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   });
 
+  const previousSyncSnapshot = useRef<Company[]>(companies);
+
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(() => {
     try {
       const parsed = getInitialStorageState();
@@ -517,6 +522,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const t = translations[language];
 
   const [toast, setToast] = useState<ToastState | null>(null);
+
+  // Record local record-level changes in the durable outbox. This does not
+  // contact Google Drive or apply remote data; offline app state remains primary.
+  useEffect(() => {
+    try {
+      const previous = previousSyncSnapshot.current as unknown as TrackedCompany[];
+      const current = companies as unknown as TrackedCompany[];
+      const changes = collectCompanyChanges(previous, current);
+      if (changes.length > 0) {
+        const deviceId = getOrCreateSyncDeviceId(localStorage);
+        const journal = new SyncJournal<unknown>(localStorage);
+        const envelopes = createSyncEnvelopes(changes, deviceId);
+        envelopes.forEach(envelope => journal.enqueue(envelope));
+      }
+      previousSyncSnapshot.current = companies;
+    } catch (error) {
+      // A sync-journal failure must never block normal local case management.
+      console.error('Could not record local changes for cloud sync:', error);
+    }
+  }, [companies]);
 
   // Sync to localStorage
   useEffect(() => {
