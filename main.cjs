@@ -9,13 +9,20 @@ async function getTokenFilePath() {
   return path.join(app.getPath("userData"), TOKEN_FILE);
 }
 
+function assertTrustedRenderer(event) {
+  if (!mainWindow || mainWindow.isDestroyed() || event.sender !== mainWindow.webContents) {
+    throw new Error("Untrusted renderer is not allowed to access secure token storage.");
+  }
+}
+
 function requireSecureTokenStorage() {
   if (!app.isReady() || !app.safeStorage || !app.safeStorage.isEncryptionAvailable()) {
     throw new Error("Windows secure token storage is unavailable on this device.");
   }
 }
 
-ipcMain.handle("srk-token:get", async () => {
+ipcMain.handle("srk-token:get", async (event) => {
+  assertTrustedRenderer(event);
   requireSecureTokenStorage();
   try {
     const encrypted = await fs.readFile(await getTokenFilePath());
@@ -26,7 +33,8 @@ ipcMain.handle("srk-token:get", async () => {
   }
 });
 
-ipcMain.handle("srk-token:set", async (_event, token) => {
+ipcMain.handle("srk-token:set", async (event, token) => {
+  assertTrustedRenderer(event);
   requireSecureTokenStorage();
   if (typeof token !== "string" || token.length < 1 || token.length > 16384) {
     throw new Error("Invalid Google Drive token value.");
@@ -39,7 +47,8 @@ ipcMain.handle("srk-token:set", async (_event, token) => {
   return true;
 });
 
-ipcMain.handle("srk-token:delete", async () => {
+ipcMain.handle("srk-token:delete", async (event) => {
+  assertTrustedRenderer(event);
   requireSecureTokenStorage();
   try {
     await fs.unlink(await getTokenFilePath());
