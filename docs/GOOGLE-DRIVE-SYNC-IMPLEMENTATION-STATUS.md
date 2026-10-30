@@ -57,3 +57,13 @@ Live sync is not enabled by this change. The app must not show a connected or sy
 - Added a Sync Status tab to Settings. It reads the local outbox, staged inbox and conflict counts without modifying any stored sync data.
 - The screen explicitly states that Google Drive is not connected and that authentication, secure token storage, folder selection and live two-way transfer are not enabled. It does not display a false connected/synced state.
 - The counts can be refreshed manually. This is a local diagnostic screen only; it does not start a Drive request or apply incoming changes.
+
+
+## Platform secure-token storage foundation
+
+- Added `src/services/secureGoogleTokenStore.ts` as a platform adapter for short-lived Google access tokens.
+- Windows uses Electron `safeStorage` through `preload.cjs`; main-process IPC rejects calls from any renderer other than the active application window.
+- Android uses `@aparajita/capacitor-secure-storage` 7.1.6, compatible with the project's Capacitor 7 dependency line.
+- Browser storage is rejected because the plugin's web implementation is not encrypted.
+- The adapter is not yet called by an OAuth flow. It does not store refresh tokens and does not make Drive appear connected.
+- The Android APK + Windows EXE workflow completed successfully for commit `109f3228b6740253dcd1c660c039d50001909a43`. This validates the repository workflow at that commit; it is not a substitute for real-device OAuth and secure-storage testing.
