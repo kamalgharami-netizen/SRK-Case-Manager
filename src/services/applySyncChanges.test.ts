@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { applySyncEnvelopes } from './applySyncChanges';
+import { mergeSyncEnvelopes } from './driveSyncProtocol';
 
 const envelope = (recordId: string, payload: unknown, deleted = false, companyId = 'company1') => ({
   schemaVersion: 1 as const, deviceId: 'device_1234567890123456',
@@ -50,4 +51,13 @@ test('rejects malformed payloads and ignores unknown companies', () => {
   ]);
   assert.equal(result.skipped, 2);
   assert.deepEqual(result.companies[0].cases, []);
+});
+
+test('sync merge keeps identical record IDs in different companies separate', () => {
+  const local = { ...envelope('cases:case1', { collection: 'cases', item: { id: 'case1' } }), deviceId: 'local_device_123456' };
+  const remote = { ...envelope('cases:case1', { collection: 'cases', item: { id: 'case1' } }, false, 'company2'), deviceId: 'remote_device_123456' };
+  const result = mergeSyncEnvelopes([local], [remote]);
+  assert.equal(result.conflicts.length, 0);
+  assert.equal(result.merged.length, 2);
+  assert.deepEqual(new Set(result.merged.map(item => item.companyId)), new Set(['company1', 'company2']));
 });
