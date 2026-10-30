@@ -16,8 +16,10 @@ const COLLECTIONS = [
 
 export interface TrackedCompany {
   id: string;
-  [key: string]: unknown;
 }
+
+const getField = (company: TrackedCompany | undefined, key: string): unknown =>
+  company ? (company as unknown as Record<string, unknown>)[key] : undefined;
 
 export interface CompanySnapshotChange<T = unknown> {
   recordId: string;
@@ -53,18 +55,18 @@ export function collectCompanyChanges(
     const profileKeys = ['name', 'type', 'barCouncil', 'gst', 'address', 'city', 'state', 'pin', 'phone', 'email', 'logoUrl', 'logoBadge', 'logoColor'];
     const profile = Object.fromEntries(profileKeys
       .filter(key => Object.prototype.hasOwnProperty.call(nextCompany, key))
-      .map(key => [key, nextCompany[key]]));
+      .map(key => [key, getField(nextCompany, key)]));
     const oldProfile = oldCompany ? Object.fromEntries(profileKeys
       .filter(key => Object.prototype.hasOwnProperty.call(oldCompany, key))
-      .map(key => [key, oldCompany[key]])) : null;
+      .map(key => [key, getField(oldCompany, key)])) : null;
 
     if (!oldCompany || stableJson(oldProfile) !== stableJson(profile)) {
       changes.push({ recordId: 'company_profile', companyId, deleted: false, payload: profile });
     }
 
     for (const collection of COLLECTIONS) {
-      const oldItems = Array.isArray(oldCompany?.[collection]) ? oldCompany?.[collection] as unknown[] : [];
-      const newItems = Array.isArray(nextCompany[collection]) ? nextCompany[collection] as unknown[] : [];
+      const oldItems = Array.isArray(getField(oldCompany, collection)) ? oldCompany?.[collection] as unknown[] : [];
+      const newItems = Array.isArray(getField(nextCompany, collection)) ? nextCompany[collection] as unknown[] : [];
       const oldById = new Map(oldItems.filter(isRecord).filter(item => typeof item.id === 'string').map(item => [String(item.id), item]));
       const newById = new Map(newItems.filter(isRecord).filter(item => typeof item.id === 'string').map(item => [String(item.id), item]));
 
@@ -87,8 +89,8 @@ export function collectCompanyChanges(
     }
 
     // Diary entries are nested by case ID, so flatten them into stable record IDs.
-    const oldDiary = isRecord(oldCompany?.diaryData) ? oldCompany?.diaryData as Record<string, unknown> : {};
-    const newDiary = isRecord(nextCompany.diaryData) ? nextCompany.diaryData as Record<string, unknown> : {};
+    const oldDiary = isRecord(getField(oldCompany, 'diaryData')) ? oldCompany?.diaryData as Record<string, unknown> : {};
+    const newDiary = isRecord(getField(nextCompany, 'diaryData')) ? nextCompany.diaryData as Record<string, unknown> : {};
     const oldDiaryById = new Map<string, { caseId: string; item: JsonRecord }>();
     const newDiaryById = new Map<string, { caseId: string; item: JsonRecord }>();
     for (const [caseId, entries] of Object.entries(oldDiary)) {
