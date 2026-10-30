@@ -14,6 +14,8 @@ export interface ApplySyncResult<T extends TrackedCompany> {
   applied: number;
   skipped: number;
   manualReview: number;
+  appliedChangeIds: string[];
+  skippedChangeIds: string[];
 }
 
 /**
@@ -29,18 +31,23 @@ export function applySyncEnvelopes<T extends TrackedCompany>(
   let applied = 0;
   let skipped = 0;
   let manualReview = 0;
+  const appliedChangeIds: string[] = [];
+  const skippedChangeIds: string[] = [];
 
   for (const change of changes) {
+    const appliedBefore = applied;
+    const skippedBefore = skipped;
     if (!change || change.schemaVersion !== 1 || !change.companyId ||
         !change.recordId || !change.changeId || !Number.isFinite(change.updatedAt) ||
         typeof change.deleted !== 'boolean' ||
         (change.deleted ? change.payload !== null : change.payload === null || change.payload === undefined)) {
       skipped += 1;
+      skippedChangeIds.push(change?.changeId || '');
       continue;
     }
 
     const companyIndex = companies.findIndex(company => company.id === change.companyId);
-    if (companyIndex < 0) { skipped += 1; continue; }
+    if (companyIndex < 0) { skipped += 1; skippedChangeIds.push(change.changeId); continue; }
     const company = companies[companyIndex];
 
     if (change.recordId === 'company_workspace') {
@@ -116,7 +123,9 @@ export function applySyncEnvelopes<T extends TrackedCompany>(
       [collection]: [item, ...existing.filter(entry => !(isRecord(entry) && entry.id === recordId))],
     } as T;
     applied += 1;
+    if (applied > appliedBefore) appliedChangeIds.push(change.changeId);
+    else if (skipped > skippedBefore) skippedChangeIds.push(change.changeId);
   }
 
-  return { companies, applied, skipped, manualReview };
+  return { companies, applied, skipped, manualReview, appliedChangeIds, skippedChangeIds };
 }
