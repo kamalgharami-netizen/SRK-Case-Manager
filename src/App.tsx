@@ -18,6 +18,7 @@ import { CommunicationCenter } from './components/CommunicationCenter';
 import { OfficeAccounts } from './components/OfficeAccounts';
 import { ClientLedger } from './components/ClientLedger';
 import { CashBankRegister } from './components/CashBankRegister';
+import { FinancialReports } from './components/FinancialReports';
 import { CaseDetailModal } from './components/CaseDetailModal';
 import { BackupModal } from './components/BackupModal';
 import { ViewingOptionsModal } from './components/ViewingOptionsModal';
@@ -732,6 +733,7 @@ const MainAppContent: React.FC = () => {
               {currentPage === 'accounts' && <OfficeAccounts />}
               {currentPage === 'client-ledger' && <ClientLedger />}
               {currentPage === 'cash-bank' && <CashBankRegister />}
+              {currentPage === 'financial-reports' && <FinancialReports />}
             </>
           )}
         </main>
