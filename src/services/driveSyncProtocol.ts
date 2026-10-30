@@ -59,11 +59,11 @@ export function mergeSyncEnvelopes<T>(
 
   for (const change of localChanges) {
     if (!isValidEnvelope<T>(change)) throw new Error('Invalid local sync change envelope');
-    localById.set(change.recordId, change);
+    localById.set(`${change.companyId}:${change.recordId}`, change);
   }
   for (const change of remoteChanges) {
     if (!isValidEnvelope<T>(change)) throw new Error('Invalid remote sync change envelope');
-    remoteById.set(change.recordId, change);
+    remoteById.set(`${change.companyId}:${change.recordId}`, change);
   }
 
   const merged: SyncEnvelope<T>[] = [];
@@ -97,7 +97,7 @@ export function mergeSyncEnvelopes<T>(
     }
 
     // Independent device edits are not safely orderable by wall-clock time.
-    conflicts.push({ recordId, local, remote });
+    conflicts.push({ recordId: local.recordId, local, remote });
     merged.push(local);
   }
 
