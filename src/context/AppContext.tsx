@@ -7,6 +7,33 @@ import { autoMergeAllPreviousData, mergeCompanyLists, extractCompaniesFromPayloa
 
 const STORAGE_KEY = 'srk_case_manager_v5';
 
+// Protect existing local data if every known primary storage entry is unreadable.
+let STORAGE_LOAD_FAILED = false;
+let INITIAL_STORAGE_STATE: any | null | undefined;
+
+function getInitialStorageState(): any | null {
+  if (INITIAL_STORAGE_STATE !== undefined) return INITIAL_STORAGE_STATE;
+  let foundUnreadableData = false;
+  for (const key of [STORAGE_KEY, 'srk_case_manager_v4', 'srk_case_manager_v3']) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        INITIAL_STORAGE_STATE = parsed;
+        STORAGE_LOAD_FAILED = false;
+        return parsed;
+      }
+      foundUnreadableData = true;
+    } catch {
+      foundUnreadableData = true;
+    }
+  }
+  STORAGE_LOAD_FAILED = foundUnreadableData;
+  INITIAL_STORAGE_STATE = null;
+  return null;
+}
+
 export interface ToastAction {
   label: string;
   onClick: () => void;
@@ -193,19 +220,19 @@ interface AppContextType {
 
 export const isDemoOrLegacyCompany = (c: any): boolean => {
   if (!c || typeof c !== 'object') return true;
-  // CRITICAL: Any chamber containing user cases or parties is NEVER purged and MUST be merged!
-  if ((c.cases && Array.isArray(c.cases) && c.cases.length > 0) || (c.parties && Array.isArray(c.parties) && c.parties.length > 0)) {
-    return false;
-  }
-  if (c.id === 'c_srk_chamber_main' && (!c.cases || c.cases.length === 0)) return true;
+
+  // Never discard a chamber that contains ANY user-created information.
+  const hasUserData = [
+    c.cases, c.parties, c.users, c.causeList, c.vaultFiles, c.activityLog, c.sampleDrafts
+  ].some(value => Array.isArray(value) && value.length > 0) ||
+    (c.diaryData && typeof c.diaryData === 'object' && Object.keys(c.diaryData).length > 0) ||
+    Boolean(c.logoUrl || c.gst || c.address || c.phone || c.email || c.barCouncil);
+
+  if (hasUserData) return false;
+
+  // Only remove clearly-labelled empty demo/sample workspaces.
   const name = String(c.name || '').toLowerCase();
-  if (
-    name.includes('demo company') ||
-    name.includes('sample company')
-  ) {
-    return true;
-  }
-  return false;
+  return name.includes('demo company') || name.includes('sample company');
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -214,18 +241,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [companies, setCompanies] = useState<Company[]>(() => {
     try {
       let loaded: Company[] = [];
-      const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('srk_case_manager_v4') || localStorage.getItem('srk_case_manager_v3');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.companies && Array.isArray(parsed.companies)) {
-          loaded = parsed.companies.filter((c: Company) => !isDemoOrLegacyCompany(c));
-        }
+      const parsed = getInitialStorageState();
+      if (parsed && Array.isArray(parsed.companies)) {
+        loaded = parsed.companies.filter((c: Company) => !isDemoOrLegacyCompany(c));
       }
 
-      // Automatically deep-merge ANY data from older versions / previous APKs
+      // Merge recoverable records from older app versions and backups.
       const mergeResult = autoMergeAllPreviousData(loaded);
-      const finalCompanies = mergeResult.mergedCompanies.filter((c: Company) => !isDemoOrLegacyCompany(c));
-      return finalCompanies;
+      if (mergeResult.mergedCompanies.length > 0) STORAGE_LOAD_FAILED = false;
+      return mergeResult.mergedCompanies.filter((c: Company) => !isDemoOrLegacyCompany(c));
     } catch (e) {
       console.error('Failed to load & merge companies from localStorage', e);
       return [];
@@ -234,9 +258,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('srk_case_manager_v4') || localStorage.getItem('srk_case_manager_v3');
-      if (saved) {
-        const parsed = JSON.parse(saved);
+      const parsed = getInitialStorageState();
+      if (parsed) {
         const validCompanies = (parsed.companies || []).filter((c: Company) => !isDemoOrLegacyCompany(c));
         if (validCompanies.length === 0) return null;
         if (parsed.activeCompanyId && validCompanies.some((c: Company) => c.id === parsed.activeCompanyId)) {
@@ -250,9 +273,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const [activeUserId, setActiveUserId] = useState<string | null>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('srk_case_manager_v4') || localStorage.getItem('srk_case_manager_v3');
-      if (saved) {
-        const parsed = JSON.parse(saved);
+      const parsed = getInitialStorageState();
+      if (parsed) {
         const validCompanies = (parsed.companies || []).filter((c: Company) => !isDemoOrLegacyCompany(c));
         if (validCompanies.length === 0) return null;
         const targetComp = validCompanies.find((c: Company) => c.id === parsed.activeCompanyId) || validCompanies[0];
@@ -479,13 +501,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Sync to localStorage
   useEffect(() => {
+    // Do not overwrite unreadable existing data with an empty first-render state.
+    if (STORAGE_LOAD_FAILED) {
+      console.error('Existing SRK data could not be parsed. Storage write paused to prevent data loss.');
+      return;
+    }
     try {
       localStorage.setItem(
         STORAGE_KEY,
         JSON.stringify({
           companies,
           activeCompanyId,
-          activeUserId
+          activeUserId,
+          version: APP_VERSION,
+          updatedAt: Date.now()
         })
       );
     } catch (e) {
