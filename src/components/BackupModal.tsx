@@ -72,6 +72,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     deleteCompany,
     openChamberSetup,
     updateCompanyDetails,
+    applyStagedSyncChanges,
     addUser,
     deleteUser,
     theme,
@@ -1217,6 +1218,20 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                 <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700"><div className="text-xs text-slate-500">Conflicts requiring decision</div><div className="text-2xl font-extrabold mt-1">{syncCounts.conflicts}</div></div>
               </div>
               {syncCounts.error && <div className="p-3 rounded-lg border border-rose-300 text-xs text-rose-700">Stored sync status could not be read. Existing data has not been changed.</div>}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled={syncCounts.staged === 0 || syncCounts.error}
+                  onClick={() => {
+                    if (!window.confirm(`Apply ${syncCounts.staged} staged remote change(s) to this device? This action updates local records and cannot be automatically undone. Please ensure you have a current backup.`)) return;
+                    const result = applyStagedSyncChanges();
+                    if (result) refreshSyncCounts();
+                  }}
+                  className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold"
+                >
+                  Review &amp; Apply Staged Changes
+                </button>
+              </div>
               <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 space-y-2">
                 <div className="font-bold text-sm text-amber-900 dark:text-amber-300">Google Drive is not connected yet</div>
                 <p className="text-xs text-amber-900/80 dark:text-amber-200/80">These figures show only this device's local queue. Sign-in, secure token storage, Drive folder selection and live two-way transfer are not enabled. No remote changes are applied automatically.</p>
