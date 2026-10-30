@@ -76,3 +76,27 @@ test('conflicts are persisted, deduplicated and can be resolved explicitly', () 
   assert.equal(journal.getConflicts().length, 0);
   assert.equal(journal.resolveConflict(local.recordId, local.changeId, remote.changeId), false);
 });
+
+test('resolving a conflict queues the selected version as a new local change', () => {
+  const journal = new SyncJournal(new MemoryStorage());
+  const local = change();
+  const remote = change({
+    deviceId: 'device_2234567890123456',
+    changeId: 'change_2234567890123456',
+    payload: { title: 'Remote edit' },
+  });
+  journal.enqueue(local);
+  journal.saveConflicts([{ recordId: local.recordId, local, remote }]);
+
+  assert.equal(journal.resolveConflictAndQueue(
+    local.recordId, local.changeId, remote.changeId,
+    'remote', 'device_3234567890123456', 500
+  ), true);
+
+  const pending = journal.getPending();
+  assert.equal(pending.length, 1);
+  assert.equal(pending[0].payload?.title, 'Remote edit');
+  assert.equal(pending[0].deviceId, 'device_3234567890123456');
+  assert.notEqual(pending[0].changeId, remote.changeId);
+  assert.equal(journal.getConflicts().length, 0);
+});
