@@ -15,6 +15,7 @@ import { DocumentVault } from './components/DocumentVault';
 import { CaseDiary } from './components/CaseDiary';
 import { StatutoryLibrary } from './components/StatutoryLibrary';
 import { CommunicationCenter } from './components/CommunicationCenter';
+import { OfficeAccounts } from './components/OfficeAccounts';
 import { CaseDetailModal } from './components/CaseDetailModal';
 import { BackupModal } from './components/BackupModal';
 import { ViewingOptionsModal } from './components/ViewingOptionsModal';
@@ -726,6 +727,7 @@ const MainAppContent: React.FC = () => {
               {currentPage === 'timeline' && <CaseDiary />}
 
               {currentPage === 'messages' && <CommunicationCenter />}
+              {currentPage === 'accounts' && <OfficeAccounts />}
             </>
           )}
         </main>
