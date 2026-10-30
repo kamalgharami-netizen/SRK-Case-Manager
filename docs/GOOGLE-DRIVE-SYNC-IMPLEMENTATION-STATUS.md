@@ -20,6 +20,8 @@
 - Added `src/services/googleDriveApi.ts` as a token-in/token-out Drive REST adapter: list folders, create a folder, list files in a selected folder, upload/update JSON, download JSON, and delete a specific Drive file.
 - The adapter never stores access tokens and never accepts client secrets or refresh tokens.
 - The adapter is not yet connected to the UI or AppContext; it cannot initiate sign-in or background sync by itself.
+- Added `src/services/syncJournal.ts`: an append-only local outbox, bounded pending reads, exact-ID acknowledgements, and persistent conflict records/resolution. Corrupt or unsupported journal data fails closed and is not overwritten.
+- The journal is a storage primitive only. AppContext mutations are not yet automatically recorded, and no remote changes are applied to live records.
 
 ## Still required before live Google Drive sync can be enabled
 
@@ -28,7 +30,7 @@
 3. Configure and verify a supported OAuth flow for both Electron/Windows and Capacitor/Android. An Android OAuth client alone does not authenticate the Windows desktop app.
 4. Implement platform-specific secure token storage. Client secrets and refresh tokens must never be embedded in Vite assets, APKs, EXEs, or source control.
 5. Add and verify platform OAuth, then connect Drive folder selection and the REST adapter to a user-controlled sync screen. Add pagination, retry and incremental transfer coordination.
-6. Persist a durable per-record change journal and conflict copies. Do not upload or replace the complete local database as one last-write-wins file.
+6. Wire the new journal into every local record mutation and deletion, with migration/recovery tests. Do not upload or replace the complete local database as one last-write-wins file.
 7. Add user-visible sync status, manual sync, notifications and recovery controls.
 8. Run Android APK and Windows EXE builds and test on actual devices, including offline operation, concurrent edits, deletion, reinstall and recovery.
 
