@@ -26,7 +26,7 @@
 - Added `src/services/googleDriveSyncTransport.test.ts` covering successful upload/acknowledgement, retry detection, failed-upload retention, and mandatory folder selection. The test script includes all three sync test files.
 - Added `src/services/companyChangeTracker.ts` and wired it into `AppContext`: local company profile changes, supported record collection additions/edits/deletions, diary entry changes, and workspace deletion are converted into record-level outbox envelopes. User credentials, messages, activity logs, and UI preferences are deliberately excluded. Journal failures are logged without blocking normal offline use.
 - Added `src/services/companyChangeTracker.test.ts` for additions/edits, deletion tombstones, nested diary changes, workspace deletion, credential exclusion, and envelope creation. `npm test` now runs both sync test files.
-- The journal is a storage primitive only. AppContext mutations are not yet automatically recorded, and no remote changes are applied to live records.
+- `AppContext` local company changes are automatically collected into the outbox; remote inbox changes are not automatically applied to live records.
 
 ## Still required before live Google Drive sync can be enabled
 
@@ -45,3 +45,8 @@ Live sync is not enabled by this change. The app must not show a connected or sy
 
 - Added `src/services/googleDriveSyncInbox.ts` to list and download remote change files with bounded pagination, validate envelopes, deduplicate change IDs, and stage incoming changes in a durable local inbox. Concurrent edits to the same record from different devices are saved as explicit conflicts; local pending changes remain untouched. Remote data is staged only and is not automatically applied to live AppContext.
 - Extended `listDriveFiles` with Drive page-token support and added `src/services/googleDriveSyncInbox.test.ts` for staging, conflict detection, inbox deduplication, pagination, and folder validation. The test script now includes four sync test files.
+
+- Fixed record-key isolation in `mergeSyncEnvelopes`: matching record IDs in different companies are now independent and cannot collide.
+- Added `src/services/applySyncChanges.ts` as a validated, record-level apply primitive for supported collections, company profile fields, and nested diary entries. It preserves unrelated records, validates payload IDs and collection names, and never automatically deletes a company workspace.
+- Added `src/services/applySyncChanges.test.ts` covering collection updates, tombstones, diary changes, workspace-deletion review, invalid payload rejection, and cross-company record isolation. The package test script includes this test file.
+- Applying inbox entries is still not wired to AppContext or a user-facing approval screen. This service is deliberately a safe foundation, not a claim that two-way sync is live.
