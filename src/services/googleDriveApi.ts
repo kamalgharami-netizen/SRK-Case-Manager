@@ -91,6 +91,7 @@ export async function listDriveFolders(
     orderBy: 'name',
   });
   if (pageToken) params.set('pageToken', pageToken);
+  if (options.pageToken) params.set('pageToken', options.pageToken);
   const response = await fetch(`${DRIVE_API}/files?${params}`, {
     headers: authHeaders(options.accessToken),
     signal: options.signal,
@@ -120,7 +121,7 @@ export async function createDriveFolder(
 }
 
 export async function listDriveFiles(
-  options: DriveRequestOptions & { parentId: string; name?: string }
+  options: DriveRequestOptions & { parentId: string; name?: string; pageToken?: string }
 ): Promise<DriveFileList> {
   if (!options.parentId) throw new Error('A selected Drive folder is required.');
   const clauses = [
