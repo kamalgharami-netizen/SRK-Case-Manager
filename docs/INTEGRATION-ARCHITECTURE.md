@@ -30,6 +30,36 @@ These are complementary modes, not three separate applications. Offline records 
 6. Add visible connection status, provider selection, timeouts, retry handling and graceful offline behavior.
 7. Test the Windows installer and Android APK on actual devices, including loss of internet and restoration of connectivity.
 
+## Selected cloud provider: Google Drive
+
+Google Drive is the selected cloud storage provider for cross-device backup and synchronisation. The selected Drive folder is a cloud destination, not a local Windows/Android filesystem path.
+
+### Intended behaviour
+
+- Keep the existing local-first case database available offline on both Windows and Android.
+- Let the user sign in with Google and select a Drive folder using the official Google Picker flow.
+- Store the selected Drive folder ID and account identity as configuration; do not store a guessed local path.
+- Upload local changes and download remote changes through the Google Drive API when connectivity is available.
+- Track per-record change IDs/revisions and device IDs. Do not replace the entire local database with a remote snapshot.
+- Detect concurrent edits and retain both versions for user resolution rather than silently overwriting data.
+- Show last successful sync time, pending changes, errors and a manual Sync Now action. Notify the user when sync succeeds or fails.
+- Keep backup/export separate from live two-way sync. A backup file alone is not a conflict-safe sync protocol.
+
+### Google Cloud setup required before live integration
+
+Create or choose one Google Cloud project and enable Google Drive API and Google Picker API. Create a restricted API key for Picker and OAuth 2.0 client IDs appropriate to the actual application platforms (web, Android and desktop as applicable). The Picker requires the project number (App ID), API key and an OAuth access token. Request the narrow https://www.googleapis.com/auth/drive.file scope where it satisfies the selected-file/folder workflow.
+
+The exact OAuth redirect/callback configuration must be implemented and tested separately for the Electron desktop package and Capacitor Android package. Do not put a client secret or refresh token in frontend source, Vite environment variables, the APK or the EXE. Persist long-lived credentials only through an appropriate secure native/backend design.
+
+Required configuration values to supply during implementation:
+
+- Google Cloud project number (Picker App ID)
+- Google Picker / Drive API key (with API restrictions)
+- OAuth client ID(s) for the approved app platforms
+- Verified redirect/callback URI(s), after the app OAuth flow is selected
+
+No Google credentials have been configured in this repository yet. The Google Drive picker, live sync, conflict handling and sync notifications are not yet implemented. Do not display a connected/synced status until a real Google API operation succeeds.
+
 ## Release acceptance checks
 
 - Existing case records survive app restart and app upgrade.
