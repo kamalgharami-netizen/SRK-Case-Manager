@@ -8,6 +8,8 @@ const COLLECTIONS = new Set([
 ]);
 const isRecord = (value: unknown): value is JsonRecord =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+const getField = (company: TrackedCompany, key: string): unknown =>
+  (company as unknown as Record<string, unknown>)[key];
 
 export interface ApplySyncResult<T extends TrackedCompany> {
   companies: T[];
@@ -69,7 +71,7 @@ export function applySyncEnvelopes<T extends TrackedCompany>(
     const recordId = change.recordId.slice(separator + 1);
 
     if (collection === 'diary') {
-      const diary = isRecord(company.diaryData) ? company.diaryData as Record<string, unknown> : {};
+      const diary = isRecord(getField(company, 'diaryData')) ? company.diaryData as Record<string, unknown> : {};
       if (change.deleted) {
         let found = false;
         const nextDiary = Object.fromEntries(Object.entries(diary).map(([caseId, entries]) => {
@@ -104,7 +106,7 @@ export function applySyncEnvelopes<T extends TrackedCompany>(
     }
 
     if (!COLLECTIONS.has(collection)) { skipped += 1; continue; }
-    const existing = Array.isArray(company[collection]) ? company[collection] as unknown[] : [];
+    const existing = Array.isArray(getField(company, collection)) ? company[collection] as unknown[] : [];
     if (change.deleted) {
       const next = existing.filter(item => !(isRecord(item) && item.id === recordId));
       if (next.length === existing.length) { skipped += 1; continue; }
