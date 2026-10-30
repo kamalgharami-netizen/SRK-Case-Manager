@@ -56,6 +56,7 @@ export type NavPage =
   | 'parties'
   | 'accounts'
   | 'client-ledger'
+  | 'cash-bank'
   | 'users'
   | 'wblract'
   | 'vault'
@@ -451,6 +452,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                   <span className={countBadgeClass('client-ledger')}>
                     {activeCompany?.partyLedgerEntries?.length || 0}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => handleNav('cash-bank')}
+                  className={navItemClass('cash-bank')}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Wallet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <span>Cash &amp; Bank (নগদ/ব্যাংক)</span>
+                  </div>
+                  <span className={countBadgeClass('cash-bank')}>
+                    {activeCompany?.officeAccounts?.length || 0}
                   </span>
                 </button>
 

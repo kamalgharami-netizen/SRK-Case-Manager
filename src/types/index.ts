@@ -278,6 +278,30 @@ export interface SampleDraftItem {
   aiAssisted?: boolean;
 }
 
+export interface OfficeAccount {
+  id: string;
+  name: string;
+  type: 'Cash' | 'Bank' | 'UPI' | 'Other';
+  openingBalance: number;
+  bankName?: string;
+  accountNumber?: string;
+  notes?: string;
+  createdAt: number;
+}
+
+export interface AccountTransaction {
+  id: string;
+  accountId: string;
+  date: string;
+  kind: 'deposit' | 'withdrawal' | 'transfer-in' | 'transfer-out';
+  amount: number;
+  description: string;
+  reference?: string;
+  transferGroupId?: string;
+  createdAt: number;
+  createdBy: string;
+}
+
 export interface Company {
   id: string;
   name: string;
@@ -299,6 +323,8 @@ export interface Company {
   parties: Party[];
   financialEntries?: FinancialEntry[];
   partyLedgerEntries?: PartyLedgerEntry[];
+  officeAccounts?: OfficeAccount[];
+  accountTransactions?: AccountTransaction[];
   vaultFiles: VaultFile[];
   causeList: CauseItem[];
   diaryData: Record<string, DiaryEntry[]>;

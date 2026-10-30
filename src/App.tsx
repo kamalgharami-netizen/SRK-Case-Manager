@@ -17,6 +17,7 @@ import { StatutoryLibrary } from './components/StatutoryLibrary';
 import { CommunicationCenter } from './components/CommunicationCenter';
 import { OfficeAccounts } from './components/OfficeAccounts';
 import { ClientLedger } from './components/ClientLedger';
+import { CashBankRegister } from './components/CashBankRegister';
 import { CaseDetailModal } from './components/CaseDetailModal';
 import { BackupModal } from './components/BackupModal';
 import { ViewingOptionsModal } from './components/ViewingOptionsModal';
@@ -730,6 +731,7 @@ const MainAppContent: React.FC = () => {
               {currentPage === 'messages' && <CommunicationCenter />}
               {currentPage === 'accounts' && <OfficeAccounts />}
               {currentPage === 'client-ledger' && <ClientLedger />}
+              {currentPage === 'cash-bank' && <CashBankRegister />}
             </>
           )}
         </main>
