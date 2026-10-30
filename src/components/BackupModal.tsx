@@ -51,7 +51,7 @@ export const VAULT_CATEGORIES = [
   'General Legal Formats & Affidavits'
 ];
 
-export type SettingsTab = 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup';
+export type SettingsTab = 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup' | 'sync';
 
 interface BackupModalProps {
   isOpen: boolean;
@@ -109,6 +109,21 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   const vaultUploadInputRef = useRef<HTMLInputElement>(null);
 
   const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
+  const [syncCounts, setSyncCounts] = useState({ pending: 0, staged: 0, conflicts: 0, error: false });
+
+  const refreshSyncCounts = () => {
+    try {
+      const readCount = (key: string, field: string) => {
+        const raw = localStorage.getItem(key);
+        if (!raw) return 0;
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed?.[field]) ? parsed[field].length : 0;
+      };
+      setSyncCounts({ pending: readCount('srk_sync_journal_v1', 'pending'), staged: readCount('srk_sync_inbox_v1', 'changes'), conflicts: readCount('srk_sync_conflicts_v1', 'conflicts'), error: false });
+    } catch {
+      setSyncCounts(previous => ({ ...previous, error: true }));
+    }
+  };
 
   // Vault Tab state - category dropdown selection strictly without 'All'
   const [selectedVaultCategory, setSelectedVaultCategory] = useState<string>(VAULT_CATEGORIES[0]);
@@ -133,6 +148,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
       setActiveTab(initialTab);
     }
   }, [initialTab, isOpen]);
+
+  useEffect(() => {
+    if (isOpen && activeTab === 'sync') refreshSyncCounts();
+  }, [isOpen, activeTab]);
 
   if (!isOpen || !activeCompany) return null;
 
@@ -334,7 +353,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         </div>
 
         {/* Unified Tab Navigator */}
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 p-2 bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 shrink-0 text-xs font-bold">
+        <div className="grid grid-cols-3 sm:grid-cols-7 gap-1 p-2 bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 shrink-0 text-xs font-bold">
           <button
             type="button"
             onClick={() => setActiveTab('chambers')}
@@ -403,6 +422,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           >
             <Archive className="w-3.5 h-3.5 text-violet-600" />
             <span className="truncate">Document Vault</span>
+          </button>
+
+          <button type="button" onClick={() => setActiveTab('sync')} className={`py-2 px-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${activeTab === 'sync' ? 'bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 shadow-xs font-extrabold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`} title="Google Drive Synchronisation">
+            <RefreshCw className="w-3.5 h-3.5 text-sky-600" /><span className="truncate">Sync Status</span>
           </button>
 
           <button
@@ -1179,6 +1202,25 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'sync' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <div><h3 className="text-sm font-extrabold text-slate-900 dark:text-slate-100">Google Drive Sync Status</h3><p className="text-xs text-slate-500 mt-1">Local synchronisation queue and review status</p></div>
+                <button type="button" onClick={refreshSyncCounts} className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-bold flex items-center gap-2"><RotateCcw className="w-3.5 h-3.5" /> Refresh</button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700"><div className="text-xs text-slate-500">Pending local changes</div><div className="text-2xl font-extrabold mt-1">{syncCounts.pending}</div></div>
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700"><div className="text-xs text-slate-500">Remote changes awaiting review</div><div className="text-2xl font-extrabold mt-1">{syncCounts.staged}</div></div>
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700"><div className="text-xs text-slate-500">Conflicts requiring decision</div><div className="text-2xl font-extrabold mt-1">{syncCounts.conflicts}</div></div>
+              </div>
+              {syncCounts.error && <div className="p-3 rounded-lg border border-rose-300 text-xs text-rose-700">Stored sync status could not be read. Existing data has not been changed.</div>}
+              <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 space-y-2">
+                <div className="font-bold text-sm text-amber-900 dark:text-amber-300">Google Drive is not connected yet</div>
+                <p className="text-xs text-amber-900/80 dark:text-amber-200/80">These figures show only this device's local queue. Sign-in, secure token storage, Drive folder selection and live two-way transfer are not enabled. No remote changes are applied automatically.</p>
+              </div>
             </div>
           )}
 
