@@ -79,7 +79,7 @@ const MainAppContent: React.FC = () => {
     return true;
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup'>('chambers');
+  const [settingsTab, setSettingsTab] = useState<'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup' | 'sync'>('chambers');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Mobile Bottom Sheet for Case Categories
