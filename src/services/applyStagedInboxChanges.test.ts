@@ -20,12 +20,12 @@ test('persists approved staged changes before acknowledging inbox entries', () =
   const storage = new MemoryStorage();
   const inbox = new SyncInbox<unknown>(storage);
   inbox.add([change]);
-  let saved: Array<{ id: string; cases: unknown[] }> | null = null;
-  const result = applyStagedInboxChanges([{ id: 'company1', cases: [] }], inbox, companies => { saved = companies; });
+  const saved: { value: Array<{ id: string; cases: unknown[] }> | null } = { value: null };
+  const result = applyStagedInboxChanges([{ id: 'company1', cases: [] }], inbox, companies => { saved.value = companies as Array<{ id: string; cases: unknown[] }>; });
   assert.equal(result.applied, 1);
   assert.equal(result.acknowledged, 1);
   assert.equal(result.remaining, 0);
-  assert.deepEqual(saved?.[0].cases, [{ id: 'c1', title: 'Remote case' }]);
+  assert.deepEqual(saved.value?.[0].cases, [{ id: 'c1', title: 'Remote case' }]);
 });
 
 test('keeps staged entries when persistence fails', () => {
