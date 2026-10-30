@@ -57,7 +57,7 @@ jobs:
           VERSION="$(node -p "require('./package.json').version")"
           VERSION_CODE=$((52000 + GITHUB_RUN_NUMBER))
           sed -i -E "s/versionCode[[:space:]]+[0-9]+/versionCode ${VERSION_CODE}/" android/app/build.gradle
-          sed -i -E "s/versionName[[:space:]]+['\"][^'\"]+['\"]/versionName \"${VERSION}\"/" android/app/build.gradle
+          sed -i -E "s/versionName .*/versionName \"${VERSION}\"/" android/app/build.gradle
 
       - name: Build debug APK
         working-directory: android
