@@ -1,4 +1,4 @@
-name: SRK Case Manager - Android APK
+name: SRK Case Manager - Android APK + Windows EXE
 
 on:
   push:
@@ -11,14 +11,14 @@ permissions:
   contents: read
 
 concurrency:
-  group: android-${{ github.ref }}
+  group: srk-case-manager-build-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build-android:
     name: Build Android APK
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -64,10 +64,63 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
-      - name: Upload APK
+      - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
           name: SRK-Case-Manager-Android-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
+
+  build-windows:
+    name: Build Windows EXE
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install project dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build Windows installer
+        run: npm run dist:win
+
+      - name: Upload Windows EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: SRK-Case-Manager-Windows-EXE
+          path: release/*.exe
+          if-no-files-found: error
+          retention-days: 14
+
+  build-report:
+    name: Build status report
+    if: always()
+    needs: [build-android, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish automatic build message
+        env:
+          ANDROID_RESULT: ${{ needs.build-android.result }}
+          WINDOWS_RESULT: ${{ needs.build-windows.result }}
+        run: |
+          {
+            echo "## SRK Case Manager build report"
+            echo ""
+            echo "| Platform | Result |"
+            echo "|---|---|"
+            echo "| Android APK | ${ANDROID_RESULT} |"
+            echo "| Windows EXE | ${WINDOWS_RESULT} |"
+            echo ""
+            if [ "${ANDROID_RESULT}" = "success" ] && [ "${WINDOWS_RESULT}" = "success" ]; then
+              echo "Both installers were built successfully. Download them from this workflow run's Artifacts section."
+            else
+              echo "At least one platform build did not succeed. Open the failed job above and inspect its logs."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
