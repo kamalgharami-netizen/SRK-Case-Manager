@@ -200,6 +200,21 @@ export interface Party {
   createdBy: string;
 }
 
+export interface FinancialEntry {
+  id: string;
+  kind: 'income' | 'expense';
+  date: string;
+  amount: number;
+  category: string;
+  partyId?: string;
+  partyName?: string;
+  paymentMode: 'Cash' | 'Bank' | 'UPI' | 'Other';
+  reference?: string;
+  notes?: string;
+  createdAt: number;
+  createdBy: string;
+}
+
 export interface VaultFile {
   id: string;
   name: string;
@@ -268,6 +283,7 @@ export interface Company {
   users: User[];
   cases: CaseItem[];
   parties: Party[];
+  financialEntries?: FinancialEntry[];
   vaultFiles: VaultFile[];
   causeList: CauseItem[];
   diaryData: Record<string, DiaryEntry[]>;
