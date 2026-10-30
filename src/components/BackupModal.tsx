@@ -425,7 +425,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           </button>
 
           <button type="button" onClick={() => setActiveTab('sync')} className={`py-2 px-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${activeTab === 'sync' ? 'bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 shadow-xs font-extrabold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`} title="Google Drive Synchronisation">
-            <RefreshCw className="w-3.5 h-3.5 text-sky-600" /><span className="truncate">Sync Status</span>
+            <RotateCcw className="w-3.5 h-3.5 text-sky-600" /><span className="truncate">Sync Status</span>
           </button>
 
           <button
