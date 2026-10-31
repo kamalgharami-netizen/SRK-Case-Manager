@@ -70,7 +70,7 @@ jobs:
           if not path.exists():
               raise SystemExit("Capacitor variables.gradle was not generated; refusing to build with an unknown Android minimum SDK.")
           content = path.read_text()
-          match = re.search(r"(minSdkVersion\\s*=\\s*)(\\d+)", content)
+          match = re.search(r"(minSdkVersion\s*=\s*)(\d+)", content)
           if not match:
               raise SystemExit("Could not find minSdkVersion in android/variables.gradle.")
           current = int(match.group(2))
