@@ -80,6 +80,17 @@ function authHeaders(accessToken: string): HeadersInit {
   return { Authorization: `Bearer ${accessToken}` };
 }
 
+export async function getDriveFileMetadata(
+  options: DriveRequestOptions & { fileId: string }
+): Promise<DriveFile> {
+  if (!options.fileId) throw new Error('A Drive file ID is required.');
+  const params = new URLSearchParams({ fields: 'id,name,mimeType,modifiedTime,parents' });
+  const response = await fetch(`${DRIVE_API}/files/${encodeURIComponent(options.fileId)}?${params}`, {
+    headers: authHeaders(options.accessToken),
+    signal: options.signal,
+  });
+  return parseResponse<DriveFile>(response);
+}
 export async function listDriveFolders(
   options: DriveRequestOptions,
   pageToken?: string
