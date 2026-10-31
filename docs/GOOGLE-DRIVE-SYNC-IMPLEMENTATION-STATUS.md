@@ -85,3 +85,11 @@ Live sync is not enabled by this change. The app must not show a connected or sy
 - The project owner supplied this separate Windows Desktop OAuth client ID: `955204328722-um7epi871el2cuentnti4rq5obofh4ih.apps.googleusercontent.com`.
 - It is different from the Android OAuth client ID. The owner should ensure its Google Cloud application type is **Desktop app** and that it belongs to project `helical-crowbar-513210-p6`.
 - The ID has been recorded in the platform setup documentation. This does not yet connect the sign-in UI or enable live Google Drive sync.
+
+
+## Windows OAuth UI wiring (2026-10-31)
+
+- Added a reusable cryptographically random OAuth state helper and allowed the Windows PKCE request builder to use that pre-generated state so it can be matched to the Electron loopback listener before opening the system browser.
+- Added the Windows sign-in orchestration service and connected it to Settings > Sync Status.
+- Google credentials are stored using the existing secure credential-bundle adapter; disconnect removes only this app's locally stored credentials and does not delete any Drive files.
+- This stage completes Windows account authorization wiring only. It does not choose a Drive folder, perform a Drive API read/write, transfer local case records, or enable automatic/two-way sync.
