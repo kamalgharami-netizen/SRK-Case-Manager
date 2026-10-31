@@ -1,7 +1,7 @@
 import { createGoogleOAuthState, createWindowsGooglePkceRequest } from './googleOAuthPkce';
 import { exchangeGoogleAuthorizationCode } from './googleOAuthTokenClient';
 import { getDriveFileMetadata } from './googleDriveApi';
-import { clearSelectedGoogleDriveFolder, saveSelectedGoogleDriveFolder, getSelectedGoogleDriveFolder, type SelectedGoogleDriveFolder } from './googleDriveSelectedFolder';
+import { clearSelectedGoogleDriveFolder, saveSelectedGoogleDriveFolder, type SelectedGoogleDriveFolder } from './googleDriveSelectedFolder';
 import {
   deleteSecureGoogleOAuthCredentials,
   getSecureGoogleOAuthCredentials,
@@ -34,7 +34,8 @@ function getWindowsOAuthBridge(): WindowsOAuthBridge {
 /**
  * Completes Windows Desktop OAuth using system-browser Authorization Code +
  * PKCE. Credentials are persisted only in the platform secure store.
- * The official Desktop/Mobile Picker selects and validates one Drive folder.\n * This does not run sync.
+ * The official Desktop/Mobile Picker selects and validates one Drive folder.
+ * This does not run sync.
  */
 export async function connectWindowsGoogleDrive(): Promise<{ credentials: StoredGoogleOAuthCredentials; folder: SelectedGoogleDriveFolder }> {
   const bridge = getWindowsOAuthBridge();
