@@ -56,7 +56,7 @@ import { getValidAndroidGoogleDriveCredentials } from '../services/googleDriveAn
 import { SyncJournal } from '../services/syncJournal';
 import type { SyncConflict } from '../services/driveSyncProtocol';
 import { SyncInbox } from '../services/googleDriveSyncInbox';
-import { syncGoogleDriveNow } from '../services/googleDriveSyncCoordinator';
+import { runGoogleDriveSyncCycle } from '../services/googleDriveSyncRunner';
 
 export const VAULT_CATEGORIES = [
   'Mutation Petitions & Orders',
@@ -233,24 +233,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     setSyncBusy(true);
     setSyncMessage('Synchronisation started…');
     try {
-      const folder = getSelectedGoogleDriveFolder();
-      if (!folder?.id) throw new Error('Select a Google Drive folder before syncing.');
-      const credentials = Capacitor.getPlatform() === 'android'
-        ? await getValidAndroidGoogleDriveCredentials()
-        : await getValidWindowsGoogleDriveCredentials();
-      const journal = new SyncJournal<unknown>(localStorage);
-      const inbox = new SyncInbox<unknown>(localStorage);
-      const pageTokenKey = `srk_drive_sync_page_token_v1_${folder.id}`;
-      const pageToken = localStorage.getItem(pageTokenKey) || undefined;
-      const result = await syncGoogleDriveNow(journal, inbox, {
-        accessToken: credentials.accessToken,
-        folderId: folder.id,
-        pageToken,
-        pullMaxPages: 10,
-        pushBatchSize: 25,
-      });
-      if (result.nextPageToken) localStorage.setItem(pageTokenKey, result.nextPageToken);
-      else localStorage.removeItem(pageTokenKey);
+      const result = await runGoogleDriveSyncCycle({ allowAndroidReauthorization: true });
+      if (!result) throw new Error('Connect Google Drive and select a sync folder before syncing.');
       refreshSyncCounts();
       setSyncMessage(
         `Completed: downloaded ${result.pulled.downloaded}, staged ${result.staged}, uploaded ${result.pushed.uploaded}, conflicts ${result.conflicts}. Pending local: ${result.remainingOutbox}; awaiting review: ${result.remainingInbox}.${result.nextPageToken ? ' More remote pages remain; press Sync Now again to continue.' : ' Remote listing is up to date.'}`
