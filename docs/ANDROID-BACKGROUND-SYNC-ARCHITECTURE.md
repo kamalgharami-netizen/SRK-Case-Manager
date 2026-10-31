@@ -100,3 +100,38 @@ Added the private Capacitor package `@srk/capacitor-sync-state`:
 ### Stage 1 verification gate
 
 The CI run triggered by these changes must pass TypeScript checks, the Android Gradle build, signed APK packaging, and Windows EXE packaging. After CI, add tests for migration retries, read-back mismatch, localStorage mutation during migration, and native database transaction failure before switching any production reads/writes.
+
+## Manual Android device validation checklist (release gate)
+
+CI currently compiles and packages the native plugin, but it does not execute Android Keystore, SQLite, app-data restore, or process-restart behavior on a physical device. Complete this checklist on at least one supported Android device before enabling the migration or connecting the native store to live sync.
+
+### A. Native storage persistence
+
+- [ ] Install the signed APK on a test device and launch the app.
+- [ ] Through a dedicated test harness for the native plugin, write a harmless test key/value; read it back and compare the exact value.
+- [ ] Force-stop the app, relaunch it, and read the same key again.
+- [ ] Write two keys in one batch; verify both are present.
+- [ ] Remove one key; verify it is absent and the other remains.
+- [ ] Submit an empty batch, a batch over 500 entries, duplicate keys, a blank key, a key over 256 characters, and a value over 2 MiB; each invalid request must be rejected without partial writes.
+- [ ] Verify SQLite contains encrypted Base64 payloads rather than the supplied plain-text test values. Do not export production sync data for this check.
+
+### B. Encryption and recovery
+
+- [ ] Verify a value written before app process termination can be decrypted after relaunch.
+- [ ] Test app update over the existing installation; confirm the stored value remains readable.
+- [ ] Test uninstall/reinstall separately and record the expected data/key loss behavior; do not treat reinstall as an in-place upgrade.
+- [ ] On a disposable test device only, test restoring app data onto a different device or after clearing Android Keystore state. The store must fail safely and must not silently create a replacement key and overwrite unreadable data.
+- [ ] Inspect Android backup/restore behavior before release. The SQLite database may be restored independently of its Android Keystore key; decide and test an explicit backup policy before relying on restored native sync state.
+
+### C. Migration gate
+
+- [ ] Seed only test sync metadata in legacy localStorage; include a page-token key.
+- [ ] Confirm the migration copies all allowlisted keys and exact values.
+- [ ] Confirm `srk_case_manager_v5`, OAuth credentials, and unrelated settings are not copied.
+- [ ] Interrupt the test migration, relaunch, and retry; the source localStorage values must remain unchanged and the completion marker must appear only after read-back verification.
+- [ ] Change or add an allowlisted source key during the copy; migration must return retry-required and must not mark completion.
+- [ ] Repeat after a successful migration; it must report already-migrated without rewriting the source.
+
+### D. Current implementation boundary
+
+The repository does not yet include a user-facing native-store test screen or Android instrumentation test harness. The checklist above is a test specification, not evidence that these device tests have passed. Do not invoke `migrateLegacyAndroidSyncState()` in production startup, switch the live sync journal/inbox to SQLite, or schedule WorkManager until the native test harness and physical-device results are reviewed. Keep the business database key `srk_case_manager_v5` and current backup/export flows unchanged.
