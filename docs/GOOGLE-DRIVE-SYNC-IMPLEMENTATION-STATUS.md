@@ -136,3 +136,17 @@ The following items supersede earlier notes above that described these component
 - Real Android/Windows device sign-in, Picker, Drive upload/download and cross-device record consistency still require manual device testing. CI success alone does not prove end-to-end Google Drive sync.
 - Automatic/background sync is not yet implemented. Sync currently requires the user to press **Sync Now**.
 - PR #7 remains open and Draft; it has not been merged.
+
+## Verification update (2026-10-31 — Build #232)
+
+- Commit: `27194e94ad292cdad6c312c69a9be89a6681628a`.
+- GitHub Actions run #232 completed with conclusion `success`.
+- Android job: TypeScript check, sync safety tests, web build, Capacitor sync, signed Release APK build, and APK artifact upload all succeeded.
+- Windows job: dependency installation, Windows installer build, and EXE artifact upload all succeeded.
+- Uploaded artifacts: `SRK-Case-Manager-Android-APK` (4,293,453 bytes) and `SRK-Case-Manager-Windows-EXE` (115,822,522 bytes). GitHub artifact retention expiry shown for this run: 2026-11-14.
+- Windows foreground renderer now retries sync every 15 minutes while the app remains running, including when its window is minimized. It does not run after the application exits.
+- Android periodic WorkManager sync is **not implemented**. The current sync journal, inbox, selected-folder setting, and pagination cursor are stored in the WebView's `localStorage`; the OAuth access token is held separately in Android Keystore-backed secure storage. A native worker cannot safely execute the current TypeScript sync pipeline or access the WebView's localStorage. Android background sync therefore requires a deliberate shared persistence/native sync design and a verified credential-renewal strategy; it must not be simulated by copying tokens into ordinary preferences.
+- Windows sync after full application exit is also **not implemented**. The current periodic retry runs only while the Electron renderer is alive.
+- Incoming remote records remain staged for review; this build does not silently overwrite the live case database.
+- CI success confirms compilation and packaging, not real-device Google OAuth, Drive Picker, offline/reconnect, or two-device end-to-end behavior. Those still require manual device testing.
+
