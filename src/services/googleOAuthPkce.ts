@@ -41,10 +41,15 @@ function assertWindowsLoopbackRedirect(redirectUri: string): void {
   }
 }
 
+export function createGoogleOAuthState(): string {
+  return randomUrlSafeString(32);
+}
+
 export async function createWindowsGooglePkceRequest(options: {
   clientId: string;
   redirectUri: string;
   scopes: string[];
+  state?: string;
 }): Promise<GooglePkceRequest> {
   if (!options.clientId?.trim()) throw new Error('A Windows Desktop OAuth client ID is required.');
   if (!Array.isArray(options.scopes) || options.scopes.length === 0 ||
@@ -54,7 +59,10 @@ export async function createWindowsGooglePkceRequest(options: {
   assertWindowsLoopbackRedirect(options.redirectUri);
 
   const codeVerifier = randomUrlSafeString(64);
-  const state = randomUrlSafeString(32);
+  const state = options.state ?? createGoogleOAuthState();
+  if (typeof state !== 'string' || !/^[A-Za-z0-9_-]{32,256}$/.test(state)) {
+    throw new Error('A valid cryptographically random OAuth state is required.');
+  }
   const digest = await globalThis.crypto.subtle.digest(
     'SHA-256',
     new TextEncoder().encode(codeVerifier)
