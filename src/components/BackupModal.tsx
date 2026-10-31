@@ -36,6 +36,11 @@ import {
 import { CompanyLogo, BADGE_OPTIONS, COLOR_OPTIONS } from './CompanyLogo';
 import { THEME_OPTIONS } from '../data/themes';
 import { VaultFile, Role } from '../types';
+import {
+  connectWindowsGoogleDrive,
+  disconnectWindowsGoogleDrive,
+  getWindowsGoogleDriveCredentials,
+} from '../services/googleDriveWindowsAuth';
 
 export const VAULT_CATEGORIES = [
   'Mutation Petitions & Orders',
@@ -111,6 +116,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
 
   const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
   const [syncCounts, setSyncCounts] = useState({ pending: 0, staged: 0, conflicts: 0, error: false });
+  const [driveAuthStatus, setDriveAuthStatus] = useState<'checking' | 'disconnected' | 'authorized' | 'unsupported' | 'error'>('disconnected');
+  const [driveAuthBusy, setDriveAuthBusy] = useState(false);
 
   const refreshSyncCounts = () => {
     try {
@@ -153,6 +160,55 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   useEffect(() => {
     if (isOpen && activeTab === 'sync') refreshSyncCounts();
   }, [isOpen, activeTab]);
+
+  useEffect(() => {
+    if (!isOpen || activeTab !== 'sync') return;
+    const isWindowsDesktop = typeof window !== 'undefined' &&
+      Boolean((window as Window & { electronAPI?: { googleOAuth?: unknown } })
+        .electronAPI?.googleOAuth);
+    if (!isWindowsDesktop) {
+      setDriveAuthStatus('unsupported');
+      return;
+    }
+    let active = true;
+    setDriveAuthStatus('checking');
+    getWindowsGoogleDriveCredentials()
+      .then(credentials => {
+        if (active) setDriveAuthStatus(credentials ? 'authorized' : 'disconnected');
+      })
+      .catch(() => {
+        if (active) setDriveAuthStatus('error');
+      });
+    return () => { active = false; };
+  }, [isOpen, activeTab]);
+
+  const handleConnectGoogleDrive = async () => {
+    setDriveAuthBusy(true);
+    try {
+      await connectWindowsGoogleDrive();
+      setDriveAuthStatus('authorized');
+      showToast('Google account authorization completed. Select a Drive folder in the next setup stage.', 'success');
+    } catch (error) {
+      setDriveAuthStatus('error');
+      showToast(error instanceof Error ? error.message : 'Google sign-in failed.', 'error');
+    } finally {
+      setDriveAuthBusy(false);
+    }
+  };
+
+  const handleDisconnectGoogleDrive = async () => {
+    if (!window.confirm('Remove the Google sign-in credentials stored by this app? No Google Drive files will be deleted.')) return;
+    setDriveAuthBusy(true);
+    try {
+      await disconnectWindowsGoogleDrive();
+      setDriveAuthStatus('disconnected');
+      showToast('Google sign-in credentials removed from this device.', 'success');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Unable to disconnect Google.', 'error');
+    } finally {
+      setDriveAuthBusy(false);
+    }
+  };
 
   if (!isOpen || !activeCompany) return null;
 
@@ -1232,9 +1288,43 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   Apply Eligible Staged Changes
                 </button>
               </div>
-              <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 space-y-2">
-                <div className="font-bold text-sm text-amber-900 dark:text-amber-300">Google Drive is not connected yet</div>
-                <p className="text-xs text-amber-900/80 dark:text-amber-200/80">These figures show only this device's local queue. Sign-in, secure token storage, Drive folder selection and live two-way transfer are not enabled. No remote changes are applied automatically.</p>
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div>
+                    <div className="font-bold text-sm text-slate-900 dark:text-slate-100">Google Drive account authorization</div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {driveAuthStatus === 'checking' ? 'Checking secure sign-in status…' :
+                       driveAuthStatus === 'authorized' ? 'Google account authorization is stored securely on this Windows device.' :
+                       driveAuthStatus === 'unsupported' ? 'Windows desktop sign-in is not available in this browser or Android build yet.' :
+                       driveAuthStatus === 'error' ? 'Sign-in status could not be verified, or the last sign-in attempt failed.' :
+                       'No Google account is authorized on this Windows device.'}
+                    </p>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${driveAuthStatus === 'authorized' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'}`}>
+                    {driveAuthStatus === 'authorized' ? 'AUTHORIZED' : driveAuthStatus.toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {driveAuthStatus !== 'authorized' && (
+                    <button type="button" disabled={driveAuthBusy || driveAuthStatus === 'unsupported' || driveAuthStatus === 'checking'}
+                      onClick={handleConnectGoogleDrive}
+                      className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-xs font-bold">
+                      {driveAuthBusy ? 'Please wait…' : 'Sign in with Google'}
+                    </button>
+                  )}
+                  {driveAuthStatus === 'authorized' && (
+                    <button type="button" disabled={driveAuthBusy} onClick={handleDisconnectGoogleDrive}
+                      className="px-4 py-2 rounded-lg border border-rose-300 text-rose-700 dark:text-rose-300 text-xs font-bold disabled:opacity-40">
+                      Disconnect this device
+                    </button>
+                  )}
+                </div>
+                <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 space-y-1">
+                  <div className="font-bold text-xs text-amber-900 dark:text-amber-300">Folder selection and live sync are still pending</div>
+                  <p className="text-xs text-amber-900/80 dark:text-amber-200/80">
+                    Authorization alone does not mean data is synchronised. The Drive folder picker, sync coordinator, conflict workflow and Android native sign-in are not yet connected. Local records remain on this device; no automatic upload or download is running.
+                  </p>
+                </div>
               </div>
             </div>
           )}
