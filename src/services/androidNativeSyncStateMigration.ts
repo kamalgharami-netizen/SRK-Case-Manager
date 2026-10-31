@@ -64,7 +64,11 @@ export async function runLegacyAndroidSyncStateMigration(
   const readBack = await nativeStore.getItems({ keys: snapshot.map(item => item.key) });
   const values = new Map(readBack.items.map(item => [item.key, item.value]));
   const verified = snapshot.every(item => values.get(item.key) === item.value);
-  const unchanged = snapshot.every(item => storage.getItem(item.key) === item.value);
+  const currentSnapshot = collectLegacyAndroidSyncState(storage);
+  const unchanged = snapshot.length === currentSnapshot.length &&
+    snapshot.every((item, index) =>
+      currentSnapshot[index]?.key === item.key && currentSnapshot[index]?.value === item.value,
+    );
   if (!verified || !unchanged) {
     return { status: 'retry-required', copied: snapshot.length };
   }
