@@ -32,9 +32,9 @@
 
 1. Confirm that the Google Drive API and Google Picker API are enabled in the same Google Cloud project used by the app's OAuth configuration.
 2. Obtain the project number (Picker App ID) and a restricted API key for Google Picker.
-3. Configure and verify a supported OAuth flow for both Electron/Windows and Capacitor/Android. An Android OAuth client alone does not authenticate the Windows desktop app.
-4. Implement platform-specific secure token storage. Client secrets and refresh tokens must never be embedded in Vite assets, APKs, EXEs, or source control.
-5. Add and verify platform OAuth, then connect Drive folder selection and the REST adapter to a user-controlled sync screen. Add pagination, retry and incremental transfer coordination.
+3. Complete Android native Google authorization; Windows system-browser OAuth with PKCE is now wired to Settings > Sync Status but still needs packaged-EXE testing.
+4. Complete and test the secure credential lifecycle on each platform. Client secrets and refresh tokens must never be embedded in Vite assets, APKs, EXEs, or source control.
+5. Implement Drive folder selection / official Picker and connect the Drive REST adapter to a user-controlled sync screen. Add pagination, retry and incremental transfer coordination.
 6. Wire the new journal into every local record mutation and deletion, with migration/recovery tests. Do not upload or replace the complete local database as one last-write-wins file.
 7. Add user-visible sync status, manual sync, notifications and recovery controls.
 8. Run Android APK and Windows EXE builds and test on actual devices, including offline operation, concurrent edits, deletion, reinstall and recovery.
@@ -55,7 +55,7 @@ Live sync is not enabled by this change. The app must not show a connected or sy
 ## Local sync status screen
 
 - Added a Sync Status tab to Settings. It reads the local outbox, staged inbox and conflict counts without modifying any stored sync data.
-- The screen explicitly states that Google Drive is not connected and that authentication, secure token storage, folder selection and live two-way transfer are not enabled. It does not display a false connected/synced state.
+- The screen displays local queue counts and distinguishes Google account authorization from a connected Drive folder or completed synchronisation. It does not display a false connected/synced state.
 - The counts can be refreshed manually. This is a local diagnostic screen only; it does not start a Drive request or apply incoming changes.
 
 
@@ -65,7 +65,7 @@ Live sync is not enabled by this change. The app must not show a connected or sy
 - Windows uses Electron `safeStorage` through `preload.cjs`; main-process IPC rejects calls from any renderer other than the active application window.
 - Android uses `@aparajita/capacitor-secure-storage` 7.1.6, compatible with the project's Capacitor 7 dependency line.
 - Browser storage is rejected because the plugin's web implementation is not encrypted.
-- The adapter is not yet called by an OAuth flow. It does not store refresh tokens and does not make Drive appear connected.
+- The adapter stores the complete access/refresh credential bundle through the platform secure-storage path when the Windows OAuth flow completes. Android native authorization is still outstanding.
 - The Android APK + Windows EXE workflow completed successfully for commit `109f3228b6740253dcd1c660c039d50001909a43`. This validates the repository workflow at that commit; it is not a substitute for real-device OAuth and secure-storage testing.
 
 
