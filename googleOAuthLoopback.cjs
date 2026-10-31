@@ -25,7 +25,14 @@ function createGoogleOAuthLoopbackListener(options = {}) {
   resultPromise.catch(() => {});
 
   const server = http.createServer((request, response) => {
-    const requestUrl = new URL(request.url || "/", "http://127.0.0.1");
+    let requestUrl;
+    try {
+      requestUrl = new URL(request.url || "/", "http://127.0.0.1");
+    } catch {
+      response.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
+      response.end("Invalid callback request.");
+      return;
+    }
     if (request.method !== "GET" || requestUrl.pathname !== CALLBACK_PATH) {
       response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
       response.end("Not found");
