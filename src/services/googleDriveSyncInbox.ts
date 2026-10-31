@@ -121,6 +121,7 @@ export async function pullRemoteChanges<T>(
   const localPending = journal.getPending(500);
   const localByRecord = new Map(localPending.map(change => [change.companyId + ':' + change.recordId, change]));
   const remote: SyncEnvelope<T>[] = [];
+  let duplicates = 0;
   let pageToken: string | undefined = options.pageToken;
   let pages = 0;
   const maxPages = Math.max(1, Math.min(100, Math.floor(options.maxPages ?? 10)));
@@ -155,7 +156,6 @@ export async function pullRemoteChanges<T>(
 
   const safeToStage: SyncEnvelope<T>[] = [];
   const conflicts: SyncConflict<T>[] = [];
-  let duplicates = 0;
   for (const change of remote) {
     const local = localByRecord.get(change.companyId + ':' + change.recordId);
     if (!local) {
