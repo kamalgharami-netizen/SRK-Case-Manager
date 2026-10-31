@@ -28,7 +28,7 @@ export async function connectAndroidGoogleDrive(): Promise<{
   folder: SelectedGoogleDriveFolder;
 }> {
   assertAndroidPlatform();
-  const authorization = await GoogleDriveAuth.authorize();
+  const authorization = await GoogleDriveAuth.authorize({ showPicker: true });
   if (!authorization.accessToken) {
     throw new Error('Google did not return a Drive access token.');
   }
@@ -73,4 +73,33 @@ export async function disconnectAndroidGoogleDrive(): Promise<void> {
   assertAndroidPlatform();
   await deleteSecureGoogleOAuthCredentials();
   clearSelectedGoogleDriveFolder();
+}
+
+
+/**
+ * Returns a usable Android access token, silently re-authorizing through
+ * Google Identity Services when the locally recorded token is near expiry.
+ * This refresh path does not reopen the Picker or change the selected folder.
+ */
+export async function getValidAndroidGoogleDriveCredentials():
+  Promise<StoredGoogleOAuthCredentials> {
+  assertAndroidPlatform();
+  const current = await getSecureGoogleOAuthCredentials();
+  if (current && current.expiresAt > Date.now() + 5 * 60 * 1000) return current;
+
+  const authorization = await GoogleDriveAuth.authorize({ showPicker: false });
+  if (!authorization.accessToken ||
+      !Array.isArray(authorization.grantedScopes) ||
+      !authorization.grantedScopes.includes(DRIVE_FILE_SCOPE)) {
+    throw new Error('Google Drive access could not be renewed. Please reconnect Google Drive.');
+  }
+  const renewed: StoredGoogleOAuthCredentials = {
+    accessToken: authorization.accessToken,
+    refreshToken: null,
+    tokenType: 'Bearer',
+    expiresAt: Date.now() + ANDROID_ACCESS_TOKEN_LIFETIME_MS,
+    scope: DRIVE_FILE_SCOPE,
+  };
+  await setSecureGoogleOAuthCredentials(renewed);
+  return renewed;
 }
