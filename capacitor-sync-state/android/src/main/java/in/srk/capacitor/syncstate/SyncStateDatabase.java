@@ -114,11 +114,28 @@ final class SyncStateDatabase extends SQLiteOpenHelper {
         return new String(cipher.doFinal(encrypted), StandardCharsets.UTF_8);
     }
 
+    private boolean hasStoredRows() {
+        try (Cursor cursor = getReadableDatabase().rawQuery(
+                "SELECT EXISTS(SELECT 1 FROM " + TABLE + " LIMIT 1)", null)) {
+            return cursor.moveToFirst() && cursor.getLong(0) == 1;
+        }
+    }
+
     private synchronized SecretKey getOrCreateKey() throws Exception {
         KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
         keyStore.load(null);
         java.security.Key existing = keyStore.getKey(KEY_ALIAS, null);
         if (existing instanceof SecretKey) return (SecretKey) existing;
+
+        // Never create a replacement key when encrypted rows already exist.
+        // Doing so would make the existing ciphertext unreadable and could
+        // overwrite it on the next write. Preserve the database for recovery.
+        if (hasStoredRows()) {
+            throw new IllegalStateException(
+                "The Android Keystore encryption key is missing or invalid, but encrypted sync data still exists. " +
+                "The stored data was preserved; do not reset or overwrite this database."
+            );
+        }
 
         KeyGenerator generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
         generator.init(new KeyGenParameterSpec.Builder(KEY_ALIAS,
