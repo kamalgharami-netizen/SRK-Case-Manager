@@ -22,13 +22,16 @@ public class GoogleDriveAuthorizationActivity extends Activity {
         super.onCreate(savedInstanceState);
         if (savedInstanceState != null) return;
 
-        AuthorizationRequest request = AuthorizationRequest.builder()
+        boolean showPicker = getIntent().getBooleanExtra("showPicker", true);
+        AuthorizationRequest.Builder builder = AuthorizationRequest.builder()
             .setRequestedScopes(Collections.singletonList(new Scope(DRIVE_FILE_SCOPE)))
-            .setOptOutIncludingGrantedScopes(true)
-            .setPrompt(AuthorizationRequest.Prompt.CONSENT)
-            .addResourceParameter(AuthorizationRequest.ResourceParameter.PICKER_OAUTH_TRIGGER, "true")
-            .addResourceParameter(AuthorizationRequest.ResourceParameter.PICKER_ALLOW_FOLDER_SELECTION, "true")
-            .build();
+            .setOptOutIncludingGrantedScopes(true);
+        if (showPicker) {
+            builder.setPrompt(AuthorizationRequest.Prompt.CONSENT)
+                .addResourceParameter(AuthorizationRequest.ResourceParameter.PICKER_OAUTH_TRIGGER, "true")
+                .addResourceParameter(AuthorizationRequest.ResourceParameter.PICKER_ALLOW_FOLDER_SELECTION, "true");
+        }
+        AuthorizationRequest request = builder.build();
 
         Identity.getAuthorizationClient(this).authorize(request)
             .addOnSuccessListener(this, this::handleAuthorizationResult)
