@@ -92,11 +92,13 @@ Live sync is not enabled by this change. The app must not show a connected or sy
 - Google credentials are stored using the existing secure credential-bundle adapter; disconnect removes only this app's locally stored credentials and does not delete any Drive files.
 - This stage completes Windows account authorization wiring only. It does not choose a Drive folder, perform a Drive API read/write, transfer local case records, or enable automatic/two-way sync.
 
-\n## Windows Desktop/Mobile Picker folder selection (2026-10-31)\n
+
+## Windows Desktop/Mobile Picker folder selection (2026-10-31)
+
 - The owner confirmed that Google Picker API is enabled in Cloud project `helical-crowbar-513210-p6`.
 - Windows OAuth now requests only `drive.file` and adds Google's required `prompt=consent` and `trigger_onepick=true` parameters, plus `allow_folder_selection=true` and `access_type=offline`.
 - The loopback callback validates OAuth state and parses `picked_file_ids`; the Windows flow requires exactly one selected item and verifies through Drive API metadata that it is a Google Drive folder.
 - The selected folder ID and name are stored locally as configuration; OAuth credentials remain in encrypted platform storage. Disconnect removes both local credentials and local folder selection but does not delete Drive data.
 - The Settings > Sync Status screen displays the selected folder and explicitly states that live sync is still inactive.
 - This stage does not upload/download case data, run automatic sync, implement Android authorization, or complete conflict approval.
-- Official reference: https://developers.google.com/workspace/drive/picker/guides/desktop-mobile-picker\n
+- Official reference: https://developers.google.com/workspace/drive/picker/guides/desktop-mobile-picker
