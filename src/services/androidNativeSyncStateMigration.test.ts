@@ -47,6 +47,12 @@ class MemoryNativeStore implements NativeSyncStateMigrationStore {
     for (const item of items) this.values.set(item.key, item.value);
     return { saved: items.length };
   }
+
+  async removeItems({ keys }: { keys: string[] }): Promise<{ removed: number }> {
+    let removed = 0;
+    for (const key of keys) if (this.values.delete(key)) removed += 1;
+    return { removed };
+  }
 }
 
 test('migration collects only the explicit sync metadata allowlist', () => {
@@ -238,4 +244,21 @@ test('migration rejects a native value larger than 2 MiB before writing', async 
   );
   assert.equal(nativeStore.values.size, 0);
   assert.equal(storage.getItem('srk_sync_journal_v1'), oversizedValue);
+});
+
+
+test('migration invalidates completion marker if legacy source changes during marker commit', async () => {
+  const storage = new MemoryStorage([['srk_sync_journal_v1', 'original-value']]);
+  const nativeStore = new MemoryNativeStore();
+  nativeStore.beforeSet = items => {
+    if (items.some(item => item.key === 'srk_native_sync_state_migration_v1')) {
+      storage.setItem('srk_sync_journal_v1', 'changed-during-finalization');
+    }
+  };
+
+  const result = await runLegacyAndroidSyncStateMigration(storage as unknown as Storage, nativeStore);
+
+  assert.deepEqual(result, { status: 'retry-required', copied: 1 });
+  assert.equal(storage.getItem('srk_sync_journal_v1'), 'changed-during-finalization');
+  assert.equal(nativeStore.values.has('srk_native_sync_state_migration_v1'), false);
 });
