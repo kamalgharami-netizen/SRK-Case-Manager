@@ -98,7 +98,7 @@ function validateCredentialBundle(value: unknown): value is StoredGoogleOAuthCre
       (typeof item.refreshToken === 'string' && item.refreshToken.length > 0 &&
        item.refreshToken.length <= 16384)) &&
     item.tokenType === 'Bearer' &&
-    Number.isSafeInteger(item.expiresAt) &&
+    typeof item.expiresAt === 'number' && Number.isSafeInteger(item.expiresAt) &&
     (item.scope === null || typeof item.scope === 'string');
 }
 
