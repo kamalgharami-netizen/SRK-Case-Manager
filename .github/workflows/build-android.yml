@@ -84,7 +84,7 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew :capacitor-sync-state:assembleDebugAndroidTest --no-daemon
+          ./gradlew :srk-capacitor-sync-state:assembleDebugAndroidTest --no-daemon
 
       - name: Set Android version
         shell: bash
