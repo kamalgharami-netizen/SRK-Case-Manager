@@ -1434,7 +1434,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
 <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 space-y-1">
   <div className="font-bold text-xs text-amber-900 dark:text-amber-300">Folder selection is ready; manual sync is available</div>
   <p className="text-xs text-amber-900/80 dark:text-amber-200/80">
-    The selected folder is saved on this device. Use Sync Now to transfer queued changes. Downloaded records remain staged until you explicitly review and apply them. Automatic background sync and detailed conflict resolution are still pending.
+    The selected folder is saved on this device. Use Sync Now to transfer queued changes immediately. When the app is open and online, automatic foreground sync is also attempted; Windows makes a best-effort sync every 15 minutes while the app is minimized. Android does not sync after the app is fully closed. Downloaded records remain staged until you explicitly review and apply them. Conflicts can be reviewed below. Real-device Google sign-in and cross-device round-trip testing are still required.
   </p>
 </div>
               </div>
