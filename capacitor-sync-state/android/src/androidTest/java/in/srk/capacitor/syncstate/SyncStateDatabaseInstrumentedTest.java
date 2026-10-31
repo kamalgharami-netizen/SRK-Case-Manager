@@ -12,6 +12,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
@@ -30,13 +31,13 @@ public class SyncStateDatabaseInstrumentedTest {
     @Before
     public void setUp() throws Exception {
         context = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        context.deleteDatabase(DATABASE_NAME);
+        databaseFile().delete();
         deleteKeystoreAlias();
     }
 
     @After
     public void tearDown() throws Exception {
-        if (context != null) context.deleteDatabase(DATABASE_NAME);
+        if (context != null) databaseFile().delete();
         deleteKeystoreAlias();
     }
 
@@ -63,6 +64,20 @@ public class SyncStateDatabaseInstrumentedTest {
     }
 
     @Test
+    public void databaseIsStoredOutsideAndroidAutoBackupDirectory() throws Exception {
+        SyncStateDatabase database = new SyncStateDatabase(context);
+        database.putAll(Arrays.asList(
+            new SyncStateDatabase.SyncStateEntry("test.backup-policy", "local-only")
+        ));
+        database.close();
+
+        String noBackupPath = context.getNoBackupFilesDir().getAbsolutePath() + File.separator;
+        assertTrue("Sync database must be in Android's no-backup directory",
+            databaseFile().getAbsolutePath().startsWith(noBackupPath));
+        assertTrue(databaseFile().isFile());
+    }
+
+    @Test
     public void sqliteStoresCiphertextRatherThanPlaintext() throws Exception {
         String plainText = "do-not-store-this-plain-text";
         SyncStateDatabase database = new SyncStateDatabase(context);
@@ -72,7 +87,7 @@ public class SyncStateDatabaseInstrumentedTest {
         database.close();
 
         SQLiteDatabase raw = SQLiteDatabase.openDatabase(
-            context.getDatabasePath(DATABASE_NAME).getAbsolutePath(),
+            databaseFile().getAbsolutePath(),
             null,
             SQLiteDatabase.OPEN_READONLY
         );
@@ -113,9 +128,13 @@ public class SyncStateDatabaseInstrumentedTest {
         assertEquals(ciphertextBefore, readStoredCiphertext("test.preserve"));
     }
 
+    private File databaseFile() {
+        return new File(context.getNoBackupFilesDir(), DATABASE_NAME);
+    }
+
     private String readStoredCiphertext(String key) {
         SQLiteDatabase raw = SQLiteDatabase.openDatabase(
-            context.getDatabasePath(DATABASE_NAME).getAbsolutePath(),
+            databaseFile().getAbsolutePath(),
             null,
             SQLiteDatabase.OPEN_READONLY
         );
