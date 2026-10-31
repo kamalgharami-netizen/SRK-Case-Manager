@@ -1,6 +1,22 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 const api = {
+  googleOAuth: {
+    listen: (expectedState) => ipcRenderer.invoke("srk-oauth:listen", expectedState),
+    wait: () => ipcRenderer.invoke("srk-oauth:wait"),
+    open: (authorizationUrl) => ipcRenderer.invoke("srk-oauth:open", authorizationUrl),
+    cancel: () => ipcRenderer.invoke("srk-oauth:cancel")
+  },
+  secureTokenStore: {
+    get: () => ipcRenderer.invoke("srk-token:get"),
+    set: (token) => ipcRenderer.invoke("srk-token:set", token),
+    delete: () => ipcRenderer.invoke("srk-token:delete")
+  },
+  secureOAuthCredentials: {
+    get: () => ipcRenderer.invoke("srk-oauth-credentials:get"),
+    set: (serialized) => ipcRenderer.invoke("srk-oauth-credentials:set", serialized),
+    delete: () => ipcRenderer.invoke("srk-oauth-credentials:delete")
+  },
   closeApp: () => {
     try {
       ipcRenderer.send("app-close");

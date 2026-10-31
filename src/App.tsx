@@ -21,6 +21,7 @@ import { CashBankRegister } from './components/CashBankRegister';
 import { FinancialReports } from './components/FinancialReports';
 import { CaseDetailModal } from './components/CaseDetailModal';
 import { BackupModal } from './components/BackupModal';
+import { runGoogleDriveSyncCycle } from './services/googleDriveSyncRunner';
 import { ViewingOptionsModal } from './components/ViewingOptionsModal';
 import { ChainDeedModal } from './components/ChainDeedModal';
 import { BackupPathModal } from './components/BackupPathModal';
@@ -79,8 +80,65 @@ const MainAppContent: React.FC = () => {
     return true;
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup'>('chambers');
+  const [settingsTab, setSettingsTab] = useState<'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup' | 'sync'>('chambers');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Automatically sync when the app starts or returns to the foreground.
+  // Incoming changes remain staged for review; this never overwrites live records.
+  useEffect(() => {
+    if (!activeUser || !activeCompany) return;
+    let disposed = false;
+    let lastAttemptAt = 0;
+
+    const runForegroundSync = async () => {
+      if (disposed || document.visibilityState === 'hidden' || navigator.onLine === false) return;
+      if (Date.now() - lastAttemptAt < 60_000) return;
+      lastAttemptAt = Date.now();
+      try {
+        await runGoogleDriveSyncCycle({ allowAndroidReauthorization: false });
+      } catch (error) {
+        // Keep the app usable offline; the Sync Status screen and manual Sync Now
+        // provide the detailed error and retry path.
+        console.warn('Automatic Google Drive foreground sync did not complete:', error);
+      }
+    };
+
+    void runForegroundSync();
+    const handleVisible = () => {
+      if (document.visibilityState === 'visible') void runForegroundSync();
+    };
+
+    // Best-effort Windows desktop sync while the app is minimized.
+    // Electron keeps this renderer alive while its window is minimized; this
+    // timer does not run after the application is fully exited.
+    const isWindowsDesktop = typeof window !== 'undefined' &&
+      Boolean((window as Window & { electronAPI?: { googleOAuth?: unknown } }).electronAPI?.googleOAuth);
+    const runMinimizedWindowsSync = async () => {
+      if (disposed || !isWindowsDesktop || navigator.onLine === false) return;
+      try {
+        await runGoogleDriveSyncCycle({ allowAndroidReauthorization: false });
+      } catch (error) {
+        console.warn('Scheduled minimized Windows Google Drive sync did not complete:', error);
+      }
+    };
+    const backgroundSyncTimer = isWindowsDesktop
+      ? window.setInterval(() => { void runMinimizedWindowsSync(); }, 15 * 60 * 1000)
+      : undefined;
+
+    window.addEventListener('focus', runForegroundSync);
+    window.addEventListener('online', runForegroundSync);
+    document.addEventListener('visibilitychange', handleVisible);
+    window.addEventListener('pageshow', runForegroundSync);
+
+    return () => {
+      disposed = true;
+      if (backgroundSyncTimer !== undefined) window.clearInterval(backgroundSyncTimer);
+      window.removeEventListener('focus', runForegroundSync);
+      window.removeEventListener('online', runForegroundSync);
+      document.removeEventListener('visibilitychange', handleVisible);
+      window.removeEventListener('pageshow', runForegroundSync);
+    };
+  }, [activeUser?.id, activeCompany?.id]);
 
   // Mobile Bottom Sheet for Case Categories
   const [mobileCasesSheetOpen, setMobileCasesSheetOpen] = useState(false);
@@ -351,7 +409,7 @@ const MainAppContent: React.FC = () => {
       currentPage !== 'dashboard'
   );
 
-  const handleOpenSettings = (tab: 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup' = 'chambers') => {
+  const handleOpenSettings = (tab: 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup' | 'sync' = 'chambers') => {
     setSettingsTab(tab);
     setSettingsOpen(true);
     pushHistoryState({ modal: 'settings', tab });

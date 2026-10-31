@@ -69,7 +69,7 @@ interface SidebarProps {
   onNavigate: (page: NavPage) => void;
   isOpen: boolean;
   onClose: () => void;
-  onOpenSettings: (tab?: 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup') => void;
+  onOpenSettings: (tab?: 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup' | 'sync') => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({

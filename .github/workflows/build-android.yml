@@ -45,6 +45,12 @@ jobs:
       - name: Install project dependencies
         run: npm install --legacy-peer-deps
 
+      - name: Type-check TypeScript
+        run: npm run lint
+
+      - name: Test sync journal safety
+        run: npm test
+
       - name: Build web application
         run: npm run build
 
@@ -54,6 +60,55 @@ jobs:
             npx cap add android
           fi
           npx cap sync android
+
+      - name: Set Android minimum supported SDK
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          path = Path("android/variables.gradle")
+          if not path.exists():
+              raise SystemExit("Capacitor variables.gradle was not generated; refusing to build with an unknown Android minimum SDK.")
+          content = path.read_text()
+          match = re.search(r"(minSdkVersion\s*=\s*)(\d+)", content)
+          if not match:
+              raise SystemExit("Could not find minSdkVersion in android/variables.gradle.")
+          current = int(match.group(2))
+          if current < 24:
+              content = content[:match.start(2)] + "24" + content[match.end(2):]
+              path.write_text(content)
+          print(f"Android minimum SDK: {max(current, 24)} (Android 7.0 or later)")
+          PY
+
+      - name: Compile native sync-store instrumentation tests
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew :srk-capacitor-sync-state:assembleDebugAndroidTest --no-daemon
+
+      - name: Run native sync-store instrumentation tests on Android Emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          emulator-boot-timeout: 900
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -wipe-data
+          disable-animations: true
+          working-directory: android
+          script: |
+            ./gradlew :srk-capacitor-sync-state:connectedDebugAndroidTest --no-daemon --stacktrace; test_status=$?; echo "===== Connected Android devices ====="; adb devices -l || true; echo "===== Emulator crash diagnostics ====="; adb -s emulator-5554 logcat -b all -d -v time | grep -E "FATAL EXCEPTION|AndroidRuntime|am_crash|am_anr|INSTRUMENTATION|Process .* died|Fatal signal|keystore|SyncStateDatabase|TestRunner" | tail -n 400 || true; exit "$test_status"
+
+      - name: Upload Android instrumentation test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SRK-Case-Manager-Android-Instrumentation-Reports
+          path: |
+            capacitor-sync-state/android/build/reports/androidTests/connected/debug
+            capacitor-sync-state/android/build/outputs/androidTest-results/connected/debug
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Set Android version
         shell: bash
