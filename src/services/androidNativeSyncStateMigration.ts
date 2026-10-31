@@ -98,11 +98,33 @@ export async function runLegacyAndroidSyncStateMigration(
       finalSourceSnapshot[index]?.key === item.key && finalSourceSnapshot[index]?.value === item.value,
     );
   if (!sourceStillUnchanged) {
-    const removed = await nativeStore.removeItems({ keys: [MIGRATION_MARKER] });
-    const markerAfterRollback = await nativeStore.getItems({ keys: [MIGRATION_MARKER] });
-    if (removed.removed !== 1 || markerAfterRollback.items.some(item => item.key === MIGRATION_MARKER && item.value === '1')) {
+    // Removal is best-effort: a native database error must not prevent the
+    // fallback invalidation attempt, because a stale '1' marker suppresses retry.
+    let markerMayStillBeComplete = true;
+    try {
+      const removed = await nativeStore.removeItems({ keys: [MIGRATION_MARKER] });
+      markerMayStillBeComplete = removed.removed !== 1;
+    } catch {
+      markerMayStillBeComplete = true;
+    }
+
+    try {
+      const markerAfterRollback = await nativeStore.getItems({ keys: [MIGRATION_MARKER] });
+      markerMayStillBeComplete ||= markerAfterRollback.items.some(
+        item => item.key === MIGRATION_MARKER && item.value === '1',
+      );
+    } catch {
+      markerMayStillBeComplete = true;
+    }
+
+    if (markerMayStillBeComplete) {
       // An invalid completion marker must never be allowed to suppress retry.
-      await nativeStore.setItems({ items: [{ key: MIGRATION_MARKER, value: '0' }] });
+      // Even if setItems reports an error after committing, verify the final state.
+      try {
+        await nativeStore.setItems({ items: [{ key: MIGRATION_MARKER, value: '0' }] });
+      } catch {
+        // Read-back below decides whether the marker is actually safe.
+      }
       const invalidated = await nativeStore.getItems({ keys: [MIGRATION_MARKER] });
       if (invalidated.items.some(item => item.key === MIGRATION_MARKER && item.value === '1')) {
         throw new Error('Migration source changed during completion and the marker could not be invalidated.');
