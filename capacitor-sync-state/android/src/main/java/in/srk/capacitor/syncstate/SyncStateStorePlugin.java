@@ -67,7 +67,7 @@ public class SyncStateStorePlugin extends Plugin {
             List<SyncStateDatabase.SyncStateEntry> entries = new ArrayList<>();
             java.util.Set<String> uniqueKeys = new java.util.HashSet<>();
             for (int i = 0; i < requested.length(); i++) {
-                JSObject item = requested.getJSObject(i);
+                JSObject item = JSObject.fromJSONObject(requested.getJSONObject(i));
                 if (item == null) {
                     call.reject("Invalid sync-state entry.");
                     return;
