@@ -21,6 +21,7 @@ import { CashBankRegister } from './components/CashBankRegister';
 import { FinancialReports } from './components/FinancialReports';
 import { CaseDetailModal } from './components/CaseDetailModal';
 import { BackupModal } from './components/BackupModal';
+import { runGoogleDriveSyncCycle } from './services/googleDriveSyncRunner';
 import { ViewingOptionsModal } from './components/ViewingOptionsModal';
 import { ChainDeedModal } from './components/ChainDeedModal';
 import { BackupPathModal } from './components/BackupPathModal';
@@ -81,6 +82,44 @@ const MainAppContent: React.FC = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup' | 'sync'>('chambers');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Automatically sync when the app starts or returns to the foreground.
+  // Incoming changes remain staged for review; this never overwrites live records.
+  useEffect(() => {
+    if (!activeUser || !activeCompany) return;
+    let disposed = false;
+    let lastAttemptAt = 0;
+
+    const runForegroundSync = async () => {
+      if (disposed || document.visibilityState === 'hidden' || navigator.onLine === false) return;
+      if (Date.now() - lastAttemptAt < 60_000) return;
+      lastAttemptAt = Date.now();
+      try {
+        await runGoogleDriveSyncCycle({ allowAndroidReauthorization: false });
+      } catch (error) {
+        // Keep the app usable offline; the Sync Status screen and manual Sync Now
+        // provide the detailed error and retry path.
+        console.warn('Automatic Google Drive foreground sync did not complete:', error);
+      }
+    };
+
+    void runForegroundSync();
+    const handleVisible = () => {
+      if (document.visibilityState === 'visible') void runForegroundSync();
+    };
+    window.addEventListener('focus', runForegroundSync);
+    window.addEventListener('online', runForegroundSync);
+    document.addEventListener('visibilitychange', handleVisible);
+    window.addEventListener('pageshow', runForegroundSync);
+
+    return () => {
+      disposed = true;
+      window.removeEventListener('focus', runForegroundSync);
+      window.removeEventListener('online', runForegroundSync);
+      document.removeEventListener('visibilitychange', handleVisible);
+      window.removeEventListener('pageshow', runForegroundSync);
+    };
+  }, [activeUser?.id, activeCompany?.id]);
 
   // Mobile Bottom Sheet for Case Categories
   const [mobileCasesSheetOpen, setMobileCasesSheetOpen] = useState(false);
