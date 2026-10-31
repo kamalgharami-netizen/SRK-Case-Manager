@@ -78,3 +78,10 @@ Live sync is not enabled by this change. The app must not show a connected or sy
 - These are tested service foundations only. They are not connected to a sign-in screen or sync coordinator. Android native Google authorization, a verified Windows Desktop OAuth client ID, revocation/reconnect handling, folder picker configuration, and end-to-end device testing remain outstanding.
 - The Android signing keystore previously tracked at `android-keystore/srk-fixed.keystore` has now been removed from the current branch and signing-key file patterns are ignored. **This deletion does not remove the key from earlier Git commits. Treat that signing key as exposed and replace/rotate it before using it for a release.** Update the Android OAuth SHA-1 registration to match the replacement signing certificate. Never commit the replacement keystore or its passwords.
 - Latest verified GitHub Actions run for commit `e58f736e3ff873b39a4846165adb8c016477afc5`: Windows EXE, Android APK and build-status jobs all succeeded. This build preceded the keystore-removal commits; a fresh build is required to validate the latest branch state.
+
+
+## Windows OAuth client ID supplied (2026-10-31)
+
+- The project owner supplied this separate Windows Desktop OAuth client ID: `955204328722-um7epi871el2cuentnti4rq5obofh4ih.apps.googleusercontent.com`.
+- It is different from the Android OAuth client ID. The owner should ensure its Google Cloud application type is **Desktop app** and that it belongs to project `helical-crowbar-513210-p6`.
+- The ID has been recorded in the platform setup documentation. This does not yet connect the sign-in UI or enable live Google Drive sync.
