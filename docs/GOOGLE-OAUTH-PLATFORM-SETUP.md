@@ -27,9 +27,11 @@ The owner reported its package/SHA-1 registration was checked in project `helica
 
 1. In the same intended Google Cloud project, create a separate OAuth client with application type **Desktop app**.
 2. Record its client ID for the Windows build configuration. Do not put its client secret into the application; installed desktop apps are public clients and cannot keep secrets confidential.
-3. Implement the system-browser authorization-code flow with a loopback listener on a dynamically selected local port and PKCE S256.
-4. Validate the returned OAuth `state`, bind the callback to the active authorization attempt, and close the listener after success, failure, or timeout.
-5. Store any long-lived user token only through the platform secure-storage adapter. Do not log tokens or include them in sync journal records.
+3. The repository now includes Windows PKCE request primitives in `src/services/googleOAuthPkce.ts`.
+4. The Electron main process now provides a loopback callback listener bound to `127.0.0.1` on a dynamically selected port, with a fixed callback path, state validation, a three-minute timeout, and explicit cancellation.
+5. The main process opens only HTTPS authorization URLs on `accounts.google.com` in the system browser. The renderer receives a narrow preload API; it cannot choose an arbitrary URL or listener address.
+6. The callback listener is covered by Node tests for valid state, rejected state, OAuth errors, and invalid state input.
+7. The Windows Desktop client ID, end-to-end authorization-code exchange using the PKCE verifier, token expiry/revocation handling, and UI connection flow are still outstanding. Store any access token only through the platform secure-storage adapter. Do not log tokens or include them in sync journal records.
 
 ## Current implementation boundary
 
@@ -37,7 +39,7 @@ The repository now has platform-specific secure storage for short-lived access t
 - Windows: Electron `safeStorage`, exposed through restricted IPC from the trusted application window.
 - Android: Capacitor secure-storage plugin backed by Android Keystore encryption.
 
-The storage adapter is not itself an OAuth implementation. OAuth sign-in, PKCE, token expiry/refresh, revocation, and UI connection state are not yet wired. Until those parts are implemented and tested on both platforms, Google Drive must remain visibly disconnected and live sync must remain disabled.
+The storage adapter is not itself a complete OAuth implementation. Windows now has PKCE request preparation and a main-process loopback callback listener, but no verified Windows Desktop client ID or authorization-code token exchange has been configured. Android native Google authorization is also not yet implemented. Token expiry/refresh, revocation, and the UI connection state remain outstanding. Until each platform's complete sign-in and token lifecycle is implemented and tested, Google Drive must remain visibly disconnected and live sync must remain disabled.
 
 ## Authoritative Google documentation
 
