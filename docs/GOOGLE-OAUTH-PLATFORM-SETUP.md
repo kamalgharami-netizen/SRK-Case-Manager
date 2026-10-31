@@ -35,13 +35,15 @@ The owner reported its package/SHA-1 registration was checked in project `helica
 
 ## Current implementation boundary
 
-The repository now has platform-specific secure storage for short-lived access tokens:
-- Windows: Electron `safeStorage`, exposed through IPC restricted to the exact local application frame.
-- Android: Capacitor secure-storage plugin backed by Android Keystore encryption.
+The repository now has platform-specific secure storage for Google OAuth credential bundles:
+- Windows: Electron `safeStorage`, stored in a separate encrypted credentials file and exposed through IPC restricted to the exact local application frame.
+- Android: Capacitor secure-storage plugin backed by Android Keystore encryption, using a dedicated credential key.
+- Credential bundles are validated before storage and retrieval. The adapter does not put refresh tokens in app state, localStorage, Drive files, logs, or the sync journal.
+- The previous short-lived access-token storage API remains separate for compatibility.
 
 The Windows OAuth callback listener is included in the packaged EXE. It binds only to `127.0.0.1`, uses a dynamically assigned port and fixed callback path, validates the per-request state, times out, and is cancelled when the app closes. Its tests are part of the project test command.
 
-The storage adapter is not itself a complete OAuth implementation. Windows now has PKCE request preparation, a main-process loopback callback listener, and a tested public-client token exchange/refresh module. No verified Windows Desktop client ID is configured, and secure persistence of the complete access/refresh credential bundle is not yet implemented. Android native Google authorization is also not yet implemented. Expiry scheduling, revocation, and the UI connection state remain outstanding. Until each platform's complete sign-in and token lifecycle is implemented and tested, Google Drive must remain visibly disconnected and live sync must remain disabled.
+The storage adapter is not itself a complete OAuth implementation. Windows now has PKCE request preparation, a main-process loopback callback listener, a tested public-client token exchange/refresh module, and OS-encrypted storage for the complete access/refresh credential bundle. No verified Windows Desktop client ID is configured. Android native Google authorization is also not yet implemented. Expiry scheduling, revocation, and the UI connection state remain outstanding. Until each platform's complete sign-in and token lifecycle is implemented and tested, Google Drive must remain visibly disconnected and live sync must remain disabled.
 
 ## Authoritative Google documentation
 
