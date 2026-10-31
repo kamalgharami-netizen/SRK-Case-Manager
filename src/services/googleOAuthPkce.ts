@@ -78,6 +78,10 @@ export async function createWindowsGooglePkceRequest(options: {
     code_challenge: codeChallenge,
     code_challenge_method: 'S256',
     state,
+    access_type: 'offline',
+    prompt: 'consent',
+    trigger_onepick: 'true',
+    allow_folder_selection: 'true',
   }).toString();
 
   return { authorizationUrl: url.toString(), state, codeVerifier };
