@@ -152,3 +152,46 @@ test('completed migration marker makes retries idempotent', async () => {
   assert.deepEqual(result, { status: 'already-migrated', copied: 0 });
   assert.equal(nativeStore.values.has('srk_sync_journal_v1'), false);
 });
+
+
+test('migration rejects more than 500 legacy entries before writing anything', async () => {
+  const entries: Array<[string, string]> = Array.from(
+    { length: 501 },
+    (_, index) => [`srk_drive_sync_page_token_v1_${index.toString().padStart(3, '0')}`, `token-${index}`],
+  );
+  const storage = new MemoryStorage(entries);
+  const nativeStore = new MemoryNativeStore();
+
+  await assert.rejects(
+    runLegacyAndroidSyncStateMigration(storage as unknown as Storage, nativeStore),
+    /Too many legacy sync-state entries/,
+  );
+  assert.equal(nativeStore.values.size, 0);
+});
+
+test('migration rejects an incomplete native batch write and does not set the marker', async () => {
+  const storage = new MemoryStorage([
+    ['srk_sync_journal_v1', 'journal-data'],
+    ['srk_sync_inbox_v1', 'inbox-data'],
+  ]);
+  const nativeStore = new MemoryNativeStore();
+  nativeStore.setItems = async ({ items }) => ({ saved: items.length - 1 });
+
+  await assert.rejects(
+    runLegacyAndroidSyncStateMigration(storage as unknown as Storage, nativeStore),
+    /did not save every entry/,
+  );
+  assert.equal(nativeStore.values.has('srk_native_sync_state_migration_v1'), false);
+});
+
+test('migration rejects completion when the marker cannot be read back', async () => {
+  const storage = new MemoryStorage([['srk_sync_journal_v1', 'journal-data']]);
+  const nativeStore = new MemoryNativeStore();
+  nativeStore.omitReadBackKeys.add('srk_native_sync_state_migration_v1');
+
+  await assert.rejects(
+    runLegacyAndroidSyncStateMigration(storage as unknown as Storage, nativeStore),
+    /marker could not be verified/,
+  );
+  assert.equal(nativeStore.values.has('srk_native_sync_state_migration_v1'), true);
+});
