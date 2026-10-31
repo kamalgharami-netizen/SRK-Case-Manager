@@ -89,11 +89,11 @@ jobs:
       - name: Run native sync-store instrumentation tests on Android Emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
-          target: google_atd
+          api-level: 34
+          target: google_apis
           arch: x86_64
           emulator-boot-timeout: 900
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -wipe-data -memory 4096 -cores 4
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -wipe-data
           disable-animations: true
           working-directory: android
           script: |
