@@ -66,3 +66,35 @@ test('rejects malformed token response and never exposes response body in errors
     return true;
   });
 });
+
+
+test('rejects non-loopback or altered callback redirect URIs before network access', async () => {
+  let requested = false;
+  const fetcher = async () => {
+    requested = true;
+    return response({ access_token: 'access', token_type: 'Bearer', expires_in: 3600 });
+  };
+  await assert.rejects(() => exchangeGoogleAuthorizationCode({
+    clientId: 'desktop-client-id', code: 'code', codeVerifier: 'v'.repeat(64),
+    redirectUri: 'https://example.com/oauth2callback', fetcher,
+  }), /registered HTTP loopback callback/);
+  await assert.rejects(() => exchangeGoogleAuthorizationCode({
+    clientId: 'desktop-client-id', code: 'code', codeVerifier: 'v'.repeat(64),
+    redirectUri: 'http://127.0.0.1:43121/other', fetcher,
+  }), /registered HTTP loopback callback/);
+  assert.equal(requested, false);
+});
+
+test('rejects malformed PKCE verifier and unsafe expiry timestamps', async () => {
+  const fetcher = async () => response({
+    access_token: 'access', token_type: 'Bearer', expires_in: 3600,
+  });
+  await assert.rejects(() => exchangeGoogleAuthorizationCode({
+    clientId: 'desktop-client-id', code: 'code', codeVerifier: 'not-a-valid-verifier',
+    redirectUri: 'http://127.0.0.1:43121/oauth2callback', fetcher,
+  }), /Invalid Google authorization-code exchange parameters/);
+  await assert.rejects(() => refreshGoogleAccessToken({
+    clientId: 'desktop-client-id', refreshToken: 'refresh', now: Number.MAX_SAFE_INTEGER + 1,
+    fetcher,
+  }), /valid current timestamp/);
+});
