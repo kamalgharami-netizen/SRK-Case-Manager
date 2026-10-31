@@ -80,6 +80,12 @@ jobs:
           print(f"Android minimum SDK: {max(current, 24)} (Android 7.0 or later)")
           PY
 
+      - name: Compile native sync-store instrumentation tests
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebugAndroidTest --no-daemon
+
       - name: Set Android version
         shell: bash
         run: |
