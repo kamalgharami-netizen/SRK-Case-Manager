@@ -101,7 +101,7 @@ jobs:
             ./gradlew :srk-capacitor-sync-state:connectedDebugAndroidTest --no-daemon --stacktrace
             test_status=$?
             echo "===== Android emulator crash diagnostics ====="
-            adb logcat -d -v time | grep -E "FATAL EXCEPTION|AndroidRuntime|am_crash|am_anr|INSTRUMENTATION|Process .* died|Fatal signal|keystore|SyncStateDatabase" | tail -n 250 || true
+            echo "===== Connected Android devices ====="\n            adb devices -l || true\n            echo "===== Emulator crash diagnostics ====="\n            adb -s emulator-5554 logcat -b all -d -v time | grep -E "FATAL EXCEPTION|AndroidRuntime|am_crash|am_anr|INSTRUMENTATION|Process .* died|Fatal signal|keystore|SyncStateDatabase|TestRunner" | tail -n 400 || true
             exit "$test_status"
 
       - name: Upload Android instrumentation test reports
