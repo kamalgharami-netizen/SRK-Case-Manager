@@ -15,7 +15,7 @@
     "dist:win": "npm run build && electron-builder --win nsis --publish never",
     "cap:sync": "cap sync",
     "cap:android": "cap open android",
-    "test": "node --import tsx --test googleOAuthLoopback.test.cjs src/services/googleOAuthTokenClient.test.ts src/services/syncJournal.test.ts src/services/companyChangeTracker.test.ts src/services/googleDriveSyncTransport.test.ts src/services/googleDriveSyncInbox.test.ts src/services/applySyncChanges.test.ts src/services/applyStagedInboxChanges.test.ts"
+    "test": "node --import tsx --test googleOAuthLoopback.test.cjs src/services/googleOAuthTokenClient.test.ts src/services/googleOAuthSession.test.ts src/services/syncJournal.test.ts src/services/companyChangeTracker.test.ts src/services/googleDriveSyncTransport.test.ts src/services/googleDriveSyncInbox.test.ts src/services/applySyncChanges.test.ts src/services/applyStagedInboxChanges.test.ts"
   },
   "dependencies": {
     "@capacitor/android": "^7.0.0",
