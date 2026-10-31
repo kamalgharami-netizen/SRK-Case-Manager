@@ -14,7 +14,7 @@ test("accepts a callback only when the OAuth state matches", async () => {
 
   const accepted = await fetch(`${redirectUri}?code=auth-code-123&state=${encodeURIComponent(STATE)}`);
   assert.equal(accepted.status, 200);
-  assert.deepEqual(await wait, { code: "auth-code-123" });
+  assert.deepEqual(await wait, { code: "auth-code-123", pickedFileIds: [] });
   listener.close();
 });
 
@@ -36,4 +36,24 @@ test("rejects a missing or short OAuth state before opening a listener", () => {
     () => createGoogleOAuthLoopbackListener({ expectedState: "short" }),
     /valid OAuth state/
   );
+});
+
+test("returns selected Drive item IDs from the Picker callback", async () => {
+  const listener = createGoogleOAuthLoopbackListener({ expectedState: STATE });
+  const { redirectUri } = await listener.ready;
+  const wait = listener.waitForCallback();
+  const response = await fetch(`${redirectUri}?code=picker-code&picked_file_ids=folder_123,folder-456&state=${encodeURIComponent(STATE)}`);
+  assert.equal(response.status, 200);
+  assert.deepEqual(await wait, { code: "picker-code", pickedFileIds: ["folder_123", "folder-456"] });
+  listener.close();
+});
+
+test("rejects malformed Picker item IDs", async () => {
+  const listener = createGoogleOAuthLoopbackListener({ expectedState: STATE });
+  const { redirectUri } = await listener.ready;
+  const wait = listener.waitForCallback();
+  const response = await fetch(`${redirectUri}?code=picker-code&picked_file_ids=folder%2Fbad&state=${encodeURIComponent(STATE)}`);
+  assert.equal(response.status, 400);
+  listener.close();
+  await assert.rejects(wait, /cancelled/);
 });
