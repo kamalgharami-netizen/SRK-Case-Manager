@@ -31,19 +31,20 @@ export function collectLegacyAndroidSyncState(storage: Pick<Storage, 'length' | 
   return entries.sort((a, b) => a.key.localeCompare(b.key));
 }
 
-/**
- * Copies legacy WebView sync metadata into native SQLite without deleting or
- * changing any source key. Safe to retry after process death: writes are
- * idempotent and the migration marker is stored only after read-back matches.
- *
- * This function is deliberately not wired into the live sync path yet.
- */
-export async function migrateLegacyAndroidSyncState(
-  storage: Storage = localStorage,
-): Promise<AndroidSyncStateMigrationResult> {
-  if (Capacitor.getPlatform() !== 'android') return { status: 'not-android' };
+export interface NativeSyncStateMigrationStore {
+  getItems(options: { keys: string[] }): Promise<{ items: NativeSyncStateEntry[] }>;
+  setItems(options: { items: NativeSyncStateEntry[] }): Promise<{ saved: number }>;
+}
 
-  const marker = await SyncStateStore.getItems({ keys: [MIGRATION_MARKER] });
+/**
+ * Performs migration against an injected store so recovery behavior can be
+ * tested without requiring an Android device.
+ */
+export async function runLegacyAndroidSyncStateMigration(
+  storage: Pick<Storage, 'length' | 'key' | 'getItem'>,
+  nativeStore: NativeSyncStateMigrationStore,
+): Promise<AndroidSyncStateMigrationResult> {
+  const marker = await nativeStore.getItems({ keys: [MIGRATION_MARKER] });
   if (marker.items.some(item => item.key === MIGRATION_MARKER && item.value === '1')) {
     return { status: 'already-migrated', copied: 0 };
   }
@@ -54,13 +55,13 @@ export async function migrateLegacyAndroidSyncState(
   }
 
   if (snapshot.length) {
-    const saved = await SyncStateStore.setItems({ items: snapshot });
+    const saved = await nativeStore.setItems({ items: snapshot });
     if (saved.saved !== snapshot.length) {
       throw new Error('Native sync-state migration did not save every entry.');
     }
   }
 
-  const readBack = await SyncStateStore.getItems({ keys: snapshot.map(item => item.key) });
+  const readBack = await nativeStore.getItems({ keys: snapshot.map(item => item.key) });
   const values = new Map(readBack.items.map(item => [item.key, item.value]));
   const verified = snapshot.every(item => values.get(item.key) === item.value);
   const unchanged = snapshot.every(item => storage.getItem(item.key) === item.value);
@@ -68,11 +69,23 @@ export async function migrateLegacyAndroidSyncState(
     return { status: 'retry-required', copied: snapshot.length };
   }
 
-  await SyncStateStore.setItems({ items: [{ key: MIGRATION_MARKER, value: '1' }] });
-  const finalCheck = await SyncStateStore.getItems({ keys: [MIGRATION_MARKER] });
+  await nativeStore.setItems({ items: [{ key: MIGRATION_MARKER, value: '1' }] });
+  const finalCheck = await nativeStore.getItems({ keys: [MIGRATION_MARKER] });
   if (!finalCheck.items.some(item => item.key === MIGRATION_MARKER && item.value === '1')) {
     throw new Error('Native sync-state migration marker could not be verified.');
   }
 
   return { status: 'migrated', copied: snapshot.length };
+}
+
+
+/**
+ * Android-only entry point. This remains deliberately unwired from live sync
+ * until physical-device migration and recovery tests are completed.
+ */
+export async function migrateLegacyAndroidSyncState(
+  storage: Storage = localStorage,
+): Promise<AndroidSyncStateMigrationResult> {
+  if (Capacitor.getPlatform() !== 'android') return { status: 'not-android' };
+  return runLegacyAndroidSyncStateMigration(storage, SyncStateStore);
 }
