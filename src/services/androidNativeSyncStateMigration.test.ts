@@ -212,3 +212,30 @@ test('migration retries when a new allowlisted key appears during the native cop
   assert.equal(nativeStore.values.has('srk_native_sync_state_migration_v1'), false);
   assert.equal(storage.getItem('srk_sync_inbox_v1'), 'added-during-migration');
 });
+
+
+test('migration rejects a native key longer than 256 characters before writing', async () => {
+  const longKey = 'srk_drive_sync_page_token_v1_' + 'x'.repeat(256);
+  const storage = new MemoryStorage([[longKey, 'page-token']]);
+  const nativeStore = new MemoryNativeStore();
+
+  await assert.rejects(
+    runLegacyAndroidSyncStateMigration(storage as unknown as Storage, nativeStore),
+    /exceeds the native store size limits/,
+  );
+  assert.equal(nativeStore.values.size, 0);
+  assert.equal(storage.getItem(longKey), 'page-token');
+});
+
+test('migration rejects a native value larger than 2 MiB before writing', async () => {
+  const oversizedValue = 'x'.repeat(2 * 1024 * 1024 + 1);
+  const storage = new MemoryStorage([['srk_sync_journal_v1', oversizedValue]]);
+  const nativeStore = new MemoryNativeStore();
+
+  await assert.rejects(
+    runLegacyAndroidSyncStateMigration(storage as unknown as Storage, nativeStore),
+    /exceeds the native store size limits/,
+  );
+  assert.equal(nativeStore.values.size, 0);
+  assert.equal(storage.getItem('srk_sync_journal_v1'), oversizedValue);
+});
