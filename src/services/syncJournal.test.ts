@@ -77,6 +77,29 @@ test('conflicts are persisted, deduplicated and can be resolved explicitly', () 
   assert.equal(journal.resolveConflict(local.recordId, local.changeId, remote.changeId), false);
 });
 
+test('choosing the local version also replaces rather than duplicates its original outbox entry', () => {
+  const journal = new SyncJournal<{ title: string }>(new MemoryStorage());
+  const local = change();
+  const remote = change({
+    deviceId: 'device_2234567890123456',
+    changeId: 'change_2234567890123456',
+    payload: { title: 'Remote edit' },
+  });
+  journal.enqueue(local);
+  journal.saveConflicts([{ recordId: local.recordId, local, remote }]);
+
+  assert.equal(journal.resolveConflictAndQueue(
+    local.recordId, local.changeId, remote.changeId,
+    'local', 'device_3234567890123456', 600
+  ), true);
+
+  const pending = journal.getPending();
+  assert.equal(pending.length, 1);
+  assert.equal(pending[0].payload?.title, 'Case title');
+  assert.notEqual(pending[0].changeId, local.changeId);
+  assert.equal(journal.getConflicts().length, 0);
+});
+
 test('resolving a conflict queues the selected version as a new local change', () => {
   const journal = new SyncJournal<{ title: string }>(new MemoryStorage());
   const local = change();
