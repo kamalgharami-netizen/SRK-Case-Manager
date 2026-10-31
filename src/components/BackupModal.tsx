@@ -1358,7 +1358,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
 <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 space-y-1">
   <div className="font-bold text-xs text-amber-900 dark:text-amber-300">Folder selection is ready; live sync is not active</div>
   <p className="text-xs text-amber-900/80 dark:text-amber-200/80">
-    The selected folder is saved on this device. Drive upload/download coordination, conflict approval, automatic sync and conflict approval are still pending. Local records remain on this device; no automatic upload or download is running.
+    The selected folder is saved on this device. Drive upload/download coordination, automatic sync and conflict approval are still pending. Local records remain on this device; no automatic upload or download is running.
   </p>
 </div>
               </div>
