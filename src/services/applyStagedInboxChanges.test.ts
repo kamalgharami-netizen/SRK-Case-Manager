@@ -28,6 +28,26 @@ test('persists approved staged changes before acknowledging inbox entries', () =
   assert.deepEqual(saved.value?.[0].cases, [{ id: 'c1', title: 'Remote case' }]);
 });
 
+test('acknowledges applied record deletions after persistence', () => {
+  const inbox = new SyncInbox<unknown>(new MemoryStorage());
+  inbox.add([{
+    ...change,
+    changeId: 'delete_case_change',
+    deleted: true,
+    payload: null,
+  }]);
+  let saved: Array<{ id: string; cases: unknown[] }> = [];
+  const result = applyStagedInboxChanges(
+    [{ id: 'company1', cases: [{ id: 'c1', title: 'Old case' }] }],
+    inbox,
+    companies => { saved = companies as Array<{ id: string; cases: unknown[] }>; }
+  );
+  assert.deepEqual(saved[0].cases, []);
+  assert.equal(result.applied, 1);
+  assert.equal(result.acknowledged, 1);
+  assert.equal(result.remaining, 0);
+});
+
 test('keeps staged entries when persistence fails', () => {
   const inbox = new SyncInbox<unknown>(new MemoryStorage());
   inbox.add([change]);
