@@ -30,6 +30,10 @@ test('builds a Windows authorization request with caller-matched state and PKCE 
   assert.equal(url.searchParams.get('response_type'), 'code');
   assert.equal(url.searchParams.get('code_challenge_method'), 'S256');
   assert.equal(url.searchParams.get('state'), state);
+  assert.equal(url.searchParams.get('access_type'), 'offline');
+  assert.equal(url.searchParams.get('prompt'), 'consent');
+  assert.equal(url.searchParams.get('trigger_onepick'), 'true');
+  assert.equal(url.searchParams.get('allow_folder_selection'), 'true');
   assert.match(url.searchParams.get('code_challenge') || '', /^[A-Za-z0-9_-]{43}$/);
   assert.match(request.codeVerifier, /^[A-Za-z0-9_-]{86}$/);
 });
