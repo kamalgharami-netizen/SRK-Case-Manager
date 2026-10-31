@@ -54,6 +54,7 @@ import {
 import { getValidWindowsGoogleDriveCredentials } from '../services/googleDriveWindowsAuth';
 import { getValidAndroidGoogleDriveCredentials } from '../services/googleDriveAndroidAuth';
 import { SyncJournal } from '../services/syncJournal';
+import type { SyncConflict } from '../services/driveSyncProtocol';
 import { SyncInbox } from '../services/googleDriveSyncInbox';
 import { syncGoogleDriveNow } from '../services/googleDriveSyncCoordinator';
 
@@ -121,7 +122,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     language,
     t,
     mergeExternalData,
-    triggerAutoDataMerge
+    triggerAutoDataMerge,
+    resolveSyncConflict
   } = useApp();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -136,6 +138,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   const [selectedDriveFolder, setSelectedDriveFolder] = useState<SelectedGoogleDriveFolder | null>(null);
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
+  const [syncConflicts, setSyncConflicts] = useState<SyncConflict<unknown>[]>([]);
 
   const refreshSyncCounts = () => {
     try {
@@ -145,7 +148,9 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         const parsed = JSON.parse(raw);
         return Array.isArray(parsed?.[field]) ? parsed[field].length : 0;
       };
-      setSyncCounts({ pending: readCount('srk_sync_journal_v1', 'pending'), staged: readCount('srk_sync_inbox_v1', 'changes'), conflicts: readCount('srk_sync_conflicts_v1', 'conflicts'), error: false });
+      const conflicts = new SyncJournal<unknown>(localStorage).getConflicts();
+      setSyncConflicts(conflicts);
+      setSyncCounts({ pending: readCount('srk_sync_journal_v1', 'pending'), staged: readCount('srk_sync_inbox_v1', 'changes'), conflicts: conflicts.length, error: false });
     } catch {
       setSyncCounts(previous => ({ ...previous, error: true }));
     }
@@ -1366,6 +1371,39 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                 </button>
               </div>
               {syncMessage && <div className="p-3 rounded-lg border border-sky-200 dark:border-sky-900 bg-sky-50 dark:bg-sky-950/30 text-xs text-sky-900 dark:text-sky-200">{syncMessage}</div>}
+              {syncConflicts.length > 0 && (
+                <div className="p-4 rounded-xl border border-amber-300 dark:border-amber-800 space-y-3">
+                  <div>
+                    <div className="font-bold text-sm text-amber-900 dark:text-amber-200">Conflict Review</div>
+                    <p className="text-xs text-slate-500 mt-1">The same record was changed on more than one device. Compare both versions and choose which version should be kept. Your choice is queued as a new sync change.</p>
+                  </div>
+                  {syncConflicts.map((conflict) => (
+                    <div key={`${conflict.recordId}:${conflict.local.changeId}:${conflict.remote.changeId}`} className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 space-y-3">
+                      <div className="text-xs font-bold break-all">Record: {conflict.recordId} · Company: {conflict.local.companyId}</div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="min-w-0 space-y-1">
+                          <div className="text-xs font-bold text-sky-700 dark:text-sky-300">LOCAL VERSION</div>
+                          <div className="text-[10px] text-slate-500 break-all">Device: {conflict.local.deviceId} · {new Date(conflict.local.updatedAt).toLocaleString()}</div>
+                          <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-slate-100 dark:bg-slate-900 p-2 text-[10px]">{JSON.stringify(conflict.local.deleted ? '[Record deleted]' : conflict.local.payload, null, 2)?.slice(0, 1600)}</pre>
+                          <button type="button" onClick={() => {
+                            if (!window.confirm('Keep the LOCAL version for this record and queue it for synchronisation?')) return;
+                            if (resolveSyncConflict(conflict, 'local')) refreshSyncCounts();
+                          }} className="px-3 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold">Keep Local Version</button>
+                        </div>
+                        <div className="min-w-0 space-y-1">
+                          <div className="text-xs font-bold text-emerald-700 dark:text-emerald-300">REMOTE VERSION</div>
+                          <div className="text-[10px] text-slate-500 break-all">Device: {conflict.remote.deviceId} · {new Date(conflict.remote.updatedAt).toLocaleString()}</div>
+                          <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-slate-100 dark:bg-slate-900 p-2 text-[10px]">{JSON.stringify(conflict.remote.deleted ? '[Record deleted]' : conflict.remote.payload, null, 2)?.slice(0, 1600)}</pre>
+                          <button type="button" onClick={() => {
+                            if (!window.confirm('Use the REMOTE version on this device and queue it for synchronisation? This will update the local record.')) return;
+                            if (resolveSyncConflict(conflict, 'remote')) refreshSyncCounts();
+                          }} className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold">Use Remote Version</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div>
