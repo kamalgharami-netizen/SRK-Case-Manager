@@ -22,7 +22,7 @@
 - The adapter is not yet connected to the UI or AppContext; it cannot initiate sign-in or background sync by itself.
 - Added `src/services/syncJournal.ts`: an append-only local outbox, bounded pending reads, exact-ID acknowledgements, and persistent conflict records/resolution. Corrupt or unsupported journal data fails closed and is not overwritten.
 - Added `src/services/syncJournal.test.ts` with Node's built-in test runner. It covers idempotent enqueue, selective acknowledgements, invalid-entry rejection, fail-closed handling of corrupt data, and explicit conflict resolution. `npm test` is included in the Android validation workflow.
-- Added `src/services/googleDriveSyncTransport.ts`: it pushes bounded outbox batches to a user-selected Drive folder as immutable one-change-per-file JSON records. Deterministic file names make retries idempotent; local entries are acknowledged only after an existing matching file is found or an upload succeeds. Failed requests leave pending entries intact. This is a transport primitive only; OAuth, remote download/merge, and UI folder selection are not yet connected.
+- Added `src/services/googleDriveSyncTransport.ts`: it pushes bounded outbox batches to a user-selected Drive folder as immutable one-change-per-file JSON records. Deterministic file names make retries idempotent; local entries are acknowledged only after an existing matching file is found or an upload succeeds. Failed requests leave pending entries intact. This remains a transport primitive; Windows OAuth and official folder selection are now connected, but the transport is not yet called by a live sync coordinator.
 - Added `src/services/googleDriveSyncTransport.test.ts` covering successful upload/acknowledgement, retry detection, failed-upload retention, and mandatory folder selection. The test script includes all three sync test files.
 - Added `src/services/companyChangeTracker.ts` and wired it into `AppContext`: local company profile changes, supported record collection additions/edits/deletions, diary entry changes, and workspace deletion are converted into record-level outbox envelopes. User credentials, messages, activity logs, and UI preferences are deliberately excluded. Journal failures are logged without blocking normal offline use.
 - Added `src/services/companyChangeTracker.test.ts` for additions/edits, deletion tombstones, nested diary changes, workspace deletion, credential exclusion, and envelope creation. `npm test` now runs both sync test files.
@@ -30,14 +30,12 @@
 
 ## Still required before live Google Drive sync can be enabled
 
-1. Confirm that the Google Drive API and Google Picker API are enabled in the same Google Cloud project used by the app's OAuth configuration.
-2. Obtain the project number (Picker App ID) and a restricted API key for Google Picker.
-3. Complete Android native Google authorization; Windows system-browser OAuth with PKCE is now wired to Settings > Sync Status but still needs packaged-EXE testing.
-4. Complete and test the secure credential lifecycle on each platform. Client secrets and refresh tokens must never be embedded in Vite assets, APKs, EXEs, or source control.
-5. Implement Drive folder selection / official Picker and connect the Drive REST adapter to a user-controlled sync screen. Add pagination, retry and incremental transfer coordination.
-6. Wire the new journal into every local record mutation and deletion, with migration/recovery tests. Do not upload or replace the complete local database as one last-write-wins file.
-7. Add user-visible sync status, manual sync, notifications and recovery controls.
-8. Run Android APK and Windows EXE builds and test on actual devices, including offline operation, concurrent edits, deletion, reinstall and recovery.
+1. Complete Android native Google authorization and test the Windows OAuth + Desktop/Mobile Picker flow in the packaged EXE.
+2. Complete and test the secure credential lifecycle on each platform. Client secrets and refresh tokens must never be embedded in Vite assets, APKs, EXEs, or source control.
+3. Connect the selected Drive folder and Drive REST adapter to a user-controlled sync coordinator. Add pagination, retry and incremental transfer coordination.
+4. Wire the journal into every local record mutation and deletion, with migration/recovery tests. Do not upload or replace the complete local database as one last-write-wins file.
+5. Add user-visible sync status, manual sync, notifications and recovery controls.
+6. Run Android APK and Windows EXE builds and test on actual devices, including offline operation, concurrent edits, deletion, reinstall and recovery.
 
 ## Safety status
 
@@ -93,4 +91,12 @@ Live sync is not enabled by this change. The app must not show a connected or sy
 - Added the Windows sign-in orchestration service and connected it to Settings > Sync Status.
 - Google credentials are stored using the existing secure credential-bundle adapter; disconnect removes only this app's locally stored credentials and does not delete any Drive files.
 - This stage completes Windows account authorization wiring only. It does not choose a Drive folder, perform a Drive API read/write, transfer local case records, or enable automatic/two-way sync.
-\n\n## Windows Desktop/Mobile Picker folder selection (2026-10-31)\n\n- The owner confirmed that Google Picker API is enabled in Cloud project `helical-crowbar-513210-p6`.\n- Windows OAuth now requests only `drive.file` and adds Google's required `prompt=consent` and `trigger_onepick=true` parameters, plus `allow_folder_selection=true` and `access_type=offline`.\n- The loopback callback validates OAuth state and parses `picked_file_ids`; the Windows flow requires exactly one selected item and verifies through Drive API metadata that it is a Google Drive folder.\n- The selected folder ID and name are stored locally as configuration; OAuth credentials remain in encrypted platform storage. Disconnect removes both local credentials and local folder selection but does not delete Drive data.\n- The Settings > Sync Status screen displays the selected folder and explicitly states that live sync is still inactive.\n- This stage does not upload/download case data, run automatic sync, implement Android authorization, or complete conflict approval.\n- Official reference: https://developers.google.com/workspace/drive/picker/guides/desktop-mobile-picker\n
+
+\n## Windows Desktop/Mobile Picker folder selection (2026-10-31)\n
+- The owner confirmed that Google Picker API is enabled in Cloud project `helical-crowbar-513210-p6`.
+- Windows OAuth now requests only `drive.file` and adds Google's required `prompt=consent` and `trigger_onepick=true` parameters, plus `allow_folder_selection=true` and `access_type=offline`.
+- The loopback callback validates OAuth state and parses `picked_file_ids`; the Windows flow requires exactly one selected item and verifies through Drive API metadata that it is a Google Drive folder.
+- The selected folder ID and name are stored locally as configuration; OAuth credentials remain in encrypted platform storage. Disconnect removes both local credentials and local folder selection but does not delete Drive data.
+- The Settings > Sync Status screen displays the selected folder and explicitly states that live sync is still inactive.
+- This stage does not upload/download case data, run automatic sync, implement Android authorization, or complete conflict approval.
+- Official reference: https://developers.google.com/workspace/drive/picker/guides/desktop-mobile-picker\n
