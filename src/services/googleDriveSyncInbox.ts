@@ -7,6 +7,8 @@ const INBOX_KEY = 'srk_sync_inbox_v1';
 export interface SyncInboxState<T> {
   schemaVersion: 1;
   changes: SyncEnvelope<T>[];
+  /** IDs already staged or routed to conflict review; prevents reprocessing on every pull. */
+  seenChangeIds?: string[];
 }
 
 function validEnvelope<T>(value: unknown): value is SyncEnvelope<T> {
@@ -35,15 +37,17 @@ export class SyncInbox<T> {
     } catch {
       throw new Error('Sync inbox is unreadable; existing data was left untouched.');
     }
-    if (state.schemaVersion !== 1 || !Array.isArray(state.changes) || !state.changes.every(validEnvelope)) {
+    if (state.schemaVersion !== 1 || !Array.isArray(state.changes) || !state.changes.every(validEnvelope) ||
+      (state.seenChangeIds !== undefined && (!Array.isArray(state.seenChangeIds) || !state.seenChangeIds.every(id => typeof id === 'string' && id.length > 0)))) {
       throw new Error('Sync inbox format is invalid; existing data was left untouched.');
     }
+    state.seenChangeIds = Array.from(new Set([...(state.seenChangeIds ?? []), ...state.changes.map(change => change.changeId)])).slice(-10000);
     return state;
   }
 
   add(changes: readonly SyncEnvelope<T>[]): number {
     const state = this.read();
-    const ids = new Set(state.changes.map(change => change.changeId));
+    const ids = new Set([...(state.seenChangeIds ?? []), ...state.changes.map(change => change.changeId)]);
     let added = 0;
     for (const change of changes) {
       if (!validEnvelope(change)) throw new Error('Invalid remote sync envelope.');
@@ -52,12 +56,27 @@ export class SyncInbox<T> {
       state.changes.push(change);
       added += 1;
     }
-    if (added) this.storage.setItem(INBOX_KEY, JSON.stringify(state));
+    if (added) {
+      state.seenChangeIds = Array.from(ids).slice(-10000);
+      this.storage.setItem(INBOX_KEY, JSON.stringify(state));
+    }
     return added;
   }
 
   getAll(): SyncEnvelope<T>[] {
     return this.read().changes;
+  }
+
+  hasSeen(changeId: string): boolean {
+    return this.read().seenChangeIds?.includes(changeId) ?? false;
+  }
+
+  /** Remember processed IDs even when they were conflicts rather than inbox entries. */
+  markSeen(changeIds: readonly string[]): void {
+    if (!changeIds.length) return;
+    const state = this.read();
+    state.seenChangeIds = Array.from(new Set([...(state.seenChangeIds ?? []), ...changeIds])).slice(-10000);
+    this.storage.setItem(INBOX_KEY, JSON.stringify(state));
   }
 
   acknowledge(changeIds: readonly string[]): number {
@@ -66,7 +85,8 @@ export class SyncInbox<T> {
     const state = this.read();
     const before = state.changes.length;
     state.changes = state.changes.filter(change => !ids.has(change.changeId));
-    if (before !== state.changes.length) this.storage.setItem(INBOX_KEY, JSON.stringify(state));
+    state.seenChangeIds = Array.from(new Set([...(state.seenChangeIds ?? []), ...ids])).slice(-10000);
+    if (before !== state.changes.length || ids.size > 0) this.storage.setItem(INBOX_KEY, JSON.stringify(state));
     return before - state.changes.length;
   }
 }
@@ -115,6 +135,13 @@ export async function pullRemoteChanges<T>(
     pages += 1;
     for (const file of page.files) {
       if (!file.name.startsWith('srk-change-') || !file.name.endsWith('.json') || file.mimeType !== 'application/json') continue;
+      const encodedChangeId = file.name.slice('srk-change-'.length, -'.json'.length);
+      let fileChangeId = '';
+      try { fileChangeId = decodeURIComponent(encodedChangeId); } catch { /* Download and validate malformed names normally. */ }
+      if (fileChangeId && inbox.hasSeen(fileChangeId)) {
+        duplicates += 1;
+        continue;
+      }
       const value = await dependencies.downloadJson({
         accessToken: options.accessToken,
         signal: options.signal,
@@ -145,6 +172,9 @@ export async function pullRemoteChanges<T>(
   }
 
   if (conflicts.length) journal.saveConflicts(conflicts);
+  // Mark every valid remote change as processed, including conflicts and changes
+  // already present in the inbox, so future pulls do not download it repeatedly.
+  inbox.markSeen(remote.map(change => change.changeId));
   const staged = inbox.add(safeToStage);
   return {
     downloaded: remote.length,
