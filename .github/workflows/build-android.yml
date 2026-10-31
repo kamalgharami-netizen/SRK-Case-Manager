@@ -93,7 +93,7 @@ jobs:
           target: google_atd
           arch: x86_64
           emulator-boot-timeout: 900
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -wipe-data
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -wipe-data -memory 4096 -cores 4
           disable-animations: true
           working-directory: android
           script: |
