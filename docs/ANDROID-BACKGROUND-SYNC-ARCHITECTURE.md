@@ -105,6 +105,12 @@ The CI run triggered by these changes must pass TypeScript checks, the Android G
 
 The native database now checks whether encrypted rows already exist before generating a Keystore key. If the alias is missing or does not resolve to a SecretKey while rows remain, the operation fails explicitly and leaves the encrypted rows untouched. It does not silently create a replacement key. This is a data-preservation safeguard, not a data-recovery mechanism: recovery still requires the original usable Keystore key or a separately verified recovery design.
 
+## Instrumentation test harness and CI boundary
+
+An Android instrumentation test source set is now included for the native SQLite/Keystore store. The Android workflow compiles the test APK using the module-scoped Gradle task `:capacitor-sync-state:assembleDebugAndroidTest`. The task is intentionally scoped to this plugin module; compiling every Android module's test APK pulled unrelated legacy Kotlin test dependencies into the build and caused duplicate Kotlin standard-library classes.
+
+A successful compile proves that the test sources and test APK can be built. It does **not** execute the tests on an emulator or physical device. The three instrumentation tests cover database reopen/remove, ciphertext-at-rest, and missing-Keystore-key preservation when run on a device. They remain unexecuted until an Android emulator/device test runner is configured. Do not treat compile success as a passed runtime test or enable the migration/live sync based on it.
+
 ## Manual Android device validation checklist (release gate)
 
 CI currently compiles and packages the native plugin, but it does not execute Android Keystore, SQLite, app-data restore, or process-restart behavior on a physical device. Complete this checklist on at least one supported Android device before enabling the migration or connecting the native store to live sync.
