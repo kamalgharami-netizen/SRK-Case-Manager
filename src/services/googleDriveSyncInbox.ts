@@ -77,6 +77,7 @@ export interface PullResult {
   duplicates: number;
   conflicts: number;
   pages: number;
+  nextPageToken?: string;
 }
 
 export interface DrivePullDependencies {
@@ -91,7 +92,7 @@ export interface DrivePullDependencies {
 export async function pullRemoteChanges<T>(
   journal: SyncJournal<T>,
   inbox: SyncInbox<T>,
-  options: { accessToken: string; folderId: string; signal?: AbortSignal; maxPages?: number },
+  options: { accessToken: string; folderId: string; signal?: AbortSignal; maxPages?: number; pageToken?: string },
   dependencies: DrivePullDependencies
 ): Promise<PullResult> {
   if (!options.accessToken?.trim()) throw new Error('A Google Drive access token is required.');
@@ -100,7 +101,7 @@ export async function pullRemoteChanges<T>(
   const localPending = journal.getPending(500);
   const localByRecord = new Map(localPending.map(change => [change.companyId + ':' + change.recordId, change]));
   const remote: SyncEnvelope<T>[] = [];
-  let pageToken: string | undefined;
+  let pageToken: string | undefined = options.pageToken;
   let pages = 0;
   const maxPages = Math.max(1, Math.min(100, Math.floor(options.maxPages ?? 10)));
 
@@ -151,5 +152,6 @@ export async function pullRemoteChanges<T>(
     duplicates,
     conflicts: conflicts.length,
     pages,
+    ...(pageToken ? { nextPageToken: pageToken } : {}),
   };
 }
