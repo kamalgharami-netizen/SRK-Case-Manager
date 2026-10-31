@@ -33,7 +33,7 @@ function getWindowsOAuthBridge(): WindowsOAuthBridge {
 /**
  * Completes Windows Desktop OAuth using system-browser Authorization Code +
  * PKCE. Credentials are persisted only in the platform secure store.
- * This authorizes Drive access; it does not yet select a sync folder or run sync.
+ * The official Desktop/Mobile Picker selects and validates one Drive folder.\n * This does not run sync.
  */
 export interface SelectedGoogleDriveFolder {
   id: string;
