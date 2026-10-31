@@ -172,10 +172,10 @@ export async function pullRemoteChanges<T>(
   }
 
   if (conflicts.length) journal.saveConflicts(conflicts);
-  // Mark every valid remote change as processed, including conflicts and changes
-  // already present in the inbox, so future pulls do not download it repeatedly.
-  inbox.markSeen(remote.map(change => change.changeId));
   const staged = inbox.add(safeToStage);
+  // Mark every valid remote change as processed, including conflicts, only after
+  // new inbox entries have been persisted.
+  inbox.markSeen(remote.map(change => change.changeId));
   return {
     downloaded: remote.length,
     staged,
