@@ -102,3 +102,15 @@ Live sync is not enabled by this change. The app must not show a connected or sy
 - The Settings > Sync Status screen displays the selected folder and explicitly states that live sync is still inactive.
 - This stage does not upload/download case data, run automatic sync, implement Android authorization, or complete conflict approval.
 - Official reference: https://developers.google.com/workspace/drive/picker/guides/desktop-mobile-picker
+
+
+## Android Native Google Drive authorization (2026-10-31)
+
+- Added a local Capacitor plugin at `capacitor-google-drive-auth/` using Google Play services Identity AuthorizationClient; it is registered through Capacitor plugin autolinking.
+- Android authorization requests only `https://www.googleapis.com/auth/drive.file`, opts out of previously granted scopes, and uses the official Picker OAuth trigger plus folder-selection resource parameters.
+- The native authorization activity returns the access token, granted scopes and Picker `picked_file_ids` to the TypeScript service. The service requires exactly one item and verifies its MIME type through Drive API before saving the folder.
+- Access tokens are saved only through the existing Android Keystore-backed secure storage adapter. Android's native authorization SDK provides a short-lived access token; the service records a conservative expiry and can request a fresh token without reopening the Picker.
+- The selected folder ID/name uses the same local configuration key as Windows. No case data is uploaded or downloaded by this authorization stage.
+- The Android OAuth client is associated with the app's package ID `in.srk.casemanage` and signing certificate fingerprint in Google Cloud; the Identity SDK uses the installed app identity. The release signing certificate must match the SHA-1 configured on the Android OAuth client.
+- Live/two-way sync, conflict approval, scheduled/automatic sync and actual device authorization testing remain outstanding.
+- Official references: https://developers.google.com/workspace/drive/picker/guides/desktop-mobile-picker and https://developers.google.com/android/reference/com/google/android/gms/auth/api/identity/AuthorizationClient
