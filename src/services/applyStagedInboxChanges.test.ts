@@ -47,3 +47,31 @@ test('does not acknowledge workspace deletions requiring manual review', () => {
   assert.equal(result.acknowledged, 0);
   assert.equal(result.remaining, 1);
 });
+
+
+test('acknowledges applied company profile changes after persistence', () => {
+  const inbox = new SyncInbox<unknown>(new MemoryStorage());
+  inbox.add([{ ...change, changeId: 'profile_change', recordId: 'company_profile', payload: { name: 'Updated Chamber' } }]);
+  let saved: Array<{ id: string; name?: string }> = [];
+  const result = applyStagedInboxChanges([{ id: 'company1', name: 'Old Chamber', cases: [] }], inbox, companies => {
+    saved = companies as Array<{ id: string; name?: string }>;
+  });
+  assert.equal(saved[0].name, 'Updated Chamber');
+  assert.equal(result.applied, 1);
+  assert.equal(result.acknowledged, 1);
+  assert.equal(result.remaining, 0);
+});
+
+test('acknowledges applied diary changes after persistence', () => {
+  const inbox = new SyncInbox<unknown>(new MemoryStorage());
+  inbox.add([{
+    ...change,
+    changeId: 'diary_change',
+    recordId: 'diary:d1',
+    payload: { caseId: 'case1', item: { id: 'd1', title: 'Hearing note' } },
+  }]);
+  const result = applyStagedInboxChanges([{ id: 'company1', cases: [], diaryData: {} }], inbox, () => undefined);
+  assert.equal(result.applied, 1);
+  assert.equal(result.acknowledged, 1);
+  assert.equal(result.remaining, 0);
+});
