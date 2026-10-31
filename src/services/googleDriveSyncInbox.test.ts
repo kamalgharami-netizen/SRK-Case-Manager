@@ -63,6 +63,43 @@ test('ignores duplicate inbox change IDs', async () => {
   assert.equal(inbox.getAll().length, 1);
 });
 
+test('does not download a remote change again after it has been acknowledged', async () => {
+  const storage = new MemoryStorage();
+  const journal = new SyncJournal<unknown>(storage);
+  const inbox = new SyncInbox<unknown>(storage);
+  const remote = envelope('already-reviewed');
+  inbox.add([remote]);
+  inbox.acknowledge([remote.changeId]);
+  let downloads = 0;
+  const result = await pullRemoteChanges(journal, inbox, { accessToken: 'token', folderId: 'folder1' }, {
+    listFiles: async () => ({ files: [{ id: 'file1', name: 'srk-change-already-reviewed.json', mimeType: 'application/json' }] }),
+    downloadJson: async () => { downloads += 1; return remote; },
+  });
+  assert.equal(downloads, 0);
+  assert.equal(result.duplicates, 1);
+  assert.equal(result.staged, 0);
+  assert.equal(inbox.getAll().length, 0);
+});
+
+test('remembers remote conflicts so repeated pulls do not recreate them', async () => {
+  const storage = new MemoryStorage();
+  const journal = new SyncJournal<unknown>(storage);
+  const inbox = new SyncInbox<unknown>(storage);
+  journal.enqueue(envelope('local-conflict', 'local_device_123456'));
+  let downloads = 0;
+  const remote = envelope('remote-conflict');
+  const dependencies = {
+    listFiles: async () => ({ files: [{ id: 'file1', name: 'srk-change-remote-conflict.json', mimeType: 'application/json' }] }),
+    downloadJson: async () => { downloads += 1; return remote; },
+  };
+  const first = await pullRemoteChanges(journal, inbox, { accessToken: 'token', folderId: 'folder1' }, dependencies);
+  const second = await pullRemoteChanges(journal, inbox, { accessToken: 'token', folderId: 'folder1' }, dependencies);
+  assert.equal(first.conflicts, 1);
+  assert.equal(second.conflicts, 0);
+  assert.equal(downloads, 1);
+  assert.equal(journal.getConflicts().length, 1);
+});
+
 test('follows Drive pagination up to configured page limit', async () => {
   const storage = new MemoryStorage();
   const journal = new SyncJournal<unknown>(storage);
