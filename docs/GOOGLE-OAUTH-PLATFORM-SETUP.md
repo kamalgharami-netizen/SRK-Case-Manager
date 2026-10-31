@@ -50,3 +50,8 @@ The storage adapter is not itself a complete OAuth implementation. Windows now h
 - Desktop installed-app flow and PKCE: https://developers.google.com/identity/protocols/oauth2/native-app
 - OAuth platform-specific client policy: https://developers.google.com/identity/protocols/oauth2/policies
 - Secure token handling: https://developers.google.com/identity/protocols/oauth2/resources/best-practices
+
+
+## Signing-key exposure notice (2026-10-31)
+
+A signing keystore file was found tracked in the repository and has been removed from the current feature branch. Because it remains present in earlier Git history, removal from the latest commit is not sufficient to make it secret again. Treat the old signing key as compromised. Before producing a release APK, create/use a replacement signing key, store it only in protected GitHub Actions secrets or a secure offline vault, and update the Android OAuth client's SHA-1 fingerprint to the replacement certificate. Do not upload or commit the keystore itself. If this application has already been distributed through Google Play App Signing, follow Google's upload-key reset process rather than changing the app-signing key yourself.
