@@ -107,9 +107,9 @@ The native database now checks whether encrypted rows already exist before gener
 
 ## Instrumentation test harness and CI boundary
 
-An Android instrumentation test source set is now included for the native SQLite/Keystore store. The Android workflow compiles the test APK using the module-scoped Gradle task `:capacitor-sync-state:assembleDebugAndroidTest`. The task is intentionally scoped to this plugin module; compiling every Android module's test APK pulled unrelated legacy Kotlin test dependencies into the build and caused duplicate Kotlin standard-library classes.
+An Android instrumentation test source set is now included for the native SQLite/Keystore store. The Android workflow compiles the test APK using the module-scoped Gradle task `:srk-capacitor-sync-state:assembleDebugAndroidTest`, then runs `:srk-capacitor-sync-state:connectedDebugAndroidTest` on an API 35 Google APIs emulator through `reactivecircus/android-emulator-runner`. The task is intentionally scoped to this plugin module; compiling every Android module's test APK pulled unrelated legacy Kotlin test dependencies into the build and caused duplicate Kotlin standard-library classes.
 
-A successful compile proves that the test sources and test APK can be built. It does **not** execute the tests on an emulator or physical device. The three instrumentation tests cover database reopen/remove, ciphertext-at-rest, and missing-Keystore-key preservation when run on a device. They remain unexecuted until an Android emulator/device test runner is configured. Do not treat compile success as a passed runtime test or enable the migration/live sync based on it.
+A successful compile alone proves only that the test sources and test APK can be built. The workflow now also attempts to execute the three instrumentation tests on an Android emulator: database reopen/remove, ciphertext-at-rest, and missing-Keystore-key preservation. Treat runtime verification as passed only when the new emulator step completes successfully. Emulator success still does not replace physical-device validation. Do not treat compile success as a passed runtime test or enable the migration/live sync based on it.
 
 ## Manual Android device validation checklist (release gate)
 
@@ -147,3 +147,10 @@ CI currently compiles and packages the native plugin, but it does not execute An
 ### D. Current implementation boundary
 
 The repository does not yet include a user-facing native-store test screen or Android instrumentation test harness. The checklist above is a test specification, not evidence that these device tests have passed. Do not invoke `migrateLegacyAndroidSyncState()` in production startup, switch the live sync journal/inbox to SQLite, or schedule WorkManager until the native test harness and physical-device results are reviewed. Keep the business database key `srk_case_manager_v5` and current backup/export flows unchanged.
+
+
+## Emulator test automation update (2026-10-31)
+
+- GitHub Actions now boots an API 35 Google APIs Android Emulator and runs the native sync-store instrumentation suite with `:srk-capacitor-sync-state:connectedDebugAndroidTest`.
+- This is an automated emulator test attempt, not a passed result until the corresponding workflow run is green.
+- Physical Android device checks, Google account authorization, real Drive folder selection, and cross-device sync remain separate release gates.
