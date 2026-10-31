@@ -62,6 +62,7 @@ export function applySyncEnvelopes<T extends TrackedCompany>(
       const profile = Object.fromEntries(Object.entries(change.payload).filter(([key]) => allowed.includes(key)));
       companies[companyIndex] = { ...company, ...profile } as T;
       applied += 1;
+      appliedChangeIds.push(change.changeId);
       continue;
     }
 
@@ -83,6 +84,7 @@ export function applySyncEnvelopes<T extends TrackedCompany>(
         if (!found) { skipped += 1; continue; }
         companies[companyIndex] = { ...company, diaryData: nextDiary } as T;
         applied += 1;
+        appliedChangeIds.push(change.changeId);
         continue;
       }
       if (!isRecord(change.payload) || typeof change.payload.caseId !== 'string' ||
@@ -102,6 +104,7 @@ export function applySyncEnvelopes<T extends TrackedCompany>(
       nextDiary[caseId] = [change.payload.item, ...existing];
       companies[companyIndex] = { ...company, diaryData: nextDiary } as T;
       applied += 1;
+      appliedChangeIds.push(change.changeId);
       continue;
     }
 
