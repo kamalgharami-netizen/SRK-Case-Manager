@@ -29,8 +29,30 @@ function validateClientId(clientId: string): void {
   }
 }
 
+function validateTimestamp(now: number): void {
+  if (!Number.isSafeInteger(now) || now < 0) {
+    throw new Error('A valid current timestamp is required for Google OAuth.');
+  }
+}
+
+function validateWindowsLoopbackRedirect(redirectUri: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(redirectUri);
+  } catch {
+    throw new Error('A valid Windows loopback redirect URI is required.');
+  }
+  const loopback = parsed.hostname === '127.0.0.1' || parsed.hostname === '[::1]';
+  if (parsed.protocol !== 'http:' || !loopback || !parsed.port ||
+      parsed.pathname !== '/oauth2callback' || parsed.username || parsed.password ||
+      parsed.search || parsed.hash) {
+    throw new Error('Google OAuth redirect must use the registered HTTP loopback callback.');
+  }
+}
+
 function parseTokenResponse(payload: unknown, now: number,
   previousRefreshToken: string | null = null): GoogleOAuthCredentialSet {
+  validateTimestamp(now);
   if (!payload || typeof payload !== 'object') {
     throw new Error('Google returned an invalid token response.');
   }
@@ -87,12 +109,13 @@ export async function exchangeGoogleAuthorizationCode(options: {
   now?: number;
 }): Promise<GoogleOAuthCredentialSet> {
   validateClientId(options.clientId);
+  validateTimestamp(options.now ?? Date.now());
   if (!options.code || options.code.length > 4096 ||
-      !options.codeVerifier || options.codeVerifier.length < 43 ||
-      options.codeVerifier.length > 128 ||
+      !options.codeVerifier || !/^[A-Za-z0-9._~-]{43,128}$/.test(options.codeVerifier) ||
       !options.redirectUri || options.redirectUri.length > 2048) {
     throw new Error('Invalid Google authorization-code exchange parameters.');
   }
+  validateWindowsLoopbackRedirect(options.redirectUri);
   const params = new URLSearchParams({
     client_id: options.clientId,
     code: options.code,
@@ -111,6 +134,7 @@ export async function refreshGoogleAccessToken(options: {
   now?: number;
 }): Promise<GoogleOAuthCredentialSet> {
   validateClientId(options.clientId);
+  validateTimestamp(options.now ?? Date.now());
   if (!options.refreshToken || options.refreshToken.length > 16384) {
     throw new Error('A valid Google refresh token is required.');
   }
