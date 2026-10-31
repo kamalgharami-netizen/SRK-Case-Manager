@@ -3,7 +3,6 @@ package in.srk.capacitor.syncstate;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.security.keystore.KeyStore;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -84,7 +83,7 @@ public class SyncStateDatabaseInstrumentedTest {
             String stored = cursor.getString(0);
             assertNotNull(stored);
             assertFalse("SQLite must not contain the supplied plaintext", stored.contains(plainText));
-            assertTrue("Stored payload should be Base64 ciphertext", stored.matches("[A-Za-z0-9+/]+"));
+            assertTrue("Stored payload should be Base64 ciphertext", stored.matches("[A-Za-z0-9+/]+=*"));
         } finally {
             raw.close();
         }
