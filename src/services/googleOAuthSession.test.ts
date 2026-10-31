@@ -1,20 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getValidGoogleAccessToken } from './googleOAuthSession.ts';
+import type { StoredGoogleOAuthCredentials } from './secureGoogleTokenStore';
 
-const valid = {
+const valid: StoredGoogleOAuthCredentials = {
   accessToken: 'old-access', refreshToken: 'refresh-token',
-  tokenType: 'Bearer' as const, expiresAt: 1000, scope: 'drive.file',
+  tokenType: 'Bearer', expiresAt: 1000, scope: 'drive.file',
 };
 
-function store(initial: typeof valid | null) {
+function store(initial: StoredGoogleOAuthCredentials | null) {
   let value = initial;
   let deleted = false;
   return {
     api: {
-      get: async () => value,
-      set: async (next: typeof valid) => { value = next; },
-      delete: async () => { value = null; deleted = true; },
+      get: async (): Promise<StoredGoogleOAuthCredentials | null> => value,
+      set: async (next: StoredGoogleOAuthCredentials): Promise<void> => { value = next; },
+      delete: async (): Promise<void> => { value = null; deleted = true; },
     },
     current: () => value,
     wasDeleted: () => deleted,
