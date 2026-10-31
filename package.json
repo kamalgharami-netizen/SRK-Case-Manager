@@ -58,6 +58,7 @@
       "dist/**/*",
       "main.cjs",
       "preload.cjs",
+      "googleOAuthLoopback.cjs",
       "package.json"
     ],
     "extraMetadata": {
