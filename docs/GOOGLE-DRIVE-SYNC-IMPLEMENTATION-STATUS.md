@@ -67,3 +67,14 @@ Live sync is not enabled by this change. The app must not show a connected or sy
 - Browser storage is rejected because the plugin's web implementation is not encrypted.
 - The adapter is not yet called by an OAuth flow. It does not store refresh tokens and does not make Drive appear connected.
 - The Android APK + Windows EXE workflow completed successfully for commit `109f3228b6740253dcd1c660c039d50001909a43`. This validates the repository workflow at that commit; it is not a substitute for real-device OAuth and secure-storage testing.
+
+
+## OAuth implementation progress (2026-10-31)
+
+- Added Windows OAuth authorization-code exchange and refresh-token handling using PKCE; the token endpoint is fixed to Google's HTTPS endpoint, and the native public-client flow does not send a client secret.
+- Added validation tests for token responses, refresh-token preservation, callback state, PKCE verifier format, and expiry values.
+- Added a credential-bundle lifecycle manager that refreshes expiring access tokens on demand and persists rotated credentials through the platform secure-store interface. Failed refresh requests preserve the existing stored credentials.
+- Added encrypted credential-bundle storage adapters for Windows Electron safeStorage and Android secure storage.
+- These are tested service foundations only. They are not connected to a sign-in screen or sync coordinator. Android native Google authorization, a verified Windows Desktop OAuth client ID, revocation/reconnect handling, folder picker configuration, and end-to-end device testing remain outstanding.
+- The Android signing keystore previously tracked at `android-keystore/srk-fixed.keystore` has now been removed from the current branch and signing-key file patterns are ignored. **This deletion does not remove the key from earlier Git commits. Treat that signing key as exposed and replace/rotate it before using it for a release.** Update the Android OAuth SHA-1 registration to match the replacement signing certificate. Never commit the replacement keystore or its passwords.
+- Latest verified GitHub Actions run for commit `e58f736e3ff873b39a4846165adb8c016477afc5`: Windows EXE, Android APK and build-status jobs all succeeded. This build preceded the keystore-removal commits; a fresh build is required to validate the latest branch state.
