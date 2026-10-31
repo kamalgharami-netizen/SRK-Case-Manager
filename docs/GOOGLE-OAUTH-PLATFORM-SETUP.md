@@ -31,7 +31,9 @@ The owner reported its package/SHA-1 registration was checked in project `helica
 4. The Electron main process now provides a loopback callback listener bound to `127.0.0.1` on a dynamically selected port, with a fixed callback path, state validation, a three-minute timeout, and explicit cancellation.
 5. The main process opens only HTTPS authorization URLs on `accounts.google.com` in the system browser. The renderer receives a narrow preload API; it cannot choose an arbitrary URL or listener address.
 6. The callback listener is covered by Node tests for valid state, rejected state, OAuth errors, and invalid state input.
-7. The Windows Desktop client ID, end-to-end authorization-code exchange using the PKCE verifier, token expiry/revocation handling, and UI connection flow are still outstanding. Store any access token only through the platform secure-storage adapter. Do not log tokens or include them in sync journal records.
+7. The project owner supplied this Windows Desktop client ID for project configuration: `955204328722-um7epi871el2cuentnti4rq5obofh4ih.apps.googleusercontent.com`. The ID is recorded here as owner-provided; its application type and project association have not been independently verified from Google Cloud Console.
+
+End-to-end authorization-code exchange using the PKCE verifier, token expiry/revocation handling, and UI connection flow are still outstanding. Store any access token only through the platform secure-storage adapter. Do not log tokens or include them in sync journal records.
 
 ## Current implementation boundary
 
