@@ -29,7 +29,7 @@ export function runGoogleDriveSyncCycle(
     const folder = getSelectedGoogleDriveFolder();
     if (!folder?.id) return null;
 
-    let credentials: Awaited<ReturnType<typeof getValidAndroidGoogleDriveCredentials>>;
+    let credentials: Awaited<ReturnType<typeof getAndroidGoogleDriveCredentials>> = null;
     if (Capacitor.getPlatform() === 'android') {
       if (options.allowAndroidReauthorization) {
         credentials = await getValidAndroidGoogleDriveCredentials();
@@ -44,6 +44,8 @@ export function runGoogleDriveSyncCycle(
       if (!isWindowsDesktop) return null;
       credentials = await getValidWindowsGoogleDriveCredentials();
     }
+
+    if (!credentials) return null;
 
     const pageTokenKey = `srk_drive_sync_page_token_v1_${folder.id}`;
     const pageToken = localStorage.getItem(pageTokenKey) || undefined;
