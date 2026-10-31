@@ -7,10 +7,10 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
-import org.json.JSONException;
-
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @CapacitorPlugin(name = "SyncStateStore")
 public class SyncStateStorePlugin extends Plugin {
@@ -65,7 +65,7 @@ public class SyncStateStorePlugin extends Plugin {
         }
         try {
             List<SyncStateDatabase.SyncStateEntry> entries = new ArrayList<>();
-            java.util.Set<String> uniqueKeys = new java.util.HashSet<>();
+            Set<String> uniqueKeys = new HashSet<>();
             for (int i = 0; i < requested.length(); i++) {
                 JSObject item = JSObject.fromJSONObject(requested.getJSONObject(i));
                 if (item == null) {
@@ -85,7 +85,7 @@ public class SyncStateStorePlugin extends Plugin {
             JSObject response = new JSObject();
             response.put("saved", saved);
             call.resolve(response);
-        } catch (JSONException | RuntimeException error) {
+        } catch (Exception error) {
             call.reject("Could not save native sync state.", error);
         }
     }
@@ -110,7 +110,7 @@ public class SyncStateStorePlugin extends Plugin {
             JSObject response = new JSObject();
             response.put("removed", database.removeAll(keys));
             call.resolve(response);
-        } catch (JSONException | RuntimeException error) {
+        } catch (Exception error) {
             call.reject("Could not remove native sync state.", error);
         }
     }
