@@ -195,3 +195,20 @@ test('migration rejects completion when the marker cannot be read back', async (
   );
   assert.equal(nativeStore.values.has('srk_native_sync_state_migration_v1'), true);
 });
+
+
+test('migration retries when a new allowlisted key appears during the native copy', async () => {
+  const storage = new MemoryStorage([['srk_sync_journal_v1', 'journal-data']]);
+  const nativeStore = new MemoryNativeStore();
+  nativeStore.beforeSet = items => {
+    if (items.some(item => item.key === 'srk_sync_journal_v1')) {
+      storage.setItem('srk_sync_inbox_v1', 'added-during-migration');
+    }
+  };
+
+  const result = await runLegacyAndroidSyncStateMigration(storage as unknown as Storage, nativeStore);
+
+  assert.deepEqual(result, { status: 'retry-required', copied: 1 });
+  assert.equal(nativeStore.values.has('srk_native_sync_state_migration_v1'), false);
+  assert.equal(storage.getItem('srk_sync_inbox_v1'), 'added-during-migration');
+});
