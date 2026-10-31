@@ -1,6 +1,7 @@
 import { createGoogleOAuthState, createWindowsGooglePkceRequest } from './googleOAuthPkce';
 import { exchangeGoogleAuthorizationCode } from './googleOAuthTokenClient';
 import { getDriveFileMetadata } from './googleDriveApi';
+import { clearSelectedGoogleDriveFolder, saveSelectedGoogleDriveFolder, getSelectedGoogleDriveFolder, type SelectedGoogleDriveFolder } from './googleDriveSelectedFolder';
 import {
   deleteSecureGoogleOAuthCredentials,
   getSecureGoogleOAuthCredentials,
@@ -35,30 +36,6 @@ function getWindowsOAuthBridge(): WindowsOAuthBridge {
  * PKCE. Credentials are persisted only in the platform secure store.
  * The official Desktop/Mobile Picker selects and validates one Drive folder.\n * This does not run sync.
  */
-export interface SelectedGoogleDriveFolder {
-  id: string;
-  name: string;
-}
-
-const SELECTED_FOLDER_KEY = 'srk_google_drive_selected_folder_v1';
-
-function saveSelectedFolder(folder: SelectedGoogleDriveFolder): void {
-  localStorage.setItem(SELECTED_FOLDER_KEY, JSON.stringify(folder));
-}
-
-export function getSelectedGoogleDriveFolder(): SelectedGoogleDriveFolder | null {
-  try {
-    const raw = localStorage.getItem(SELECTED_FOLDER_KEY);
-    if (!raw) return null;
-    const value = JSON.parse(raw);
-    if (!value || typeof value.id !== 'string' || !value.id ||
-        typeof value.name !== 'string' || !value.name) return null;
-    return { id: value.id, name: value.name };
-  } catch {
-    return null;
-  }
-}
-
 export async function connectWindowsGoogleDrive(): Promise<{ credentials: StoredGoogleOAuthCredentials; folder: SelectedGoogleDriveFolder }> {
   const bridge = getWindowsOAuthBridge();
   const state = createGoogleOAuthState();
@@ -102,7 +79,7 @@ export async function connectWindowsGoogleDrive(): Promise<{ credentials: Stored
     }
     const folder = { id: selected.id, name: selected.name };
     await setSecureGoogleOAuthCredentials(credentials);
-    saveSelectedFolder(folder);
+    saveSelectedGoogleDriveFolder(folder);
     return { credentials, folder };
   } finally {
     await bridge.cancel().catch(() => false);
@@ -119,5 +96,5 @@ export async function getWindowsGoogleDriveCredentials():
 export async function disconnectWindowsGoogleDrive(): Promise<void> {
   getWindowsOAuthBridge();
   await deleteSecureGoogleOAuthCredentials();
-  localStorage.removeItem(SELECTED_FOLDER_KEY);
+  clearSelectedGoogleDriveFolder();
 }
