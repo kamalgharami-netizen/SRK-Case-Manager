@@ -19,6 +19,7 @@ public class GoogleDriveAuthPlugin extends Plugin {
     @PluginMethod
     public void authorize(PluginCall call) {
         Intent intent = new Intent(getContext(), GoogleDriveAuthorizationActivity.class);
+        intent.putExtra("showPicker", call.getBoolean("showPicker", true));
         startActivityForResult(call, intent, "authorizationActivityResult");
     }
 
