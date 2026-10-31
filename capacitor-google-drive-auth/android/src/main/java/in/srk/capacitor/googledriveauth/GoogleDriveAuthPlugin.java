@@ -12,8 +12,6 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
-import org.json.JSONException;
-
 @CapacitorPlugin(name = "GoogleDriveAuth")
 public class GoogleDriveAuthPlugin extends Plugin {
     @PluginMethod
@@ -47,13 +45,13 @@ public class GoogleDriveAuthPlugin extends Plugin {
         JSArray ids = new JSArray();
         if (pickedIds != null) {
             for (String id : pickedIds) {
-                try { ids.put(id); } catch (JSONException ignored) {}
+                ids.put(id);
             }
         }
         JSArray scopes = new JSArray();
         if (grantedScopes != null) {
             for (String scope : grantedScopes) {
-                try { scopes.put(scope); } catch (JSONException ignored) {}
+                scopes.put(scope);
             }
         }
         response.put("pickedFileIds", ids);
