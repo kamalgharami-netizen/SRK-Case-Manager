@@ -5,6 +5,7 @@ const fs = require("fs/promises");
 
 
 const TOKEN_FILE = "google-drive-token.enc";
+const OAUTH_CREDENTIALS_FILE = "google-drive-oauth-credentials.enc";
 
 async function getTokenFilePath() {
   return path.join(app.getPath("userData"), TOKEN_FILE);
@@ -73,6 +74,66 @@ ipcMain.handle("srk-token:delete", async (event) => {
   } catch (error) {
     if (!error || error.code !== "ENOENT") {
       throw new Error("Unable to delete the encrypted Google Drive token.");
+    }
+  }
+  return true;
+});
+
+
+async function getOAuthCredentialsFilePath() {
+  return path.join(app.getPath("userData"), OAUTH_CREDENTIALS_FILE);
+}
+
+ipcMain.handle("srk-oauth-credentials:get", async (event) => {
+  assertTrustedRenderer(event);
+  requireSecureTokenStorage();
+  try {
+    const encrypted = await fs.readFile(await getOAuthCredentialsFilePath());
+    return app.safeStorage.decryptString(encrypted);
+  } catch (error) {
+    if (error && error.code === "ENOENT") return null;
+    throw new Error("Unable to read encrypted Google OAuth credentials.");
+  }
+});
+
+ipcMain.handle("srk-oauth-credentials:set", async (event, serializedCredentials) => {
+  assertTrustedRenderer(event);
+  requireSecureTokenStorage();
+  if (typeof serializedCredentials !== "string" ||
+      serializedCredentials.length < 2 || serializedCredentials.length > 40000) {
+    throw new Error("Invalid Google OAuth credential bundle.");
+  }
+  let parsed;
+  try { parsed = JSON.parse(serializedCredentials); } catch {
+    throw new Error("Google OAuth credentials must be valid JSON.");
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) ||
+      typeof parsed.accessToken !== "string" || !parsed.accessToken ||
+      parsed.accessToken.length > 16384 ||
+      !(parsed.refreshToken === null ||
+        (typeof parsed.refreshToken === "string" && parsed.refreshToken.length > 0 &&
+         parsed.refreshToken.length <= 16384)) ||
+      parsed.tokenType !== "Bearer" ||
+      !Number.isSafeInteger(parsed.expiresAt) ||
+      !(parsed.scope === null || typeof parsed.scope === "string")) {
+    throw new Error("Google OAuth credential bundle failed validation.");
+  }
+  const filePath = await getOAuthCredentialsFilePath();
+  const tempPath = filePath + ".tmp";
+  const encrypted = app.safeStorage.encryptString(serializedCredentials);
+  await fs.writeFile(tempPath, encrypted, { mode: 0o600 });
+  await fs.rename(tempPath, filePath);
+  return true;
+});
+
+ipcMain.handle("srk-oauth-credentials:delete", async (event) => {
+  assertTrustedRenderer(event);
+  requireSecureTokenStorage();
+  try {
+    await fs.unlink(await getOAuthCredentialsFilePath());
+  } catch (error) {
+    if (!error || error.code !== "ENOENT") {
+      throw new Error("Unable to delete encrypted Google OAuth credentials.");
     }
   }
   return true;
