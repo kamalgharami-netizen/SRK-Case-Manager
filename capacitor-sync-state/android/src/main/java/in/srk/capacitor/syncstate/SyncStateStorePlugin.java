@@ -26,16 +26,17 @@ public class SyncStateStorePlugin extends Plugin {
     @PluginMethod
     public void getItems(PluginCall call) {
         JSArray requested = call.getArray("keys");
-        if (requested == null) {
-            call.reject("A keys array is required.");
+        if (requested == null || requested.length() > 500) {
+            call.reject("A keys array with at most 500 entries is required.");
             return;
         }
         try {
             List<String> keys = new ArrayList<>();
+            Set<String> uniqueKeys = new HashSet<>();
             for (int i = 0; i < requested.length(); i++) {
                 String key = requested.getString(i);
-                if (!validKey(key)) {
-                    call.reject("Invalid sync-state key.");
+                if (!validKey(key) || !uniqueKeys.add(key)) {
+                    call.reject("Invalid or duplicate sync-state key.");
                     return;
                 }
                 keys.add(key);
