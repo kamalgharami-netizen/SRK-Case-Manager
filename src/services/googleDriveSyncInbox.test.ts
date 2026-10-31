@@ -81,6 +81,44 @@ test('follows Drive pagination up to configured page limit', async () => {
   assert.deepEqual(tokens, [undefined, 'page2']);
 });
 
+test('returns a continuation token when the pull page limit is reached', async () => {
+  const storage = new MemoryStorage();
+  const journal = new SyncJournal<unknown>(storage);
+  const inbox = new SyncInbox<unknown>(storage);
+  const requestedTokens: Array<string | undefined> = [];
+  const result = await pullRemoteChanges(
+    journal,
+    inbox,
+    { accessToken: 'token', folderId: 'folder1', maxPages: 1 },
+    {
+      listFiles: async options => {
+        requestedTokens.push(options.pageToken);
+        return { files: [], nextPageToken: 'page-2' };
+      },
+      downloadJson: async () => envelope('unused'),
+    }
+  );
+  assert.equal(result.pages, 1);
+  assert.equal(result.nextPageToken, 'page-2');
+  assert.deepEqual(requestedTokens, [undefined]);
+
+  const next = await pullRemoteChanges(
+    journal,
+    inbox,
+    { accessToken: 'token', folderId: 'folder1', maxPages: 1, pageToken: result.nextPageToken },
+    {
+      listFiles: async options => {
+        requestedTokens.push(options.pageToken);
+        return { files: [], nextPageToken: undefined };
+      },
+      downloadJson: async () => envelope('unused'),
+    }
+  );
+  assert.equal(next.pages, 1);
+  assert.equal(next.nextPageToken, undefined);
+  assert.deepEqual(requestedTokens, [undefined, 'page-2']);
+});
+
 test('requires a selected Drive folder', async () => {
   const storage = new MemoryStorage();
   await assert.rejects(
