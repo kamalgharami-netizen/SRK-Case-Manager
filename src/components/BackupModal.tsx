@@ -40,6 +40,8 @@ import {
   connectWindowsGoogleDrive,
   disconnectWindowsGoogleDrive,
   getWindowsGoogleDriveCredentials,
+  getSelectedGoogleDriveFolder,
+  type SelectedGoogleDriveFolder,
 } from '../services/googleDriveWindowsAuth';
 
 export const VAULT_CATEGORIES = [
@@ -118,6 +120,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   const [syncCounts, setSyncCounts] = useState({ pending: 0, staged: 0, conflicts: 0, error: false });
   const [driveAuthStatus, setDriveAuthStatus] = useState<'checking' | 'disconnected' | 'authorized' | 'unsupported' | 'error'>('disconnected');
   const [driveAuthBusy, setDriveAuthBusy] = useState(false);
+  const [selectedDriveFolder, setSelectedDriveFolder] = useState<SelectedGoogleDriveFolder | null>(null);
 
   const refreshSyncCounts = () => {
     try {
@@ -172,6 +175,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     }
     let active = true;
     setDriveAuthStatus('checking');
+    setSelectedDriveFolder(getSelectedGoogleDriveFolder());
     getWindowsGoogleDriveCredentials()
       .then(credentials => {
         if (active) setDriveAuthStatus(credentials ? 'authorized' : 'disconnected');
@@ -185,9 +189,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   const handleConnectGoogleDrive = async () => {
     setDriveAuthBusy(true);
     try {
-      await connectWindowsGoogleDrive();
+      const result = await connectWindowsGoogleDrive();
+      setSelectedDriveFolder(result.folder);
       setDriveAuthStatus('authorized');
-      showToast('Google account authorization completed. Select a Drive folder in the next setup stage.', 'success');
+      showToast('Google account authorized and Drive folder selected. Sync is not yet active.', 'success');
     } catch (error) {
       setDriveAuthStatus('error');
       showToast(error instanceof Error ? error.message : 'Google sign-in failed.', 'error');
@@ -202,7 +207,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     try {
       await disconnectWindowsGoogleDrive();
       setDriveAuthStatus('disconnected');
-      showToast('Google sign-in credentials removed from this device.', 'success');
+      setSelectedDriveFolder(null);
+      showToast('Google sign-in credentials and selected folder removed from this device.', 'success');
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'Unable to disconnect Google.', 'error');
     } finally {
@@ -1319,12 +1325,24 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                     </button>
                   )}
                 </div>
-                <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 space-y-1">
-                  <div className="font-bold text-xs text-amber-900 dark:text-amber-300">Folder selection and live sync are still pending</div>
-                  <p className="text-xs text-amber-900/80 dark:text-amber-200/80">
-                    Authorization alone does not mean data is synchronised. The Drive folder picker, sync coordinator, conflict workflow and Android native sign-in are not yet connected. Local records remain on this device; no automatic upload or download is running.
-                  </p>
-                </div>
+                <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1">
+  <div className="font-bold text-xs text-slate-800 dark:text-slate-200">Selected Google Drive folder</div>
+  {selectedDriveFolder ? (
+    <div className="text-xs text-slate-700 dark:text-slate-300 break-all">
+      {selectedDriveFolder.name}
+      <span className="block font-mono text-[10px] text-slate-500 mt-1">{selectedDriveFolder.id}</span>
+    </div>
+  ) : (
+    <p className="text-xs text-slate-500">No Drive folder has been selected on this device.</p>
+  )}
+  <p className="text-xs text-slate-500">Use “Connect Google” or reconnect to choose or change the folder.</p>
+</div>
+<div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 space-y-1">
+  <div className="font-bold text-xs text-amber-900 dark:text-amber-300">Folder selection is ready; live sync is not active</div>
+  <p className="text-xs text-amber-900/80 dark:text-amber-200/80">
+    The selected folder is saved on this device. Drive upload/download coordination, conflict approval, Android native sign-in and automatic sync are still pending. Local records remain on this device; no automatic upload or download is running.
+  </p>
+</div>
               </div>
             </div>
           )}
