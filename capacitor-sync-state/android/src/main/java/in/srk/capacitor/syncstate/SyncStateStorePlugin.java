@@ -51,7 +51,7 @@ public class SyncStateStorePlugin extends Plugin {
             JSObject response = new JSObject();
             response.put("items", output);
             call.resolve(response);
-        } catch (JSONException | RuntimeException error) {
+        } catch (Exception error) {
             call.reject("Could not read native sync state.", error);
         }
     }
