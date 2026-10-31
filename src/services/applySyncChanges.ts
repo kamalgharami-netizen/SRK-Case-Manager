@@ -115,6 +115,7 @@ export function applySyncEnvelopes<T extends TrackedCompany>(
       if (next.length === existing.length) { skipped += 1; continue; }
       companies[companyIndex] = { ...company, [collection]: next } as T;
       applied += 1;
+      appliedChangeIds.push(change.changeId);
       continue;
     }
     if (!isRecord(change.payload) || change.payload.collection !== collection ||
