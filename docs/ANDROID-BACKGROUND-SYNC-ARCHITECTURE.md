@@ -82,3 +82,21 @@ No OAuth client secret may be embedded in the APK. Never commit signing keystore
 ## Current verified boundary
 
 Build #233 passed on 2026-10-31 for both the signed Android APK and Windows EXE. This verifies the current branch build, not physical-device OAuth, Picker, two-device sync, or the architecture above. The implementation remains unmerged in Draft PR #7.
+
+
+## Implementation progress (2026-10-31)
+
+### Stage 1 — native encrypted sync-state store scaffold
+
+Added the private Capacitor package `@srk/capacitor-sync-state`:
+
+- Android SQLite database `srk_sync_state_v1.db` with a key/value table and transactional batch writes/deletes.
+- Values are encrypted with AES-256-GCM using a non-exportable Android Keystore key; only ciphertext is stored in SQLite.
+- The plugin exposes bounded `getItems`, `setItems`, and `removeItems` operations.
+- Added `migrateLegacyAndroidSyncState()`, which copies only the known sync metadata keys and per-folder pagination keys, reads them back for exact verification, and writes a completion marker only after verification.
+- The migration never deletes or changes the original localStorage values and explicitly excludes the business database and OAuth credentials.
+- The native store is not yet connected to the live sync journal/inbox. This is intentional until native Android build and migration tests pass.
+
+### Stage 1 verification gate
+
+The CI run triggered by these changes must pass TypeScript checks, the Android Gradle build, signed APK packaging, and Windows EXE packaging. After CI, add tests for migration retries, read-back mismatch, localStorage mutation during migration, and native database transaction failure before switching any production reads/writes.
