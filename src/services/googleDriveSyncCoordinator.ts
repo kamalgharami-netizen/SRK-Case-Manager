@@ -1,6 +1,7 @@
 import {
   downloadDriveJson,
   listDriveFiles,
+  uploadDriveJson,
 } from './googleDriveApi';
 import {
   pullRemoteChanges,
@@ -45,10 +46,7 @@ const defaultDependencies: GoogleDriveSyncCoordinatorDependencies = {
   },
   push: {
     listFiles: listDriveFiles,
-    uploadJson: async (options, data) => {
-      const { uploadDriveJson } = await import('./googleDriveApi');
-      return uploadDriveJson(options, data);
-    },
+    uploadJson: uploadDriveJson,
   },
 };
 
