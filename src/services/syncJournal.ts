@@ -175,7 +175,8 @@ export class SyncJournal<T> {
 
     // Persist the chosen version first. If anything fails, the conflict remains available.
     this.enqueue(resolution);
-    if (choice === 'remote') this.acknowledge([conflict.local.changeId]);
+    // The new resolution envelope supersedes the original local pending edit in either choice.
+    this.acknowledge([conflict.local.changeId]);
 
     state.conflicts = state.conflicts.filter(item => item !== conflict);
     this.storage.setItem(CONFLICT_KEY, JSON.stringify(state));
