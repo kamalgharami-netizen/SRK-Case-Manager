@@ -107,6 +107,24 @@ const MainAppContent: React.FC = () => {
     const handleVisible = () => {
       if (document.visibilityState === 'visible') void runForegroundSync();
     };
+
+    // Best-effort Windows desktop sync while the app is minimized.
+    // Electron keeps this renderer alive while its window is minimized; this
+    // timer does not run after the application is fully exited.
+    const isWindowsDesktop = typeof window !== 'undefined' &&
+      Boolean((window as Window & { electronAPI?: { googleOAuth?: unknown } }).electronAPI?.googleOAuth);
+    const runMinimizedWindowsSync = async () => {
+      if (disposed || !isWindowsDesktop || navigator.onLine === false) return;
+      try {
+        await runGoogleDriveSyncCycle({ allowAndroidReauthorization: false });
+      } catch (error) {
+        console.warn('Scheduled minimized Windows Google Drive sync did not complete:', error);
+      }
+    };
+    const backgroundSyncTimer = isWindowsDesktop
+      ? window.setInterval(() => { void runMinimizedWindowsSync(); }, 15 * 60 * 1000)
+      : undefined;
+
     window.addEventListener('focus', runForegroundSync);
     window.addEventListener('online', runForegroundSync);
     document.addEventListener('visibilitychange', handleVisible);
@@ -114,6 +132,7 @@ const MainAppContent: React.FC = () => {
 
     return () => {
       disposed = true;
+      if (backgroundSyncTimer !== undefined) window.clearInterval(backgroundSyncTimer);
       window.removeEventListener('focus', runForegroundSync);
       window.removeEventListener('online', runForegroundSync);
       document.removeEventListener('visibilitychange', handleVisible);
