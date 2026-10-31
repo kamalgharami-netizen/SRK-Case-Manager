@@ -282,6 +282,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
 
   const previousSyncSnapshot = useRef<Company[]>(companies);
+  const skipNextSyncTracking = useRef(false);
 
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(() => {
     try {
@@ -529,6 +530,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Record local record-level changes in the durable outbox. This does not
   // contact Google Drive or apply remote data; offline app state remains primary.
   useEffect(() => {
+    if (skipNextSyncTracking.current) {
+      skipNextSyncTracking.current = false;
+      previousSyncSnapshot.current = companies;
+      return;
+    }
     try {
       const previous = previousSyncSnapshot.current as unknown as TrackedCompany[];
       const current = companies as unknown as TrackedCompany[];
@@ -1824,6 +1830,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
       );
       if (result.applied > 0) {
+        // Remote-approved records must not be re-enqueued as fresh local edits.
+        skipNextSyncTracking.current = true;
         setCompanies(result.companies);
         showToast(`Applied ${result.applied} remote change(s). ${result.remaining} item(s) remain for review.`, 'success');
       } else if (result.manualReview > 0 || result.skipped > 0) {
