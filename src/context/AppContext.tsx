@@ -9,6 +9,8 @@ import { getOrCreateSyncDeviceId } from '../services/driveSyncProtocol';
 import { collectCompanyChanges, createSyncEnvelopes, type TrackedCompany } from '../services/companyChangeTracker';
 import { SyncInbox } from '../services/googleDriveSyncInbox';
 import { applyStagedInboxChanges } from '../services/applyStagedInboxChanges';
+import { applySyncEnvelopes } from '../services/applySyncChanges';
+import type { SyncConflict } from '../services/driveSyncProtocol';
 
 const STORAGE_KEY = 'srk_case_manager_v5';
 
@@ -153,6 +155,7 @@ interface AppContextType {
   ) => boolean;
   updateCompanyDetails: (details: Partial<Company>) => boolean;
   applyStagedSyncChanges: () => { applied: number; skipped: number; manualReview: number; remaining: number } | null;
+  resolveSyncConflict: (conflict: SyncConflict<unknown>, choice: 'local' | 'remote') => boolean;
   selectCompany: (companyId: string) => void;
   deleteCompany: (companyId: string) => void;
   loginUser: (identifier: string, passcodeOrPassword?: string, companyId?: string) => boolean;
@@ -1847,6 +1850,56 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const resolveSyncConflict = (conflict: SyncConflict<unknown>, choice: 'local' | 'remote') => {
+    if (STORAGE_LOAD_FAILED) {
+      showToast('Local data could not be verified. The conflict was not resolved.', 'error');
+      return false;
+    }
+    try {
+      const journal = new SyncJournal<unknown>(localStorage);
+      if (choice === 'remote') {
+        const result = applySyncEnvelopes(
+          companies as unknown as TrackedCompany[],
+          [conflict.remote]
+        );
+        if (result.applied !== 1) {
+          showToast('The remote version cannot be safely applied to this record. The conflict remains available.', 'warning');
+          return false;
+        }
+        // Persist the selected remote version before replacing the conflict with
+        // a new outbound resolution envelope.
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          companies: result.companies,
+          activeCompanyId,
+          activeUserId,
+          version: APP_VERSION,
+          updatedAt: Date.now()
+        }));
+        skipNextSyncTracking.current = true;
+        setCompanies(result.companies as unknown as Company[]);
+      }
+      const resolved = journal.resolveConflictAndQueue(
+        conflict.recordId,
+        conflict.local.changeId,
+        conflict.remote.changeId,
+        choice,
+        getOrCreateSyncDeviceId(localStorage)
+      );
+      if (!resolved) {
+        showToast('This conflict is no longer available. Refresh the sync status.', 'warning');
+        return false;
+      }
+      showToast(choice === 'remote'
+        ? 'Remote version selected, applied locally and queued for synchronisation.'
+        : 'Local version selected and queued for synchronisation.', 'success');
+      return true;
+    } catch (error) {
+      console.error('Could not resolve sync conflict:', error);
+      showToast('Could not resolve this conflict. Check local storage and try again.', 'error');
+      return false;
+    }
+  };
+
   const forceAppUpdateAndReplace = async () => {
     try {
       showToast('Clearing stale cache and updating to latest app version...', 'info');
@@ -1908,6 +1961,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         createCompany,
         updateCompanyDetails,
         applyStagedSyncChanges,
+        resolveSyncConflict,
         selectCompany,
         deleteCompany,
         loginUser,
