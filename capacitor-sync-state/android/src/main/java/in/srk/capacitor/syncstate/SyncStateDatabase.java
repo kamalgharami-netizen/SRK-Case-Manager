@@ -9,6 +9,7 @@ import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.util.Base64;
 
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import javax.crypto.Cipher;
@@ -24,7 +25,12 @@ final class SyncStateDatabase extends SQLiteOpenHelper {
     private static final int GCM_TAG_LENGTH_BITS = 128;
 
     SyncStateDatabase(Context context) {
-        super(context, DATABASE_NAME, null, DATABASE_VERSION);
+        // Sync metadata is encrypted with a non-exportable Android Keystore key.
+        // Keep the ciphertext database out of Android Auto Backup: the Keystore
+        // key is not backed up, so restoring the database alone would make every
+        // stored value permanently unreadable on the restored installation.
+        super(context, new File(context.getNoBackupFilesDir(), DATABASE_NAME).getAbsolutePath(),
+            null, DATABASE_VERSION);
         setWriteAheadLoggingEnabled(true);
     }
 
