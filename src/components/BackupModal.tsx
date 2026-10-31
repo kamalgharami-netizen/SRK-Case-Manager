@@ -235,15 +235,20 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         : await getValidWindowsGoogleDriveCredentials();
       const journal = new SyncJournal<unknown>(localStorage);
       const inbox = new SyncInbox<unknown>(localStorage);
+      const pageTokenKey = `srk_drive_sync_page_token_v1_${folder.id}`;
+      const pageToken = localStorage.getItem(pageTokenKey) || undefined;
       const result = await syncGoogleDriveNow(journal, inbox, {
         accessToken: credentials.accessToken,
         folderId: folder.id,
+        pageToken,
         pullMaxPages: 10,
         pushBatchSize: 25,
       });
+      if (result.nextPageToken) localStorage.setItem(pageTokenKey, result.nextPageToken);
+      else localStorage.removeItem(pageTokenKey);
       refreshSyncCounts();
       setSyncMessage(
-        `Completed: downloaded ${result.pulled.downloaded}, staged ${result.staged}, uploaded ${result.pushed.uploaded}, conflicts ${result.conflicts}. Pending local: ${result.remainingOutbox}; awaiting review: ${result.remainingInbox}.`
+        `Completed: downloaded ${result.pulled.downloaded}, staged ${result.staged}, uploaded ${result.pushed.uploaded}, conflicts ${result.conflicts}. Pending local: ${result.remainingOutbox}; awaiting review: ${result.remainingInbox}.${result.nextPageToken ? ' More remote pages remain; press Sync Now again to continue.' : ' Remote listing is up to date.'}`
       );
       showToast('Google Drive sync cycle completed. Remote changes remain staged for review.', 'success');
     } catch (error) {
