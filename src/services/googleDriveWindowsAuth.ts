@@ -1,5 +1,5 @@
 import { createGoogleOAuthState, createWindowsGooglePkceRequest } from './googleOAuthPkce';
-import { exchangeGoogleAuthorizationCode } from './googleOAuthTokenClient';
+import { exchangeGoogleAuthorizationCode, refreshGoogleAccessToken } from './googleOAuthTokenClient';
 import { getDriveFileMetadata } from './googleDriveApi';
 import { clearSelectedGoogleDriveFolder, saveSelectedGoogleDriveFolder, type SelectedGoogleDriveFolder } from './googleDriveSelectedFolder';
 import {
@@ -91,6 +91,24 @@ export async function getWindowsGoogleDriveCredentials():
   Promise<StoredGoogleOAuthCredentials | null> {
   getWindowsOAuthBridge();
   return getSecureGoogleOAuthCredentials();
+}
+
+/** Refreshes an expired Windows access token without reopening the folder picker. */
+export async function getValidWindowsGoogleDriveCredentials():
+  Promise<StoredGoogleOAuthCredentials> {
+  getWindowsOAuthBridge();
+  const current = await getSecureGoogleOAuthCredentials();
+  if (!current) throw new Error('Connect Google Drive before starting sync.');
+  if (current.expiresAt > Date.now() + 5 * 60 * 1000) return current;
+  if (!current.refreshToken) {
+    throw new Error('Google sign-in must be reconnected to renew Drive access.');
+  }
+  const renewed = await refreshGoogleAccessToken({
+    clientId: WINDOWS_GOOGLE_CLIENT_ID,
+    refreshToken: current.refreshToken,
+  });
+  await setSecureGoogleOAuthCredentials(renewed);
+  return renewed;
 }
 
 /** Removes this app's locally stored Google credentials; it does not delete Drive files. */
