@@ -11,8 +11,25 @@ async function getTokenFilePath() {
 }
 
 function assertTrustedRenderer(event) {
-  if (!mainWindow || mainWindow.isDestroyed() || event.sender !== mainWindow.webContents) {
-    throw new Error("Untrusted renderer is not allowed to access secure token storage.");
+  const expectedFile = path.join(__dirname, "dist", "index.html");
+  let senderUrl = "";
+  try {
+    senderUrl = event.senderFrame && event.senderFrame.url
+      ? new URL(event.senderFrame.url).href
+      : "";
+  } catch {
+    senderUrl = "";
+  }
+  let expectedUrl = "";
+  try {
+    expectedUrl = require("url").pathToFileURL(expectedFile).href;
+  } catch {
+    expectedUrl = "";
+  }
+  if (!mainWindow || mainWindow.isDestroyed() ||
+      event.sender !== mainWindow.webContents ||
+      !senderUrl || senderUrl !== expectedUrl) {
+    throw new Error("Untrusted renderer is not allowed to access secure application IPC.");
   }
 }
 
@@ -188,6 +205,10 @@ ipcMain.handle("srk-oauth:cancel", async (event) => {
 
 ipcMain.on("app-close", () => {
   isQuitting = true;
+  if (googleOAuthListener) {
+    googleOAuthListener.close();
+    googleOAuthListener = null;
+  }
   BrowserWindow.getAllWindows().forEach((win) => {
     try {
       win.removeAllListeners("close");
@@ -221,6 +242,10 @@ app.whenReady().then(() => {
 
 app.on("before-quit", () => {
   isQuitting = true;
+  if (googleOAuthListener) {
+    googleOAuthListener.close();
+    googleOAuthListener = null;
+  }
 });
 
 app.on("window-all-closed", () => {
