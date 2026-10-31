@@ -51,6 +51,11 @@ import {
   getSelectedGoogleDriveFolder,
   type SelectedGoogleDriveFolder,
 } from '../services/googleDriveSelectedFolder';
+import { getValidWindowsGoogleDriveCredentials } from '../services/googleDriveWindowsAuth';
+import { getValidAndroidGoogleDriveCredentials } from '../services/googleDriveAndroidAuth';
+import { SyncJournal } from '../services/syncJournal';
+import { SyncInbox } from '../services/googleDriveSyncInbox';
+import { syncGoogleDriveNow } from '../services/googleDriveSyncCoordinator';
 
 export const VAULT_CATEGORIES = [
   'Mutation Petitions & Orders',
@@ -129,6 +134,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   const [driveAuthStatus, setDriveAuthStatus] = useState<'checking' | 'disconnected' | 'authorized' | 'unsupported' | 'error'>('disconnected');
   const [driveAuthBusy, setDriveAuthBusy] = useState(false);
   const [selectedDriveFolder, setSelectedDriveFolder] = useState<SelectedGoogleDriveFolder | null>(null);
+  const [syncBusy, setSyncBusy] = useState(false);
+  const [syncMessage, setSyncMessage] = useState('');
 
   const refreshSyncCounts = () => {
     try {
@@ -212,6 +219,39 @@ export const BackupModal: React.FC<BackupModalProps> = ({
       showToast(error instanceof Error ? error.message : 'Google sign-in failed.', 'error');
     } finally {
       setDriveAuthBusy(false);
+    }
+  };
+
+
+  const handleSyncGoogleDriveNow = async () => {
+    if (syncBusy) return;
+    setSyncBusy(true);
+    setSyncMessage('Synchronisation started…');
+    try {
+      const folder = getSelectedGoogleDriveFolder();
+      if (!folder?.id) throw new Error('Select a Google Drive folder before syncing.');
+      const credentials = Capacitor.getPlatform() === 'android'
+        ? await getValidAndroidGoogleDriveCredentials()
+        : await getValidWindowsGoogleDriveCredentials();
+      const journal = new SyncJournal<unknown>(localStorage);
+      const inbox = new SyncInbox<unknown>(localStorage);
+      const result = await syncGoogleDriveNow(journal, inbox, {
+        accessToken: credentials.accessToken,
+        folderId: folder.id,
+        pullMaxPages: 10,
+        pushBatchSize: 25,
+      });
+      refreshSyncCounts();
+      setSyncMessage(
+        `Completed: downloaded ${result.pulled.downloaded}, staged ${result.staged}, uploaded ${result.pushed.uploaded}, conflicts ${result.conflicts}. Pending local: ${result.remainingOutbox}; awaiting review: ${result.remainingInbox}.`
+      );
+      showToast('Google Drive sync cycle completed. Remote changes remain staged for review.', 'success');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Google Drive sync failed.';
+      setSyncMessage(message);
+      showToast(message, 'error');
+    } finally {
+      setSyncBusy(false);
     }
   };
 
@@ -1301,6 +1341,14 @@ export const BackupModal: React.FC<BackupModalProps> = ({
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
+                  disabled={driveAuthStatus !== 'authorized' || !selectedDriveFolder?.id || syncBusy || syncCounts.error}
+                  onClick={handleSyncGoogleDriveNow}
+                  className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold"
+                >
+                  {syncBusy ? 'Synchronising…' : 'Sync Now'}
+                </button>
+                <button
+                  type="button"
                   disabled={syncCounts.staged === 0 || syncCounts.error}
                   onClick={() => {
                     if (!window.confirm(`Apply all eligible ${syncCounts.staged} staged remote change(s) to this device? This applies eligible changes in one operation; it does not show a per-record preview. Conflicting or unsupported changes may remain for manual review. This action updates local records and cannot be automatically undone. Please ensure you have a current backup.`)) return;
@@ -1312,6 +1360,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   Apply Eligible Staged Changes
                 </button>
               </div>
+              {syncMessage && <div className="p-3 rounded-lg border border-sky-200 dark:border-sky-900 bg-sky-50 dark:bg-sky-950/30 text-xs text-sky-900 dark:text-sky-200">{syncMessage}</div>}
               <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div>
@@ -1356,9 +1405,9 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   <p className="text-xs text-slate-500">Use “Connect Google” or reconnect to choose or change the folder.</p>
 </div>
 <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 space-y-1">
-  <div className="font-bold text-xs text-amber-900 dark:text-amber-300">Folder selection is ready; live sync is not active</div>
+  <div className="font-bold text-xs text-amber-900 dark:text-amber-300">Folder selection is ready; manual sync is available</div>
   <p className="text-xs text-amber-900/80 dark:text-amber-200/80">
-    The selected folder is saved on this device. Drive upload/download coordination, automatic sync and conflict approval are still pending. Local records remain on this device; no automatic upload or download is running.
+    The selected folder is saved on this device. Use Sync Now to transfer queued changes. Downloaded records remain staged until you explicitly review and apply them. Automatic background sync and detailed conflict resolution are still pending.
   </p>
 </div>
               </div>
