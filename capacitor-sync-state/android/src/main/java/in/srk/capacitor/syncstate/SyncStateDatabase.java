@@ -114,7 +114,7 @@ final class SyncStateDatabase extends SQLiteOpenHelper {
         return new String(cipher.doFinal(encrypted), StandardCharsets.UTF_8);
     }
 
-    private SecretKey getOrCreateKey() throws Exception {
+    private synchronized SecretKey getOrCreateKey() throws Exception {
         KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
         keyStore.load(null);
         java.security.Key existing = keyStore.getKey(KEY_ALIAS, null);
