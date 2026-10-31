@@ -19,6 +19,7 @@ import type { SyncJournal } from './syncJournal';
 export interface GoogleDriveSyncCoordinatorOptions {
   accessToken: string;
   folderId: string;
+  pageToken?: string;
   signal?: AbortSignal;
   pullMaxPages?: number;
   pushBatchSize?: number;
@@ -74,6 +75,7 @@ export async function syncGoogleDriveNow<T>(
     {
       accessToken: options.accessToken,
       folderId: options.folderId,
+      pageToken: options.pageToken,
       signal: options.signal,
       maxPages: options.pullMaxPages ?? 10,
     },
