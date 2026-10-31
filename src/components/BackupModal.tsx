@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { useApp } from '../context/AppContext';
 import {
   Settings,
@@ -40,9 +41,16 @@ import {
   connectWindowsGoogleDrive,
   disconnectWindowsGoogleDrive,
   getWindowsGoogleDriveCredentials,
+} from '../services/googleDriveWindowsAuth';
+import {
+  connectAndroidGoogleDrive,
+  disconnectAndroidGoogleDrive,
+  getAndroidGoogleDriveCredentials,
+} from '../services/googleDriveAndroidAuth';
+import {
   getSelectedGoogleDriveFolder,
   type SelectedGoogleDriveFolder,
-} from '../services/googleDriveWindowsAuth';
+} from '../services/googleDriveSelectedFolder';
 
 export const VAULT_CATEGORIES = [
   'Mutation Petitions & Orders',
@@ -166,17 +174,21 @@ export const BackupModal: React.FC<BackupModalProps> = ({
 
   useEffect(() => {
     if (!isOpen || activeTab !== 'sync') return;
+    const isAndroid = Capacitor.getPlatform() === 'android';
     const isWindowsDesktop = typeof window !== 'undefined' &&
       Boolean((window as Window & { electronAPI?: { googleOAuth?: unknown } })
         .electronAPI?.googleOAuth);
-    if (!isWindowsDesktop) {
+    if (!isAndroid && !isWindowsDesktop) {
       setDriveAuthStatus('unsupported');
       return;
     }
     let active = true;
     setDriveAuthStatus('checking');
     setSelectedDriveFolder(getSelectedGoogleDriveFolder());
-    getWindowsGoogleDriveCredentials()
+    const credentialCheck = isAndroid
+      ? getAndroidGoogleDriveCredentials()
+      : getWindowsGoogleDriveCredentials();
+    credentialCheck
       .then(credentials => {
         if (active) setDriveAuthStatus(credentials ? 'authorized' : 'disconnected');
       })
@@ -189,7 +201,9 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   const handleConnectGoogleDrive = async () => {
     setDriveAuthBusy(true);
     try {
-      const result = await connectWindowsGoogleDrive();
+      const result = Capacitor.getPlatform() === 'android'
+        ? await connectAndroidGoogleDrive()
+        : await connectWindowsGoogleDrive();
       setSelectedDriveFolder(result.folder);
       setDriveAuthStatus('authorized');
       showToast('Google account authorized and Drive folder selected. Sync is not yet active.', 'success');
@@ -205,7 +219,11 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     if (!window.confirm('Remove the Google sign-in credentials stored by this app? No Google Drive files will be deleted.')) return;
     setDriveAuthBusy(true);
     try {
-      await disconnectWindowsGoogleDrive();
+      if (Capacitor.getPlatform() === 'android') {
+        await disconnectAndroidGoogleDrive();
+      } else {
+        await disconnectWindowsGoogleDrive();
+      }
       setDriveAuthStatus('disconnected');
       setSelectedDriveFolder(null);
       showToast('Google sign-in credentials and selected folder removed from this device.', 'success');
@@ -1300,10 +1318,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                     <div className="font-bold text-sm text-slate-900 dark:text-slate-100">Google Drive account authorization</div>
                     <p className="text-xs text-slate-500 mt-1">
                       {driveAuthStatus === 'checking' ? 'Checking secure sign-in status…' :
-                       driveAuthStatus === 'authorized' ? 'Google account authorization is stored securely on this Windows device.' :
-                       driveAuthStatus === 'unsupported' ? 'Windows desktop sign-in is not available in this browser or Android build yet.' :
+                       driveAuthStatus === 'authorized' ? 'Google account authorization is stored securely on this device.' :
+                       driveAuthStatus === 'unsupported' ? 'Google Drive sign-in is available in the Windows desktop and Android apps, not in this browser.' :
                        driveAuthStatus === 'error' ? 'Sign-in status could not be verified, or the last sign-in attempt failed.' :
-                       'No Google account is authorized on this Windows device.'}
+                       'No Google account is authorized on this device.'}
                     </p>
                   </div>
                   <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${driveAuthStatus === 'authorized' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'}`}>
@@ -1340,7 +1358,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
 <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 space-y-1">
   <div className="font-bold text-xs text-amber-900 dark:text-amber-300">Folder selection is ready; live sync is not active</div>
   <p className="text-xs text-amber-900/80 dark:text-amber-200/80">
-    The selected folder is saved on this device. Drive upload/download coordination, conflict approval, Android native sign-in and automatic sync are still pending. Local records remain on this device; no automatic upload or download is running.
+    The selected folder is saved on this device. Drive upload/download coordination, conflict approval, automatic sync and conflict approval are still pending. Local records remain on this device; no automatic upload or download is running.
   </p>
 </div>
               </div>
