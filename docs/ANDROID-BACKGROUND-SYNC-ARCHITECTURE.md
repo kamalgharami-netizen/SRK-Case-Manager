@@ -101,6 +101,10 @@ Added the private Capacitor package `@srk/capacitor-sync-state`:
 
 The CI run triggered by these changes must pass TypeScript checks, the Android Gradle build, signed APK packaging, and Windows EXE packaging. After CI, add tests for migration retries, read-back mismatch, localStorage mutation during migration, and native database transaction failure before switching any production reads/writes.
 
+### Stage 1.1 — missing-key data preservation
+
+The native database now checks whether encrypted rows already exist before generating a Keystore key. If the alias is missing or does not resolve to a SecretKey while rows remain, the operation fails explicitly and leaves the encrypted rows untouched. It does not silently create a replacement key. This is a data-preservation safeguard, not a data-recovery mechanism: recovery still requires the original usable Keystore key or a separately verified recovery design.
+
 ## Manual Android device validation checklist (release gate)
 
 CI currently compiles and packages the native plugin, but it does not execute Android Keystore, SQLite, app-data restore, or process-restart behavior on a physical device. Complete this checklist on at least one supported Android device before enabling the migration or connecting the native store to live sync.
@@ -116,6 +120,8 @@ CI currently compiles and packages the native plugin, but it does not execute An
 - [ ] Verify SQLite contains encrypted Base64 payloads rather than the supplied plain-text test values. Do not export production sync data for this check.
 
 ### B. Encryption and recovery
+
+- [ ] If encrypted rows exist but the Android Keystore alias is missing or no longer resolves to a usable key, verify reads/writes fail with an explicit recovery error and do not generate a replacement key or overwrite existing ciphertext.
 
 - [ ] Verify a value written before app process termination can be decrypted after relaunch.
 - [ ] Test app update over the existing installation; confirm the stored value remains readable.
