@@ -54,6 +54,13 @@ function createGoogleOAuthLoopbackListener(options = {}) {
 
     const oauthError = requestUrl.searchParams.get("error");
     const code = requestUrl.searchParams.get("code");
+    const pickedFileIdsValue = requestUrl.searchParams.get("picked_file_ids") || "";
+    const pickedFileIds = pickedFileIdsValue ? pickedFileIdsValue.split(",") : [];
+    if (pickedFileIdsValue.length > 4096 || pickedFileIds.some((id) => !/^[A-Za-z0-9_-]{1,256}$/.test(id))) {
+      response.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
+      response.end("Invalid Google Drive selection response.");
+      return;
+    }
     settled = true;
     clearTimeout(timer);
 
@@ -73,7 +80,7 @@ function createGoogleOAuthLoopbackListener(options = {}) {
 
     response.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
     response.end("<!doctype html><title>Sign-in complete</title><p>Google sign-in response received. You may close this window and return to SRK Case Manager.</p>");
-    resolveResult({ code });
+    resolveResult({ code, pickedFileIds });
   });
 
   const close = () => {
