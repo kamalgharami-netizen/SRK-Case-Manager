@@ -262,3 +262,47 @@ test('migration invalidates completion marker if legacy source changes during ma
   assert.equal(storage.getItem('srk_sync_journal_v1'), 'changed-during-finalization');
   assert.equal(nativeStore.values.has('srk_native_sync_state_migration_v1'), false);
 });
+
+test('migration falls back to an invalid marker when marker removal throws', async () => {
+  const storage = new MemoryStorage([['srk_sync_journal_v1', 'original-value']]);
+  const nativeStore = new MemoryNativeStore();
+  nativeStore.beforeSet = items => {
+    if (items.some(item => item.key === 'srk_native_sync_state_migration_v1')) {
+      storage.setItem('srk_sync_journal_v1', 'changed-during-finalization');
+    }
+  };
+  nativeStore.removeItems = async () => {
+    throw new Error('simulated native database removal failure');
+  };
+
+  const result = await runLegacyAndroidSyncStateMigration(storage as unknown as Storage, nativeStore);
+
+  assert.deepEqual(result, { status: 'retry-required', copied: 1 });
+  assert.equal(nativeStore.values.get('srk_native_sync_state_migration_v1'), '0');
+});
+
+test('migration fails closed if marker removal and invalidation both fail', async () => {
+  const storage = new MemoryStorage([['srk_sync_journal_v1', 'original-value']]);
+  const nativeStore = new MemoryNativeStore();
+  nativeStore.beforeSet = items => {
+    if (items.some(item => item.key === 'srk_native_sync_state_migration_v1')) {
+      storage.setItem('srk_sync_journal_v1', 'changed-during-finalization');
+    }
+  };
+  nativeStore.removeItems = async () => {
+    throw new Error('simulated remove failure');
+  };
+  const originalSetItems = nativeStore.setItems.bind(nativeStore);
+  nativeStore.setItems = async ({ items }) => {
+    if (items.some(item => item.key === 'srk_native_sync_state_migration_v1' && item.value === '0')) {
+      throw new Error('simulated marker invalidation failure');
+    }
+    return originalSetItems({ items });
+  };
+
+  await assert.rejects(
+    runLegacyAndroidSyncStateMigration(storage as unknown as Storage, nativeStore),
+    /marker could not be invalidated/,
+  );
+  assert.equal(nativeStore.values.get('srk_native_sync_state_migration_v1'), '1');
+});
