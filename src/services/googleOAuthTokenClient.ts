@@ -47,11 +47,12 @@ function parseTokenResponse(payload: unknown, now: number,
         (typeof value.scope !== 'string' || value.scope.length > 4096))) {
     throw new Error('Google returned incomplete or invalid OAuth token fields.');
   }
+  const expiresIn = value.expires_in as number;
   return {
     accessToken: value.access_token,
     refreshToken: value.refresh_token ?? previousRefreshToken,
     tokenType: 'Bearer',
-    expiresAt: now + value.expires_in * 1000,
+    expiresAt: now + expiresIn * 1000,
     scope: value.scope ?? null,
   };
 }
