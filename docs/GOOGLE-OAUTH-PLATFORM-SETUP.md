@@ -33,7 +33,7 @@ The owner reported its package/SHA-1 registration was checked in project `helica
 6. The callback listener is covered by Node tests for valid state, rejected state, OAuth errors, and invalid state input.
 7. The project owner supplied this Windows Desktop client ID and confirmed that its application type is **Desktop app** and it belongs to project `helical-crowbar-513210-p6`: `955204328722-um7epi871el2cuentnti4rq5obofh4ih.apps.googleusercontent.com`. This confirmation is owner-reported, not independently inspected by the repository integration. The ID is now used by `src/services/googleDriveWindowsAuth.ts`.
 
-End-to-end authorization-code exchange using the PKCE verifier, token expiry/revocation handling, and UI connection flow are still outstanding. Store any access token only through the platform secure-storage adapter. Do not log tokens or include them in sync journal records.
+Windows authorization-code exchange using the PKCE verifier and encrypted credential storage are implemented. The Windows UI now invokes the Desktop/Mobile Picker and saves one verified selected folder ID locally. Token expiry/revocation recovery, Android native authorization, live sync coordination and end-to-end packaged-app verification remain outstanding. Store tokens only through the platform secure-storage adapter. Do not log tokens or include them in sync journal records.
 
 ## Current implementation boundary
 
