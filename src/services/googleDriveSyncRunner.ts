@@ -7,9 +7,9 @@ import { getValidWindowsGoogleDriveCredentials } from './googleDriveWindowsAuth'
 import { getSelectedGoogleDriveFolder } from './googleDriveSelectedFolder';
 import { SyncJournal } from './syncJournal';
 import { SyncInbox } from './googleDriveSyncInbox';
-import { syncGoogleDriveNow } from './googleDriveSyncCoordinator';
+import { syncGoogleDriveNow, type GoogleDriveSyncCoordinatorResult } from './googleDriveSyncCoordinator';
 
-let activeCycle: Promise<Awaited<ReturnType<typeof syncGoogleDriveNow<unknown>>> | null> | null = null;
+let activeCycle: Promise<GoogleDriveSyncCoordinatorResult | null> | null = null;
 
 export interface GoogleDriveSyncCycleOptions {
   /** Manual user action may renew Android credentials; automatic foreground sync must not prompt. */
@@ -22,14 +22,14 @@ export interface GoogleDriveSyncCycleOptions {
  */
 export function runGoogleDriveSyncCycle(
   options: GoogleDriveSyncCycleOptions = {},
-): Promise<Awaited<ReturnType<typeof syncGoogleDriveNow<unknown>>> | null> {
+): Promise<GoogleDriveSyncCoordinatorResult | null> {
   if (activeCycle) return activeCycle;
 
   activeCycle = (async () => {
     const folder = getSelectedGoogleDriveFolder();
     if (!folder?.id) return null;
 
-    let credentials;
+    let credentials: Awaited<ReturnType<typeof getValidAndroidGoogleDriveCredentials>>;
     if (Capacitor.getPlatform() === 'android') {
       if (options.allowAndroidReauthorization) {
         credentials = await getValidAndroidGoogleDriveCredentials();
