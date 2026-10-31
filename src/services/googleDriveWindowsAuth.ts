@@ -1,5 +1,6 @@
 import { createGoogleOAuthState, createWindowsGooglePkceRequest } from './googleOAuthPkce';
 import { exchangeGoogleAuthorizationCode } from './googleOAuthTokenClient';
+import { getDriveFileMetadata } from './googleDriveApi';
 import {
   deleteSecureGoogleOAuthCredentials,
   getSecureGoogleOAuthCredentials,
@@ -13,7 +14,7 @@ const DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
 interface WindowsOAuthBridge {
   listen(expectedState: string): Promise<{ redirectUri: string }>;
-  wait(): Promise<{ code?: string; error?: string }>;
+  wait(): Promise<{ code?: string; error?: string; pickedFileIds?: string[] }>;
   open(authorizationUrl: string): Promise<boolean>;
   cancel(): Promise<boolean>;
 }
@@ -34,7 +35,31 @@ function getWindowsOAuthBridge(): WindowsOAuthBridge {
  * PKCE. Credentials are persisted only in the platform secure store.
  * This authorizes Drive access; it does not yet select a sync folder or run sync.
  */
-export async function connectWindowsGoogleDrive(): Promise<StoredGoogleOAuthCredentials> {
+export interface SelectedGoogleDriveFolder {
+  id: string;
+  name: string;
+}
+
+const SELECTED_FOLDER_KEY = 'srk_google_drive_selected_folder_v1';
+
+function saveSelectedFolder(folder: SelectedGoogleDriveFolder): void {
+  localStorage.setItem(SELECTED_FOLDER_KEY, JSON.stringify(folder));
+}
+
+export function getSelectedGoogleDriveFolder(): SelectedGoogleDriveFolder | null {
+  try {
+    const raw = localStorage.getItem(SELECTED_FOLDER_KEY);
+    if (!raw) return null;
+    const value = JSON.parse(raw);
+    if (!value || typeof value.id !== 'string' || !value.id ||
+        typeof value.name !== 'string' || !value.name) return null;
+    return { id: value.id, name: value.name };
+  } catch {
+    return null;
+  }
+}
+
+export async function connectWindowsGoogleDrive(): Promise<{ credentials: StoredGoogleOAuthCredentials; folder: SelectedGoogleDriveFolder }> {
   const bridge = getWindowsOAuthBridge();
   const state = createGoogleOAuthState();
   const callback = await bridge.listen(state);
@@ -58,6 +83,9 @@ export async function connectWindowsGoogleDrive(): Promise<StoredGoogleOAuthCred
     if (!callbackResult.code) {
       throw new Error('Google did not return an authorization code.');
     }
+    if (!Array.isArray(callbackResult.pickedFileIds) || callbackResult.pickedFileIds.length !== 1) {
+      throw new Error('Select exactly one Google Drive folder to continue.');
+    }
 
     const credentials = await exchangeGoogleAuthorizationCode({
       clientId: WINDOWS_GOOGLE_CLIENT_ID,
@@ -65,8 +93,17 @@ export async function connectWindowsGoogleDrive(): Promise<StoredGoogleOAuthCred
       codeVerifier: request.codeVerifier,
       redirectUri: callback.redirectUri,
     });
+    const selected = await getDriveFileMetadata({
+      accessToken: credentials.accessToken,
+      fileId: callbackResult.pickedFileIds[0],
+    });
+    if (selected.mimeType !== 'application/vnd.google-apps.folder') {
+      throw new Error('The selected Drive item is not a folder. Please select a folder.');
+    }
+    const folder = { id: selected.id, name: selected.name };
     await setSecureGoogleOAuthCredentials(credentials);
-    return credentials;
+    saveSelectedFolder(folder);
+    return { credentials, folder };
   } finally {
     await bridge.cancel().catch(() => false);
   }
@@ -82,4 +119,5 @@ export async function getWindowsGoogleDriveCredentials():
 export async function disconnectWindowsGoogleDrive(): Promise<void> {
   getWindowsOAuthBridge();
   await deleteSecureGoogleOAuthCredentials();
+  localStorage.removeItem(SELECTED_FOLDER_KEY);
 }
