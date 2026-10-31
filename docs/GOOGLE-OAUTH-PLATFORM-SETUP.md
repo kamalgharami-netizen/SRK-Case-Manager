@@ -41,7 +41,7 @@ The repository now has platform-specific secure storage for short-lived access t
 
 The Windows OAuth callback listener is included in the packaged EXE. It binds only to `127.0.0.1`, uses a dynamically assigned port and fixed callback path, validates the per-request state, times out, and is cancelled when the app closes. Its tests are part of the project test command.
 
-The storage adapter is not itself a complete OAuth implementation. Windows now has PKCE request preparation and a main-process loopback callback listener, but no verified Windows Desktop client ID or authorization-code token exchange has been configured. Android native Google authorization is also not yet implemented. Token expiry/refresh, revocation, and the UI connection state remain outstanding. Until each platform's complete sign-in and token lifecycle is implemented and tested, Google Drive must remain visibly disconnected and live sync must remain disabled.
+The storage adapter is not itself a complete OAuth implementation. Windows now has PKCE request preparation, a main-process loopback callback listener, and a tested public-client token exchange/refresh module. No verified Windows Desktop client ID is configured, and secure persistence of the complete access/refresh credential bundle is not yet implemented. Android native Google authorization is also not yet implemented. Expiry scheduling, revocation, and the UI connection state remain outstanding. Until each platform's complete sign-in and token lifecycle is implemented and tested, Google Drive must remain visibly disconnected and live sync must remain disabled.
 
 ## Authoritative Google documentation
 
