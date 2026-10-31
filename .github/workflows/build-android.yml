@@ -97,12 +97,7 @@ jobs:
           disable-animations: true
           working-directory: android
           script: |
-            set +e
-            ./gradlew :srk-capacitor-sync-state:connectedDebugAndroidTest --no-daemon --stacktrace
-            test_status=$?
-            echo "===== Android emulator crash diagnostics ====="
-            echo "===== Connected Android devices ====="\n            adb devices -l || true\n            echo "===== Emulator crash diagnostics ====="\n            adb -s emulator-5554 logcat -b all -d -v time | grep -E "FATAL EXCEPTION|AndroidRuntime|am_crash|am_anr|INSTRUMENTATION|Process .* died|Fatal signal|keystore|SyncStateDatabase|TestRunner" | tail -n 400 || true
-            exit "$test_status"
+            ./gradlew :srk-capacitor-sync-state:connectedDebugAndroidTest --no-daemon --stacktrace; test_status=$?; echo "===== Connected Android devices ====="; adb devices -l || true; echo "===== Emulator crash diagnostics ====="; adb -s emulator-5554 logcat -b all -d -v time | grep -E "FATAL EXCEPTION|AndroidRuntime|am_crash|am_anr|INSTRUMENTATION|Process .* died|Fatal signal|keystore|SyncStateDatabase|TestRunner" | tail -n 400 || true; exit "$test_status"
 
       - name: Upload Android instrumentation test reports
         if: always()
@@ -110,8 +105,8 @@ jobs:
         with:
           name: SRK-Case-Manager-Android-Instrumentation-Reports
           path: |
-            android/capacitor-sync-state/build/reports/androidTests/connected/debug
-            android/capacitor-sync-state/build/outputs/androidTest-results/connected/debug
+            capacitor-sync-state/android/build/reports/androidTests/connected/debug
+            capacitor-sync-state/android/build/outputs/androidTest-results/connected/debug
           if-no-files-found: warn
           retention-days: 7
 
