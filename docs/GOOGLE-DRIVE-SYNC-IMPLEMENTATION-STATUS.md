@@ -114,3 +114,25 @@ Live sync is not enabled by this change. The app must not show a connected or sy
 - The Android OAuth client is associated with the app's package ID `in.srk.casemanage` and signing certificate fingerprint in Google Cloud; the Identity SDK uses the installed app identity. The release signing certificate must match the SHA-1 configured on the Android OAuth client.
 - Live/two-way sync, conflict approval, scheduled/automatic sync and actual device authorization testing remain outstanding.
 - Official references: https://developers.google.com/workspace/drive/picker/guides/desktop-mobile-picker and https://developers.google.com/android/reference/com/google/android/gms/auth/api/identity/AuthorizationClient
+
+## Latest implementation update (2026-10-31)
+
+The following items supersede earlier notes above that described these components as not yet wired:
+
+- Added the Android native Google authorization and folder-selection flow alongside the Windows PKCE + Picker flow. Both platforms use the shared selected-folder configuration.
+- Added a bounded Google Drive sync coordinator. A manual **Sync Now** action pulls remote change files into the review inbox, then pushes pending local change envelopes. It does not automatically apply remote changes to the live case database.
+- Windows access tokens are refreshed on demand using the stored refresh token. Android authorization is renewed through the native authorization flow when the short-lived access token approaches expiry.
+- The Sync Status screen now shows the manual sync action, transfer counts and pagination continuation status.
+- Remote change IDs are persisted in the inbox's seen-ID ledger (bounded to the latest 10,000 IDs). Acknowledged changes and conflicts are skipped on later pulls instead of being downloaded and staged repeatedly.
+- Drive pagination continuation tokens are stored per selected folder so a later manual sync can continue after the configured page limit.
+- Added side-by-side Conflict Review with explicit **Keep Local Version** and **Use Remote Version** actions. Choosing the remote version applies that validated record locally; either choice queues a new resolution envelope for the next sync.
+- Fixed conflict resolution so the original local pending change is superseded after the selected resolution envelope has been safely queued, preventing the original and resolution versions from both being uploaded.
+- Added tests for acknowledged-change deduplication, conflict deduplication, and local-choice conflict resolution.
+
+### Build verification
+
+- GitHub Actions run #215, commit `40252b0001e670a361d82ba284a86dc2eab57dbd`, completed successfully: signed Android APK and Windows installer artifacts were built and uploaded. This verifies that commit's source and workflow.
+- Subsequent commits add the persistent seen-ID ledger, pagination continuation and Conflict Review UI. Their latest GitHub Actions run must also pass before these newest changes are treated as build-verified.
+- Real Android/Windows device sign-in, Picker, Drive upload/download and cross-device record consistency still require manual device testing. CI success alone does not prove end-to-end Google Drive sync.
+- Automatic/background sync is not yet implemented. Sync currently requires the user to press **Sync Now**.
+- PR #7 remains open and Draft; it has not been merged.
