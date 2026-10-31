@@ -21,6 +21,8 @@ function createGoogleOAuthLoopbackListener(options = {}) {
     resolveResult = resolve;
     rejectResult = reject;
   });
+  // The caller may cancel or time out before it starts awaiting the result.
+  resultPromise.catch(() => {});
 
   const server = http.createServer((request, response) => {
     const requestUrl = new URL(request.url || "/", "http://127.0.0.1");
