@@ -36,6 +36,7 @@ export function collectLegacyAndroidSyncState(storage: Pick<Storage, 'length' | 
 export interface NativeSyncStateMigrationStore {
   getItems(options: { keys: string[] }): Promise<{ items: NativeSyncStateEntry[] }>;
   setItems(options: { items: NativeSyncStateEntry[] }): Promise<{ saved: number }>;
+  removeItems(options: { keys: string[] }): Promise<{ removed: number }>;
 }
 
 /**
@@ -87,6 +88,27 @@ export async function runLegacyAndroidSyncStateMigration(
   const finalCheck = await nativeStore.getItems({ keys: [MIGRATION_MARKER] });
   if (!finalCheck.items.some(item => item.key === MIGRATION_MARKER && item.value === '1')) {
     throw new Error('Native sync-state migration marker could not be verified.');
+  }
+
+  // Recheck once more after the marker write: legacy state may have changed
+  // while the native store was committing the completion marker.
+  const finalSourceSnapshot = collectLegacyAndroidSyncState(storage);
+  const sourceStillUnchanged = snapshot.length === finalSourceSnapshot.length &&
+    snapshot.every((item, index) =>
+      finalSourceSnapshot[index]?.key === item.key && finalSourceSnapshot[index]?.value === item.value,
+    );
+  if (!sourceStillUnchanged) {
+    const removed = await nativeStore.removeItems({ keys: [MIGRATION_MARKER] });
+    const markerAfterRollback = await nativeStore.getItems({ keys: [MIGRATION_MARKER] });
+    if (removed.removed !== 1 || markerAfterRollback.items.some(item => item.key === MIGRATION_MARKER && item.value === '1')) {
+      // An invalid completion marker must never be allowed to suppress retry.
+      await nativeStore.setItems({ items: [{ key: MIGRATION_MARKER, value: '0' }] });
+      const invalidated = await nativeStore.getItems({ keys: [MIGRATION_MARKER] });
+      if (invalidated.items.some(item => item.key === MIGRATION_MARKER && item.value === '1')) {
+        throw new Error('Migration source changed during completion and the marker could not be invalidated.');
+      }
+    }
+    return { status: 'retry-required', copied: snapshot.length };
   }
 
   return { status: 'migrated', copied: snapshot.length };
