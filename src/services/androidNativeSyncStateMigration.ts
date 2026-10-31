@@ -2,6 +2,8 @@ import { Capacitor } from '@capacitor/core';
 import { SyncStateStore, type NativeSyncStateEntry } from '@srk/capacitor-sync-state';
 
 const MIGRATION_MARKER = 'srk_native_sync_state_migration_v1';
+const MAX_NATIVE_KEY_LENGTH = 256;
+const MAX_NATIVE_VALUE_LENGTH = 2 * 1024 * 1024;
 const SYNC_STATE_KEYS = new Set([
   'srk_sync_journal_v1',
   'srk_sync_conflicts_v1',
@@ -52,6 +54,14 @@ export async function runLegacyAndroidSyncStateMigration(
   const snapshot = collectLegacyAndroidSyncState(storage);
   if (snapshot.length > 500) {
     throw new Error('Too many legacy sync-state entries for a safe migration batch.');
+  }
+  // Match the native plugin's limits before making any write. This prevents a
+  // single oversized legacy page token or value from causing a partial migration.
+  const invalidEntry = snapshot.find(item =>
+    item.key.length > MAX_NATIVE_KEY_LENGTH || item.value.length > MAX_NATIVE_VALUE_LENGTH,
+  );
+  if (invalidEntry) {
+    throw new Error('A legacy sync-state entry exceeds the native store size limits; source data was left untouched.');
   }
 
   if (snapshot.length) {
