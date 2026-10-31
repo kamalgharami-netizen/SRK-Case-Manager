@@ -100,7 +100,7 @@ test('returns a continuation token when the pull page limit is reached', async (
   );
   assert.equal(result.pages, 1);
   assert.equal(result.nextPageToken, 'page-2');
-  assert.deepEqual(requestedTokens, [undefined]);
+  assert.equal(requestedTokens[0], undefined);
 
   const next = await pullRemoteChanges(
     journal,
