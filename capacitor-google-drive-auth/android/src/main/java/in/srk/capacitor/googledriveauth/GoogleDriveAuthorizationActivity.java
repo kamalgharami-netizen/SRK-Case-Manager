@@ -8,7 +8,7 @@ import android.os.Bundle;
 import com.google.android.gms.auth.api.identity.AuthorizationRequest;
 import com.google.android.gms.auth.api.identity.AuthorizationResult;
 import com.google.android.gms.auth.api.identity.Identity;
-import com.google.android.gms.auth.api.identity.Scope;
+import com.google.android.gms.common.api.Scope;
 
 import java.util.Collections;
 import java.util.List;
