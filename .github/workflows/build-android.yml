@@ -61,6 +61,25 @@ jobs:
           fi
           npx cap sync android
 
+      - name: Set Android minimum supported SDK
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          path = Path("android/variables.gradle")
+          if not path.exists():
+              raise SystemExit("Capacitor variables.gradle was not generated; refusing to build with an unknown Android minimum SDK.")
+          content = path.read_text()
+          match = re.search(r"(minSdkVersion\\s*=\\s*)(\\d+)", content)
+          if not match:
+              raise SystemExit("Could not find minSdkVersion in android/variables.gradle.")
+          current = int(match.group(2))
+          if current < 24:
+              content = content[:match.start(2)] + "24" + content[match.end(2):]
+              path.write_text(content)
+          print(f"Android minimum SDK: {max(current, 24)} (Android 7.0 or later)")
+          PY
+
       - name: Set Android version
         shell: bash
         run: |
