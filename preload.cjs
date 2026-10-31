@@ -12,6 +12,11 @@ const api = {
     set: (token) => ipcRenderer.invoke("srk-token:set", token),
     delete: () => ipcRenderer.invoke("srk-token:delete")
   },
+  secureOAuthCredentials: {
+    get: () => ipcRenderer.invoke("srk-oauth-credentials:get"),
+    set: (serialized) => ipcRenderer.invoke("srk-oauth-credentials:set", serialized),
+    delete: () => ipcRenderer.invoke("srk-oauth-credentials:delete")
+  },
   closeApp: () => {
     try {
       ipcRenderer.send("app-close");
