@@ -7,7 +7,7 @@ export interface GoogleDriveAuthorizationResult {
 }
 
 export interface GoogleDriveAuthPlugin {
-  authorize(): Promise<GoogleDriveAuthorizationResult>;
+  authorize(options?: { showPicker?: boolean }): Promise<GoogleDriveAuthorizationResult>;
 }
 
 export const GoogleDriveAuth = registerPlugin<GoogleDriveAuthPlugin>('GoogleDriveAuth');
