@@ -86,6 +86,18 @@ jobs:
           chmod +x gradlew
           ./gradlew :srk-capacitor-sync-state:assembleDebugAndroidTest --no-daemon
 
+      - name: Run native sync-store instrumentation tests on Android Emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: true
+          working-directory: android
+          script: ./gradlew :srk-capacitor-sync-state:connectedDebugAndroidTest --no-daemon
+
       - name: Set Android version
         shell: bash
         run: |
