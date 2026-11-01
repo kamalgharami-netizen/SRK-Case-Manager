@@ -90,12 +90,12 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
-          target: google_apis
+          target: default
           arch: x86_64
           profile: pixel_2
           emulator-boot-timeout: 1200
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 3072 -cores 2
-          # Keep the proven API 34 image and lower emulator resource allocation; API 35 repeatedly lost core Android services in CI.
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 4096 -cores 4
+          # Use the lean AOSP API 34 image; Google Play services are not needed by these native storage tests. Give the emulator enough CPU and memory to avoid package-manager service death on hosted runners.
           disable-animations: true
           working-directory: android
           # This action invokes each physical script line in a separate /usr/bin/sh process.
