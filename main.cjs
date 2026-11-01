@@ -139,6 +139,73 @@ ipcMain.handle("srk-oauth-credentials:delete", async (event) => {
   return true;
 });
 
+
+const BACKUP_DIRECTORY_FILE = "backup-directory.json";
+
+async function getSelectedBackupDirectory() {
+  try {
+    const raw = await fs.readFile(path.join(app.getPath("userData"), BACKUP_DIRECTORY_FILE), "utf8");
+    const parsed = JSON.parse(raw);
+    return typeof parsed.directory === "string" && path.isAbsolute(parsed.directory)
+      ? path.resolve(parsed.directory)
+      : null;
+  } catch (error) {
+    if (error && error.code === "ENOENT") return null;
+    throw new Error("Unable to read the selected backup directory.");
+  }
+}
+
+ipcMain.handle("srk-backup:select-folder", async (event) => {
+  assertTrustedRenderer(event);
+  if (!mainWindow || mainWindow.isDestroyed()) throw new Error("The application window is unavailable.");
+  const previous = await getSelectedBackupDirectory().catch(() => null);
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: "Select SRK Case Manager backup folder",
+    defaultPath: previous || app.getPath("documents"),
+    properties: ["openDirectory", "createDirectory"],
+  });
+  if (result.canceled || !result.filePaths || !result.filePaths[0]) return null;
+  const directory = path.resolve(result.filePaths[0]);
+  const info = await fs.stat(directory);
+  if (!info.isDirectory()) throw new Error("The selected backup location is not a folder.");
+  const configPath = path.join(app.getPath("userData"), BACKUP_DIRECTORY_FILE);
+  const tempConfigPath = configPath + ".tmp";
+  await fs.writeFile(tempConfigPath, JSON.stringify({ directory }), { encoding: "utf8", mode: 0o600 });
+  await fs.rename(tempConfigPath, configPath);
+  return directory;
+});
+
+ipcMain.handle("srk-backup:write-file", async (event, request) => {
+  assertTrustedRenderer(event);
+  if (!request || typeof request !== "object" || Array.isArray(request)) {
+    throw new Error("Invalid backup write request.");
+  }
+  const { directory, fileName, content } = request;
+  if (typeof directory !== "string" || !path.isAbsolute(directory) ||
+      typeof fileName !== "string" || fileName.length > 180 ||
+      path.basename(fileName) !== fileName || !/^[A-Za-z0-9_-]+\.json$/i.test(fileName) ||
+      typeof content !== "string" || Buffer.byteLength(content, "utf8") > 50 * 1024 * 1024) {
+    throw new Error("Backup file details are invalid or exceed the supported size.");
+  }
+  const selectedDirectory = await getSelectedBackupDirectory();
+  const resolvedDirectory = path.resolve(directory);
+  if (!selectedDirectory || resolvedDirectory !== selectedDirectory) {
+    throw new Error("Choose the backup folder using Browse before saving to it.");
+  }
+  const info = await fs.stat(resolvedDirectory);
+  if (!info.isDirectory()) throw new Error("The selected backup location is no longer available.");
+  const destination = path.join(resolvedDirectory, fileName);
+  const temporary = destination + ".tmp-" + process.pid;
+  try {
+    await fs.writeFile(temporary, content, { encoding: "utf8", mode: 0o600 });
+    await fs.rename(temporary, destination);
+  } catch (error) {
+    try { await fs.unlink(temporary); } catch {}
+    throw new Error("The backup file could not be written to the selected folder.");
+  }
+  return { saved: true, filePath: destination };
+});
+
 let mainWindow = null;
 let isQuitting = false;
 let googleOAuthListener = null;
