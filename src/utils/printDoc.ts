@@ -112,3 +112,22 @@ export function safeOpenWhatsApp(phone: string, message: string): void {
     }
   }, 100);
 }
+
+
+/** Opens the device's default SMS composer; the user must review and send. */
+export function safeOpenSms(phone: string, message: string): void {
+  const cleanPhone = phone.replace(/[^0-9+]/g, '');
+  const encoded = encodeURIComponent(message);
+  const separator = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? '?' : '?';
+  const smsUrl = cleanPhone
+    ? `sms:${cleanPhone}${separator}body=${encoded}`
+    : `sms:${separator}body=${encoded}`;
+  const link = document.createElement('a');
+  link.href = smsUrl;
+  link.rel = 'noopener noreferrer';
+  document.body.appendChild(link);
+  link.click();
+  window.setTimeout(() => {
+    if (document.body.contains(link)) document.body.removeChild(link);
+  }, 100);
+}
