@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { runDatabaseMigrations, type DatabaseMigrationStorage } from './databaseMigrations';
+import { runDatabaseMigrations, restoreDatabaseMigrationBackup, type DatabaseMigrationStorage } from './databaseMigrations';
 
 class MemoryStorage implements DatabaseMigrationStorage {
   values = new Map<string, string>();
@@ -155,4 +155,69 @@ test('fails closed and keeps backup when migrated output fails validation', () =
   assert.throws(() => runDatabaseMigrations(options(storage, { migrations })), /produced invalid data/);
   assert.equal(storage.getItem('srk_case_manager_data'), original);
   assert.ok(storage.getItem('srk_database_migration_backup_v1_123456'));
+});
+
+test('restores a retained backup and verifies restored data and schema version', () => {
+  const storage = new MemoryStorage();
+  const original = JSON.stringify({ records: ['before'], schema: 1 });
+  storage.setItem('srk_case_manager_data', original);
+  const migration = runDatabaseMigrations(options(storage));
+  assert.equal(storage.getItem('srk_database_schema_version_v1'), '3');
+
+  const result = restoreDatabaseMigrationBackup({
+    storage,
+    backupKey: migration.backupKey,
+    dataKey: 'srk_case_manager_data',
+  });
+
+  assert.deepEqual(result, { status: 'restored', version: 1 });
+  assert.equal(storage.getItem('srk_case_manager_data'), original);
+  assert.equal(storage.getItem('srk_database_schema_version_v1'), null);
+  assert.ok(storage.getItem(migration.backupKey));
+});
+
+test('refuses a backup belonging to a different database without changing current data', () => {
+  const storage = new MemoryStorage();
+  const current = JSON.stringify({ records: ['current'], schema: 3 });
+  storage.setItem('srk_case_manager_data', current);
+  storage.setItem('srk_database_schema_version_v1', '3');
+  storage.setItem('foreign_backup', JSON.stringify({
+    formatVersion: 1,
+    dataKey: 'another_database',
+    schemaVersion: 1,
+    rawData: JSON.stringify({ records: [], schema: 1 }),
+    rawVersionMarker: null,
+  }));
+
+  assert.throws(() => restoreDatabaseMigrationBackup({
+    storage,
+    backupKey: 'foreign_backup',
+    dataKey: 'srk_case_manager_data',
+  }), /does not match this database/);
+  assert.equal(storage.getItem('srk_case_manager_data'), current);
+  assert.equal(storage.getItem('srk_database_schema_version_v1'), '3');
+});
+
+test('restores the current state if a backup recovery write fails', () => {
+  const storage = new MemoryStorage();
+  const current = JSON.stringify({ records: ['current'], schema: 3 });
+  storage.setItem('srk_case_manager_data', current);
+  storage.setItem('srk_database_schema_version_v1', '3');
+  storage.setItem('valid_backup', JSON.stringify({
+    formatVersion: 1,
+    dataKey: 'srk_case_manager_data',
+    schemaVersion: 1,
+    rawData: JSON.stringify({ records: ['backup'], schema: 1 }),
+    rawVersionMarker: null,
+  }));
+  storage.failSetKey = 'srk_case_manager_data';
+  storage.failSetOnce = true;
+
+  assert.throws(() => restoreDatabaseMigrationBackup({
+    storage,
+    backupKey: 'valid_backup',
+    dataKey: 'srk_case_manager_data',
+  }), /simulated write failure/);
+  assert.equal(storage.getItem('srk_case_manager_data'), current);
+  assert.equal(storage.getItem('srk_database_schema_version_v1'), '3');
 });
