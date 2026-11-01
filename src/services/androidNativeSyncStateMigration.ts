@@ -95,6 +95,23 @@ export async function runLegacyAndroidSyncStateMigration(
       currentSnapshot[index]?.key === item.key && currentSnapshot[index]?.value === item.value,
     );
   if (!verified || !unchanged) {
+    if (!unchanged) {
+      // If the legacy source changed during this attempt, remove only destination
+      // keys that were absent at preflight and therefore were created by this
+      // attempt. Preserve pre-existing native values and fail closed if cleanup
+      // cannot be verified; the next retry can then copy the latest source value.
+      const newlyWrittenKeys = snapshot
+        .filter(item => !existingValues.has(item.key))
+        .map(item => item.key);
+      if (newlyWrittenKeys.length) {
+        await nativeStore.removeItems({ keys: newlyWrittenKeys });
+        const cleanupReadBack = await nativeStore.getItems({ keys: newlyWrittenKeys });
+        const remainingKeys = new Set(cleanupReadBack.items.map(item => item.key));
+        if (newlyWrittenKeys.some(key => remainingKeys.has(key))) {
+          throw new Error('Migration source changed during copy and newly written destination values could not be safely rolled back.');
+        }
+      }
+    }
     return { status: 'retry-required', copied: snapshot.length };
   }
 
