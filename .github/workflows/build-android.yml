@@ -70,7 +70,7 @@ jobs:
           if not path.exists():
               raise SystemExit("Capacitor variables.gradle was not generated; refusing to build with an unknown Android minimum SDK.")
           content = path.read_text()
-          match = re.search(r"(minSdkVersion\\s*=\\s*)(\\d+)", content)
+          match = re.search(r"(minSdkVersion\s*=\s*)(\d+)", content)
           if not match:
               raise SystemExit("Could not find minSdkVersion in android/variables.gradle.")
           current = int(match.group(2))
@@ -139,7 +139,7 @@ jobs:
           VERSION="$(node -p "require('./package.json').version")"
           VERSION_CODE=$((52000 + GITHUB_RUN_NUMBER))
           sed -i -E "s/versionCode[[:space:]]+[0-9]+/versionCode ${VERSION_CODE}/" android/app/build.gradle
-          sed -i -E "s/versionName .*/versionName "\"${VERSION}\""/" android/app/build.gradle
+          sed -i -E "s/versionName .*/versionName \"${VERSION}\"/" android/app/build.gradle
 
       - name: Configure persistent release signing
         if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' && env.ANDROID_KEYSTORE_PASSWORD != '' && env.ANDROID_KEY_ALIAS != '' && env.ANDROID_KEY_PASSWORD != '' }}
@@ -166,9 +166,9 @@ jobs:
           """,
                   1
               )
-          pattern = r"(buildTypes\\s*\\{\\s*release\\s*\\{)"
+          pattern = r"(buildTypes\s*\\{\s*release\s*\\{)"
           if re.search(pattern, content):
-              content = re.sub(pattern, r"\\1\\n            signingConfig signingConfigs.release", content, count=1)
+              content = re.sub(pattern, r"\1\n            signingConfig signingConfigs.release", content, count=1)
           else:
               raise SystemExit("Could not locate Android release build type; refusing to create an unsigned release APK.")
           path.write_text(content)
