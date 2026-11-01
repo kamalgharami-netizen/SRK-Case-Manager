@@ -166,3 +166,78 @@ test('requires a selected Drive folder', async () => {
     /Select a Google Drive sync folder/
   );
 });
+
+
+test('stages remote deletion tombstones and does not apply them during pull', async () => {
+  const storage = new MemoryStorage();
+  const journal = new SyncJournal<unknown>(storage);
+  const inbox = new SyncInbox<unknown>(storage);
+  const tombstone = {
+    ...envelope('remote-delete'),
+    recordId: 'cases:case1',
+    deleted: true,
+    payload: null,
+  };
+  const result = await pullRemoteChanges(journal, inbox, { accessToken: 'token', folderId: 'folder1' }, {
+    listFiles: async () => ({ files: [{ id: 'delete-file', name: 'srk-change-remote-delete.json', mimeType: 'application/json' }] }),
+    downloadJson: async () => tombstone,
+  });
+
+  assert.equal(result.downloaded, 1);
+  assert.equal(result.staged, 1);
+  assert.deepEqual(inbox.getAll(), [tombstone]);
+  assert.equal(journal.getPendingCount(), 0);
+});
+
+test('routes a remote deletion against a pending local edit to conflict review', async () => {
+  const storage = new MemoryStorage();
+  const journal = new SyncJournal<unknown>(storage);
+  const inbox = new SyncInbox<unknown>(storage);
+  journal.enqueue({
+    ...envelope('local-edit', 'local_device_123456'),
+    payload: { id: 'case1', caseNo: 'locally edited' },
+  });
+  const tombstone = {
+    ...envelope('remote-delete'),
+    recordId: 'cases:case1',
+    deleted: true,
+    payload: null,
+  };
+
+  const result = await pullRemoteChanges(journal, inbox, { accessToken: 'token', folderId: 'folder1' }, {
+    listFiles: async () => ({ files: [{ id: 'delete-file', name: 'srk-change-remote-delete.json', mimeType: 'application/json' }] }),
+    downloadJson: async () => tombstone,
+  });
+
+  assert.equal(result.conflicts, 1);
+  assert.equal(result.staged, 0);
+  assert.equal(inbox.getAll().length, 0);
+  const conflicts = journal.getConflicts();
+  assert.equal(conflicts.length, 1);
+  assert.equal(conflicts[0].remote.deleted, true);
+  assert.equal(conflicts[0].remote.payload, null);
+  assert.equal(journal.getPendingCount(), 1);
+});
+
+test('does not download a previously seen remote deletion tombstone again', async () => {
+  const storage = new MemoryStorage();
+  const journal = new SyncJournal<unknown>(storage);
+  const inbox = new SyncInbox<unknown>(storage);
+  const tombstone = {
+    ...envelope('remote-delete'),
+    deleted: true,
+    payload: null,
+  };
+  inbox.add([tombstone]);
+  inbox.acknowledge([tombstone.changeId]);
+  let downloads = 0;
+
+  const result = await pullRemoteChanges(journal, inbox, { accessToken: 'token', folderId: 'folder1' }, {
+    listFiles: async () => ({ files: [{ id: 'delete-file', name: 'srk-change-remote-delete.json', mimeType: 'application/json' }] }),
+    downloadJson: async () => { downloads += 1; return tombstone; },
+  });
+
+  assert.equal(downloads, 0);
+  assert.equal(result.duplicates, 1);
+  assert.equal(inbox.getAll().length, 0);
+});
