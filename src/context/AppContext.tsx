@@ -1733,8 +1733,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         };
       })
     );
-    logActivity(`Sent ${channel} notice to ${party?.name || phone}`);
-    showToast(`Dispatched ${channel} message`);
+    logActivity(`Prepared ${channel} notice for ${party?.name || phone}`);
+    showToast(`${channel} message prepared; review and send it in the opened app.`, 'info');
   };
 
   // Check and sync application version on every start/reload so changes replace the running app and merge older data
