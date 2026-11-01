@@ -131,6 +131,7 @@ export async function pullRemoteChanges<T>(
   }
   const localByRecord = new Map(localPending.map(change => [change.companyId + ':' + change.recordId, change]));
   const remote: SyncEnvelope<T>[] = [];
+  const remoteChangeIds = new Set<string>();
   let duplicates = 0;
   let pageToken: string | undefined = options.pageToken;
   let pages = 0;
@@ -155,7 +156,7 @@ export async function pullRemoteChanges<T>(
         continue;
       }
       if (!fileChangeId) continue;
-      if (inbox.hasSeen(fileChangeId)) {
+      if (inbox.hasSeen(fileChangeId) || remoteChangeIds.has(fileChangeId)) {
         duplicates += 1;
         continue;
       }
@@ -165,6 +166,7 @@ export async function pullRemoteChanges<T>(
         fileId: file.id,
       });
       if (!validEnvelope<T>(value) || value.changeId !== fileChangeId) continue;
+      remoteChangeIds.add(fileChangeId);
       remote.push(value);
     }
     pageToken = page.nextPageToken;
