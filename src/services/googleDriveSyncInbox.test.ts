@@ -241,3 +241,36 @@ test('does not download a previously seen remote deletion tombstone again', asyn
   assert.equal(result.duplicates, 1);
   assert.equal(inbox.getAll().length, 0);
 });
+
+test('rejects a Drive filename whose change ID does not match its envelope', async () => {
+  const storage = new MemoryStorage();
+  const journal = new SyncJournal<unknown>(storage);
+  const inbox = new SyncInbox<unknown>(storage);
+  let downloads = 0;
+  const result = await pullRemoteChanges(journal, inbox, { accessToken: 'token', folderId: 'folder1' }, {
+    listFiles: async () => ({ files: [{ id: 'file1', name: 'srk-change-filename-id.json', mimeType: 'application/json' }] }),
+    downloadJson: async () => { downloads += 1; return envelope('payload-id'); },
+  });
+
+  assert.equal(downloads, 1);
+  assert.equal(result.downloaded, 0);
+  assert.equal(result.staged, 0);
+  assert.equal(inbox.getAll().length, 0);
+  assert.equal(inbox.hasSeen('payload-id'), false);
+});
+
+test('does not download a change with a malformed encoded Drive filename', async () => {
+  const storage = new MemoryStorage();
+  const journal = new SyncJournal<unknown>(storage);
+  const inbox = new SyncInbox<unknown>(storage);
+  let downloads = 0;
+  const result = await pullRemoteChanges(journal, inbox, { accessToken: 'token', folderId: 'folder1' }, {
+    listFiles: async () => ({ files: [{ id: 'file1', name: 'srk-change-%E0%A4%A.json', mimeType: 'application/json' }] }),
+    downloadJson: async () => { downloads += 1; return envelope('unused'); },
+  });
+
+  assert.equal(downloads, 0);
+  assert.equal(result.downloaded, 0);
+  assert.equal(result.staged, 0);
+  assert.equal(inbox.getAll().length, 0);
+});
