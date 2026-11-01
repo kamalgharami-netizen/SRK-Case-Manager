@@ -154,3 +154,10 @@ The repository does not yet include a user-facing native-store test screen or An
 - GitHub Actions now boots an API 35 Google APIs Android Emulator and runs the native sync-store instrumentation suite with `:srk-capacitor-sync-state:connectedDebugAndroidTest`.
 - This is an automated emulator test attempt, not a passed result until the corresponding workflow run is green.
 - Physical Android device checks, Google account authorization, real Drive folder selection, and cross-device sync remain separate release gates.
+
+
+## CI emulator recovery note (2026-11-01)
+
+- Workflow run #321 built the Windows EXE successfully, but the Android job failed before the instrumentation tests could reliably execute: the API 34 emulator stopped responding to ADB, the Android package manager never became ready, and Gradle reported no compatible device. The log contains emulator/Keystore service stalls and Android system ANRs; it does not identify an assertion failure in the native sync-store tests.
+- The workflow emulator profile has therefore been changed to API 35 Google APIs, Pixel 2, x86_64, with a 2 GiB guest-memory setting. This is a CI-environment mitigation, not proof of native-store correctness.
+- The next workflow run must be checked independently. If the emulator again fails to boot or respond, preserve the test gate and investigate runner/emulator stability; do not skip or mark instrumentation as passed.
