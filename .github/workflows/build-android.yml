@@ -96,7 +96,7 @@ jobs:
           emulator-boot-timeout: 1200
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 3072 -cores 2
           # Keep the proven API 34 image and lower emulator resource allocation; API 35 repeatedly lost core Android services in CI.
-          disable-animations: false
+          disable-animations: true
           working-directory: android
           # This action invokes each physical script line in a separate /usr/bin/sh process.
           # Keep the complete loop and test/diagnostic sequence on one shell line.
