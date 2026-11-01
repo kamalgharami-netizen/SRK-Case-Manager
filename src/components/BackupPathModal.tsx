@@ -75,6 +75,23 @@ export const BackupPathModal: React.FC = () => {
    * 3. Handles iframe security limitations without crashing
    */
   const handleBrowseFolder = async () => {
+    const nativeBackupStorage = typeof window !== 'undefined'
+      ? (window as Window & { electronAPI?: { backupStorage?: { selectFolder: () => Promise<string | null> } } })
+          .electronAPI?.backupStorage
+      : undefined;
+    if (nativeBackupStorage?.selectFolder) {
+      try {
+        const selectedDirectory = await nativeBackupStorage.selectFolder();
+        if (!selectedDirectory) return;
+        const normalizedDirectory = selectedDirectory.replace(/\\\\/g, '/');
+        setCustomPath(normalizedDirectory);
+        showToast(`Backup folder selected: ${selectedDirectory}`, 'success');
+      } catch (error) {
+        showToast(error instanceof Error ? error.message : 'Unable to select a backup folder.', 'error');
+      }
+      return;
+    }
+
     let succeededWithNative = false;
 
     // Method 1: File System Access API (Desktop Chrome / Edge / Opera)
