@@ -118,7 +118,17 @@ export async function pullRemoteChanges<T>(
   if (!options.accessToken?.trim()) throw new Error('A Google Drive access token is required.');
   if (!options.folderId?.trim()) throw new Error('Select a Google Drive sync folder first.');
 
+  // Conflict detection must cover every pending local edit. The journal deliberately
+  // caps reads at 500 entries; fail closed rather than staging remote data when the
+  // outbox is larger and some local edits would otherwise be invisible to this pull.
+  const pendingCount = journal.getPendingCount();
+  if (pendingCount > 500) {
+    throw new Error('More than 500 local changes are pending. Sync the local outbox before downloading remote changes.');
+  }
   const localPending = journal.getPending(500);
+  if (localPending.length !== pendingCount) {
+    throw new Error('The local sync outbox changed during conflict validation. Please retry the sync.');
+  }
   const localByRecord = new Map(localPending.map(change => [change.companyId + ':' + change.recordId, change]));
   const remote: SyncEnvelope<T>[] = [];
   let duplicates = 0;
