@@ -128,6 +128,69 @@ public class SyncStateDatabaseInstrumentedTest {
         assertEquals(ciphertextBefore, readStoredCiphertext("test.preserve"));
     }
 
+    @Test
+    public void failedBatchWriteRollsBackEveryRowAndPreservesExistingValues() throws Exception {
+        SyncStateDatabase database = new SyncStateDatabase(context);
+        database.putAll(Arrays.asList(
+            new SyncStateDatabase.SyncStateEntry("test.existing", "keep-existing")
+        ));
+
+        try {
+            database.putAll(Arrays.asList(
+                new SyncStateDatabase.SyncStateEntry("test.partial", "must-rollback"),
+                new SyncStateDatabase.SyncStateEntry(null, "force-constraint-failure")
+            ));
+            fail("A batch containing an invalid key must fail.");
+        } catch (Exception expected) {
+            // The transaction must roll back the first row in the failed batch.
+        }
+
+        List<SyncStateDatabase.SyncStateEntry> existing =
+            database.getAll(Arrays.asList("test.existing"));
+        assertEquals(1, existing.size());
+        assertEquals("keep-existing", existing.get(0).value);
+        assertTrue("No partial row from a failed transaction may remain",
+            database.getAll(Arrays.asList("test.partial")).isEmpty());
+        database.close();
+    }
+
+    @Test
+    public void corruptedCiphertextFailsClosedWithoutReplacingStoredPayload() throws Exception {
+        SyncStateDatabase database = new SyncStateDatabase(context);
+        database.putAll(Arrays.asList(
+            new SyncStateDatabase.SyncStateEntry("test.tamper", "original-secret")
+        ));
+        database.close();
+
+        String originalCiphertext = readStoredCiphertext("test.tamper");
+        String corruptedCiphertext = (originalCiphertext.startsWith("A") ? "B" : "A")
+            + originalCiphertext.substring(1);
+        SQLiteDatabase raw = SQLiteDatabase.openDatabase(
+            databaseFile().getAbsolutePath(),
+            null,
+            SQLiteDatabase.OPEN_READWRITE
+        );
+        try {
+            android.content.ContentValues values = new android.content.ContentValues();
+            values.put("state_value", corruptedCiphertext);
+            assertEquals(1, raw.update("sync_state", values, "state_key = ?",
+                new String[]{"test.tamper"}));
+        } finally {
+            raw.close();
+        }
+
+        SyncStateDatabase reopened = new SyncStateDatabase(context);
+        try {
+            reopened.getAll(Arrays.asList("test.tamper"));
+            fail("Modified AES-GCM ciphertext must not be accepted.");
+        } catch (java.security.GeneralSecurityException expected) {
+            // Authentication failure is expected; the stored payload must remain untouched.
+        } finally {
+            reopened.close();
+        }
+        assertEquals(corruptedCiphertext, readStoredCiphertext("test.tamper"));
+    }
+
     private File databaseFile() {
         return new File(context.getNoBackupFilesDir(), DATABASE_NAME);
     }
