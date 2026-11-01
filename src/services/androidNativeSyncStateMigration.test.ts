@@ -148,6 +148,43 @@ test('migration refuses to set completion marker when native read-back differs',
   assert.equal(nativeStore.values.has('srk_native_sync_state_migration_v1'), false);
 });
 
+test('migration refuses to overwrite a different value already present in native storage', async () => {
+  const storage = new MemoryStorage([['srk_sync_journal_v1', 'legacy-value']]);
+  const nativeStore = new MemoryNativeStore();
+  nativeStore.values.set('srk_sync_journal_v1', 'different-native-value');
+
+  await assert.rejects(
+    runLegacyAndroidSyncStateMigration(storage as unknown as Storage, nativeStore),
+    /destination already contains a different value/,
+  );
+  assert.equal(storage.getItem('srk_sync_journal_v1'), 'legacy-value');
+  assert.equal(nativeStore.values.get('srk_sync_journal_v1'), 'different-native-value');
+  assert.equal(nativeStore.values.has('srk_native_sync_state_migration_v1'), false);
+});
+
+test('migration invalidates a marker when native marker write throws after committing', async () => {
+  const storage = new MemoryStorage([['srk_sync_journal_v1', 'legacy-value']]);
+  const nativeStore = new MemoryNativeStore();
+  const originalSetItems = nativeStore.setItems.bind(nativeStore);
+  nativeStore.setItems = async ({ items }) => {
+    const result = await originalSetItems({ items });
+    if (items.some(item => item.key === 'srk_native_sync_state_migration_v1' && item.value === '1')) {
+      throw new Error('simulated bridge failure after marker commit');
+    }
+    return result;
+  };
+  nativeStore.removeItems = async () => {
+    throw new Error('simulated marker removal failure');
+  };
+
+  await assert.rejects(
+    runLegacyAndroidSyncStateMigration(storage as unknown as Storage, nativeStore),
+    /simulated bridge failure after marker commit/,
+  );
+  assert.equal(nativeStore.values.get('srk_native_sync_state_migration_v1'), '0');
+  assert.equal(storage.getItem('srk_sync_journal_v1'), 'legacy-value');
+});
+
 test('completed migration marker makes retries idempotent', async () => {
   const storage = new MemoryStorage([['srk_sync_journal_v1', 'journal-data']]);
   const nativeStore = new MemoryNativeStore();
