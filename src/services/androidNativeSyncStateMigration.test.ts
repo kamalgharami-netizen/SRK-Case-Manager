@@ -137,6 +137,27 @@ test('migration does not mark completion when source changes during copy and suc
   assert.equal(nativeStore.values.get('srk_native_sync_state_migration_v1'), '1');
 });
 
+test('migration fails closed if changed-source rollback cannot remove newly copied values', async () => {
+  const storage = new MemoryStorage([['srk_sync_journal_v1', 'old-value']]);
+  const nativeStore = new MemoryNativeStore();
+  nativeStore.beforeSet = items => {
+    if (items.some(item => item.key === 'srk_sync_journal_v1')) {
+      storage.setItem('srk_sync_journal_v1', 'new-value');
+    }
+  };
+  nativeStore.removeItems = async () => {
+    throw new Error('simulated destination rollback failure');
+  };
+
+  await assert.rejects(
+    runLegacyAndroidSyncStateMigration(storage as unknown as Storage, nativeStore),
+    /simulated destination rollback failure/,
+  );
+  assert.equal(storage.getItem('srk_sync_journal_v1'), 'new-value');
+  assert.equal(nativeStore.values.get('srk_sync_journal_v1'), 'old-value');
+  assert.equal(nativeStore.values.has('srk_native_sync_state_migration_v1'), false);
+});
+
 test('migration refuses to set completion marker when native read-back differs', async () => {
   const storage = new MemoryStorage([['srk_sync_journal_v1', 'journal-data']]);
   const nativeStore = new MemoryNativeStore();
