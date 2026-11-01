@@ -174,8 +174,32 @@ export async function pullRemoteChanges<T>(
 
   const safeToStage: SyncEnvelope<T>[] = [];
   const conflicts: SyncConflict<T>[] = [];
+
+  // Drive file listing order is not a revision order. Consolidate remote
+  // versions per record before staging so two devices cannot silently replace
+  // one another merely because one file appeared later in the listing.
+  const remoteByRecord = new Map<string, SyncEnvelope<T>>();
+  const remoteConflictedRecords = new Set<string>();
   for (const change of remote) {
-    const local = localByRecord.get(change.companyId + ':' + change.recordId);
+    const key = change.companyId + ':' + change.recordId;
+    const previous = remoteByRecord.get(key);
+    if (!previous) {
+      remoteByRecord.set(key, change);
+      continue;
+    }
+    const result = mergeSyncEnvelopes([previous], [change]);
+    if (result.conflicts.length) {
+      conflicts.push(...result.conflicts);
+      remoteConflictedRecords.add(key);
+    } else if (result.merged[0]) {
+      // Same-device revisions can be ordered by that device's timestamp.
+      remoteByRecord.set(key, result.merged[0]);
+    }
+  }
+
+  for (const [key, change] of remoteByRecord) {
+    if (remoteConflictedRecords.has(key)) continue;
+    const local = localByRecord.get(key);
     if (!local) {
       safeToStage.push(change);
       continue;
