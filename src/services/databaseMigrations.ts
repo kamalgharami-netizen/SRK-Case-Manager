@@ -186,3 +186,122 @@ export function runDatabaseMigrations(
     throw migrationError;
   }
 }
+
+
+export interface RestoreDatabaseMigrationBackupOptions {
+  storage: DatabaseMigrationStorage;
+  backupKey: string;
+  dataKey: string;
+  versionKey?: string;
+}
+
+/**
+ * Explicit recovery from a retained migration backup.
+ * This function is never invoked automatically. It validates the complete
+ * backup before writing and restores the current state if recovery fails.
+ */
+export function restoreDatabaseMigrationBackup(
+  options: RestoreDatabaseMigrationBackupOptions,
+): { status: 'restored'; version: number } {
+  const {
+    storage,
+    backupKey,
+    dataKey,
+    versionKey = 'srk_database_schema_version_v1',
+  } = options;
+  if (!backupKey || !dataKey || !versionKey || dataKey === versionKey) {
+    throw new Error('Valid, distinct backup, data and version keys are required.');
+  }
+
+  const backupRaw = storage.getItem(backupKey);
+  if (backupRaw === null) {
+    throw new Error('Migration backup was not found; current database was not changed.');
+  }
+
+  let backup: unknown;
+  try {
+    backup = JSON.parse(backupRaw);
+  } catch {
+    throw new Error('Migration backup is unreadable; current database was not changed.');
+  }
+
+  if (!backup || typeof backup !== 'object') {
+    throw new Error('Migration backup has an invalid format; current database was not changed.');
+  }
+  const candidate = backup as {
+    formatVersion?: unknown;
+    dataKey?: unknown;
+    schemaVersion?: unknown;
+    rawData?: unknown;
+    rawVersionMarker?: unknown;
+  };
+  if (
+    candidate.formatVersion !== 1 ||
+    candidate.dataKey !== dataKey ||
+    typeof candidate.rawData !== 'string' ||
+    (candidate.rawVersionMarker !== null && typeof candidate.rawVersionMarker !== 'string')
+  ) {
+    throw new Error('Migration backup does not match this database; current database was not changed.');
+  }
+  assertVersion(candidate.schemaVersion as number, 'backup schema version');
+  try {
+    JSON.parse(candidate.rawData);
+  } catch {
+    throw new Error('Migration backup data is invalid; current database was not changed.');
+  }
+  if (
+    candidate.rawVersionMarker !== null &&
+    Number(candidate.rawVersionMarker) !== candidate.schemaVersion
+  ) {
+    throw new Error('Migration backup version marker is inconsistent; current database was not changed.');
+  }
+
+  const currentData = storage.getItem(dataKey);
+  const currentVersion = storage.getItem(versionKey);
+  if (currentData === null) {
+    throw new Error('Current database data is missing; recovery was not started.');
+  }
+
+  try {
+    storage.setItem(dataKey, candidate.rawData);
+    if (storage.getItem(dataKey) !== candidate.rawData) {
+      throw new Error('Restored database data could not be verified.');
+    }
+    if (candidate.rawVersionMarker === null) {
+      storage.removeItem(versionKey);
+      if (storage.getItem(versionKey) !== null) {
+        throw new Error('Restored database version marker could not be verified.');
+      }
+    } else {
+      storage.setItem(versionKey, candidate.rawVersionMarker);
+      if (storage.getItem(versionKey) !== candidate.rawVersionMarker) {
+        throw new Error('Restored database version marker could not be verified.');
+      }
+    }
+    return { status: 'restored', version: candidate.schemaVersion as number };
+  } catch (restoreError) {
+    try {
+      storage.setItem(dataKey, currentData);
+      if (storage.getItem(dataKey) !== currentData) {
+        throw new Error('Current database data rollback failed.');
+      }
+      if (currentVersion === null) {
+        storage.removeItem(versionKey);
+        if (storage.getItem(versionKey) !== null) {
+          throw new Error('Current database version rollback failed.');
+        }
+      } else {
+        storage.setItem(versionKey, currentVersion);
+        if (storage.getItem(versionKey) !== currentVersion) {
+          throw new Error('Current database version rollback failed.');
+        }
+      }
+    } catch (rollbackError) {
+      throw new Error(
+        'Backup recovery failed and current-state rollback could not be verified. Preserve the backup and stop database writes.',
+        { cause: rollbackError },
+      );
+    }
+    throw restoreError;
+  }
+}
