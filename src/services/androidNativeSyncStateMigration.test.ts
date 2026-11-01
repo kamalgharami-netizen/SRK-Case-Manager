@@ -257,7 +257,7 @@ test('migration rejects completion when the marker cannot be read back', async (
     runLegacyAndroidSyncStateMigration(storage as unknown as Storage, nativeStore),
     /marker could not be verified/,
   );
-  assert.equal(nativeStore.values.has('srk_native_sync_state_migration_v1'), true);
+  assert.equal(nativeStore.values.has('srk_native_sync_state_migration_v1'), false);
 });
 
 
