@@ -156,6 +156,34 @@ test('returns a continuation token when the pull page limit is reached', async (
   assert.deepEqual(requestedTokens, [undefined, 'page-2']);
 });
 
+test('fails closed when more than 500 local changes prevent complete conflict detection', async () => {
+  const storage = new MemoryStorage();
+  const journal = new SyncJournal<unknown>(storage);
+  const inbox = new SyncInbox<unknown>(storage);
+  for (let index = 0; index < 501; index += 1) {
+    journal.enqueue({
+      ...envelope(`local-${index}`, 'local_device_123456'),
+      recordId: `cases:case-${index}`,
+    });
+  }
+  let listCalls = 0;
+
+  await assert.rejects(
+    pullRemoteChanges(journal, inbox, { accessToken: 'token', folderId: 'folder1' }, {
+      listFiles: async () => {
+        listCalls += 1;
+        return { files: [{ id: 'file1', name: 'srk-change-remote1.json', mimeType: 'application/json' }] };
+      },
+      downloadJson: async () => envelope('remote1'),
+    }),
+    /More than 500 local changes are pending/
+  );
+
+  assert.equal(listCalls, 0);
+  assert.equal(journal.getPendingCount(), 501);
+  assert.equal(inbox.getAll().length, 0);
+});
+
 test('requires a selected Drive folder', async () => {
   const storage = new MemoryStorage();
   await assert.rejects(
