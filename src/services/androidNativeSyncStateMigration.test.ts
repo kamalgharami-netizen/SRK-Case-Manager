@@ -364,3 +364,54 @@ test('migration fails closed if marker removal and invalidation both fail', asyn
   );
   assert.equal(nativeStore.values.get('srk_native_sync_state_migration_v1'), '1');
 });
+
+
+test('migration safely retries when native batch commits but the bridge reports failure', async () => {
+  const storage = new MemoryStorage([
+    ['srk_sync_journal_v1', 'journal-data'],
+    ['srk_sync_inbox_v1', 'inbox-data'],
+  ]);
+  const nativeStore = new MemoryNativeStore();
+  const originalSetItems = nativeStore.setItems.bind(nativeStore);
+  let failAfterCommit = true;
+  nativeStore.setItems = async ({ items }) => {
+    const result = await originalSetItems({ items });
+    if (failAfterCommit && items.some(item => item.key === 'srk_sync_journal_v1')) {
+      failAfterCommit = false;
+      throw new Error('simulated bridge failure after native batch commit');
+    }
+    return result;
+  };
+
+  await assert.rejects(
+    runLegacyAndroidSyncStateMigration(storage as unknown as Storage, nativeStore),
+    /simulated bridge failure after native batch commit/,
+  );
+  assert.equal(nativeStore.values.get('srk_sync_journal_v1'), 'journal-data');
+  assert.equal(nativeStore.values.get('srk_sync_inbox_v1'), 'inbox-data');
+  assert.equal(nativeStore.values.has('srk_native_sync_state_migration_v1'), false);
+  assert.equal(storage.getItem('srk_sync_journal_v1'), 'journal-data');
+  assert.equal(storage.getItem('srk_sync_inbox_v1'), 'inbox-data');
+
+  const retry = await runLegacyAndroidSyncStateMigration(storage as unknown as Storage, nativeStore);
+  assert.deepEqual(retry, { status: 'migrated', copied: 2 });
+  assert.equal(nativeStore.values.get('srk_native_sync_state_migration_v1'), '1');
+});
+
+test('migration resumes a partially populated destination when existing values match', async () => {
+  const storage = new MemoryStorage([
+    ['srk_sync_journal_v1', 'journal-data'],
+    ['srk_sync_inbox_v1', 'inbox-data'],
+  ]);
+  const nativeStore = new MemoryNativeStore();
+  nativeStore.values.set('srk_sync_journal_v1', 'journal-data');
+
+  const result = await runLegacyAndroidSyncStateMigration(storage as unknown as Storage, nativeStore);
+
+  assert.deepEqual(result, { status: 'migrated', copied: 2 });
+  assert.equal(nativeStore.values.get('srk_sync_journal_v1'), 'journal-data');
+  assert.equal(nativeStore.values.get('srk_sync_inbox_v1'), 'inbox-data');
+  assert.equal(nativeStore.values.get('srk_native_sync_state_migration_v1'), '1');
+  assert.equal(storage.getItem('srk_sync_journal_v1'), 'journal-data');
+  assert.equal(storage.getItem('srk_sync_inbox_v1'), 'inbox-data');
+});
