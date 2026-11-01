@@ -27,6 +27,7 @@ test('uploads pending changes and acknowledges only after successful upload', as
   const uploaded: string[] = [];
   const result = await pushPendingChanges(journal, { accessToken: 'token', folderId: 'folder1' }, {
     listFiles: async () => ({ files: [] }),
+    downloadJson: async () => null,
     uploadJson: async options => {
       uploaded.push(options.name);
       return { id: 'file' + uploaded.length, name: options.name, mimeType: 'application/json' };
@@ -43,7 +44,8 @@ test('recognizes an already uploaded change and avoids duplicate upload', async 
   journal.enqueue(envelope('change1'));
   let uploadCalls = 0;
   const result = await pushPendingChanges(journal, { accessToken: 'token', folderId: 'folder1' }, {
-    listFiles: async () => ({ files: [{ id: 'existing', name: 'existing', mimeType: 'application/json' }] }),
+    listFiles: async () => ({ files: [{ id: 'existing', name: 'srk-change-change1.json', mimeType: 'application/json' }] }),
+    downloadJson: async () => envelope('change1'),
     uploadJson: async () => {
       uploadCalls += 1;
       return { id: 'new', name: 'new', mimeType: 'application/json' };
@@ -54,12 +56,51 @@ test('recognizes an already uploaded change and avoids duplicate upload', async 
   assert.equal(result.remaining, 0);
 });
 
+
+test('does not acknowledge an existing Drive filename when its content differs', async () => {
+  const journal = new SyncJournal<unknown>(new MemoryStorage());
+  journal.enqueue(envelope('change1'));
+  let uploadCalls = 0;
+  await assert.rejects(
+    pushPendingChanges(journal, { accessToken: 'token', folderId: 'folder1' }, {
+      listFiles: async () => ({
+        files: [{ id: 'existing', name: 'srk-change-change1.json', mimeType: 'application/json' }],
+      }),
+      downloadJson: async () => ({ ...envelope('change1'), payload: { caseId: 'different' } }),
+      uploadJson: async () => {
+        uploadCalls += 1;
+        return { id: 'new', name: 'srk-change-change1.json', mimeType: 'application/json' };
+      },
+    }),
+    /content does not match the local pending change/,
+  );
+  assert.equal(uploadCalls, 0);
+  assert.equal(journal.getPendingCount(), 1);
+});
+
+test('does not acknowledge an existing Drive file with a different change identity', async () => {
+  const journal = new SyncJournal<unknown>(new MemoryStorage());
+  journal.enqueue(envelope('change1'));
+  await assert.rejects(
+    pushPendingChanges(journal, { accessToken: 'token', folderId: 'folder1' }, {
+      listFiles: async () => ({
+        files: [{ id: 'existing', name: 'srk-change-change1.json', mimeType: 'application/json' }],
+      }),
+      downloadJson: async () => envelope('change2'),
+      uploadJson: async () => ({ id: 'new', name: 'new', mimeType: 'application/json' }),
+    }),
+    /content does not match the local pending change/,
+  );
+  assert.equal(journal.getPendingCount(), 1);
+});
+
 test('keeps unacknowledged changes when a Drive upload fails', async () => {
   const journal = new SyncJournal<unknown>(new MemoryStorage());
   journal.enqueue(envelope('change1'));
   await assert.rejects(
     pushPendingChanges(journal, { accessToken: 'token', folderId: 'folder1' }, {
       listFiles: async () => ({ files: [] }),
+      downloadJson: async () => null,
       uploadJson: async () => { throw new Error('network unavailable'); },
     }),
     /network unavailable/
