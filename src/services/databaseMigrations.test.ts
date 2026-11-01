@@ -5,6 +5,7 @@ import { runDatabaseMigrations, type DatabaseMigrationStorage } from './database
 class MemoryStorage implements DatabaseMigrationStorage {
   values = new Map<string, string>();
   failSetKey: string | null = null;
+  failSetOnce = false;
   failReadBackKey: string | null = null;
 
   getItem(key: string): string | null {
@@ -12,7 +13,10 @@ class MemoryStorage implements DatabaseMigrationStorage {
     return this.values.get(key) ?? null;
   }
   setItem(key: string, value: string): void {
-    if (key === this.failSetKey) throw new Error(`simulated write failure: ${key}`);
+    if (key === this.failSetKey) {
+      if (this.failSetOnce) this.failSetKey = null;
+      throw new Error(`simulated write failure: ${key}`);
+    }
     this.values.set(key, value);
   }
   removeItem(key: string): void {
@@ -112,6 +116,7 @@ test('restores original version marker when final version write fails', () => {
   storage.setItem('srk_case_manager_data', original);
   storage.setItem('srk_database_schema_version_v1', '1');
   storage.failSetKey = 'srk_database_schema_version_v1';
+  storage.failSetOnce = true;
 
   assert.throws(() => runDatabaseMigrations(options(storage)), /simulated write failure/);
   assert.equal(storage.getItem('srk_case_manager_data'), original);
@@ -125,7 +130,7 @@ test('refuses downgrades and databases newer than the running application', () =
   storage.setItem('srk_database_schema_version_v1', '4');
 
   assert.throws(() => runDatabaseMigrations(options(storage)), /newer than this application/);
-  assert.throws(() => runDatabaseMigrations(options(storage, { targetVersion: 1 })), /downgrade is not supported/);
+  assert.throws(() => runDatabaseMigrations(options(storage, { initialVersion: 2, targetVersion: 1 })), /downgrade is not supported/);
   assert.equal(storage.getItem('srk_database_schema_version_v1'), '4');
 });
 
