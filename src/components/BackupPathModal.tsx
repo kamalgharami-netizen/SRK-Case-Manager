@@ -83,8 +83,7 @@ export const BackupPathModal: React.FC = () => {
       try {
         const selectedDirectory = await nativeBackupStorage.selectFolder();
         if (!selectedDirectory) return;
-        const normalizedDirectory = selectedDirectory.replace(/\\\\/g, '/');
-        setCustomPath(normalizedDirectory);
+        setCustomPath(selectedDirectory);
         showToast(`Backup folder selected: ${selectedDirectory}`, 'success');
       } catch (error) {
         showToast(error instanceof Error ? error.message : 'Unable to select a backup folder.', 'error');
