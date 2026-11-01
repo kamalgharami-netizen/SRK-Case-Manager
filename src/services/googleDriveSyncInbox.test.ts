@@ -63,6 +63,29 @@ test('ignores duplicate inbox change IDs', async () => {
   assert.equal(inbox.getAll().length, 1);
 });
 
+test('downloads a repeated Drive change ID only once during a single pull', async () => {
+  const storage = new MemoryStorage();
+  const journal = new SyncJournal<unknown>(storage);
+  const inbox = new SyncInbox<unknown>(storage);
+  let downloads = 0;
+  const remote = envelope('same-change');
+  const result = await pullRemoteChanges(journal, inbox, { accessToken: 'token', folderId: 'folder1' }, {
+    listFiles: async () => ({
+      files: [
+        { id: 'file1', name: 'srk-change-same-change.json', mimeType: 'application/json' },
+        { id: 'file2', name: 'srk-change-same-change.json', mimeType: 'application/json' },
+      ],
+    }),
+    downloadJson: async () => { downloads += 1; return remote; },
+  });
+
+  assert.equal(downloads, 1);
+  assert.equal(result.downloaded, 1);
+  assert.equal(result.duplicates, 1);
+  assert.equal(result.staged, 1);
+  assert.equal(inbox.getAll().length, 1);
+});
+
 test('does not download a remote change again after it has been acknowledged', async () => {
   const storage = new MemoryStorage();
   const journal = new SyncJournal<unknown>(storage);
