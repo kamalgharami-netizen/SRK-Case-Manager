@@ -828,6 +828,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const jsonStr = JSON.stringify(payload, null, 2);
     const sizeKb = Math.round((jsonStr.length / 1024) * 10) / 10;
 
+    let nativeBackupSaved = false;
+    let browserDownloadRequested = false;
+    if (options?.downloadFile) {
+      const nativeBackupStorage = typeof window !== 'undefined'
+        ? (window as Window & { electronAPI?: { backupStorage?: {
+            writeFile: (request: { directory: string; fileName: string; content: string }) =>
+              Promise<{ saved: boolean; filePath: string }>;
+          } } }).electronAPI?.backupStorage
+        : undefined;
+      if (nativeBackupStorage?.writeFile) {
+        try {
+          const result = await nativeBackupStorage.writeFile({
+            directory: targetPath,
+            fileName,
+            content: jsonStr
+          });
+          if (!result?.saved) throw new Error('The backup file was not confirmed as saved.');
+          nativeBackupSaved = true;
+        } catch (error) {
+          showToast(error instanceof Error ? error.message : 'Backup could not be written to the selected folder.', 'error');
+          return null;
+        }
+      } else {
+        browserDownloadRequested = true;
+      }
+    }
+
     setCompanies(prev =>
       prev.map(c => (c.id === activeCompany.id ? updatedCompany : c))
     );
@@ -890,7 +917,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       console.warn('Storage save warning during backup:', e);
     }
 
-    if (options?.downloadFile) {
+    if (browserDownloadRequested) {
       try {
         const blob = new Blob([jsonStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -905,7 +932,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
 
     if (type === 'manual') {
-      showToast(`Manual backup saved: ${fileName}`, 'success');
+      if (nativeBackupSaved) {
+        showToast(`Manual backup saved to selected folder: ${fileName}`, 'success');
+      } else if (browserDownloadRequested) {
+        showToast(`Backup download prepared: ${fileName}. Choose the save location in your browser.`, 'info');
+      }
     }
 
     return logEntry;
