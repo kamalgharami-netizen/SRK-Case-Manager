@@ -57,6 +57,7 @@ test('coordinator pulls before pushing and records concurrent edits as conflicts
         calls.push('push-check');
         return { files: [] };
       },
+      downloadJson: async () => null,
       uploadJson: async options => {
         calls.push('push-upload');
         return { id: 'uploaded-1', name: options.name, mimeType: 'application/json' };
@@ -95,6 +96,7 @@ test('coordinator stages non-conflicting remote changes and never auto-applies t
     },
     push: {
       listFiles: async () => ({ files: [] }),
+      downloadJson: async () => null,
       uploadJson: async options => ({ id: 'unused', name: options.name, mimeType: 'application/json' }),
     },
   });
