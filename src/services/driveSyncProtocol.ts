@@ -48,7 +48,7 @@ const isValidEnvelope = <T>(value: unknown): value is SyncEnvelope<T> => {
 /**
  * Merge record-level changes without silently overwriting concurrent edits.
  * Equal change IDs are duplicates. Different changes to the same record are
- * retained as an explicit conflict, even if timestamps happen to be equal.
+ * retained as an explicit conflict when their order cannot be established.
  */
 export function mergeSyncEnvelopes<T>(
   localChanges: readonly SyncEnvelope<T>[],
@@ -90,13 +90,16 @@ export function mergeSyncEnvelopes<T>(
       continue;
     }
 
-    // Changes from the same device can be ordered by its local timestamp.
-    if (local.deviceId === remote.deviceId) {
-      merged.push(local.updatedAt >= remote.updatedAt ? local : remote);
+    // Same-device revisions are orderable only when their timestamps differ.
+    // Equal timestamps can occur within one millisecond; choosing either would
+    // make the result depend on Drive listing order, so preserve both as a conflict.
+    if (local.deviceId === remote.deviceId && local.updatedAt !== remote.updatedAt) {
+      merged.push(local.updatedAt > remote.updatedAt ? local : remote);
       continue;
     }
 
-    // Independent device edits are not safely orderable by wall-clock time.
+    // Independent device edits, or same-device edits with indistinguishable
+    // timestamps, are not safely orderable.
     conflicts.push({ recordId: local.recordId, local, remote });
     merged.push(local);
   }
