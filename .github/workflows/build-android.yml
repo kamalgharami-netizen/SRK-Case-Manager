@@ -166,7 +166,7 @@ jobs:
           """,
                   1
               )
-          pattern = r"(buildTypes\s*\\{\s*release\s*\\{)"
+          pattern = r"(buildTypes\s*\{\s*release\s*\{)"
           if re.search(pattern, content):
               content = re.sub(pattern, r"\1\n            signingConfig signingConfigs.release", content, count=1)
           else:
