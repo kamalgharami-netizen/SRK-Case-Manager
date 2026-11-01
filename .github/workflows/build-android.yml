@@ -97,30 +97,10 @@ jobs:
           # Avoid post-boot settings-provider writes; these intermittently kill the emulator service.
           disable-animations: false
           working-directory: android
+          # This action invokes each physical script line in a separate /usr/bin/sh process.
+          # Keep the complete loop and test/diagnostic sequence on one shell line.
           script: |
-            # The emulator action executes this script with /usr/bin/sh; pipefail is Bash-only.
-            echo "===== Wait for Android package manager ====="
-            ready=0
-            for attempt in $(seq 1 60); do
-              if adb -s emulator-5554 shell pm path android >/dev/null 2>&1; then
-                ready=1
-                break
-              fi
-              sleep 5
-            done
-            if [ "$ready" -ne 1 ]; then
-              echo "Android package manager did not become ready."
-              adb -s emulator-5554 logcat -b all -d -v time | tail -n 300 || true
-              exit 1
-            fi
-            echo "Android package manager is ready."
-            ./gradlew :srk-capacitor-sync-state:connectedDebugAndroidTest --no-daemon --stacktrace
-            test_status=$?
-            echo "===== Connected Android devices ====="
-            adb devices -l || true
-            echo "===== Emulator crash diagnostics ====="
-            adb -s emulator-5554 logcat -b all -d -v time | grep -E "FATAL EXCEPTION|AndroidRuntime|am_crash|am_anr|INSTRUMENTATION|Process .* died|Fatal signal|keystore|SyncStateDatabase|TestRunner" | tail -n 400 || true
-            exit "$test_status"
+            echo "===== Wait for Android package manager ====="; ready=0; for attempt in $(seq 1 60); do if adb -s emulator-5554 shell pm path android >/dev/null 2>&1; then ready=1; break; fi; sleep 5; done; if [ "$ready" -ne 1 ]; then echo "Android package manager did not become ready."; adb -s emulator-5554 logcat -b all -d -v time | tail -n 300 || true; exit 1; fi; echo "Android package manager is ready."; ./gradlew :srk-capacitor-sync-state:connectedDebugAndroidTest --no-daemon --stacktrace; test_status=$?; echo "===== Connected Android devices ====="; adb devices -l || true; echo "===== Emulator crash diagnostics ====="; adb -s emulator-5554 logcat -b all -d -v time | grep -E "FATAL EXCEPTION|AndroidRuntime|am_crash|am_anr|INSTRUMENTATION|Process .* died|Fatal signal|keystore|SyncStateDatabase|TestRunner" | tail -n 400 || true; exit "$test_status"
 
       - name: Upload Android instrumentation test reports
         if: always()
