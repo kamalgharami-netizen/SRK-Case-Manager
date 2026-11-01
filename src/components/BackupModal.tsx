@@ -218,7 +218,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         : await connectWindowsGoogleDrive();
       setSelectedDriveFolder(result.folder);
       setDriveAuthStatus('authorized');
-      showToast('Google account authorized and Drive folder selected. Sync is not yet active.', 'success');
+      showToast('Google account authorized and Drive folder selected. You can now use Sync Now; incoming changes remain staged for review.', 'success');
     } catch (error) {
       setDriveAuthStatus('error');
       showToast(error instanceof Error ? error.message : 'Google sign-in failed.', 'error');
