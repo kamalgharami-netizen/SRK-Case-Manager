@@ -48,6 +48,7 @@ const defaultDependencies: GoogleDriveSyncCoordinatorDependencies = {
   push: {
     listFiles: listDriveFiles,
     uploadJson: uploadDriveJson,
+    downloadJson: downloadDriveJson,
   },
 };
 
