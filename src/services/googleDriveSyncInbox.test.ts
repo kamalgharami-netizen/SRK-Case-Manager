@@ -123,6 +123,62 @@ test('remembers remote conflicts so repeated pulls do not recreate them', async 
   assert.equal(journal.getConflicts().length, 1);
 });
 
+test('routes concurrent remote edits from different devices to conflict review', async () => {
+  const storage = new MemoryStorage();
+  const journal = new SyncJournal<unknown>(storage);
+  const inbox = new SyncInbox<unknown>(storage);
+  const first = envelope('remote-device-a', 'device_a_123456789');
+  const second = envelope('remote-device-b', 'device_b_123456789');
+  let downloads = 0;
+
+  const result = await pullRemoteChanges(journal, inbox, { accessToken: 'token', folderId: 'folder1' }, {
+    listFiles: async () => ({
+      files: [
+        { id: 'file-a', name: 'srk-change-remote-device-a.json', mimeType: 'application/json' },
+        { id: 'file-b', name: 'srk-change-remote-device-b.json', mimeType: 'application/json' },
+      ],
+    }),
+    downloadJson: async options => {
+      downloads += 1;
+      return options.fileId === 'file-a' ? first : second;
+    },
+  });
+
+  assert.equal(downloads, 2);
+  assert.equal(result.downloaded, 2);
+  assert.equal(result.conflicts, 1);
+  assert.equal(result.staged, 0);
+  assert.equal(inbox.getAll().length, 0);
+  const conflicts = journal.getConflicts();
+  assert.equal(conflicts.length, 1);
+  assert.deepEqual(
+    new Set([conflicts[0].local.changeId, conflicts[0].remote.changeId]),
+    new Set(['remote-device-a', 'remote-device-b'])
+  );
+});
+
+test('keeps the newest revision when repeated remote changes come from the same device', async () => {
+  const storage = new MemoryStorage();
+  const journal = new SyncJournal<unknown>(storage);
+  const inbox = new SyncInbox<unknown>(storage);
+  const older = { ...envelope('same-device-old'), updatedAt: 100 };
+  const newer = { ...envelope('same-device-new'), updatedAt: 200 };
+
+  const result = await pullRemoteChanges(journal, inbox, { accessToken: 'token', folderId: 'folder1' }, {
+    listFiles: async () => ({
+      files: [
+        { id: 'file-old', name: 'srk-change-same-device-old.json', mimeType: 'application/json' },
+        { id: 'file-new', name: 'srk-change-same-device-new.json', mimeType: 'application/json' },
+      ],
+    }),
+    downloadJson: async options => options.fileId === 'file-old' ? older : newer,
+  });
+
+  assert.equal(result.conflicts, 0);
+  assert.equal(result.staged, 1);
+  assert.deepEqual(inbox.getAll(), [newer]);
+});
+
 test('follows Drive pagination up to configured page limit', async () => {
   const storage = new MemoryStorage();
   const journal = new SyncJournal<unknown>(storage);
