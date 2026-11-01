@@ -157,6 +157,34 @@ export async function runLegacyAndroidSyncStateMigration(
 
   const finalCheck = await nativeStore.getItems({ keys: [MIGRATION_MARKER] });
   if (!finalCheck.items.some(item => item.key === MIGRATION_MARKER && item.value === '1')) {
+    // A failed read-back must not leave a possibly committed completion marker
+    // that could make the next launch skip an incomplete migration.
+    let markerMayStillBeComplete = true;
+    try {
+      const removed = await nativeStore.removeItems({ keys: [MIGRATION_MARKER] });
+      markerMayStillBeComplete = removed.removed !== 1;
+    } catch {
+      markerMayStillBeComplete = true;
+    }
+    try {
+      const afterRemoval = await nativeStore.getItems({ keys: [MIGRATION_MARKER] });
+      markerMayStillBeComplete ||= afterRemoval.items.some(
+        item => item.key === MIGRATION_MARKER && item.value === '1',
+      );
+    } catch {
+      markerMayStillBeComplete = true;
+    }
+    if (markerMayStillBeComplete) {
+      try {
+        await nativeStore.setItems({ items: [{ key: MIGRATION_MARKER, value: '0' }] });
+      } catch {
+        // Verify below; the native bridge may report failure after commit.
+      }
+      const invalidated = await nativeStore.getItems({ keys: [MIGRATION_MARKER] });
+      if (invalidated.items.some(item => item.key === MIGRATION_MARKER && item.value === '1')) {
+        throw new Error('Native migration marker could not be verified or safely invalidated.');
+      }
+    }
     throw new Error('Native sync-state migration marker could not be verified.');
   }
 
