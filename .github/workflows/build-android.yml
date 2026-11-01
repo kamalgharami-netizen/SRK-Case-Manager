@@ -94,7 +94,7 @@ jobs:
           arch: x86_64
           profile: pixel_2
           emulator-boot-timeout: 1200
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 2048 -cores 2
+          emulator-options: -no-window -gpu swiftshader -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 4096 -cores 4
           # Avoid post-boot settings-provider writes; these intermittently kill the emulator service.
           disable-animations: false
           working-directory: android
