@@ -137,9 +137,15 @@ export async function pullRemoteChanges<T>(
     for (const file of page.files) {
       if (!file.name.startsWith('srk-change-') || !file.name.endsWith('.json') || file.mimeType !== 'application/json') continue;
       const encodedChangeId = file.name.slice('srk-change-'.length, -'.json'.length);
-      let fileChangeId = '';
-      try { fileChangeId = decodeURIComponent(encodedChangeId); } catch { /* Download and validate malformed names normally. */ }
-      if (fileChangeId && inbox.hasSeen(fileChangeId)) {
+      let fileChangeId: string;
+      try {
+        fileChangeId = decodeURIComponent(encodedChangeId);
+      } catch {
+        // A malformed filename cannot be safely associated with an envelope.
+        continue;
+      }
+      if (!fileChangeId) continue;
+      if (inbox.hasSeen(fileChangeId)) {
         duplicates += 1;
         continue;
       }
@@ -148,7 +154,7 @@ export async function pullRemoteChanges<T>(
         signal: options.signal,
         fileId: file.id,
       });
-      if (!validEnvelope<T>(value)) continue;
+      if (!validEnvelope<T>(value) || value.changeId !== fileChangeId) continue;
       remote.push(value);
     }
     pageToken = page.nextPageToken;
