@@ -1,6 +1,6 @@
 import type { SyncEnvelope } from './driveSyncProtocol';
 import { SyncJournal } from './syncJournal';
-import { listDriveFiles, uploadDriveJson, type DriveFile, type DriveRequestOptions } from './googleDriveApi';
+import { downloadDriveJson, listDriveFiles, uploadDriveJson, type DriveFile, type DriveRequestOptions } from './googleDriveApi';
 
 export interface SyncPushResult {
   uploaded: number;
@@ -11,7 +11,20 @@ export interface SyncPushResult {
 export interface SyncPushDependencies {
   listFiles: (options: DriveRequestOptions & { parentId: string; name?: string }) => Promise<{ files: DriveFile[] }>;
   uploadJson: (options: DriveRequestOptions & { name: string; parentId?: string; appProperties?: Record<string, string> }, data: unknown) => Promise<DriveFile>;
+  downloadJson: (options: DriveRequestOptions & { fileId: string }) => Promise<unknown>;
 }
+
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return '[' + value.map(canonicalJson).join(',') + ']';
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    return '{' + Object.keys(record).sort().map(key =>
+      JSON.stringify(key) + ':' + canonicalJson(record[key]),
+    ).join(',') + '}';
+  }
+  return JSON.stringify(value);
+}
+
 
 /**
  * Pushes the local outbox as immutable, one-change-per-file records.
@@ -26,6 +39,7 @@ export async function pushPendingChanges<T>(
   dependencies: SyncPushDependencies = {
     listFiles: listDriveFiles,
     uploadJson: uploadDriveJson,
+    downloadJson: downloadDriveJson,
   }
 ): Promise<SyncPushResult> {
   if (!options.folderId?.trim()) throw new Error('Select a Google Drive sync folder first.');
@@ -43,6 +57,18 @@ export async function pushPendingChanges<T>(
     });
 
     if (existing.files.length > 0) {
+      // A deterministic filename alone is not proof that the remote content
+      // matches this pending change. Verify the complete envelope before ack.
+      const remote = await dependencies.downloadJson({
+        accessToken: options.accessToken,
+        signal: options.signal,
+        fileId: existing.files[0].id,
+      });
+      if (canonicalJson(remote) !== canonicalJson(change)) {
+        throw new Error(
+          `A Drive file already exists for change "${change.changeId}", but its content does not match the local pending change. The local change was kept pending.`,
+        );
+      }
       acknowledged.push(change.changeId);
       continue;
     }
