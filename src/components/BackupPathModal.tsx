@@ -190,9 +190,9 @@ export const BackupPathModal: React.FC = () => {
 
     if (isManualBackupConfirmOpen) {
       setIsProcessing(true);
-      await performBackup({ type: 'manual', customPath: finalPath, downloadFile: true });
+      const backupResult = await performBackup({ type: 'manual', customPath: finalPath, downloadFile: true });
       setIsProcessing(false);
-      handleClose();
+      if (backupResult) handleClose();
     } else {
       setIsSelectBackupPathModalOpen(false);
       showToast(`Data storage path configured: ${finalPath}`);
@@ -201,9 +201,9 @@ export const BackupPathModal: React.FC = () => {
 
   const handleConfirmManualBackupCurrent = async () => {
     setIsProcessing(true);
-    await performBackup({ type: 'manual', downloadFile: true });
+    const backupResult = await performBackup({ type: 'manual', downloadFile: true });
     setIsProcessing(false);
-    handleClose();
+    if (backupResult) handleClose();
   };
 
   // Preset quick storage locations
