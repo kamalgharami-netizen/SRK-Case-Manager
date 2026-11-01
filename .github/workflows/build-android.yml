@@ -70,7 +70,7 @@ jobs:
           if not path.exists():
               raise SystemExit("Capacitor variables.gradle was not generated; refusing to build with an unknown Android minimum SDK.")
           content = path.read_text()
-          match = re.search(r"(minSdkVersion\s*=\s*)(\d+)", content)
+          match = re.search(r"(minSdkVersion\\s*=\\s*)(\\d+)", content)
           if not match:
               raise SystemExit("Could not find minSdkVersion in android/variables.gradle.")
           current = int(match.group(2))
@@ -92,12 +92,35 @@ jobs:
           api-level: 34
           target: google_apis
           arch: x86_64
-          emulator-boot-timeout: 900
+          emulator-boot-timeout: 1200
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 3072 -cores 2
-          disable-animations: true
+          # Avoid post-boot settings-provider writes; these intermittently kill the emulator service.
+          disable-animations: false
           working-directory: android
           script: |
-            ./gradlew :srk-capacitor-sync-state:connectedDebugAndroidTest --no-daemon --stacktrace; test_status=$?; echo "===== Connected Android devices ====="; adb devices -l || true; echo "===== Emulator crash diagnostics ====="; adb -s emulator-5554 logcat -b all -d -v time | grep -E "FATAL EXCEPTION|AndroidRuntime|am_crash|am_anr|INSTRUMENTATION|Process .* died|Fatal signal|keystore|SyncStateDatabase|TestRunner" | tail -n 400 || true; exit "$test_status"
+            set -o pipefail
+            echo "===== Wait for Android package manager ====="
+            ready=0
+            for attempt in $(seq 1 60); do
+              if adb -s emulator-5554 shell pm path android >/dev/null 2>&1; then
+                ready=1
+                break
+              fi
+              sleep 5
+            done
+            if [ "$ready" -ne 1 ]; then
+              echo "Android package manager did not become ready."
+              adb -s emulator-5554 logcat -b all -d -v time | tail -n 300 || true
+              exit 1
+            fi
+            echo "Android package manager is ready."
+            ./gradlew :srk-capacitor-sync-state:connectedDebugAndroidTest --no-daemon --stacktrace
+            test_status=$?
+            echo "===== Connected Android devices ====="
+            adb devices -l || true
+            echo "===== Emulator crash diagnostics ====="
+            adb -s emulator-5554 logcat -b all -d -v time | grep -E "FATAL EXCEPTION|AndroidRuntime|am_crash|am_anr|INSTRUMENTATION|Process .* died|Fatal signal|keystore|SyncStateDatabase|TestRunner" | tail -n 400 || true
+            exit "$test_status"
 
       - name: Upload Android instrumentation test reports
         if: always()
@@ -116,7 +139,7 @@ jobs:
           VERSION="$(node -p "require('./package.json').version")"
           VERSION_CODE=$((52000 + GITHUB_RUN_NUMBER))
           sed -i -E "s/versionCode[[:space:]]+[0-9]+/versionCode ${VERSION_CODE}/" android/app/build.gradle
-          sed -i -E "s/versionName .*/versionName \"${VERSION}\"/" android/app/build.gradle
+          sed -i -E "s/versionName .*/versionName "\"${VERSION}\""/" android/app/build.gradle
 
       - name: Configure persistent release signing
         if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' && env.ANDROID_KEYSTORE_PASSWORD != '' && env.ANDROID_KEY_ALIAS != '' && env.ANDROID_KEY_PASSWORD != '' }}
@@ -143,9 +166,9 @@ jobs:
           """,
                   1
               )
-          pattern = r"(buildTypes\s*\{\s*release\s*\{)"
+          pattern = r"(buildTypes\\s*\\{\\s*release\\s*\\{)"
           if re.search(pattern, content):
-              content = re.sub(pattern, r"\1\n            signingConfig signingConfigs.release", content, count=1)
+              content = re.sub(pattern, r"\\1\\n            signingConfig signingConfigs.release", content, count=1)
           else:
               raise SystemExit("Could not locate Android release build type; refusing to create an unsigned release APK.")
           path.write_text(content)
