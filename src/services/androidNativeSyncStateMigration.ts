@@ -65,6 +65,20 @@ export async function runLegacyAndroidSyncStateMigration(
     throw new Error('A legacy sync-state entry exceeds the native store size limits; source data was left untouched.');
   }
 
+  // Preflight the destination before writing: a previous partial migration may
+  // already have copied some keys. Identical values are safe to resume; different
+  // native values are a conflict and must never be silently overwritten.
+  const existingNative = await nativeStore.getItems({ keys: snapshot.map(item => item.key) });
+  const existingValues = new Map(existingNative.items.map(item => [item.key, item.value]));
+  const destinationConflict = snapshot.find(item =>
+    existingValues.has(item.key) && existingValues.get(item.key) !== item.value,
+  );
+  if (destinationConflict) {
+    throw new Error(
+      `Native sync-state destination already contains a different value for "${destinationConflict.key}"; source data was left untouched.`,
+    );
+  }
+
   if (snapshot.length) {
     const saved = await nativeStore.setItems({ items: snapshot });
     if (saved.saved !== snapshot.length) {
@@ -84,7 +98,46 @@ export async function runLegacyAndroidSyncStateMigration(
     return { status: 'retry-required', copied: snapshot.length };
   }
 
-  await nativeStore.setItems({ items: [{ key: MIGRATION_MARKER, value: '1' }] });
+  // A bridge/database error can be reported after a native transaction has
+  // committed. If marker creation fails or reports an incomplete write, remove
+  // or invalidate it and verify that no stale completion marker can suppress retry.
+  try {
+    const markerWrite = await nativeStore.setItems({
+      items: [{ key: MIGRATION_MARKER, value: '1' }],
+    });
+    if (markerWrite.saved !== 1) {
+      throw new Error('Native sync-state migration marker write was incomplete.');
+    }
+  } catch (writeError) {
+    let markerMayStillBeComplete = true;
+    try {
+      const removed = await nativeStore.removeItems({ keys: [MIGRATION_MARKER] });
+      markerMayStillBeComplete = removed.removed !== 1;
+    } catch {
+      markerMayStillBeComplete = true;
+    }
+    try {
+      const afterRemoval = await nativeStore.getItems({ keys: [MIGRATION_MARKER] });
+      markerMayStillBeComplete ||= afterRemoval.items.some(
+        item => item.key === MIGRATION_MARKER && item.value === '1',
+      );
+    } catch {
+      markerMayStillBeComplete = true;
+    }
+    if (markerMayStillBeComplete) {
+      try {
+        await nativeStore.setItems({ items: [{ key: MIGRATION_MARKER, value: '0' }] });
+      } catch {
+        // Verify below; the bridge may have failed after committing the update.
+      }
+      const invalidated = await nativeStore.getItems({ keys: [MIGRATION_MARKER] });
+      if (invalidated.items.some(item => item.key === MIGRATION_MARKER && item.value === '1')) {
+        throw new Error('Migration marker write failed and its completion marker could not be invalidated.');
+      }
+    }
+    throw writeError;
+  }
+
   const finalCheck = await nativeStore.getItems({ keys: [MIGRATION_MARKER] });
   if (!finalCheck.items.some(item => item.key === MIGRATION_MARKER && item.value === '1')) {
     throw new Error('Native sync-state migration marker could not be verified.');
