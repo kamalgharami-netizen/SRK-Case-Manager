@@ -830,13 +830,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     let nativeBackupSaved = false;
     let browserDownloadRequested = false;
-    if (options?.downloadFile) {
-      const nativeBackupStorage = typeof window !== 'undefined'
-        ? (window as Window & { electronAPI?: { backupStorage?: {
-            writeFile: (request: { directory: string; fileName: string; content: string }) =>
-              Promise<{ saved: boolean; filePath: string }>;
-          } } }).electronAPI?.backupStorage
-        : undefined;
+    const nativeBackupStorage = typeof window !== 'undefined'
+      ? (window as Window & { electronAPI?: { backupStorage?: {
+          writeFile: (request: { directory: string; fileName: string; content: string }) =>
+            Promise<{ saved: boolean; filePath: string }>;
+        } } }).electronAPI?.backupStorage
+      : undefined;
+    const shouldWriteNativeBackup = Boolean(options?.downloadFile || (isAutoBackup && nativeBackupStorage?.writeFile));
+    if (shouldWriteNativeBackup) {
       if (nativeBackupStorage?.writeFile) {
         try {
           const result = await nativeBackupStorage.writeFile({
@@ -850,7 +851,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           showToast(error instanceof Error ? error.message : 'Backup could not be written to the selected folder.', 'error');
           return null;
         }
-      } else {
+      } else if (options?.downloadFile) {
         browserDownloadRequested = true;
       }
     }
@@ -967,8 +968,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setIsExitConfirmOpen(true);
   };
 
-  const confirmAppExit = () => {
-    performBackup({ type: 'auto-close' });
+  const confirmAppExit = async () => {
+    const backupResult = await performBackup({ type: 'auto-close' });
+    if (activeCompany && !backupResult) {
+      const closeWithoutBackup = window.confirm(
+        'The automatic backup could not be saved to the selected folder. Close the application without a new backup?'
+      );
+      if (!closeWithoutBackup) return;
+    }
 
     // Safely close desktop Windows / Electron / PWA app window
     try {
