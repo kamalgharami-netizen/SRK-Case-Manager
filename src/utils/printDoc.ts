@@ -118,7 +118,7 @@ export function safeOpenWhatsApp(phone: string, message: string): void {
 export function safeOpenSms(phone: string, message: string): void {
   const cleanPhone = phone.replace(/[^0-9+]/g, '');
   const encoded = encodeURIComponent(message);
-  const separator = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? '?' : '?';
+  const separator = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? '&' : '?';
   const smsUrl = cleanPhone
     ? `sms:${cleanPhone}${separator}body=${encoded}`
     : `sms:${separator}body=${encoded}`;
