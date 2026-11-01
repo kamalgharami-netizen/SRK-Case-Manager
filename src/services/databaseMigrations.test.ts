@@ -60,6 +60,7 @@ test('runs sequential versioned migrations and preserves a byte-for-byte backup'
   storage.setItem('srk_case_manager_data', original);
 
   const result = runDatabaseMigrations(options(storage));
+  if (result.status !== 'migrated') throw new Error('Expected database migration to run.');
 
   assert.deepEqual(result, {
     status: 'migrated',
@@ -162,6 +163,7 @@ test('restores a retained backup and verifies restored data and schema version',
   const original = JSON.stringify({ records: ['before'], schema: 1 });
   storage.setItem('srk_case_manager_data', original);
   const migration = runDatabaseMigrations(options(storage));
+  if (migration.status !== 'migrated') throw new Error('Expected database migration to run.');
   assert.equal(storage.getItem('srk_database_schema_version_v1'), '3');
 
   const result = restoreDatabaseMigrationBackup({
