@@ -150,3 +150,20 @@ The following items supersede earlier notes above that described these component
 - Incoming remote records remain staged for review; this build does not silently overwrite the live case database.
 - CI success confirms compilation and packaging, not real-device Google OAuth, Drive Picker, offline/reconnect, or two-device end-to-end behavior. Those still require manual device testing.
 
+
+
+## Current verification checkpoint (2026-11-01)
+
+- The current sync implementation is wired into the application: local record changes are queued by `AppContext`; the shared runner obtains platform credentials and the selected folder; the coordinator pulls remote changes into the review inbox before pushing local outbox entries; approved remote changes and conflicts are handled through the Sync Status screen.
+- Windows attempts foreground sync when the app is visible/online and retries every 15 minutes while the Electron renderer remains alive, including while the window is minimized. It does not run after the app is fully closed.
+- Android supports manual sync and foreground attempts. Periodic Android WorkManager sync remains unimplemented because the current TypeScript pipeline uses WebView `localStorage`; a native worker cannot safely use it without a shared native persistence and credential design.
+- Android native sync-state migration has an allowlisted copy, read-back verification, source-change detection and rollback/error tests. It is not activated as the live journal store. Do not mark migration rollout complete until a real Android device test verifies migration, app restart, recovery and preservation of existing case data.
+- The three previously partial areas now have the following source/CI status:
+  1. **Migration safety:** automated tests and Android instrumentation compile/run in CI; real-device migration/recovery validation remains outstanding.
+  2. **Two-way sync:** coordinator, outbox, inbox, conflict resolution and platform auth paths are integrated and covered by automated tests; a real Windows-to-Android and Android-to-Windows record round trip, including offline/reconnect and simultaneous edits, remains outstanding.
+  3. **Drive folder selection:** Windows and Android authorization flows select exactly one Drive folder and verify its MIME type through Drive metadata; actual Picker/OAuth permission and reconnect checks on both physical platforms remain outstanding.
+- GitHub Actions run **#334** (run ID `41327423988`, source commit `3c0d6a4f92601eecad32454b227d67bce14a35d2`) completed successfully on 2026-11-01. Windows EXE build/upload, Android type-check, sync safety tests, web build, Capacitor sync, native instrumentation tests, release signing and signed APK upload all succeeded. This is CI/package verification, not physical-device end-to-end verification.
+- A follow-up UI wording correction was committed after run #334 (`d9d81cd853e1bff8262d4290e17df1f2d1fa1f36`): after authorization, Settings now correctly tells the user that Sync Now is available and incoming changes remain staged. A fresh workflow run is required to verify that follow-up commit.
+- The Windows backup path selector still requires a separate native folder-picker/file-write implementation before the displayed path can be treated as a verified physical backup destination. Browser download fallback must not be described as writing directly to the selected folder.
+- The Android signing key previously committed in repository history remains compromised; rotate it and update the Android OAuth SHA-1 before production release. Never commit the replacement key or passwords.
+
