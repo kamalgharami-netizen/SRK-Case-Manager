@@ -1245,16 +1245,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const logoutUser = () => {
+  const logoutUser = async () => {
     const prevName = activeUser?.name || 'Advocate';
+    const backupResult = await performBackup({ type: 'auto-close' });
+    if (activeCompany && !backupResult) {
+      const logoutWithoutBackup = window.confirm(
+        'The automatic backup could not be saved to the selected folder. Log out without a new backup?'
+      );
+      if (!logoutWithoutBackup) return;
+    }
     if (activeCompanyId && activeUser) {
       logActivity(`${prevName} logged out of chamber workspace`);
     }
-    // Auto backup on logout/closing
-    performBackup({ type: 'auto-close' });
     setActiveUserId(null);
     setIsChamberSetupOpen(false);
-    showToast(`Logged out (${prevName}). All data auto-backed up.`, 'info');
+    showToast(
+      backupResult ? `Logged out (${prevName}). Backup snapshot completed.` : `Logged out (${prevName}) without a new backup.`,
+      backupResult ? 'success' : 'warning'
+    );
   };
 
   const switchCompany = () => {
