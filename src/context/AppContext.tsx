@@ -802,10 +802,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const dStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const tStr = `${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;
 
-    // Auto backup modifies existing file / data with new; Manual backup creates a new timestamped file
+    // Use a unique file for every backup. Android SAF providers may create a second
+    // document rather than overwrite an existing name; unique names preserve every snapshot.
     const fileName = isAutoBackup
-      ? `Backup_${safeName}_AutoBackup.json`
-      : `Backup_${safeName}_${dStr}_${tStr}.json`;
+      ? `Backup_${safeName}_AutoBackup_${dStr}_${tStr}_${timestamp}.json`
+      : `Backup_${safeName}_${dStr}_${tStr}_${timestamp}.json`;
 
     const updatedCompany: Company = {
       ...activeCompany,
