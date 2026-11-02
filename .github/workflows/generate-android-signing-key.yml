@@ -1,0 +1,82 @@
+name: Generate encrypted Android signing key
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate-key:
+    name: Generate and encrypt replacement signing key
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Validate export encryption secret
+        env:
+          EXPORT_PASSWORD: ${{ secrets.SRK_KEY_EXPORT_PASSWORD }}
+        shell: bash
+        run: |
+          set +x
+          if [ -z "$EXPORT_PASSWORD" ] || [ "${#EXPORT_PASSWORD}" -lt 20 ]; then
+            echo "::error::Create repository Actions secret SRK_KEY_EXPORT_PASSWORD with a strong password of at least 20 characters before running this workflow."
+            exit 1
+          fi
+
+      - name: Generate private keystore and encrypted export package
+        env:
+          EXPORT_PASSWORD: ${{ secrets.SRK_KEY_EXPORT_PASSWORD }}
+        shell: bash
+        run: |
+          set +x
+          set -euo pipefail
+          umask 077
+          WORK="$RUNNER_TEMP/srk-key-rotation"
+          mkdir -p "$WORK"
+          STORE_PASSWORD="$(openssl rand -hex 32)"
+          KEY_PASSWORD="$(openssl rand -hex 32)"
+          KEY_ALIAS="srk-release"
+          keytool -genkeypair             -keystore "$WORK/srk-release.keystore"             -storetype JKS             -storepass "$STORE_PASSWORD"             -keypass "$KEY_PASSWORD"             -alias "$KEY_ALIAS"             -keyalg RSA             -keysize 3072             -validity 10000             -dname "CN=SRK Case Manager, OU=SRK LEGAL SOLUTION, O=SRK LEGAL SOLUTION, L=BARUIPUR, ST=WEST BENGAL, C=IN"             -noprompt
+          keytool -list -v             -keystore "$WORK/srk-release.keystore"             -storepass "$STORE_PASSWORD"             -alias "$KEY_ALIAS" > "$WORK/certificate-report.txt"
+          SHA1="$(awk -F': ' '/SHA1:/{print $2; exit}' "$WORK/certificate-report.txt")"
+          SHA256="$(awk -F': ' '/SHA256:/{print $2; exit}' "$WORK/certificate-report.txt")"
+          test -n "$SHA1"
+          test -n "$SHA256"
+          cat > "$WORK/PRIVATE-KEY-CREDENTIALS.txt" <<EOF
+          PRIVATE MATERIAL - KEEP CONFIDENTIAL
+          Keystore file: srk-release.keystore
+          Keystore type: JKS
+          Keystore password: $STORE_PASSWORD
+          Key alias: $KEY_ALIAS
+          Key password: $KEY_PASSWORD
+          SHA-1: $SHA1
+          SHA-256: $SHA256
+
+          Store the keystore and these credentials in separate secure backups.
+          Never commit or send the keystore or passwords to chat/issues.
+          EOF
+          chmod 600 "$WORK/srk-release.keystore" "$WORK/PRIVATE-KEY-CREDENTIALS.txt"
+          mkdir -p "$WORK/package"
+          cp "$WORK/srk-release.keystore" "$WORK/certificate-report.txt" "$WORK/PRIVATE-KEY-CREDENTIALS.txt" "$WORK/package/"
+          (cd "$WORK/package" && zip -q "$WORK/srk-signing-key-private.zip" ./*)
+          openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt             -in "$WORK/srk-signing-key-private.zip"             -out "$WORK/SRK-Android-Signing-Key-ENCRYPTED.bin"             -pass env:EXPORT_PASSWORD
+          {
+            echo "## Replacement Android signing certificate (public fingerprints)"
+            echo ""
+            echo "| Fingerprint | Value |"
+            echo "|---|---|"
+            echo "| SHA-1 | `$SHA1` |"
+            echo "| SHA-256 | `$SHA256` |"
+            echo ""
+            echo "The private keystore and passwords are inside an encrypted artifact. They are not printed in logs."
+            echo "Download and decrypt the artifact promptly. Artifact retention is one day."
+          } >> "$GITHUB_STEP_SUMMARY"
+          cp "$WORK/SRK-Android-Signing-Key-ENCRYPTED.bin" "$GITHUB_WORKSPACE/SRK-Android-Signing-Key-ENCRYPTED.bin"
+
+      - name: Upload encrypted signing-key package
+        uses: actions/upload-artifact@v4
+        with:
+          name: SRK-Android-Signing-Key-ENCRYPTED
+          path: SRK-Android-Signing-Key-ENCRYPTED.bin
+          if-no-files-found: error
+          retention-days: 1
