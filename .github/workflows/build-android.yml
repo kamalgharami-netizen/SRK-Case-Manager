@@ -91,8 +91,8 @@ jobs:
           arch: x86_64
           profile: pixel_2
           emulator-boot-timeout: 1200
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 2048 -cores 2
-          # Use the Android API 34 image and allocate additional emulator memory and CPU to reduce boot and package-manager timeouts on hosted runners.
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 4096 -cores 4
+          # Use the Android API 34 image and allocate 4 GiB RAM and 4 CPU cores to reduce Android system-service crashes and package-manager timeouts on hosted runners.
           disable-animations: true
           working-directory: android
           # This action invokes each physical script line in a separate /usr/bin/sh process.
