@@ -111,3 +111,13 @@ Reviewed the current branch implementation:
 ### Audit conclusion
 
 The existing immutable change-envelope and staged-conflict design can be extended, but it is not evidence of a completed multi-device product. Before implementing a device registry, inspect and test the actual account-selection, folder-picker, device-ID creation, and Windows/Android storage adapters. Do not enable a production 10-device cap or claim all-device automatic updates until those paths and a concurrency-safe registration authority are implemented.
+
+
+## Registry hardening and cleanup review (2026-11-02)
+
+- Fixed a registry policy bug: a revoked device is treated as a new active registration when reactivated, so it cannot bypass the 10-active-device limit.
+- Added a regression test that fills all ten slots, revokes one device, fills the freed slot with a replacement, and verifies the old revoked device cannot reactivate as an eleventh active device.
+- Kept the registry storage-agnostic and explicitly documented that snapshot validation is not an atomic cloud registration authority.
+- Reviewed the new device ID helper and registry model: both are referenced by the test suite; no redundant generated files or signing credentials were introduced by this change.
+- Did not delete unrelated application modules or dependencies because their use across Windows, Android, Electron, and Capacitor builds has not been established by a complete dependency/build analysis. Removing them based on name or partial search would be unsafe.
+- CI run for commit `661b15301b30285d47feb7b7b0271e8f138e8b4d` was pending at the time of this note; no passing test/build result is claimed.
