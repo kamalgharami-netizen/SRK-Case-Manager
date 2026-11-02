@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { SyncStateStore } from '@srk/capacitor-sync-state';
 import { Company, User, CaseItem, Party, CauseItem, VaultFile, DiaryEntry, MessageItem, SampleDraftItem, BackupLogEntry, FinancialEntry, PartyLedgerEntry, OfficeAccount, AccountTransaction } from '../types';
 import { AppLanguage, translations, Translations } from '../data/translations';
 import { INITIAL_SAMPLE_DRAFTS } from '../data/sampleDraftTemplates';
@@ -836,10 +838,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             Promise<{ saved: boolean; filePath: string }>;
         } } }).electronAPI?.backupStorage
       : undefined;
-    const shouldWriteNativeBackup = Boolean(options?.downloadFile || (isAutoBackup && nativeBackupStorage?.writeFile));
+    const isAndroidSaf = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+    const shouldWriteNativeBackup = Boolean(
+      options?.downloadFile ||
+      (isAutoBackup && (nativeBackupStorage?.writeFile || isAndroidSaf))
+    );
     if (shouldWriteNativeBackup) {
-      if (nativeBackupStorage?.writeFile) {
-        try {
+      try {
+        if (nativeBackupStorage?.writeFile) {
           const result = await nativeBackupStorage.writeFile({
             directory: targetPath,
             fileName,
@@ -847,12 +853,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           });
           if (!result?.saved) throw new Error('The backup file was not confirmed as saved.');
           nativeBackupSaved = true;
-        } catch (error) {
-          showToast(error instanceof Error ? error.message : 'Backup could not be written to the selected folder.', 'error');
-          return null;
+        } else if (isAndroidSaf) {
+          const result = await SyncStateStore.writeBackupFile({ fileName, content: jsonStr });
+          if (!result?.saved) throw new Error('Android did not confirm that the backup file was saved.');
+          nativeBackupSaved = true;
+        } else if (options?.downloadFile) {
+          browserDownloadRequested = true;
         }
-      } else if (options?.downloadFile) {
-        browserDownloadRequested = true;
+      } catch (error) {
+        showToast(error instanceof Error ? error.message : 'Backup could not be written to the selected folder.', 'error');
+        return null;
       }
     }
 
