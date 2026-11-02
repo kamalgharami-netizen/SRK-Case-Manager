@@ -198,3 +198,15 @@ The following items supersede earlier notes above that described these component
 - Mouza serial/order must never be used as a J.L. number. J.L. must remain a text identifier (not an integer) so leading zeros and official formatting are preserved. District/block/mouza linkage must use verified identifiers and reject ambiguous duplicate names.
 - No complete, authoritative, machine-readable West Bengal district→block→mouza→J.L. dataset has yet been verified for bulk import. Do not populate guessed records or treat LGD village codes as J.L. numbers. Bulk import remains gated on an official Banglarbhumi/BL&LRO export or another authoritative source with provenance and validation.
 - PR #7 remains open and Draft. Do not merge until the exposed historical signing-key risk is resolved and real-device OAuth/Picker plus cross-device sync tests are completed.
+
+
+## Current verification checkpoint (2026-11-02 — GitHub Actions run #372)
+
+- Source commit: `8a674e49a1c67c21a0181fcb9c5848b8d65617a3`.
+- GitHub Actions run #372 (run ID `41414718650`) completed successfully: https://github.com/kamalgharami-netizen/SRK-Case-Manager/actions/runs/41414718650
+- Windows EXE job: dependency installation, installer build and artifact upload all succeeded.
+- Android APK job: TypeScript check, sync-journal safety tests, web build, Capacitor sync, Android Emulator sync-store instrumentation tests, release APK build, signature verification and artifact upload all succeeded.
+- The UI now explicitly distinguishes the official J.L. number from the Mouza list serial and instructs users to preserve leading zeros. This is a data-entry safeguard, not proof that the entered J.L. value has been checked against an official source.
+- The immediately preceding documentation-only workflow for commit `e0d7c6640c7472e7ac54b96219ae4f9213b3ec68` was cancelled when a newer workflow superseded it. The subsequent run #372 on the branch head succeeded; the documentation change itself does not affect application build output.
+- CI verifies build, packaging and automated emulator tests only. Physical Android OAuth/Picker and actual Windows↔Android Drive round-trip testing remain release gates.
+- PR #7 remains open and Draft. The historical signing-key exposure and replacement-key verification remain unresolved release gates. Do not merge or call Google Drive sync production-ready until those gates are completed.
