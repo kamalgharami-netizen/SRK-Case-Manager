@@ -2738,6 +2738,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                         placeholder="36"
                         className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono font-bold uppercase"
                       />
+                      <p className="mt-1 text-[10px] text-slate-500">Enter the official J.L. number, not the Mouza list serial. Keep leading zeros.</p>
                     </div>
                   </div>
 
@@ -2894,6 +2895,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                         placeholder="36"
                         className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono uppercase"
                       />
+                      <p className="mt-1 text-[10px] text-slate-500">Enter the official J.L. number, not the Mouza list serial. Keep leading zeros.</p>
                     </div>
 
                     <div>
