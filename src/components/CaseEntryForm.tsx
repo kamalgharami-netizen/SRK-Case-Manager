@@ -1410,7 +1410,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   const isEditingExisting = Boolean(activeEditingCase || editingCase);
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-16">
+    <div className="space-y-6 w-full max-w-6xl mx-auto px-1 sm:px-2 pb-20">
       {/* Chain Deed Modal (Requirement 20) */}
       {activeChainDeedModalCase && (
         <ChainDeedModal
