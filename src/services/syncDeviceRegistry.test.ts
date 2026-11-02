@@ -69,6 +69,21 @@ test('revocation frees an active slot but preserves the device history', () => {
   assert.equal(replacement.ok, true);
 });
 
+test('does not let a revoked device bypass the ten-device limit when reactivated', () => {
+  let current = registry();
+  for (let index = 1; index <= MAX_ACTIVE_SYNC_DEVICES; index += 1) {
+    const result = registerSyncDevice(current, { ownerAccountId: current.ownerAccountId, folderId: current.folderId }, device(index), 100 + index);
+    assert.equal(result.ok, true);
+    if (result.ok) current = result.registry;
+  }
+  current = revokeSyncDevice(current, device(1).deviceId, 200);
+  const replacement = registerSyncDevice(current, { ownerAccountId: current.ownerAccountId, folderId: current.folderId }, device(11), 201);
+  assert.equal(replacement.ok, true);
+  if (!replacement.ok) return;
+  const reactivation = registerSyncDevice(replacement.registry, { ownerAccountId: current.ownerAccountId, folderId: current.folderId }, device(1), 202);
+  assert.deepEqual(reactivation, { ok: false, reason: 'device-limit-reached' });
+});
+
 test('rejects malformed registries and duplicate device IDs', () => {
   const invalid = { ...registry(), devices: [device(1), device(1)] };
   assert.equal(validateSyncDeviceRegistry(invalid), false);
