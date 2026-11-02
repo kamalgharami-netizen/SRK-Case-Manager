@@ -167,3 +167,20 @@ The following items supersede earlier notes above that described these component
 - The Windows backup path selector still requires a separate native folder-picker/file-write implementation before the displayed path can be treated as a verified physical backup destination. Browser download fallback must not be described as writing directly to the selected folder.
 - The Android signing key previously committed in repository history remains compromised; rotate it and update the Android OAuth SHA-1 before production release. Never commit the replacement key or passwords.
 
+
+
+## Current verification checkpoint (2026-11-02 — GitHub Actions run #362)
+
+- Source commit: `07b72dc2b0757629c26fe9e1025ff2420afc0b1d`.
+- Run #362 completed successfully: https://github.com/kamalgharami-netizen/SRK-Case-Manager/actions/runs/41404522993
+- Windows EXE build and artifact upload succeeded.
+- Android TypeScript checks, sync-journal safety tests, web build, Capacitor sync, native instrumentation tests, release signing, APK signature verification and artifact upload succeeded.
+- APK signature verification completed with `apksigner verify --verbose` and certificate fingerprint extraction. The certificate reported by this CI run is:
+  - SHA-1: `d58a97a1619be31a29f10d092805853549b22a2e`
+  - SHA-256: `c563d37511633a90658b4e519c27db052a773601e133c2c1156c2e55bac8527d`
+- These fingerprints identify the certificate used by this particular CI build. They do **not** prove that the historical exposed keystore has been rotated. Until a replacement key is generated, stored only in GitHub Actions secrets, and independently verified, treat the historical key as compromised and do not publish a production release.
+- Uploaded artifacts for this run:
+  - Android APK: https://github.com/kamalgharami-netizen/SRK-Case-Manager/actions/runs/41404522993/artifacts/13122924899
+  - Windows EXE: https://github.com/kamalgharami-netizen/SRK-Case-Manager/actions/runs/41404522993/artifacts/13122912171
+- The Android emulator/instrumentation and CI checks are automated validation only. They do not replace real-device Google sign-in, Picker, or Windows↔Android data round-trip testing.
+- PR #7 remains open and Draft: https://github.com/kamalgharami-netizen/SRK-Case-Manager/pull/7. Do not merge until the signing-key security gate and physical-device validation are complete.
