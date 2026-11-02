@@ -4,6 +4,15 @@ const JOURNAL_KEY = 'srk_sync_journal_v1';
 const CONFLICT_KEY = 'srk_sync_conflicts_v1';
 const JOURNAL_SCHEMA = 1;
 
+function createResolutionChangeId(now: number): string {
+  if (typeof crypto === 'undefined' || typeof crypto.getRandomValues !== 'function') {
+    throw new Error('Secure random generation is unavailable; conflict resolution cannot be queued safely.');
+  }
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  const suffix = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+  return `chg_resolution_${now.toString(36)}_${suffix}`;
+}
+
 export interface SyncJournalState<T> {
   schemaVersion: typeof JOURNAL_SCHEMA;
   pending: SyncEnvelope<T>[];
@@ -169,7 +178,7 @@ export class SyncJournal<T> {
     const resolution: SyncEnvelope<T> = {
       ...selected,
       deviceId,
-      changeId: 'chg_resolution_' + now.toString(36) + '_' + Math.random().toString(36).slice(2, 12),
+      changeId: createResolutionChangeId(now),
       updatedAt: now,
     };
 
