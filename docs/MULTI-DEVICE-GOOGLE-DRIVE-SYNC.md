@@ -95,3 +95,19 @@ The current architecture document records that Android's native SQLite sync-stat
 ## Verified implementation status on 2026-11-02
 
 This document records the approved product requirement and implementation plan. It does not claim that 10-device registration, strict device-limit enforcement, independent-customer OAuth onboarding, or 10-device synchronization is implemented or tested. The existing Draft PR and release gates remain in force.
+
+
+## Initial code audit (2026-11-02)
+
+Reviewed the current branch implementation:
+
+- `syncGoogleDriveNow()` validates that an access token and folder ID exist, then performs a bounded pull before push. It stages inbound changes and reports staged conflicts; it does not apply remote data directly to the live database.
+- `pushPendingChanges()` writes immutable per-change JSON files with deterministic names and verifies an existing file's complete envelope before acknowledging a retry. This is a useful idempotency foundation.
+- The current sync journal stores pending changes and a bounded list of acknowledged change IDs. It validates change envelopes and preserves unreadable journal data rather than overwriting it.
+- The coordinator receives an access token and folder ID from its caller. The reviewed coordinator itself does not establish a cross-device account/folder identity binding or a registered-device limit.
+- The OAuth token-session service can refresh a token only when a refresh token exists. The previously recorded Android authorization flow currently stores `refreshToken: null`; therefore unattended Android background sync is not yet verified.
+- The existing native Android encrypted SQLite sync-state scaffold is not yet the live journal/inbox store, as recorded in `ANDROID-BACKGROUND-SYNC-ARCHITECTURE.md`.
+
+### Audit conclusion
+
+The existing immutable change-envelope and staged-conflict design can be extended, but it is not evidence of a completed multi-device product. Before implementing a device registry, inspect and test the actual account-selection, folder-picker, device-ID creation, and Windows/Android storage adapters. Do not enable a production 10-device cap or claim all-device automatic updates until those paths and a concurrency-safe registration authority are implemented.
