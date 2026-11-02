@@ -80,7 +80,10 @@ export const BackupPathModal: React.FC = () => {
     if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
       try {
         const selected = await SyncStateStore.selectBackupFolder();
-        setCustomPath('Android SAF folder (persistent access granted)');
+        const selectedFolderLabel = selected.displayName
+          ? `Android SAF: ${selected.displayName}`
+          : 'Android SAF folder (persistent access granted)';
+        setCustomPath(selectedFolderLabel);
         showToast('Android backup folder selected. Access will remain available for future backups.', 'success');
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unable to select Android backup folder.';
