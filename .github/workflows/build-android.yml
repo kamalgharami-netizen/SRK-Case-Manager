@@ -20,10 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      HAS_ANDROID_SIGNING: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -123,7 +120,12 @@ jobs:
           sed -i -E "s/versionName .*/versionName \"${VERSION}\"/" android/app/build.gradle
 
       - name: Configure persistent release signing
-        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' && env.ANDROID_KEYSTORE_PASSWORD != '' && env.ANDROID_KEY_ALIAS != '' && env.ANDROID_KEY_PASSWORD != '' }}
+        if: ${{ env.HAS_ANDROID_SIGNING == 'true' }}
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         working-directory: android
         run: |
           echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/srk-release.keystore"
@@ -156,14 +158,18 @@ jobs:
           PY
 
       - name: Build signed release APK
-        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' && env.ANDROID_KEYSTORE_PASSWORD != '' && env.ANDROID_KEY_ALIAS != '' && env.ANDROID_KEY_PASSWORD != '' }}
+        if: ${{ env.HAS_ANDROID_SIGNING == 'true' }}
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         working-directory: android
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
 
       - name: Verify release APK signature and report certificate fingerprints
-        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' && env.ANDROID_KEYSTORE_PASSWORD != '' && env.ANDROID_KEY_ALIAS != '' && env.ANDROID_KEY_PASSWORD != '' }}
+        if: ${{ env.HAS_ANDROID_SIGNING == 'true' }}
         working-directory: android
         run: |
           APK="app/build/outputs/apk/release/app-release.apk"
@@ -192,7 +198,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Build debug APK (temporary fallback until signing secrets are configured)
-        if: ${{ env.ANDROID_KEYSTORE_BASE64 == '' || env.ANDROID_KEYSTORE_PASSWORD == '' || env.ANDROID_KEY_ALIAS == '' || env.ANDROID_KEY_PASSWORD == '' }}
+        if: ${{ env.HAS_ANDROID_SIGNING != 'true' }}
         working-directory: android
         run: |
           echo "::warning::A persistent Android signing key is not configured. This debug APK is not guaranteed to update an APK from a previous GitHub Actions run."
@@ -200,7 +206,7 @@ jobs:
           ./gradlew assembleDebug --no-daemon
 
       - name: Upload signed Android APK
-        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' && env.ANDROID_KEYSTORE_PASSWORD != '' && env.ANDROID_KEY_ALIAS != '' && env.ANDROID_KEY_PASSWORD != '' }}
+        if: ${{ env.HAS_ANDROID_SIGNING == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: SRK-Case-Manager-Android-APK
@@ -209,7 +215,7 @@ jobs:
           retention-days: 14
 
       - name: Upload temporary debug APK
-        if: ${{ env.ANDROID_KEYSTORE_BASE64 == '' || env.ANDROID_KEYSTORE_PASSWORD == '' || env.ANDROID_KEY_ALIAS == '' || env.ANDROID_KEY_PASSWORD == '' }}
+        if: ${{ env.HAS_ANDROID_SIGNING != 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: SRK-Case-Manager-Android-APK-DEBUG-ONLY
