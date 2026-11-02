@@ -78,11 +78,13 @@ export function registerSyncDevice(
   }
 
   const existing = registry.devices.find(item => item.deviceId === device.deviceId);
-  if (!existing && getActiveSyncDevices(registry).length >= MAX_ACTIVE_SYNC_DEVICES) {
+  const isAlreadyActive = existing?.revokedAt === null;
+  const activeCount = getActiveSyncDevices(registry).length;
+  if (!isAlreadyActive && activeCount >= MAX_ACTIVE_SYNC_DEVICES) {
     return { ok: false, reason: 'device-limit-reached' };
   }
 
-  const nextDevice: SyncDeviceRegistration = existing
+  const nextDevice: SyncDeviceRegistration = existing && isAlreadyActive
     ? { ...existing, ...device, lastSeenAt: now, revokedAt: null }
     : { ...device, registeredAt: now, lastSeenAt: now, revokedAt: null };
 
@@ -92,7 +94,7 @@ export function registerSyncDevice(
 
   return {
     ok: true,
-    alreadyRegistered: Boolean(existing),
+    alreadyRegistered: Boolean(isAlreadyActive),
     device: nextDevice,
     registry: { ...registry, updatedAt: now, devices },
   };
