@@ -87,18 +87,18 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
-          target: default
+          target: google_apis
           arch: x86_64
           profile: pixel_2
           emulator-boot-timeout: 1200
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 4096 -cores 4
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 2048 -cores 2
           # Use the Android API 34 image and allocate additional emulator memory and CPU to reduce boot and package-manager timeouts on hosted runners.
           disable-animations: true
           working-directory: android
           # This action invokes each physical script line in a separate /usr/bin/sh process.
           # Keep the complete loop and test/diagnostic sequence on one shell line.
           script: |
-            echo "===== Wait for Android package manager ====="; ready=0; for attempt in $(seq 1 60); do if adb -s emulator-5554 shell pm path android >/dev/null 2>&1; then ready=1; break; fi; sleep 5; done; if [ "$ready" -ne 1 ]; then echo "Android package manager did not become ready."; adb -s emulator-5554 logcat -b all -d -v time | tail -n 300 || true; exit 1; fi; echo "Android package manager is ready."; ./gradlew :srk-capacitor-sync-state:connectedDebugAndroidTest --no-daemon --stacktrace; test_status=$?; echo "===== Connected Android devices ====="; adb devices -l || true; echo "===== Emulator crash diagnostics ====="; adb -s emulator-5554 logcat -b all -d -v time | grep -E "FATAL EXCEPTION|AndroidRuntime|am_crash|am_anr|INSTRUMENTATION|Process .* died|Fatal signal|keystore|SyncStateDatabase|TestRunner" | tail -n 400 || true; exit "$test_status"
+            echo "===== Wait for fully booted Android emulator ====="; ready=0; for attempt in $(seq 1 120); do booted="$(adb -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d "\r" || true)"; api="$(adb -s emulator-5554 shell getprop ro.build.version.sdk 2>/dev/null | tr -d "\r" || true)"; if [ "$booted" = "1" ] && [ "$api" -ge 24 ] 2>/dev/null && adb -s emulator-5554 shell pm path android >/dev/null 2>&1; then ready=1; break; fi; sleep 5; done; if [ "$ready" -ne 1 ]; then echo "Android emulator did not complete boot or report a valid API level."; adb devices -l || true; adb -s emulator-5554 shell getprop ro.build.version.sdk || true; adb -s emulator-5554 logcat -b all -d -v time | tail -n 300 || true; exit 1; fi; echo "Android emulator is ready (API $api)."; ./gradlew :srk-capacitor-sync-state:connectedDebugAndroidTest --no-daemon --stacktrace; test_status=$?; echo "===== Connected Android devices ====="; adb devices -l || true; echo "===== Emulator crash diagnostics ====="; adb -s emulator-5554 logcat -b all -d -v time | grep -E "FATAL EXCEPTION|AndroidRuntime|am_crash|am_anr|INSTRUMENTATION|Process .* died|Fatal signal|keystore|SyncStateDatabase|TestRunner" | tail -n 400 || true; exit "$test_status"
 
       - name: Upload Android instrumentation test reports
         if: always()
