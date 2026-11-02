@@ -745,8 +745,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         timestamp: Date.now(),
         storagePath: targetBackupPath,
         company: newCompany,
-        allCompanies: [newCompany],
-        passcodeVerify: cleanPasscode
+        allCompanies: [newCompany]
       };
       localStorage.setItem('srk_persistent_vault_latest', JSON.stringify(initialSnapshot));
     } catch {}
@@ -824,8 +823,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       totalCases: activeCompany.cases?.length || 0,
       totalParties: activeCompany.parties?.length || 0,
       company: updatedCompany,
-      allCompanies: companies.map(c => (c.id === updatedCompany.id ? updatedCompany : c)),
-      passcodeVerify: activeUser?.passcode || activeUser?.password || '1234'
+      allCompanies: companies.map(c => (c.id === updatedCompany.id ? updatedCompany : c))
     };
 
     const jsonStr = JSON.stringify(payload, null, 2);
@@ -1137,12 +1135,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const storedPasscode = (foundUser.passcode || '').trim();
     const storedPassword = (foundUser.password || '').trim();
 
-    const isMatch =
-      !entered ||
-      entered === storedPasscode ||
-      entered === storedPassword ||
-      entered === '1234' ||
-      (!storedPasscode && !storedPassword);
+    const isMatch = Boolean(
+      entered &&
+      ((Boolean(storedPasscode) && entered === storedPasscode) ||
+        (Boolean(storedPassword) && entered === storedPassword))
+    );
 
     if (!isMatch) {
       showToast('Incorrect 4-digit passcode. Please check and try again.', 'error');
@@ -1216,10 +1213,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           const uPhone = (u.phone || '').replace(/\D/g, '').slice(-10);
           const phoneMatch = !cleanPhone || uPhone === cleanPhone || cleanPhone.length < 10;
           const passcodeMatch =
-            enteredPasscode === u.passcode ||
-            enteredPasscode === u.password ||
-            enteredPasscode === '1234' ||
-            enteredPasscode === targetPayload.passcodeVerify;
+            (Boolean(u.passcode) && enteredPasscode === u.passcode) ||
+            (Boolean(u.password) && enteredPasscode === u.password);
 
           if (passcodeMatch && phoneMatch) {
             matchedUser = u;
@@ -1228,11 +1223,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           }
         }
         if (matchedUser && matchedComp) break;
-      }
-
-      if (!matchedUser && enteredPasscode === '1234') {
-        matchedComp = candidateCompanies[0];
-        matchedUser = matchedComp.users?.[0] || null;
       }
 
       if (!matchedComp || !matchedUser) {
