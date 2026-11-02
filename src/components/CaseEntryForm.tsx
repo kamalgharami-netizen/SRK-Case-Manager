@@ -1484,18 +1484,18 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       )}
 
       {/* Top Header & Actions Bar */}
-      <div className="flex flex-wrap items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4 gap-3">
+      <div className="relative flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-2xl border border-blue-200 dark:border-blue-900 bg-gradient-to-r from-white via-blue-50/80 to-indigo-50/70 dark:from-slate-950 dark:via-blue-950/40 dark:to-indigo-950/30 p-3 sm:p-4 shadow-sm">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="min-h-10 min-w-10 p-2 rounded-xl border border-blue-200 dark:border-blue-800 bg-white/80 dark:bg-slate-900/80 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors cursor-pointer"
             title="Cancel and Go Back"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-lg font-black tracking-wide text-slate-900 dark:text-slate-100 uppercase">
+              <h1 className="text-base sm:text-lg font-black tracking-wide text-slate-900 dark:text-slate-100 uppercase leading-snug">
                 {(() => {
                   const label =
                     type === 'mutation' ? 'MUTATION CASE ENTRY FORM' :
@@ -1532,7 +1532,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
             <button
               type="button"
               onClick={() => handleSaveOrUpdate(true, false)}
-              className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="min-h-10 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>Update {isMisc ? 'Misc Case' : isMutation ? 'Mutation' : isCertCopy ? 'Certified Copy' : isRorPi ? 'ROR / PI Entry' : 'Case'}</span>
@@ -1543,7 +1543,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
           <button
             type="button"
             onClick={() => handleSaveOrUpdate(false, false)}
-            className="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="min-h-10 px-4 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold shadow-md flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
           >
             <Save className="w-4 h-4" />
             <span>Save {isMisc ? 'Misc Case' : isMutation ? 'Case File' : isCertCopy ? 'Certified Copy' : isRorPi ? 'ROR / PI Entry' : 'Case'}</span>
@@ -1553,7 +1553,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
           <button
             type="button"
             onClick={onBack}
-            className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold cursor-pointer"
+            className="min-h-10 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold cursor-pointer"
           >
             Cancel
           </button>
