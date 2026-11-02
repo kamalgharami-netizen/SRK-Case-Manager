@@ -184,3 +184,17 @@ The following items supersede earlier notes above that described these component
   - Windows EXE: https://github.com/kamalgharami-netizen/SRK-Case-Manager/actions/runs/41404522993/artifacts/13122912171
 - The Android emulator/instrumentation and CI checks are automated validation only. They do not replace real-device Google sign-in, Picker, or Windows↔Android data round-trip testing.
 - PR #7 remains open and Draft: https://github.com/kamalgharami-netizen/SRK-Case-Manager/pull/7. Do not merge until the signing-key security gate and physical-device validation are complete.
+
+
+## Current verification checkpoint (2026-11-02 — GitHub Actions run #368)
+
+- Source commit: `21e965fb436db2b95c770eec9d67ae869e041fb2`.
+- GitHub Actions run #368 (run ID `41412277647`) completed successfully: https://github.com/kamalgharami-netizen/SRK-Case-Manager/actions/runs/41412277647
+- Windows EXE build and artifact upload succeeded. Artifact: https://github.com/kamalgharami-netizen/SRK-Case-Manager/actions/runs/41412277647/artifacts/13126420842
+- Android TypeScript check, sync-journal safety tests, web build, Capacitor sync, native sync-store instrumentation tests on Android Emulator, release APK build, signature verification and artifact upload succeeded. APK artifact: https://github.com/kamalgharami-netizen/SRK-Case-Manager/actions/runs/41412277647/artifacts/13126412755
+- Android instrumentation report artifact: https://github.com/kamalgharami-netizen/SRK-Case-Manager/actions/runs/41412277647/artifacts/13126417709
+- The successful CI run confirms that the source commit builds and the automated emulator tests pass. It does not establish physical-device Google OAuth/Picker success or a real Windows↔Android Drive round trip.
+- Commit `21e965fb436db2b95c770eec9d67ae869e041fb2` clears block, mouza and JL when a schedule's district changes; clears mouza and JL when its block changes; validates a selected block against the selected district; and does not copy the previous schedule's block/mouza/JL into a new schedule.
+- Mouza serial/order must never be used as a J.L. number. J.L. must remain a text identifier (not an integer) so leading zeros and official formatting are preserved. District/block/mouza linkage must use verified identifiers and reject ambiguous duplicate names.
+- No complete, authoritative, machine-readable West Bengal district→block→mouza→J.L. dataset has yet been verified for bulk import. Do not populate guessed records or treat LGD village codes as J.L. numbers. Bulk import remains gated on an official Banglarbhumi/BL&LRO export or another authoritative source with provenance and validation.
+- PR #7 remains open and Draft. Do not merge until the exposed historical signing-key risk is resolved and real-device OAuth/Picker plus cross-device sync tests are completed.
