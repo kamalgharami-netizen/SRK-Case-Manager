@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { SyncStateStore } from '@srk/capacitor-sync-state';
 import { useApp } from '../context/AppContext';
 import {
   HardDrive,
@@ -75,6 +77,18 @@ export const BackupPathModal: React.FC = () => {
    * 3. Handles iframe security limitations without crashing
    */
   const handleBrowseFolder = async () => {
+    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
+      try {
+        const selected = await SyncStateStore.selectBackupFolder();
+        setCustomPath('Android SAF folder (persistent access granted)');
+        showToast('Android backup folder selected. Access will remain available for future backups.', 'success');
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unable to select Android backup folder.';
+        if (!/cancel/i.test(message)) showToast(message, 'error');
+      }
+      return;
+    }
+
     const nativeBackupStorage = typeof window !== 'undefined'
       ? (window as Window & { electronAPI?: { backupStorage?: { selectFolder: () => Promise<string | null> } } })
           .electronAPI?.backupStorage
