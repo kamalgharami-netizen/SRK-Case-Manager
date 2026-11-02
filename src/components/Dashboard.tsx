@@ -31,7 +31,9 @@ import {
   Scroll,
   FileSpreadsheet,
   Search,
-  CheckCircle2
+  CheckCircle2,
+  Scale,
+  Plus
 } from 'lucide-react';
 import { CaseType, CaseItem, getStatusTrackingInfo, getBackupStatus } from '../types';
 import { safePrintHtml } from '../utils/printDoc';
