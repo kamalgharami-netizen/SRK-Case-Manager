@@ -785,15 +785,16 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   const addLandSchedule = () => {
     setLandSchedules(prev => {
       const parentDistrict = prev[0]?.district || district || '';
-      const parentBlock = prev[0]?.block || (parentDistrict && wbDistricts[parentDistrict] ? wbDistricts[parentDistrict][0] : '') || '';
+      // Never infer a block or mouza for a new schedule row. The user must select
+      // the district and its block again; this prevents accidental cross-linking.
       return [
         ...prev,
         {
           id: 'ls_' + Date.now(),
           district: parentDistrict,
-          block: parentBlock,
-          mouza: prev[0]?.mouza || '',
-          jl: prev[0]?.jl || '',
+          block: '',
+          mouza: '',
+          jl: '',
           khatian: '',
           dag: '',
           area: '',
@@ -817,8 +818,14 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       prev.map((s, i) => {
         if (i !== idx) return s;
         if (field === 'district') {
-          const blocks = wbDistricts[val] || [];
-          return { ...s, district: val, block: blocks[0] || '' };
+          // A district change invalidates all dependent administrative selections.
+          return { ...s, district: val, block: '', mouza: '', jl: '' };
+        }
+        if (field === 'block') {
+          // A block change invalidates the mouza and its JL reference.
+          const allowedBlocks = wbDistricts[s.district] || [];
+          if (val && !allowedBlocks.includes(val)) return s;
+          return { ...s, block: val, mouza: '', jl: '' };
         }
         return { ...s, [field]: finalVal };
       })
