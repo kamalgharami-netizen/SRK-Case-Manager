@@ -107,15 +107,24 @@ export function mergeSyncEnvelopes<T>(
   return { merged, conflicts, unchanged };
 }
 
-/** Create a stable, non-secret device identifier for this app installation. */
+/** Create a stable, non-secret device identifier for this app installation.
+ *
+ * IDs are generated only with a cryptographically secure random source. A
+ * weak Math.random fallback could cause collisions across installations and
+ * is therefore deliberately not used. If secure randomness is unavailable,
+ * fail closed rather than registering an unreliable device identity.
+ */
 export function getOrCreateSyncDeviceId(storage: Pick<Storage, 'getItem' | 'setItem'>): string {
   const key = 'srk_sync_device_id_v1';
   const existing = storage.getItem(key);
-  if (existing && /^[a-zA-Z0-9_-]{16,80}$/.test(existing)) return existing;
+  if (existing && /^srk_[a-f0-9]{32}$/.test(existing)) return existing;
 
-  const randomPart = typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID().replace(/-/g, '')
-    : Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+  if (typeof crypto === 'undefined' || typeof crypto.getRandomValues !== 'function') {
+    throw new Error('Secure random generation is unavailable; this device cannot be registered safely.');
+  }
+
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  const randomPart = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
   const deviceId = `srk_${randomPart}`;
   storage.setItem(key, deviceId);
   return deviceId;
