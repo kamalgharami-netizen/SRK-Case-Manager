@@ -168,9 +168,15 @@ jobs:
         run: |
           APK="app/build/outputs/apk/release/app-release.apk"
           test -s "$APK"
-          apksigner verify --verbose "$APK"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner -perm -u+x | sort -V | tail -n 1)"
+          if [ -z "$APKSIGNER" ]; then
+            echo "::error::Android SDK Build Tools apksigner was not found."
+            find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name apksigner -print || true
+            exit 1
+          fi
+          "$APKSIGNER" verify --verbose "$APK"
           echo "## Android release signing certificate" >> "$GITHUB_STEP_SUMMARY"
-          apksigner verify --print-certs "$APK" | tee "$RUNNER_TEMP/srk-apk-certificate.txt"
+          "$APKSIGNER" verify --print-certs "$APK" | tee "$RUNNER_TEMP/srk-apk-certificate.txt"
           SHA1="$(sed -n 's/^Signer #1 certificate SHA-1 digest: //p' "$RUNNER_TEMP/srk-apk-certificate.txt" | head -n 1)"
           SHA256="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$RUNNER_TEMP/srk-apk-certificate.txt" | head -n 1)"
           test -n "$SHA1"
