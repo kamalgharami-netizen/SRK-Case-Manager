@@ -89,13 +89,13 @@ jobs:
       - name: Run native sync-store instrumentation tests on Android Emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: 30
           target: default
           arch: x86_64
           profile: pixel_2
           emulator-boot-timeout: 1200
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 4096 -cores 4
-          # Use the lean AOSP API 34 image; Google Play services are not needed by these native storage tests. Give the emulator enough CPU and memory to avoid package-manager service death on hosted runners.
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 3072 -cores 2
+          # Use the stable AOSP API 30 image for native storage tests. Lower emulator CPU/RAM allocation to reduce contention with Gradle on hosted runners.
           disable-animations: true
           working-directory: android
           # This action invokes each physical script line in a separate /usr/bin/sh process.
