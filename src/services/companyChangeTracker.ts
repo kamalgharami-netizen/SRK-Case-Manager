@@ -52,7 +52,7 @@ export function collectCompanyChanges<T extends TrackedCompany>(
     const oldCompany = previousCompanies.get(companyId);
 
     // Company profile only; never include users or other private collections.
-    const profileKeys = ['name', 'type', 'barCouncil', 'gst', 'address', 'city', 'state', 'pin', 'phone', 'email', 'logoUrl', 'logoBadge', 'logoColor'];
+    const profileKeys = ['name', 'type', 'barCouncil', 'gst', 'address', 'city', 'state', 'pin', 'phone', 'email', 'logoUrl', 'logoBadge', 'logoColor', 'chainSampleTemplate'];
     const profile = Object.fromEntries(profileKeys
       .filter(key => Object.prototype.hasOwnProperty.call(nextCompany, key))
       .map(key => [key, getField(nextCompany, key)]));
