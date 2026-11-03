@@ -1,3 +1,4 @@
+import { getLocalDateInputValue } from '../utils/localDate';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import {
@@ -325,7 +326,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       : FORUMS_BY_TYPE[type][0] || ''
   );
   const [filingDate, setFilingDate] = useState(
-    editingCase?.filingDate || new Date().toISOString().slice(0, 10)
+    editingCase?.filingDate || getLocalDateInputValue()
   );
   const [nextDate, setNextDate] = useState(editingCase?.nextDate || '');
 
