@@ -13,6 +13,7 @@ const testFiles = [
   'src/services/driveSyncProtocol.deviceId.test.ts',
   'src/services/syncDeviceRegistry.test.ts',
   'src/services/googleDriveAccountIdentity.test.ts',
+  'src/services/googleDriveDeviceRegistry.test.ts',
   'src/services/applySyncChanges.test.ts',
   'src/services/applyStagedInboxChanges.test.ts',
   'src/services/googleDriveSyncCoordinator.test.ts',
