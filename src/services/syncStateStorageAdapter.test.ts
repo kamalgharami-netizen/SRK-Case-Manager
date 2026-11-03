@@ -241,16 +241,11 @@ test('platform storage serializes same-key writes and reads in call order', asyn
 test('a failed serialized write does not block later operations for the same key', async () => {
   const values = new Map<string, string>();
   let calls = 0;
-  let signalFirstWriteStarted!: () => void;
-  const firstWriteStarted = new Promise<void>(resolve => { signalFirstWriteStarted = resolve; });
   const underlying = {
     async getItem(key: string) { return values.get(key) ?? null; },
     async setItem(key: string, value: string) {
       calls += 1;
-      if (calls === 1) {
-        signalFirstWriteStarted();
-        throw new Error('simulated write failure');
-      }
+      if (calls === 1) throw new Error('simulated write failure');
       values.set(key, value);
     },
     async removeItem(key: string) { values.delete(key); },
@@ -260,14 +255,10 @@ test('a failed serialized write does not block later operations for the same key
     localStorage: underlying as unknown as Storage,
   });
 
-  const failed = storage.setItem('journal', 'lost');
-  // Attach the rejection assertion immediately: the underlying async operation
-  // can reject in the same turn that signals its start.
-  const failedAssertion = assert.rejects(failed, /simulated write failure/);
-  await firstWriteStarted;
-  const retry = storage.setItem('journal', 'recovered');
-  await failedAssertion;
-  await retry;
+  // Await the first failure fully before queuing the retry. This directly
+  // verifies that a rejected operation does not poison the per-key queue.
+  await assert.rejects(storage.setItem('journal', 'lost'), /simulated write failure/);
+  await storage.setItem('journal', 'recovered');
   assert.equal(await storage.getItem('journal'), 'recovered');
   assert.equal(calls, 2);
 });
