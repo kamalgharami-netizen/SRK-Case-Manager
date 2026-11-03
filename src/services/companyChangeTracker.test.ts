@@ -53,3 +53,32 @@ test('creates valid envelopes with unique change identifiers', () => {
   assert.equal(envelopes[1].payload, null);
   assert.equal(envelopes[1].updatedAt, 1001);
 });
+
+
+test('tracks the custom chain deed template without syncing private workspace data', () => {
+  const previous = [{
+    id: 'co1',
+    name: 'Chamber',
+    chainSampleTemplate: 'Old template',
+    users: [{ id: 'u1', password: 'private-password' }],
+    messages: [{ id: 'm1', body: 'private message' }],
+    activityLog: [{ id: 'a1', action: 'private activity' }],
+  }];
+  const current = [{
+    id: 'co1',
+    name: 'Chamber',
+    chainSampleTemplate: 'Updated template',
+    users: [{ id: 'u1', password: 'new-private-password' }],
+    messages: [{ id: 'm1', body: 'updated private message' }],
+    activityLog: [{ id: 'a1', action: 'updated private activity' }],
+  }];
+
+  const changes = collectCompanyChanges(previous, current);
+  assert.equal(changes.length, 1);
+  assert.equal(changes[0].recordId, 'company_profile');
+  assert.deepEqual(changes[0].payload, {
+    name: 'Chamber',
+    chainSampleTemplate: 'Updated template',
+  });
+  assert.equal(JSON.stringify(changes).includes('private'), false);
+});
