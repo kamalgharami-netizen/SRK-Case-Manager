@@ -19,6 +19,7 @@ const testFiles = [
   'src/services/applyStagedInboxChanges.test.ts',
   'src/services/googleDriveSyncCoordinator.test.ts',
   'src/services/androidNativeSyncStateMigration.test.ts',
+  'src/services/syncStateStorageAdapter.test.ts',
   'src/services/databaseMigrations.test.ts',
   'src/utils/localDate.test.ts',
 ];
