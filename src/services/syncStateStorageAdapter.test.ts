@@ -162,3 +162,26 @@ test('Android platform does not silently fall back when native plugin is absent'
   await assert.rejects(adapter.getItem('srk_sync_journal_v1'), /native plugin unavailable/);
   assert.equal(local.getItem('srk_sync_journal_v1'), null);
 });
+
+
+test('native adapter rejects malformed write acknowledgement objects', async () => {
+  for (const response of [null, {}, { saved: 0 }, { saved: 2 }, { saved: Number.NaN }]) {
+    const native = new MemoryNativeStore();
+    native.setItems = async () => response as { saved: number };
+    await assert.rejects(
+      createNativeSyncStateStorage(native).setItem('srk_sync_journal_v1', 'journal'),
+      /write was not fully committed/,
+    );
+  }
+});
+
+test('native adapter rejects malformed removal acknowledgement objects', async () => {
+  for (const response of [null, {}, { removed: -1 }, { removed: 2 }, { removed: Number.NaN }]) {
+    const native = new MemoryNativeStore();
+    native.removeItems = async () => response as { removed: number };
+    await assert.rejects(
+      createNativeSyncStateStorage(native).removeItem('srk_sync_journal_v1'),
+      /removal returned an invalid result/,
+    );
+  }
+});
