@@ -209,7 +209,7 @@ export async function runLegacyAndroidSyncStateMigration(
     // that could make the next launch skip an incomplete migration.
     let markerMayStillBeComplete = true;
     try {
-      const removed = await nativeStore.removeItems({ keys: [MIGRATION_MARKER] });
+      const removed = await removeNativeSyncStateItems(nativeStore, [MIGRATION_MARKER]);
       markerMayStillBeComplete = removed.removed !== 1;
     } catch {
       markerMayStillBeComplete = true;
@@ -224,7 +224,7 @@ export async function runLegacyAndroidSyncStateMigration(
     }
     if (markerMayStillBeComplete) {
       try {
-        await nativeStore.setItems({ items: [{ key: MIGRATION_MARKER, value: '0' }] });
+        await writeNativeSyncStateItems(nativeStore, [{ key: MIGRATION_MARKER, value: '0' }]);
       } catch {
         // Verify below; the native bridge may report failure after commit.
       }
