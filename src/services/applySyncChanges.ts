@@ -58,7 +58,7 @@ export function applySyncEnvelopes<T extends TrackedCompany>(
 
     if (change.recordId === 'company_profile') {
       if (change.deleted || !isRecord(change.payload)) { skipped += 1; continue; }
-      const allowed = ['name', 'type', 'barCouncil', 'gst', 'address', 'city', 'state', 'pin', 'phone', 'email', 'logoUrl', 'logoBadge', 'logoColor'];
+      const allowed = ['name', 'type', 'barCouncil', 'gst', 'address', 'city', 'state', 'pin', 'phone', 'email', 'logoUrl', 'logoBadge', 'logoColor', 'chainSampleTemplate'];
       const profile = Object.fromEntries(Object.entries(change.payload).filter(([key]) => allowed.includes(key)));
       companies[companyIndex] = { ...company, ...profile } as T;
       applied += 1;
