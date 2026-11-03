@@ -15,7 +15,7 @@ import java.util.List;
 
 public class GoogleDriveAuthorizationActivity extends Activity {
     private static final int AUTHORIZATION_REQUEST_CODE = 7314;
-    private static final String DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file";
+    private static final String DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file";\n    private static final String OPENID_SCOPE = "openid";\n    private static final String EMAIL_SCOPE = "email";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,7 +24,7 @@ public class GoogleDriveAuthorizationActivity extends Activity {
 
         boolean showPicker = getIntent().getBooleanExtra("showPicker", true);
         AuthorizationRequest.Builder builder = AuthorizationRequest.builder()
-            .setRequestedScopes(Collections.singletonList(new Scope(DRIVE_FILE_SCOPE)))
+            .setRequestedScopes(java.util.Arrays.asList(new Scope(OPENID_SCOPE), new Scope(EMAIL_SCOPE), new Scope(DRIVE_FILE_SCOPE)))
             .setOptOutIncludingGrantedScopes(true);
         if (showPicker) {
             builder.setPrompt(AuthorizationRequest.Prompt.CONSENT)
