@@ -415,3 +415,39 @@ test('migration resumes a partially populated destination when existing values m
   assert.equal(storage.getItem('srk_sync_journal_v1'), 'journal-data');
   assert.equal(storage.getItem('srk_sync_inbox_v1'), 'inbox-data');
 });
+
+
+test('migration rejects malformed, unexpected, and duplicate native read entries', async () => {
+  const storage = new MemoryStorage([['srk_sync_journal_v1', 'legacy-value']]);
+
+  const malformed = new MemoryNativeStore();
+  malformed.getItems = async () => ({ items: null as unknown as NativeSyncStateEntry[] });
+  await assert.rejects(
+    runLegacyAndroidSyncStateMigration(storage as unknown as Storage, malformed),
+    /read returned an invalid result/,
+  );
+  assert.equal(malformed.values.size, 0);
+
+  const unexpected = new MemoryNativeStore();
+  unexpected.getItems = async () => ({
+    items: [{ key: 'unrequested-key', value: 'unrelated' }],
+  });
+  await assert.rejects(
+    runLegacyAndroidSyncStateMigration(storage as unknown as Storage, unexpected),
+    /read returned an unexpected key/,
+  );
+  assert.equal(unexpected.values.size, 0);
+
+  const duplicate = new MemoryNativeStore();
+  duplicate.getItems = async () => ({
+    items: [
+      { key: 'srk_native_sync_state_migration_v1', value: '0' },
+      { key: 'srk_native_sync_state_migration_v1', value: '1' },
+    ],
+  });
+  await assert.rejects(
+    runLegacyAndroidSyncStateMigration(storage as unknown as Storage, duplicate),
+    /read returned duplicate entries/,
+  );
+  assert.equal(duplicate.values.size, 0);
+});
