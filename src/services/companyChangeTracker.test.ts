@@ -82,3 +82,41 @@ test('tracks the custom chain deed template without syncing private workspace da
   });
   assert.equal(JSON.stringify(changes).includes('private'), false);
 });
+
+
+test('tracks every supported business collection and its deletions', () => {
+  const previous = [{
+    id: 'co1',
+    parties: [{ id: 'party1', name: 'Old party' }],
+    causeList: [{ id: 'cause1', title: 'Old cause' }],
+    vaultFiles: [{ id: 'vault1', name: 'old.pdf' }],
+    sampleDrafts: [{ id: 'draft1', title: 'Old draft' }],
+    financialEntries: [{ id: 'fin1', amount: 100 }],
+    partyLedgerEntries: [{ id: 'ledger1', amount: 50 }],
+    officeAccounts: [{ id: 'account1', name: 'Cash' }],
+    accountTransactions: [{ id: 'txn1', amount: 25 }],
+  }];
+  const current = [{
+    id: 'co1',
+    parties: [{ id: 'party1', name: 'Updated party' }],
+    causeList: [],
+    vaultFiles: [{ id: 'vault1', name: 'new.pdf' }],
+    sampleDrafts: [],
+    financialEntries: [{ id: 'fin1', amount: 200 }],
+    partyLedgerEntries: [],
+    officeAccounts: [{ id: 'account1', name: 'Bank' }],
+    accountTransactions: [],
+  }];
+
+  const changes = collectCompanyChanges(previous, current);
+  const byId = new Map(changes.map(change => [change.recordId, change]));
+  assert.equal(byId.get('parties:party1')?.deleted, false);
+  assert.equal(byId.get('causeList:cause1')?.deleted, true);
+  assert.equal(byId.get('vaultFiles:vault1')?.deleted, false);
+  assert.equal(byId.get('sampleDrafts:draft1')?.deleted, true);
+  assert.equal(byId.get('financialEntries:fin1')?.deleted, false);
+  assert.equal(byId.get('partyLedgerEntries:ledger1')?.deleted, true);
+  assert.equal(byId.get('officeAccounts:account1')?.deleted, false);
+  assert.equal(byId.get('accountTransactions:txn1')?.deleted, true);
+  assert.equal(changes.length, 8);
+});
