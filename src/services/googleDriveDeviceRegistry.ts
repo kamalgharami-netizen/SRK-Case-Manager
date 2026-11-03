@@ -98,7 +98,7 @@ export async function registerCurrentGoogleDriveDevice(options: {
     if (result.reason === 'identity-mismatch') {
       throw new Error('This SRK folder is registered to a different Google account or folder. Sync has been stopped.');
     }
-    if (result.reason === 'device-limit-reached') {
+    if (result.reason === 'device-revoked') {\n      throw new Error('This device was revoked from SRK sync. Register a replacement device instead.');\n    }\n    if (result.reason === 'device-limit-reached') {
       throw new Error('The maximum of 10 active SRK devices has been reached. Revoke an old device before connecting another.');
     }
     throw new Error('The shared SRK device registry is invalid. Sync has been stopped.');
