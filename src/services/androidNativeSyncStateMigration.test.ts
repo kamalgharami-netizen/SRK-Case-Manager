@@ -451,3 +451,43 @@ test('migration rejects malformed, unexpected, and duplicate native read entries
   );
   assert.equal(duplicate.values.size, 0);
 });
+
+
+test('migration rejects malformed native batch write acknowledgements', async () => {
+  const storage = new MemoryStorage([['srk_sync_journal_v1', 'journal-data']]);
+
+  for (const response of [
+    null,
+    {},
+    { saved: Number.NaN },
+    { saved: 2 },
+    { saved: -1 },
+  ]) {
+    const nativeStore = new MemoryNativeStore();
+    nativeStore.setItems = async () => response as { saved: number };
+    await assert.rejects(
+      runLegacyAndroidSyncStateMigration(storage as unknown as Storage, nativeStore),
+      /write returned an invalid result/,
+    );
+    assert.equal(nativeStore.values.has('srk_native_sync_state_migration_v1'), false);
+  }
+});
+
+test('migration fails closed on malformed native rollback acknowledgement', async () => {
+  const storage = new MemoryStorage([['srk_sync_journal_v1', 'old-value']]);
+  const nativeStore = new MemoryNativeStore();
+  nativeStore.beforeSet = items => {
+    if (items.some(item => item.key === 'srk_sync_journal_v1')) {
+      storage.setItem('srk_sync_journal_v1', 'new-value');
+    }
+  };
+  nativeStore.removeItems = async () => ({ removed: 99 });
+
+  await assert.rejects(
+    runLegacyAndroidSyncStateMigration(storage as unknown as Storage, nativeStore),
+    /removal returned an invalid result/,
+  );
+  assert.equal(storage.getItem('srk_sync_journal_v1'), 'new-value');
+  assert.equal(nativeStore.values.get('srk_sync_journal_v1'), 'old-value');
+  assert.equal(nativeStore.values.has('srk_native_sync_state_migration_v1'), false);
+});
