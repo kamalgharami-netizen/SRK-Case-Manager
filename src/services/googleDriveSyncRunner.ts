@@ -4,7 +4,8 @@ import {
   getValidAndroidGoogleDriveCredentials,
 } from './googleDriveAndroidAuth';
 import { getValidWindowsGoogleDriveCredentials } from './googleDriveWindowsAuth';
-import { getSelectedGoogleDriveFolder } from './googleDriveSelectedFolder';\nimport { registerCurrentGoogleDriveDevice } from './googleDriveDeviceRegistry';
+import { getSelectedGoogleDriveFolder } from './googleDriveSelectedFolder';
+import { registerCurrentGoogleDriveDevice } from './googleDriveDeviceRegistry';
 import { SyncJournal } from './syncJournal';
 import { SyncInbox } from './googleDriveSyncInbox';
 import { syncGoogleDriveNow, type GoogleDriveSyncCoordinatorResult } from './googleDriveSyncCoordinator';
@@ -46,6 +47,14 @@ export function runGoogleDriveSyncCycle(
     }
 
     if (!credentials) return null;
+
+    // Bind this installation to the signed-in Google account and selected folder
+    // before any business-record transfer is attempted.
+    await registerCurrentGoogleDriveDevice({
+      accessToken: credentials.accessToken,
+      folderId: folder.id,
+      storage: localStorage,
+    });
 
     const pageTokenKey = `srk_drive_sync_page_token_v1_${folder.id}`;
     const pageToken = localStorage.getItem(pageTokenKey) || undefined;
