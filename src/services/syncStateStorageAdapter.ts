@@ -107,9 +107,45 @@ export function createPlatformSyncStateStorage(options: {
 } = {}): AsyncSyncStateStorage {
   const platform = options.platform ?? Capacitor.getPlatform();
   if (platform === 'android') {
-    return createNativeSyncStateStorage(options.nativeStore);
+    return createSerializedSyncStateStorage(createNativeSyncStateStorage(options.nativeStore));
   }
   const storage = options.localStorage ?? (typeof localStorage !== 'undefined' ? localStorage : undefined);
   if (!storage) throw new Error('Local sync-state storage is unavailable on this platform.');
-  return createLocalSyncStateStorage(storage);
+  return createSerializedSyncStateStorage(createLocalSyncStateStorage(storage));
+}
+
+
+/**
+ * Serialize operations per key for asynchronous stores. This prevents overlapping
+ * read/modify/write sequences from reordering writes on the native bridge.
+ * Different keys remain independent, and a rejected operation does not poison
+ * the queue for later retries.
+ */
+export function createSerializedSyncStateStorage(
+  storage: AsyncSyncStateStorage,
+): AsyncSyncStateStorage {
+  const tails = new Map<string, Promise<void>>();
+
+  function runExclusive<T>(key: string, operation: () => Promise<T>): Promise<T> {
+    const previous = tails.get(key) ?? Promise.resolve();
+    const current = previous.catch(() => undefined).then(operation);
+    const settled = current.then(() => undefined, () => undefined);
+    tails.set(key, settled);
+    void settled.then(() => {
+      if (tails.get(key) === settled) tails.delete(key);
+    });
+    return current;
+  }
+
+  return {
+    getItem(key) {
+      return runExclusive(key, () => storage.getItem(key));
+    },
+    setItem(key, value) {
+      return runExclusive(key, () => storage.setItem(key, value));
+    },
+    removeItem(key) {
+      return runExclusive(key, () => storage.removeItem(key));
+    },
+  };
 }
