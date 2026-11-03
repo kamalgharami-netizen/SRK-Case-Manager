@@ -78,6 +78,9 @@ export function registerSyncDevice(
   }
 
   const existing = registry.devices.find(item => item.deviceId === device.deviceId);
+  if (existing && existing.revokedAt !== null) {
+    return { ok: false, reason: 'device-revoked' };
+  }
   const isAlreadyActive = existing?.revokedAt === null;
   const activeCount = getActiveSyncDevices(registry).length;
   if (!isAlreadyActive && activeCount >= MAX_ACTIVE_SYNC_DEVICES) {
