@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
+import { getLocalDateInputValue } from '../utils/localDate';
 import { useApp } from '../context/AppContext';
 import { AccountTransaction, OfficeAccount } from '../types';
 import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Plus, Wallet, Building2, Trash2 } from 'lucide-react';
 
 const money = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(value);
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => getLocalDateInputValue();
 
 export const CashBankRegister: React.FC = () => {
   const { activeCompany, addOfficeAccount, addAccountTransaction, transferBetweenAccounts, deleteAccountTransaction, showToast, language } = useApp();
