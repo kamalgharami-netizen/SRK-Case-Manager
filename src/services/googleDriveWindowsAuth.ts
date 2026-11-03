@@ -46,7 +46,7 @@ export async function connectWindowsGoogleDrive(): Promise<{ credentials: Stored
     const request = await createWindowsGooglePkceRequest({
       clientId: WINDOWS_GOOGLE_CLIENT_ID,
       redirectUri: callback.redirectUri,
-      scopes: [DRIVE_FILE_SCOPE],
+      scopes: ['openid', 'email', DRIVE_FILE_SCOPE],
       state,
     });
 
