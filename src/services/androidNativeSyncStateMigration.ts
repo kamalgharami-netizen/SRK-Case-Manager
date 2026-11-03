@@ -65,6 +65,30 @@ async function readNativeSyncStateItems(
   return result.items;
 }
 
+/** Validate native batch write acknowledgements before trusting their counts. */
+async function writeNativeSyncStateItems(
+  nativeStore: NativeSyncStateMigrationStore,
+  items: NativeSyncStateEntry[],
+): Promise<number> {
+  const result = await nativeStore.setItems({ items });
+  if (!result || !Number.isInteger(result.saved) || result.saved < 0 || result.saved > items.length) {
+    throw new Error('Native sync-state migration write returned an invalid result.');
+  }
+  return result.saved;
+}
+
+/** Validate native batch removal acknowledgements before trusting their counts. */
+async function removeNativeSyncStateItems(
+  nativeStore: NativeSyncStateMigrationStore,
+  keys: string[],
+): Promise<number> {
+  const result = await nativeStore.removeItems({ keys });
+  if (!result || !Number.isInteger(result.removed) || result.removed < 0 || result.removed > keys.length) {
+    throw new Error('Native sync-state migration removal returned an invalid result.');
+  }
+  return result.removed;
+}
+
 /**
  * Performs migration against an injected store so recovery behavior can be
  * tested without requiring an Android device.
@@ -106,8 +130,8 @@ export async function runLegacyAndroidSyncStateMigration(
   }
 
   if (snapshot.length) {
-    const saved = await nativeStore.setItems({ items: snapshot });
-    if (saved.saved !== snapshot.length) {
+    const saved = await writeNativeSyncStateItems(nativeStore, snapshot);
+    if (saved !== snapshot.length) {
       throw new Error('Native sync-state migration did not save every entry.');
     }
   }
@@ -130,7 +154,7 @@ export async function runLegacyAndroidSyncStateMigration(
         .filter(item => !existingValues.has(item.key))
         .map(item => item.key);
       if (newlyWrittenKeys.length) {
-        await nativeStore.removeItems({ keys: newlyWrittenKeys });
+        await removeNativeSyncStateItems(nativeStore, newlyWrittenKeys);
         const cleanupReadBack = await readNativeSyncStateItems(nativeStore, newlyWrittenKeys);
         const remainingKeys = new Set(cleanupReadBack.items.map(item => item.key));
         if (newlyWrittenKeys.some(key => remainingKeys.has(key))) {
@@ -145,17 +169,15 @@ export async function runLegacyAndroidSyncStateMigration(
   // committed. If marker creation fails or reports an incomplete write, remove
   // or invalidate it and verify that no stale completion marker can suppress retry.
   try {
-    const markerWrite = await nativeStore.setItems({
-      items: [{ key: MIGRATION_MARKER, value: '1' }],
-    });
-    if (markerWrite.saved !== 1) {
+    const markerWrite = await writeNativeSyncStateItems(nativeStore, [{ key: MIGRATION_MARKER, value: '1' }]);
+    if (markerWrite !== 1) {
       throw new Error('Native sync-state migration marker write was incomplete.');
     }
   } catch (writeError) {
     let markerMayStillBeComplete = true;
     try {
-      const removed = await nativeStore.removeItems({ keys: [MIGRATION_MARKER] });
-      markerMayStillBeComplete = removed.removed !== 1;
+      const removed = await removeNativeSyncStateItems(nativeStore, [MIGRATION_MARKER]);
+      markerMayStillBeComplete = removed !== 1;
     } catch {
       markerMayStillBeComplete = true;
     }
@@ -169,7 +191,7 @@ export async function runLegacyAndroidSyncStateMigration(
     }
     if (markerMayStillBeComplete) {
       try {
-        await nativeStore.setItems({ items: [{ key: MIGRATION_MARKER, value: '0' }] });
+        await writeNativeSyncStateItems(nativeStore, [{ key: MIGRATION_MARKER, value: '0' }]);
       } catch {
         // Verify below; the bridge may have failed after committing the update.
       }
