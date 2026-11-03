@@ -15,7 +15,9 @@ import java.util.List;
 
 public class GoogleDriveAuthorizationActivity extends Activity {
     private static final int AUTHORIZATION_REQUEST_CODE = 7314;
-    private static final String DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file";\n    private static final String OPENID_SCOPE = "openid";\n    private static final String EMAIL_SCOPE = "email";
+    private static final String DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file";
+    private static final String OPENID_SCOPE = "openid";
+    private static final String EMAIL_SCOPE = "email";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
