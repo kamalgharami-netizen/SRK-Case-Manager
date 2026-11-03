@@ -223,3 +223,5 @@ The following items supersede earlier notes above that described these component
 - Added account-identity tests and expanded device-registry tests; included the identity tests in `npm test`. These tests have not yet been run in this coding-first stage.
 - Important limitation: Drive JSON files do not support atomic compare-and-swap. The Drive-only 10-device registry is best-effort and cannot guarantee race-free enforcement if multiple new devices register simultaneously. The UI and documentation disclose this; do not claim strict 10-device enforcement until an authoritative concurrency-safe registration service exists.
 - Physical Google sign-in, Picker, account binding, device listing/revocation, and cross-device round-trip tests remain pending. No production-ready claim is made.
+
+- Updated `npm test` to use `scripts/run-tests-serial.mjs`: each test file is launched as a separate Node test process in a fixed order, and the sequence stops immediately on the first failure. This is the configured verification order for the next CI run.
