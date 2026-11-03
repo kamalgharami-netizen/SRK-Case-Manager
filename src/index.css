@@ -193,3 +193,111 @@ header button.rounded-lg:active {
     display: none !important;
   }
 }
+
+
+/* SRK approved Blue-White Legal Chamber UI */
+:root {
+  --srk-navy: #073b91;
+  --srk-blue: #0969d8;
+  --srk-blue-deep: #06469b;
+  --srk-sky: #eaf4ff;
+  --srk-border: #b9d8f7;
+  --srk-green: #168b32;
+}
+
+body {
+  background: #edf6ff !important;
+}
+
+.app-shell-bg,
+main {
+  background: linear-gradient(180deg, #f5faff 0%, #eaf4ff 100%) !important;
+}
+
+/* Consistent blue application header */
+body #root header.sticky {
+  background: linear-gradient(100deg, #06449b 0%, #086bd2 100%) !important;
+  color: #fff !important;
+  border-color: #0a56b5 !important;
+  box-shadow: 0 4px 14px rgba(5, 52, 122, .18) !important;
+}
+body #root header.sticky :is(button, span, div, svg) {
+  color: inherit;
+}
+body #root header.sticky input {
+  color: #10213b !important;
+  background: #fff !important;
+  border-color: #c6dcf4 !important;
+}
+body #root header.sticky button {
+  border-color: rgba(255,255,255,.35) !important;
+}
+body #root header.sticky button:hover {
+  background: rgba(255,255,255,.15) !important;
+}
+
+/* Navy sidebar with bright-blue active navigation */
+body #root aside {
+  background: linear-gradient(180deg, #123d70 0%, #082b52 100%) !important;
+  color: #f8fbff !important;
+  border-color: #0c3d72 !important;
+  box-shadow: 5px 0 18px rgba(7, 40, 80, .16) !important;
+}
+body #root aside :is(div, span, button, svg) {
+  color: inherit;
+}
+body #root aside button {
+  color: #edf6ff !important;
+}
+body #root aside button:hover {
+  background: rgba(43, 139, 255, .22) !important;
+  color: #fff !important;
+}
+body #root aside button.bg-blue-600,
+body #root aside button[class*="bg-blue-600"] {
+  background: linear-gradient(90deg, #0879ed 0%, #0757b9 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 5px 12px rgba(0, 18, 55, .25) !important;
+}
+body #root aside button[class*="bg-white"],
+body #root aside button[class*="bg-slate-"],
+body #root aside button[class*="bg-rose-"] {
+  background: rgba(255,255,255,.12) !important;
+  color: #fff !important;
+  border-color: rgba(255,255,255,.18) !important;
+}
+body #root aside [class*="border-t"],
+body #root aside [class*="border-b"] {
+  border-color: rgba(255,255,255,.18) !important;
+}
+
+/* Clean white content panels, blue borders and consistent depth */
+body #root main .bg-white,
+body #root main [class*="bg-white/"] {
+  background-color: #fff !important;
+}
+body #root main .rounded-2xl,
+body #root main .rounded-xl {
+  border-color: var(--srk-border);
+  box-shadow: 0 5px 16px rgba(20, 76, 135, .09), 0 2px 0 rgba(121, 173, 226, .20) !important;
+}
+body #root main button[class*="bg-blue-600"],
+body #root main button[class*="bg-blue-700"] {
+  background: linear-gradient(180deg, #1680ed 0%, #0758bd 100%) !important;
+  color: #fff !important;
+}
+body #root main button[class*="bg-emerald-"],
+body #root main button[class*="bg-green-"] {
+  background: linear-gradient(180deg, #20a444 0%, #11752d 100%) !important;
+  color: #fff !important;
+}
+
+/* Keep every existing screen responsive and readable */
+@media (max-width: 1023px) {
+  body #root main {
+    padding-bottom: max(4.5rem, env(safe-area-inset-bottom)) !important;
+  }
+  body #root aside {
+    border-radius: 0 18px 18px 0 !important;
+  }
+}
