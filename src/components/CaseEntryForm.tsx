@@ -1484,18 +1484,18 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       )}
 
       {/* Top Header & Actions Bar */}
-      <div className="relative flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-2xl border border-blue-200 dark:border-blue-900 bg-gradient-to-r from-white via-blue-50/80 to-indigo-50/70 dark:from-slate-950 dark:via-blue-950/40 dark:to-indigo-950/30 p-3 sm:p-4 shadow-sm">
-        <div className="flex items-center gap-3">
+      <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 overflow-hidden rounded-2xl border border-blue-200 dark:border-blue-900 bg-gradient-to-r from-white via-blue-50/80 to-indigo-50/70 dark:from-slate-950 dark:via-blue-950/40 dark:to-indigo-950/30 p-3 sm:p-4 shadow-sm">
+        <div className="flex min-w-0 items-start sm:items-center gap-3">
           <button
-            onClick={onBack}
+            onClick={onBack
             className="min-h-10 min-w-10 p-2 rounded-xl border border-blue-200 dark:border-blue-800 bg-white/80 dark:bg-slate-900/80 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors cursor-pointer"
             title="Cancel and Go Back"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-black tracking-wide text-slate-900 dark:text-slate-100 uppercase leading-snug">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="min-w-0 break-words text-base sm:text-lg font-black tracking-wide text-slate-900 dark:text-slate-100 uppercase leading-snug">
                 {(() => {
                   const label =
                     type === 'mutation' ? 'MUTATION CASE ENTRY FORM' :
@@ -1525,7 +1525,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         </div>
 
         {/* Action Buttons: Save, Update, Cancel */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex w-full sm:w-auto flex-wrap items-center gap-2">
 
           {/* Requirement 18: Update Button */}
           {isEditingExisting && (
@@ -1561,7 +1561,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       </div>
 
       {/* Search Box for updating existing data through deed no, app no / docket no, applicant name, case no */}
-      <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-800/80 bg-blue-50/50 dark:bg-blue-950/30 space-y-2 relative">
+      <div className="p-3 sm:p-4 rounded-xl border border-blue-200 dark:border-blue-800/80 bg-blue-50/50 dark:bg-blue-950/30 space-y-2 relative">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <label className="text-xs font-bold text-blue-900 dark:text-blue-200 uppercase tracking-wide flex items-center gap-1.5">
             <Search className="w-4 h-4 text-blue-600" />
