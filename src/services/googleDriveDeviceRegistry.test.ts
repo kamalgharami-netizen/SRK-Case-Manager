@@ -127,3 +127,87 @@ test('does not upload changes when an existing registry belongs to another Googl
   });
   assert.equal(requests.some(url => url.includes('upload/drive')), false);
 });
+
+
+test('registers a new device and creates one account-bound registry in the selected folder', async () => {
+  const requests: Array<{ url: string; method: string; body?: string }> = [];
+  const deviceId = 'srk_00000000000000000000000000000001';
+  await withDriveFetch((url, init) => {
+    requests.push({ url, method: init?.method || 'GET', body: typeof init?.body === 'string' ? init.body : undefined });
+    if (url.includes('openidconnect.googleapis.com')) {
+      return jsonResponse({ sub: 'google-subject-1', email: 'owner@example.com' });
+    }
+    if (url.includes('/files/folder-1?')) return jsonResponse(folder);
+    if (url.includes('/files?')) return jsonResponse({ files: [] });
+    if (url.includes('/upload/drive/v3/files?')) {
+      return jsonResponse({ id: 'created-registry', name: 'srk-device-registry-v1.json', mimeType: 'application/json', parents: ['folder-1'] });
+    }
+    throw new Error('Unexpected Drive request: ' + url);
+  }, async () => {
+    const result = await registerCurrentGoogleDriveDevice({
+      accessToken: 'access-token',
+      folderId: 'folder-1',
+      storage: {
+        getItem: (key: string) => key === 'srk_sync_device_id_v1' ? deviceId : null,
+        setItem: () => undefined,
+      },
+    });
+    assert.equal(result.deviceId, deviceId);
+    assert.equal(result.activeDeviceCount, 1);
+    assert.equal(result.alreadyRegistered, false);
+    assert.equal(result.accountEmail, 'owner@example.com');
+    assert.equal(result.registry.ownerAccountId, 'google-subject-1');
+    assert.equal(result.registry.folderId, 'folder-1');
+    assert.equal(result.registry.devices[0].deviceId, deviceId);
+    assert.equal(result.registry.devices[0].revokedAt, null);
+  });
+  const upload = requests.find(request => request.url.includes('/upload/drive/v3/files?'));
+  assert.ok(upload, 'expected exactly one registry creation upload');
+  assert.equal(upload?.method, 'POST');
+  assert.equal(requests.filter(request => request.url.includes('/upload/drive/v3/files?')).length, 1);
+  assert.match(upload?.body || '', /google-subject-1/);
+  assert.match(upload?.body || '', /srk-device-registry-v1\.json/);
+});
+
+test('refuses to reactivate a revoked installation and does not upload registry changes', async () => {
+  const requests: string[] = [];
+  const deviceId = 'srk_00000000000000000000000000000002';
+  const revokedRegistry = {
+    schemaVersion: 1,
+    ownerAccountId: 'google-subject-1',
+    folderId: 'folder-1',
+    updatedAt: 200,
+    devices: [{
+      deviceId,
+      platform: 'unknown',
+      label: 'SRK device',
+      appVersion: '5.4.1',
+      registeredAt: 100,
+      lastSeenAt: 100,
+      revokedAt: 150,
+    }],
+  };
+  await withDriveFetch((url) => {
+    requests.push(url);
+    if (url.includes('openidconnect.googleapis.com')) return jsonResponse({ sub: 'google-subject-1' });
+    if (url.includes('/files/folder-1?')) return jsonResponse(folder);
+    if (url.includes('/files?')) {
+      return jsonResponse({ files: [{ id: 'registry-1', name: 'srk-device-registry-v1.json', mimeType: 'application/json' }] });
+    }
+    if (url.includes('/files/registry-1?') && !url.includes('alt=media')) {
+      return jsonResponse({ id: 'registry-1', name: 'srk-device-registry-v1.json', mimeType: 'application/json', parents: ['folder-1'] });
+    }
+    if (url.includes('/files/registry-1?alt=media')) return jsonResponse(revokedRegistry);
+    throw new Error('Unexpected Drive request: ' + url);
+  }, async () => {
+    await assert.rejects(
+      registerCurrentGoogleDriveDevice({
+        accessToken: 'access-token',
+        folderId: 'folder-1',
+        storage: { getItem: () => deviceId, setItem: () => undefined },
+      }),
+      /device was revoked/,
+    );
+  });
+  assert.equal(requests.some(url => url.includes('/upload/drive/v3/files')), false);
+});
