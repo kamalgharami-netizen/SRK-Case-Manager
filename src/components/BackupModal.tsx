@@ -57,7 +57,9 @@ import { getValidAndroidGoogleDriveCredentials } from '../services/googleDriveAn
 import { SyncJournal } from '../services/syncJournal';
 import type { SyncConflict } from '../services/driveSyncProtocol';
 import { SyncInbox } from '../services/googleDriveSyncInbox';
-import { runGoogleDriveSyncCycle } from '../services/googleDriveSyncRunner';\nimport { getOrCreateSyncDeviceId } from '../services/driveSyncProtocol';\nimport { listRegisteredGoogleDriveDevices, revokeGoogleDriveDevice } from '../services/googleDriveDeviceRegistry';\nimport type { SyncDeviceRegistration } from '../services/syncDeviceRegistry';
+import { runGoogleDriveSyncCycle } from '../services/googleDriveSyncRunner';
+import { listRegisteredGoogleDriveDevices, revokeGoogleDriveDevice } from '../services/googleDriveDeviceRegistry';
+import type { SyncDeviceRegistration } from '../services/syncDeviceRegistry';
 
 export const VAULT_CATEGORIES = [
   'Mutation Petitions & Orders',
@@ -1406,7 +1408,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   Apply Eligible Staged Changes
                 </button>
               </div>
-              {syncMessage && <div className="p-3 rounded-lg border border-sky-200 dark:border-sky-900 bg-sky-50 dark:bg-sky-950/30 text-xs text-sky-900 dark:text-sky-200">{syncMessage}</div>}\n              <section className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+              {syncMessage && <div className="p-3 rounded-lg border border-sky-200 dark:border-sky-900 bg-sky-50 dark:bg-sky-950/30 text-xs text-sky-900 dark:text-sky-200">{syncMessage}</div>}
+              <section className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <h4 className="text-sm font-extrabold">Registered Devices</h4>
