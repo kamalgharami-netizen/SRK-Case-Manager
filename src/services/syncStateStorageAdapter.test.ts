@@ -50,6 +50,16 @@ test('native adapter reads, writes, and removes through the native plugin', asyn
   assert.equal(native.values.size, 0);
 });
 
+test('native adapter rejects malformed native removal results', async () => {
+  const native = new MemoryNativeStore();
+  native.removeItems = async () => ({ removed: 2 });
+  const adapter = createNativeSyncStateStorage(native);
+  await assert.rejects(
+    adapter.removeItem('srk_sync_inbox_v1'),
+    /removal returned an invalid result/,
+  );
+});
+
 test('native adapter fails closed when a native write is incomplete', async () => {
   const native = new MemoryNativeStore();
   native.setItems = async () => ({ saved: 0 });
