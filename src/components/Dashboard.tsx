@@ -1,3 +1,4 @@
+import { getLocalDateInputValue } from '../utils/localDate';
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { NavPage } from './Sidebar';
@@ -249,7 +250,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    const dateStr = new Date().toISOString().slice(0, 10);
+    const dateStr = getLocalDateInputValue();
     link.href = url;
     link.setAttribute('download', `chamber_cases_${dateStr}.csv`);
     document.body.appendChild(link);
@@ -499,7 +500,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `active_pending_cases_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `active_pending_cases_${getLocalDateInputValue()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
