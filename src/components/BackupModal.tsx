@@ -57,7 +57,7 @@ import { getValidAndroidGoogleDriveCredentials } from '../services/googleDriveAn
 import { SyncJournal } from '../services/syncJournal';
 import type { SyncConflict } from '../services/driveSyncProtocol';
 import { SyncInbox } from '../services/googleDriveSyncInbox';
-import { runGoogleDriveSyncCycle } from '../services/googleDriveSyncRunner';
+import { runGoogleDriveSyncCycle } from '../services/googleDriveSyncRunner';\nimport { getOrCreateSyncDeviceId } from '../services/driveSyncProtocol';\nimport { listRegisteredGoogleDriveDevices, revokeGoogleDriveDevice } from '../services/googleDriveDeviceRegistry';\nimport type { SyncDeviceRegistration } from '../services/syncDeviceRegistry';
 
 export const VAULT_CATEGORIES = [
   'Mutation Petitions & Orders',
@@ -139,7 +139,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   const [selectedDriveFolder, setSelectedDriveFolder] = useState<SelectedGoogleDriveFolder | null>(null);
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
-  const [syncConflicts, setSyncConflicts] = useState<SyncConflict<unknown>[]>([]);
+  const [syncConflicts, setSyncConflicts] = useState<SyncConflict<unknown>[]>([]);\n  const [registeredDevices, setRegisteredDevices] = useState<SyncDeviceRegistration[]>([]);\n  const [deviceRegistryBusy, setDeviceRegistryBusy] = useState(false);\n  const [deviceRegistryMessage, setDeviceRegistryMessage] = useState('');
 
   const refreshSyncCounts = () => {
     try {
@@ -247,6 +247,57 @@ export const BackupModal: React.FC<BackupModalProps> = ({
       showToast(message, 'error');
     } finally {
       setSyncBusy(false);
+    }
+  };
+
+  const handleRefreshRegisteredDevices = async () => {
+    if (!selectedDriveFolder?.id || deviceRegistryBusy) return;
+    setDeviceRegistryBusy(true);
+    setDeviceRegistryMessage('Loading registered devices…');
+    try {
+      const credentials = Capacitor.getPlatform() === 'android'
+        ? await getValidAndroidGoogleDriveCredentials()
+        : await getValidWindowsGoogleDriveCredentials();
+      const registry = await listRegisteredGoogleDriveDevices({
+        accessToken: credentials.accessToken,
+        folderId: selectedDriveFolder.id,
+      });
+      setRegisteredDevices(registry.devices);
+      setDeviceRegistryMessage(`${registry.devices.filter(device => device.revokedAt === null).length} active device(s) registered. The Drive-only registry is best-effort and does not provide race-free enforcement during simultaneous registrations.`);
+    } catch (error) {
+      setDeviceRegistryMessage(error instanceof Error ? error.message : 'Unable to load registered devices.');
+    } finally {
+      setDeviceRegistryBusy(false);
+    }
+  };
+
+  const handleRevokeRegisteredDevice = async (device: SyncDeviceRegistration) => {
+    if (device.revokedAt !== null || !selectedDriveFolder?.id || deviceRegistryBusy) return;
+    const currentDeviceId = getOrCreateSyncDeviceId(localStorage);
+    if (device.deviceId === currentDeviceId) {
+      showToast('This device cannot revoke itself from this screen. Disconnect Google Drive on this device instead.', 'warning');
+      return;
+    }
+    if (!window.confirm(`Revoke ${device.label} from SRK Case Manager sync? Its cloud records will not be deleted.`)) return;
+    setDeviceRegistryBusy(true);
+    try {
+      const credentials = Capacitor.getPlatform() === 'android'
+        ? await getValidAndroidGoogleDriveCredentials()
+        : await getValidWindowsGoogleDriveCredentials();
+      const registry = await revokeGoogleDriveDevice({
+        accessToken: credentials.accessToken,
+        folderId: selectedDriveFolder.id,
+        deviceId: device.deviceId,
+      });
+      setRegisteredDevices(registry.devices);
+      setDeviceRegistryMessage('Device revoked. Its registration history and all cloud records were preserved.');
+      showToast('Device revoked from SRK sync.', 'success');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to revoke device.';
+      setDeviceRegistryMessage(message);
+      showToast(message, 'error');
+    } finally {
+      setDeviceRegistryBusy(false);
     }
   };
 
@@ -1355,7 +1406,34 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   Apply Eligible Staged Changes
                 </button>
               </div>
-              {syncMessage && <div className="p-3 rounded-lg border border-sky-200 dark:border-sky-900 bg-sky-50 dark:bg-sky-950/30 text-xs text-sky-900 dark:text-sky-200">{syncMessage}</div>}
+              {syncMessage && <div className="p-3 rounded-lg border border-sky-200 dark:border-sky-900 bg-sky-50 dark:bg-sky-950/30 text-xs text-sky-900 dark:text-sky-200">{syncMessage}</div>}\n              <section className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h4 className="text-sm font-extrabold">Registered Devices</h4>
+                    <p className="text-xs text-slate-500 mt-1">Devices using this Google account and SRK data folder</p>
+                  </div>
+                  <button type="button" disabled={driveAuthStatus !== 'authorized' || !selectedDriveFolder?.id || deviceRegistryBusy} onClick={handleRefreshRegisteredDevices} className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-bold disabled:opacity-40">
+                    {deviceRegistryBusy ? 'Please wait…' : 'Refresh Devices'}
+                  </button>
+                </div>
+                {deviceRegistryMessage && <p className="text-xs text-slate-600 dark:text-slate-300">{deviceRegistryMessage}</p>}
+                {registeredDevices.length > 0 && <div className="space-y-2">
+                  {registeredDevices.map(device => (
+                    <div key={device.deviceId} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 dark:bg-slate-900 p-3">
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold">{device.label} · {device.platform}</div>
+                        <div className="text-[10px] text-slate-500">App {device.appVersion || 'Unknown'} · Last seen {new Date(device.lastSeenAt).toLocaleString()}</div>
+                        <div className="text-[10px] text-slate-500 break-all">{device.deviceId}</div>
+                      </div>
+                      {device.revokedAt === null
+                        ? <button type="button" disabled={deviceRegistryBusy || device.deviceId === getOrCreateSyncDeviceId(localStorage)} onClick={() => void handleRevokeRegisteredDevice(device)} className="px-3 py-1.5 rounded-lg border border-rose-300 text-rose-700 text-xs font-bold disabled:opacity-40">Revoke</button>
+                        : <span className="text-[10px] font-bold text-rose-600">Revoked</span>}
+                    </div>
+                  ))}
+                </div>}
+                <p className="text-[10px] text-amber-700 dark:text-amber-300">Drive-only registration is best-effort. Google Drive does not provide atomic registration, so the 10-device limit is not yet race-proof under simultaneous registrations.</p>
+              </section>
+
               {syncConflicts.length > 0 && (
                 <div className="p-4 rounded-xl border border-amber-300 dark:border-amber-800 space-y-3">
                   <div>
