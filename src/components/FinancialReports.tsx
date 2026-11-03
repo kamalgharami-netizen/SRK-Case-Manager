@@ -98,6 +98,7 @@ export const FinancialReports: React.FC = () => {
         <section className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 space-y-3">
           <div className="flex items-center justify-between"><h2 className="font-bold text-sm">{bn?'অ্যাকাউন্ট ব্যালেন্স':'Account Balances'}</h2><Wallet size={17} className="text-blue-600"/></div>
           {accountBalances.length===0 ? <p className="text-xs text-slate-500">{bn?'এখনও কোনো Cash/Bank অ্যাকাউন্ট তৈরি হয়নি।':'No cash/bank accounts created yet.'}</p> : accountBalances.map(a=><div key={a.id} className="flex justify-between items-center text-xs border-b last:border-0 border-slate-100 dark:border-slate-800 pb-2"><span>{a.name} <span className="text-slate-400">({a.type})</span></span><strong>{money(a.balance)}</strong></div>)}
+          <p className="text-[10px] text-slate-500 pt-1">{bn?'এই ব্যালেন্স Opening Balance ও Cash/Bank Register-এর লেনদেন থেকে গণনা করা হয়। Income/Expense এন্ট্রি আলাদাভাবে সংরক্ষিত; সেগুলি এই ব্যালেন্সে স্বয়ংক্রিয়ভাবে যোগ বা বিয়োগ হয় না।':'Balances are calculated from opening balances and Cash/Bank Register transactions. Income/Expense entries are stored separately and do not automatically change these balances.'}</p>
         </section>
       </div>
 
