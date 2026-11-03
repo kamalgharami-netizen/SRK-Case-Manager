@@ -91,7 +91,7 @@ jobs:
           arch: x86_64
           profile: pixel_2
           emulator-boot-timeout: 1200
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 2048 -cores 2 -qemu -m 2048
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 2048 -cores 2
           # Use a bounded 2 GiB / 2-core emulator profile to avoid overcommitting hosted-runner resources and destabilising Android system services during instrumentation APK installation.
           disable-animations: true
           working-directory: android
