@@ -61,3 +61,13 @@ test('sync merge keeps identical record IDs in different companies separate', ()
   assert.equal(result.merged.length, 2);
   assert.deepEqual(new Set(result.merged.map(item => item.companyId)), new Set(['company1', 'company2']));
 });
+
+
+test('applies the custom chain deed template from a remote company profile', () => {
+  const initial = [{ id: 'company1', name: 'Chamber', chainSampleTemplate: 'Old template' }];
+  const result = applySyncEnvelopes(initial, [
+    envelope('company_profile', { name: 'Chamber', chainSampleTemplate: 'Updated template' }),
+  ]);
+  assert.equal(result.applied, 1);
+  assert.equal(result.companies[0].chainSampleTemplate, 'Updated template');
+});
