@@ -677,9 +677,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   ];
 
   return (
-    <div className="space-y-5 sm:space-y-7">
+    <div className="srk-dashboard space-y-5 sm:space-y-7">
       {/* Chamber welcome panel and primary actions */}
-      <section className="relative overflow-hidden rounded-2xl border border-blue-200/80 dark:border-blue-900/80 bg-gradient-to-br from-blue-950 via-blue-800 to-indigo-800 text-white shadow-lg">
+      <section className="srk-dashboard-hero relative overflow-hidden rounded-2xl border border-blue-200/80 dark:border-blue-900/80 bg-gradient-to-br from-blue-950 via-blue-800 to-indigo-800 text-white shadow-lg">
         <div className="absolute -right-10 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl pointer-events-none" />
         <div className="absolute right-24 -bottom-24 h-48 w-48 rounded-full bg-cyan-300/10 blur-2xl pointer-events-none" />
         <div className="relative flex flex-col gap-5 p-5 sm:p-7 lg:flex-row lg:items-center lg:justify-between">
