@@ -59,8 +59,22 @@ export function createNativeSyncStateStorage(
     async getItem(key) {
       validateKey(key);
       const result = await nativeStore.getItems({ keys: [key] });
-      const match = result.items.find(item => item.key === key);
-      return match?.value ?? null;
+      if (!result || !Array.isArray(result.items)) {
+        throw new Error('Native sync-state read returned an invalid result.');
+      }
+      const matches = result.items.filter(item => {
+        if (!item || typeof item.key !== 'string' || typeof item.value !== 'string') {
+          throw new Error('Native sync-state read returned a malformed entry.');
+        }
+        if (item.key !== key) {
+          throw new Error('Native sync-state read returned an unexpected key.');
+        }
+        return true;
+      });
+      if (matches.length > 1) {
+        throw new Error('Native sync-state read returned duplicate entries.');
+      }
+      return matches[0]?.value ?? null;
     },
     async setItem(key, value) {
       validateKey(key);
