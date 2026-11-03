@@ -261,9 +261,12 @@ test('a failed serialized write does not block later operations for the same key
   });
 
   const failed = storage.setItem('journal', 'lost');
+  // Attach the rejection assertion immediately: the underlying async operation
+  // can reject in the same turn that signals its start.
+  const failedAssertion = assert.rejects(failed, /simulated write failure/);
   await firstWriteStarted;
   const retry = storage.setItem('journal', 'recovered');
-  await assert.rejects(failed, /simulated write failure/);
+  await failedAssertion;
   await retry;
   assert.equal(await storage.getItem('journal'), 'recovered');
   assert.equal(calls, 2);
