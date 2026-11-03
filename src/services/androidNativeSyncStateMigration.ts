@@ -39,6 +39,32 @@ export interface NativeSyncStateMigrationStore {
   removeItems(options: { keys: string[] }): Promise<{ removed: number }>;
 }
 
+/** Validate every native read before using it to decide whether migration is safe. */
+async function readNativeSyncStateItems(
+  nativeStore: NativeSyncStateMigrationStore,
+  keys: string[],
+): Promise<NativeSyncStateEntry[]> {
+  const result = await nativeStore.getItems({ keys });
+  if (!result || !Array.isArray(result.items)) {
+    throw new Error('Native sync-state migration read returned an invalid result.');
+  }
+  const requested = new Set(keys);
+  const seen = new Set<string>();
+  for (const item of result.items) {
+    if (!item || typeof item.key !== 'string' || typeof item.value !== 'string') {
+      throw new Error('Native sync-state migration read returned a malformed entry.');
+    }
+    if (!requested.has(item.key)) {
+      throw new Error('Native sync-state migration read returned an unexpected key.');
+    }
+    if (seen.has(item.key)) {
+      throw new Error('Native sync-state migration read returned duplicate entries.');
+    }
+    seen.add(item.key);
+  }
+  return result.items;
+}
+
 /**
  * Performs migration against an injected store so recovery behavior can be
  * tested without requiring an Android device.
@@ -47,7 +73,7 @@ export async function runLegacyAndroidSyncStateMigration(
   storage: Pick<Storage, 'length' | 'key' | 'getItem'>,
   nativeStore: NativeSyncStateMigrationStore,
 ): Promise<AndroidSyncStateMigrationResult> {
-  const marker = await nativeStore.getItems({ keys: [MIGRATION_MARKER] });
+  const marker = await readNativeSyncStateItems(nativeStore, [MIGRATION_MARKER]);
   if (marker.items.some(item => item.key === MIGRATION_MARKER && item.value === '1')) {
     return { status: 'already-migrated', copied: 0 };
   }
@@ -68,7 +94,7 @@ export async function runLegacyAndroidSyncStateMigration(
   // Preflight the destination before writing: a previous partial migration may
   // already have copied some keys. Identical values are safe to resume; different
   // native values are a conflict and must never be silently overwritten.
-  const existingNative = await nativeStore.getItems({ keys: snapshot.map(item => item.key) });
+  const existingNative = await readNativeSyncStateItems(nativeStore, snapshot.map(item => item.key));
   const existingValues = new Map(existingNative.items.map(item => [item.key, item.value]));
   const destinationConflict = snapshot.find(item =>
     existingValues.has(item.key) && existingValues.get(item.key) !== item.value,
@@ -86,7 +112,7 @@ export async function runLegacyAndroidSyncStateMigration(
     }
   }
 
-  const readBack = await nativeStore.getItems({ keys: snapshot.map(item => item.key) });
+  const readBack = await readNativeSyncStateItems(nativeStore, snapshot.map(item => item.key));
   const values = new Map(readBack.items.map(item => [item.key, item.value]));
   const verified = snapshot.every(item => values.get(item.key) === item.value);
   const currentSnapshot = collectLegacyAndroidSyncState(storage);
@@ -105,7 +131,7 @@ export async function runLegacyAndroidSyncStateMigration(
         .map(item => item.key);
       if (newlyWrittenKeys.length) {
         await nativeStore.removeItems({ keys: newlyWrittenKeys });
-        const cleanupReadBack = await nativeStore.getItems({ keys: newlyWrittenKeys });
+        const cleanupReadBack = await readNativeSyncStateItems(nativeStore, newlyWrittenKeys);
         const remainingKeys = new Set(cleanupReadBack.items.map(item => item.key));
         if (newlyWrittenKeys.some(key => remainingKeys.has(key))) {
           throw new Error('Migration source changed during copy and newly written destination values could not be safely rolled back.');
@@ -134,7 +160,7 @@ export async function runLegacyAndroidSyncStateMigration(
       markerMayStillBeComplete = true;
     }
     try {
-      const afterRemoval = await nativeStore.getItems({ keys: [MIGRATION_MARKER] });
+      const afterRemoval = await readNativeSyncStateItems(nativeStore, [MIGRATION_MARKER]);
       markerMayStillBeComplete ||= afterRemoval.items.some(
         item => item.key === MIGRATION_MARKER && item.value === '1',
       );
@@ -147,7 +173,7 @@ export async function runLegacyAndroidSyncStateMigration(
       } catch {
         // Verify below; the bridge may have failed after committing the update.
       }
-      const invalidated = await nativeStore.getItems({ keys: [MIGRATION_MARKER] });
+      const invalidated = await readNativeSyncStateItems(nativeStore, [MIGRATION_MARKER]);
       if (invalidated.items.some(item => item.key === MIGRATION_MARKER && item.value === '1')) {
         throw new Error('Migration marker write failed and its completion marker could not be invalidated.');
       }
@@ -155,7 +181,7 @@ export async function runLegacyAndroidSyncStateMigration(
     throw writeError;
   }
 
-  const finalCheck = await nativeStore.getItems({ keys: [MIGRATION_MARKER] });
+  const finalCheck = await readNativeSyncStateItems(nativeStore, [MIGRATION_MARKER]);
   if (!finalCheck.items.some(item => item.key === MIGRATION_MARKER && item.value === '1')) {
     // A failed read-back must not leave a possibly committed completion marker
     // that could make the next launch skip an incomplete migration.
@@ -167,7 +193,7 @@ export async function runLegacyAndroidSyncStateMigration(
       markerMayStillBeComplete = true;
     }
     try {
-      const afterRemoval = await nativeStore.getItems({ keys: [MIGRATION_MARKER] });
+      const afterRemoval = await readNativeSyncStateItems(nativeStore, [MIGRATION_MARKER]);
       markerMayStillBeComplete ||= afterRemoval.items.some(
         item => item.key === MIGRATION_MARKER && item.value === '1',
       );
@@ -180,7 +206,7 @@ export async function runLegacyAndroidSyncStateMigration(
       } catch {
         // Verify below; the native bridge may report failure after commit.
       }
-      const invalidated = await nativeStore.getItems({ keys: [MIGRATION_MARKER] });
+      const invalidated = await readNativeSyncStateItems(nativeStore, [MIGRATION_MARKER]);
       if (invalidated.items.some(item => item.key === MIGRATION_MARKER && item.value === '1')) {
         throw new Error('Native migration marker could not be verified or safely invalidated.');
       }
@@ -207,7 +233,7 @@ export async function runLegacyAndroidSyncStateMigration(
     }
 
     try {
-      const markerAfterRollback = await nativeStore.getItems({ keys: [MIGRATION_MARKER] });
+      const markerAfterRollback = await readNativeSyncStateItems(nativeStore, [MIGRATION_MARKER]);
       markerMayStillBeComplete ||= markerAfterRollback.items.some(
         item => item.key === MIGRATION_MARKER && item.value === '1',
       );
@@ -223,7 +249,7 @@ export async function runLegacyAndroidSyncStateMigration(
       } catch {
         // Read-back below decides whether the marker is actually safe.
       }
-      const invalidated = await nativeStore.getItems({ keys: [MIGRATION_MARKER] });
+      const invalidated = await readNativeSyncStateItems(nativeStore, [MIGRATION_MARKER]);
       if (invalidated.items.some(item => item.key === MIGRATION_MARKER && item.value === '1')) {
         throw new Error('Migration source changed during completion and the marker could not be invalidated.');
       }
