@@ -191,7 +191,9 @@ test('platform storage serializes same-key writes and reads in call order', asyn
   const events: string[] = [];
   const values = new Map<string, string>();
   let releaseFirstWrite!: () => void;
+  let signalFirstWriteStarted!: () => void;
   const firstWriteGate = new Promise<void>(resolve => { releaseFirstWrite = resolve; });
+  const firstWriteStarted = new Promise<void>(resolve => { signalFirstWriteStarted = resolve; });
   let writeCount = 0;
   const underlying = {
     async getItem(key: string) {
@@ -202,7 +204,10 @@ test('platform storage serializes same-key writes and reads in call order', asyn
       writeCount += 1;
       const currentWrite = writeCount;
       events.push('start:' + value);
-      if (currentWrite === 1) await firstWriteGate;
+      if (currentWrite === 1) {
+        signalFirstWriteStarted();
+        await firstWriteGate;
+      }
       values.set(key, value);
       events.push('end:' + value);
     },
@@ -219,7 +224,7 @@ test('platform storage serializes same-key writes and reads in call order', asyn
   const first = storage.setItem('journal', 'first');
   const second = storage.setItem('journal', 'second');
   const read = storage.getItem('journal');
-  await Promise.resolve();
+  await firstWriteStarted;
   assert.deepEqual(events, ['start:first']);
   releaseFirstWrite();
   await Promise.all([first, second]);
@@ -236,11 +241,16 @@ test('platform storage serializes same-key writes and reads in call order', asyn
 test('a failed serialized write does not block later operations for the same key', async () => {
   const values = new Map<string, string>();
   let calls = 0;
+  let signalFirstWriteStarted!: () => void;
+  const firstWriteStarted = new Promise<void>(resolve => { signalFirstWriteStarted = resolve; });
   const underlying = {
     async getItem(key: string) { return values.get(key) ?? null; },
     async setItem(key: string, value: string) {
       calls += 1;
-      if (calls === 1) throw new Error('simulated write failure');
+      if (calls === 1) {
+        signalFirstWriteStarted();
+        throw new Error('simulated write failure');
+      }
       values.set(key, value);
     },
     async removeItem(key: string) { values.delete(key); },
@@ -251,6 +261,7 @@ test('a failed serialized write does not block later operations for the same key
   });
 
   const failed = storage.setItem('journal', 'lost');
+  await firstWriteStarted;
   const retry = storage.setItem('journal', 'recovered');
   await assert.rejects(failed, /simulated write failure/);
   await retry;
