@@ -12,7 +12,8 @@ permissions:
 
 concurrency:
   group: srk-case-manager-build-${{ github.ref }}
-  cancel-in-progress: true
+  # Do not cancel an in-progress Windows/Android build when a newer commit arrives.
+  cancel-in-progress: false
 
 jobs:
   build-android:
