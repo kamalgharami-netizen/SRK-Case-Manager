@@ -210,3 +210,16 @@ The following items supersede earlier notes above that described these component
 - The immediately preceding documentation-only workflow for commit `e0d7c6640c7472e7ac54b96219ae4f9213b3ec68` was cancelled when a newer workflow superseded it. The subsequent run #372 on the branch head succeeded; the documentation change itself does not affect application build output.
 - CI verifies build, packaging and automated emulator tests only. Physical Android OAuth/Picker and actual Windows↔Android Drive round-trip testing remain release gates.
 - PR #7 remains open and Draft. The historical signing-key exposure and replacement-key verification remain unresolved release gates. Do not merge or call Google Drive sync production-ready until those gates are completed.
+
+
+## Device/account binding implementation (2026-11-03 — coding completed; tests pending)
+
+- Added OpenID Connect account identity lookup using Google's user-info endpoint. The registry stores the stable opaque `sub` identifier, not the account email.
+- Windows and Android authorization now request `openid`, `email`, and the existing narrow `drive.file` scope so the account can be bound before sync.
+- Added a Drive-backed `srk-device-registry-v1.json` in the selected customer folder. It binds the registry to the Google account subject and exact Drive folder ID.
+- The sync runner now validates/registers the current installation before pulling or uploading case changes. An account/folder mismatch, malformed/duplicate registry, revoked installation, or full 10-device snapshot stops the sync cycle.
+- Added device listing and revocation operations and a Registered Devices section under Settings → Sync Status. Revocation preserves registration history and cloud case data; the current device cannot revoke itself from this screen.
+- A revoked installation ID cannot re-register itself. A replacement installation receives a new random device ID.
+- Added account-identity tests and expanded device-registry tests; included the identity tests in `npm test`. These tests have not yet been run in this coding-first stage.
+- Important limitation: Drive JSON files do not support atomic compare-and-swap. The Drive-only 10-device registry is best-effort and cannot guarantee race-free enforcement if multiple new devices register simultaneously. The UI and documentation disclose this; do not claim strict 10-device enforcement until an authoritative concurrency-safe registration service exists.
+- Physical Google sign-in, Picker, account binding, device listing/revocation, and cross-device round-trip tests remain pending. No production-ready claim is made.
