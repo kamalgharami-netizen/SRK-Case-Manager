@@ -301,3 +301,40 @@ body #root main button[class*="bg-green-"] {
     border-radius: 0 18px 18px 0 !important;
   }
 }
+
+/* Dashboard composition: aligned with the approved SRK reference image */
+.srk-dashboard { color: #14243b; }
+.srk-dashboard .srk-dashboard-hero {
+  background: linear-gradient(105deg, #073b91 0%, #075bb8 58%, #0876d5 100%) !important;
+  border: 1px solid #8bbcf0 !important;
+  box-shadow: 0 10px 24px rgba(5, 55, 125, .18) !important;
+}
+.srk-dashboard .srk-dashboard-hero h1 { color: #fff !important; }
+.srk-dashboard .srk-dashboard-hero p { color: #e5f2ff !important; }
+.srk-dashboard .srk-dashboard-hero button:first-child {
+  background: linear-gradient(180deg, #24a64a 0%, #137b32 100%) !important;
+  color: #fff !important;
+  border: 1px solid #8ad49c !important;
+}
+.srk-dashboard .srk-dashboard-hero button:last-child {
+  background: rgba(255,255,255,.12) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,.48) !important;
+}
+.srk-dashboard h2, .srk-dashboard h3 { color: #083b83; }
+.srk-dashboard [class*="rounded-xl"][class*="border"],
+.srk-dashboard [class*="rounded-2xl"][class*="border"] {
+  border-color: #bfd9f3;
+}
+.srk-dashboard table thead { background: #eaf3ff !important; color: #123f7b !important; }
+.srk-dashboard table tbody tr:hover { background-color: #f0f7ff !important; }
+.srk-dashboard button:focus-visible,
+.srk-dashboard [role="button"]:focus-visible {
+  outline: 2px solid #0876d5;
+  outline-offset: 2px;
+}
+@media (max-width: 640px) {
+  .srk-dashboard { gap: 1rem; }
+  .srk-dashboard .srk-dashboard-hero { border-radius: 14px; }
+  .srk-dashboard .srk-dashboard-hero > div.relative { padding: 1rem; }
+}
