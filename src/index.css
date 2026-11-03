@@ -8,7 +8,7 @@
     color-scheme: light !important;
   }
   body {
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Plus Jakarta Sans', 'Nirmala UI', 'Noto Sans Bengali', 'Vrinda', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     -webkit-tap-highlight-color: transparent;
     background-color: #ffffff;
     color: #0f172a;
@@ -452,4 +452,10 @@ body #root main button[class*="bg-green-"] {
 @media (prefers-reduced-motion: reduce) {
   #root main button, #root aside button, #root main table tbody tr { transition: none !important; }
   #root aside button:hover { transform: none; }
+}
+
+
+/* Bengali-first fallback for Windows, Android and offline use */
+#root :is(button, input, select, textarea) {
+  font-family: inherit;
 }
