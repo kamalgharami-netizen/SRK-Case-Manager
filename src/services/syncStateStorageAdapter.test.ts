@@ -50,6 +50,36 @@ test('native adapter reads, writes, and removes through the native plugin', asyn
   assert.equal(native.values.size, 0);
 });
 
+test('native adapter rejects malformed, unexpected, and duplicate read results', async () => {
+  const malformed = new MemoryNativeStore();
+  malformed.getItems = async () => ({ items: null as unknown as NativeSyncStateEntry[] });
+  await assert.rejects(
+    createNativeSyncStateStorage(malformed).getItem('srk_sync_journal_v1'),
+    /read returned an invalid result/,
+  );
+
+  const unexpected = new MemoryNativeStore();
+  unexpected.getItems = async () => ({
+    items: [{ key: 'different-key', value: 'unrelated' }],
+  });
+  await assert.rejects(
+    createNativeSyncStateStorage(unexpected).getItem('srk_sync_journal_v1'),
+    /unexpected key/,
+  );
+
+  const duplicate = new MemoryNativeStore();
+  duplicate.getItems = async () => ({
+    items: [
+      { key: 'srk_sync_journal_v1', value: 'first' },
+      { key: 'srk_sync_journal_v1', value: 'second' },
+    ],
+  });
+  await assert.rejects(
+    createNativeSyncStateStorage(duplicate).getItem('srk_sync_journal_v1'),
+    /duplicate entries/,
+  );
+});
+
 test('native adapter rejects malformed native removal results', async () => {
   const native = new MemoryNativeStore();
   native.removeItems = async () => ({ removed: 2 });
