@@ -273,7 +273,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
 
   const handleRevokeRegisteredDevice = async (device: SyncDeviceRegistration) => {
     if (device.revokedAt !== null || !selectedDriveFolder?.id || deviceRegistryBusy) return;
-    const currentDeviceId = getOrCreateSyncDeviceId(localStorage);
+    const currentDeviceId = localStorage.getItem('srk_sync_device_id_v1');
     if (device.deviceId === currentDeviceId) {
       showToast('This device cannot revoke itself from this screen. Disconnect Google Drive on this device instead.', 'warning');
       return;
@@ -1426,7 +1426,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                         <div className="text-[10px] text-slate-500 break-all">{device.deviceId}</div>
                       </div>
                       {device.revokedAt === null
-                        ? <button type="button" disabled={deviceRegistryBusy || device.deviceId === getOrCreateSyncDeviceId(localStorage)} onClick={() => void handleRevokeRegisteredDevice(device)} className="px-3 py-1.5 rounded-lg border border-rose-300 text-rose-700 text-xs font-bold disabled:opacity-40">Revoke</button>
+                        ? <button type="button" disabled={deviceRegistryBusy || device.deviceId === localStorage.getItem('srk_sync_device_id_v1')} onClick={() => void handleRevokeRegisteredDevice(device)} className="px-3 py-1.5 rounded-lg border border-rose-300 text-rose-700 text-xs font-bold disabled:opacity-40">Revoke</button>
                         : <span className="text-[10px] font-bold text-rose-600">Revoked</span>}
                     </div>
                   ))}
