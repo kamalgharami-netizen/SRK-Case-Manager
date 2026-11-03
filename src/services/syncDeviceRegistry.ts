@@ -30,7 +30,7 @@ export interface SyncDeviceRegistry {
 
 export type DeviceRegistrationResult =
   | { ok: true; registry: SyncDeviceRegistry; device: SyncDeviceRegistration; alreadyRegistered: boolean }
-  | { ok: false; reason: 'device-limit-reached' | 'identity-mismatch' | 'invalid-registry' };
+  | { ok: false; reason: 'device-limit-reached' | 'identity-mismatch' | 'invalid-registry' | 'device-revoked' };
 
 function validDevice(device: SyncDeviceRegistration): boolean {
   return Boolean(
