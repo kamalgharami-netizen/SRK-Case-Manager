@@ -72,7 +72,13 @@ export function createNativeSyncStateStorage(
     },
     async removeItem(key) {
       validateKey(key);
-      await nativeStore.removeItems({ keys: [key] });
+      const result = await nativeStore.removeItems({ keys: [key] });
+      // Removing an absent key is idempotent (0); a single-key request may
+      // remove exactly one entry. Treat malformed or impossible counts as a
+      // failed operation so callers never advance state after an unverified delete.
+      if (!Number.isInteger(result.removed) || result.removed < 0 || result.removed > 1) {
+        throw new Error('Native sync-state removal returned an invalid result.');
+      }
     },
   };
 }
