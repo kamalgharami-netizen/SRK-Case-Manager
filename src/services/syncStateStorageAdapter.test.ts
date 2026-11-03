@@ -185,3 +185,75 @@ test('native adapter rejects malformed removal acknowledgement objects', async (
     );
   }
 });
+
+
+test('platform storage serializes same-key writes and reads in call order', async () => {
+  const events: string[] = [];
+  const values = new Map<string, string>();
+  let releaseFirstWrite!: () => void;
+  const firstWriteGate = new Promise<void>(resolve => { releaseFirstWrite = resolve; });
+  let writeCount = 0;
+  const underlying = {
+    async getItem(key: string) {
+      events.push('read:' + key);
+      return values.get(key) ?? null;
+    },
+    async setItem(key: string, value: string) {
+      writeCount += 1;
+      const currentWrite = writeCount;
+      events.push('start:' + value);
+      if (currentWrite === 1) await firstWriteGate;
+      values.set(key, value);
+      events.push('end:' + value);
+    },
+    async removeItem(key: string) {
+      events.push('remove:' + key);
+      values.delete(key);
+    },
+  };
+  const storage = createPlatformSyncStateStorage({
+    platform: 'web',
+    localStorage: underlying as unknown as Storage,
+  });
+
+  const first = storage.setItem('journal', 'first');
+  const second = storage.setItem('journal', 'second');
+  const read = storage.getItem('journal');
+  await Promise.resolve();
+  assert.deepEqual(events, ['start:first']);
+  releaseFirstWrite();
+  await Promise.all([first, second]);
+  assert.equal(await read, 'second');
+  assert.deepEqual(events, [
+    'start:first',
+    'end:first',
+    'start:second',
+    'end:second',
+    'read:journal',
+  ]);
+});
+
+test('a failed serialized write does not block later operations for the same key', async () => {
+  const values = new Map<string, string>();
+  let calls = 0;
+  const underlying = {
+    async getItem(key: string) { return values.get(key) ?? null; },
+    async setItem(key: string, value: string) {
+      calls += 1;
+      if (calls === 1) throw new Error('simulated write failure');
+      values.set(key, value);
+    },
+    async removeItem(key: string) { values.delete(key); },
+  };
+  const storage = createPlatformSyncStateStorage({
+    platform: 'web',
+    localStorage: underlying as unknown as Storage,
+  });
+
+  const failed = storage.setItem('journal', 'lost');
+  const retry = storage.setItem('journal', 'recovered');
+  await assert.rejects(failed, /simulated write failure/);
+  await retry;
+  assert.equal(await storage.getItem('journal'), 'recovered');
+  assert.equal(calls, 2);
+});
