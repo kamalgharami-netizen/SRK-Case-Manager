@@ -248,7 +248,7 @@ export async function runLegacyAndroidSyncStateMigration(
     // fallback invalidation attempt, because a stale '1' marker suppresses retry.
     let markerMayStillBeComplete = true;
     try {
-      const removed = await nativeStore.removeItems({ keys: [MIGRATION_MARKER] });
+      const removed = await removeNativeSyncStateItems(nativeStore, [MIGRATION_MARKER]);
       markerMayStillBeComplete = removed.removed !== 1;
     } catch {
       markerMayStillBeComplete = true;
@@ -267,7 +267,7 @@ export async function runLegacyAndroidSyncStateMigration(
       // An invalid completion marker must never be allowed to suppress retry.
       // Even if setItems reports an error after committing, verify the final state.
       try {
-        await nativeStore.setItems({ items: [{ key: MIGRATION_MARKER, value: '0' }] });
+        await writeNativeSyncStateItems(nativeStore, [{ key: MIGRATION_MARKER, value: '0' }]);
       } catch {
         // Read-back below decides whether the marker is actually safe.
       }
