@@ -381,3 +381,48 @@ test('does not download a change with a malformed encoded Drive filename', async
   assert.equal(result.staged, 0);
   assert.equal(inbox.getAll().length, 0);
 });
+
+
+test('does not mark a remote change as seen when inbox persistence fails, and safely retries', async () => {
+  class FailOnceStorage {
+    private values = new Map<string, string>();
+    private failNextWrite = true;
+    getItem(key: string) { return this.values.get(key) ?? null; }
+    setItem(key: string, value: string) {
+      if (this.failNextWrite) {
+        this.failNextWrite = false;
+        throw new Error('simulated durable storage failure');
+      }
+      this.values.set(key, value);
+    }
+    removeItem(key: string) { this.values.delete(key); }
+  }
+
+  const storage = new FailOnceStorage();
+  const journal = new SyncJournal<unknown>(storage);
+  const inbox = new SyncInbox<unknown>(storage);
+  const remote = envelope('retry-after-storage-failure');
+  const dependencies = {
+    listFiles: async () => ({
+      files: [{ id: 'file1', name: 'srk-change-retry-after-storage-failure.json', mimeType: 'application/json' }],
+    }),
+    downloadJson: async () => remote,
+  };
+
+  await assert.rejects(
+    pullRemoteChanges(journal, inbox, { accessToken: 'token', folderId: 'folder1' }, dependencies),
+    /simulated durable storage failure/
+  );
+  assert.equal(inbox.hasSeen(remote.changeId), false);
+  assert.equal(inbox.getAll().length, 0);
+
+  const retry = await pullRemoteChanges(
+    journal,
+    inbox,
+    { accessToken: 'token', folderId: 'folder1' },
+    dependencies
+  );
+  assert.equal(retry.staged, 1);
+  assert.equal(inbox.hasSeen(remote.changeId), true);
+  assert.deepEqual(inbox.getAll(), [remote]);
+});
