@@ -5,6 +5,7 @@ import { getGoogleDriveAccountIdentity } from './googleDriveAccountIdentity';
 import {
   getActiveSyncDevices,
   registerSyncDevice,
+  revokeSyncDevice,
   validateSyncDeviceRegistry,
   type SyncDeviceRegistry,
 } from './syncDeviceRegistry';
@@ -118,4 +119,60 @@ export async function registerCurrentGoogleDriveDevice(options: {
     alreadyRegistered: result.alreadyRegistered,
     ...(identity.email ? { accountEmail: identity.email } : {}),
   };
+}
+
+
+/** Read the validated shared device list for the currently selected account/folder. */
+export async function listRegisteredGoogleDriveDevices(options: {
+  accessToken: string;
+  folderId: string;
+}): Promise<SyncDeviceRegistry> {
+  const identity = await getGoogleDriveAccountIdentity(options.accessToken);
+  const folder = await getDriveFileMetadata({ accessToken: options.accessToken, fileId: options.folderId });
+  if (folder.mimeType !== 'application/vnd.google-apps.folder') {
+    throw new Error('The selected Google Drive item is not a folder.');
+  }
+  const matches = await listDriveFiles({
+    accessToken: options.accessToken,
+    parentId: options.folderId,
+    name: REGISTRY_FILE_NAME,
+  });
+  if (matches.files.length !== 1) {
+    throw new Error(matches.files.length === 0
+      ? 'No shared device registry exists yet. Run Sync Now to register this device.'
+      : 'Multiple device registries were found. Device management is paused.');
+  }
+  const response = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(matches.files[0].id)}?alt=media`, {
+    headers: { Authorization: `Bearer ${options.accessToken}` },
+  });
+  if (!response.ok) throw new Error('The shared device registry could not be downloaded.');
+  const registry: unknown = await response.json();
+  if (!validateSyncDeviceRegistry(registry)) throw new Error('The shared device registry is invalid.');
+  if (registry.ownerAccountId !== identity.accountId || registry.folderId !== options.folderId) {
+    throw new Error('The registry belongs to a different Google account or Drive folder.');
+  }
+  return registry;
+}
+
+/** Revoke another device while retaining its audit entry and all cloud records. */
+export async function revokeGoogleDriveDevice(options: {
+  accessToken: string;
+  folderId: string;
+  deviceId: string;
+}): Promise<SyncDeviceRegistry> {
+  const registry = await listRegisteredGoogleDriveDevices(options);
+  const next = revokeSyncDevice(registry, options.deviceId);
+  const matches = await listDriveFiles({
+    accessToken: options.accessToken,
+    parentId: options.folderId,
+    name: REGISTRY_FILE_NAME,
+  });
+  if (matches.files.length !== 1) throw new Error('The shared device registry changed unexpectedly. No device was revoked.');
+  await uploadDriveJson({
+    accessToken: options.accessToken,
+    parentId: options.folderId,
+    name: REGISTRY_FILE_NAME,
+    mimeType: REGISTRY_MIME_TYPE,
+  }, next, matches.files[0].id);
+  return next;
 }
