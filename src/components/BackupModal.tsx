@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { getLocalDateInputValue } from '../utils/localDate';
 import { Capacitor } from '@capacitor/core';
 import { useApp } from '../context/AppContext';
 import {
@@ -356,7 +357,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         name: f.name,
         size: sizeStr,
         type: fType,
-        date: new Date().toISOString().slice(0, 10),
+        date: getLocalDateInputValue(),
         category: selectedVaultCategory,
         aiLearned: true,
         aiTrackedCategory: selectedVaultCategory
