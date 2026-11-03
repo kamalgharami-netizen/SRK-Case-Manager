@@ -1,3 +1,4 @@
+import { getLocalDateInputValue } from '../utils/localDate';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { CaseType, CaseItem } from '../types';
@@ -1248,7 +1249,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    const dateStr = new Date().toISOString().slice(0, 10);
+    const dateStr = getLocalDateInputValue();
     const filterTag =
       selectedCaseIds.length > 0
         ? `selected_${selectedCaseIds.length}`
