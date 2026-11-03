@@ -338,3 +338,56 @@ body #root main button[class*="bg-green-"] {
   .srk-dashboard .srk-dashboard-hero { border-radius: 14px; }
   .srk-dashboard .srk-dashboard-hero > div.relative { padding: 1rem; }
 }
+
+
+/* SRK 3D icon and card treatment — retain existing navigation and actions */
+.srk-dashboard [class*="min-h-[136px]"][class*="rounded-xl"] {
+  position: relative;
+  background: linear-gradient(155deg, #ffffff 0%, #f5f9ff 72%, #eaf3ff 100%) !important;
+  border: 1px solid #b7d4f2 !important;
+  border-bottom: 4px solid #8eb8e6 !important;
+  box-shadow:
+    0 9px 0 rgba(18, 76, 139, .08),
+    0 12px 20px rgba(14, 65, 126, .13),
+    inset 0 2px 0 rgba(255,255,255,.98),
+    inset 0 -2px 4px rgba(30, 90, 150, .06) !important;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.srk-dashboard [class*="min-h-[136px]"][class*="rounded-xl"]:hover {
+  transform: translateY(-3px);
+  border-color: #4b9be9 !important;
+  box-shadow:
+    0 11px 0 rgba(18, 76, 139, .07),
+    0 17px 26px rgba(14, 85, 166, .2),
+    inset 0 2px 0 #fff !important;
+}
+.srk-dashboard [class*="min-h-[136px]"] > div:first-child > div:first-child {
+  border: 1px solid rgba(255,255,255,.95) !important;
+  box-shadow:
+    0 5px 9px rgba(13, 52, 101, .20),
+    inset 0 2px 3px rgba(255,255,255,.95),
+    inset 0 -3px 4px rgba(12, 55, 105, .12) !important;
+}
+.srk-dashboard [class*="min-h-[136px]"] svg {
+  filter: drop-shadow(0 1px 1px rgba(0, 35, 85, .20));
+  stroke-width: 2.35;
+}
+.srk-dashboard [class*="min-h-[104px]"] {
+  background: linear-gradient(145deg, #fff 0%, #f2f7ff 100%) !important;
+  border: 1px solid #c0d9f2 !important;
+  border-bottom: 4px solid #a6c5e8 !important;
+  box-shadow: 0 7px 13px rgba(16, 67, 125, .12), inset 0 2px 0 #fff !important;
+}
+.srk-dashboard [class*="min-h-[104px]"] > div:first-child > div {
+  box-shadow: 0 3px 7px rgba(14, 61, 117, .15), inset 0 1px 2px #fff !important;
+}
+.srk-dashboard [class*="min-h-[136px]"] button {
+  box-shadow: 0 2px 0 rgba(20, 67, 120, .16), 0 3px 6px rgba(15, 55, 100, .10);
+}
+.srk-dashboard [class*="min-h-[136px]"] button:hover {
+  transform: translateY(-1px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .srk-dashboard [class*="min-h-[136px]"] { transition: none; }
+  .srk-dashboard [class*="min-h-[136px]"]:hover { transform: none; }
+}
