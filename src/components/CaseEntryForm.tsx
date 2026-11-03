@@ -1487,7 +1487,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 overflow-hidden rounded-2xl border border-blue-200 dark:border-blue-900 bg-gradient-to-r from-white via-blue-50/80 to-indigo-50/70 dark:from-slate-950 dark:via-blue-950/40 dark:to-indigo-950/30 p-3 sm:p-4 shadow-sm">
         <div className="flex min-w-0 items-start sm:items-center gap-3">
           <button
-            onClick={onBack
+            onClick={onBack}
             className="min-h-10 min-w-10 p-2 rounded-xl border border-blue-200 dark:border-blue-800 bg-white/80 dark:bg-slate-900/80 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors cursor-pointer"
             title="Cancel and Go Back"
           >
