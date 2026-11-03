@@ -141,7 +141,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   const [selectedDriveFolder, setSelectedDriveFolder] = useState<SelectedGoogleDriveFolder | null>(null);
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
-  const [syncConflicts, setSyncConflicts] = useState<SyncConflict<unknown>[]>([]);\n  const [registeredDevices, setRegisteredDevices] = useState<SyncDeviceRegistration[]>([]);\n  const [deviceRegistryBusy, setDeviceRegistryBusy] = useState(false);\n  const [deviceRegistryMessage, setDeviceRegistryMessage] = useState('');
+  const [syncConflicts, setSyncConflicts] = useState<SyncConflict<unknown>[]>([]);
+  const [registeredDevices, setRegisteredDevices] = useState<SyncDeviceRegistration[]>([]);
+  const [deviceRegistryBusy, setDeviceRegistryBusy] = useState(false);
+  const [deviceRegistryMessage, setDeviceRegistryMessage] = useState('');
 
   const refreshSyncCounts = () => {
     try {
