@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { registerCurrentGoogleDriveDevice } from './googleDriveDeviceRegistry';
+import { listRegisteredGoogleDriveDevices, registerCurrentGoogleDriveDevice, revokeGoogleDriveDevice } from './googleDriveDeviceRegistry';
 
 const folder = {
   id: 'folder-1',
@@ -210,4 +210,82 @@ test('refuses to reactivate a revoked installation and does not upload registry 
     );
   });
   assert.equal(requests.some(url => url.includes('/upload/drive/v3/files')), false);
+});
+
+
+test('lists registered devices only for the matching Google account and selected folder', async () => {
+  const registered = {
+    schemaVersion: 1,
+    ownerAccountId: 'google-subject-1',
+    folderId: 'folder-1',
+    updatedAt: 200,
+    devices: [{
+      deviceId: 'srk_00000000000000000000000000000003',
+      platform: 'windows',
+      label: 'Windows desktop',
+      appVersion: '5.4.1',
+      registeredAt: 100,
+      lastSeenAt: 200,
+      revokedAt: null,
+    }],
+  };
+  await withDriveFetch((url) => {
+    if (url.includes('openidconnect.googleapis.com')) return jsonResponse({ sub: 'google-subject-1' });
+    if (url.includes('/files/folder-1?')) return jsonResponse(folder);
+    if (url.includes('/files?')) {
+      return jsonResponse({ files: [{ id: 'registry-1', name: 'srk-device-registry-v1.json', mimeType: 'application/json' }] });
+    }
+    if (url.includes('/files/registry-1?alt=media')) return jsonResponse(registered);
+    throw new Error('Unexpected Drive request: ' + url);
+  }, async () => {
+    const result = await listRegisteredGoogleDriveDevices({ accessToken: 'access-token', folderId: 'folder-1' });
+    assert.equal(result.devices.length, 1);
+    assert.equal(result.devices[0].deviceId, registered.devices[0].deviceId);
+  });
+});
+
+test('revokes a device by updating the shared registry without deleting its audit entry', async () => {
+  const requests: Array<{ url: string; method: string; body?: string }> = [];
+  const registered = {
+    schemaVersion: 1,
+    ownerAccountId: 'google-subject-1',
+    folderId: 'folder-1',
+    updatedAt: 200,
+    devices: [{
+      deviceId: 'srk_00000000000000000000000000000004',
+      platform: 'android',
+      label: 'Android device',
+      appVersion: '5.4.1',
+      registeredAt: 100,
+      lastSeenAt: 200,
+      revokedAt: null,
+    }],
+  };
+  await withDriveFetch((url, init) => {
+    requests.push({ url, method: init?.method || 'GET', body: typeof init?.body === 'string' ? init.body : undefined });
+    if (url.includes('openidconnect.googleapis.com')) return jsonResponse({ sub: 'google-subject-1' });
+    if (url.includes('/files/folder-1?')) return jsonResponse(folder);
+    if (url.includes('/files?')) {
+      return jsonResponse({ files: [{ id: 'registry-1', name: 'srk-device-registry-v1.json', mimeType: 'application/json' }] });
+    }
+    if (url.includes('/files/registry-1?alt=media')) return jsonResponse(registered);
+    if (url.includes('/upload/drive/v3/files/registry-1?')) {
+      return jsonResponse({ id: 'registry-1', name: 'srk-device-registry-v1.json', mimeType: 'application/json' });
+    }
+    throw new Error('Unexpected Drive request: ' + url);
+  }, async () => {
+    const result = await revokeGoogleDriveDevice({
+      accessToken: 'access-token',
+      folderId: 'folder-1',
+      deviceId: registered.devices[0].deviceId,
+    });
+    assert.equal(result.devices.length, 1);
+    assert.notEqual(result.devices[0].revokedAt, null);
+    assert.ok(Number.isFinite(result.devices[0].revokedAt));
+  });
+  const update = requests.find(request => request.url.includes('/upload/drive/v3/files/registry-1?'));
+  assert.ok(update, 'expected registry update request');
+  assert.equal(update?.method, 'PATCH');
+  assert.match(update?.body || '', /"revokedAt":\d+/);
+  assert.equal(requests.some(request => request.method === 'DELETE'), false);
 });
