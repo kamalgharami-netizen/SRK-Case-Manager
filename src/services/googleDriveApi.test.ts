@@ -91,7 +91,7 @@ test('creates a JSON Drive file with the selected parent and payload', async () 
 
 test('updates an existing JSON Drive file without changing its parent', async () => {
   await withFetch((url, init) => {
-    assert.match(url, /files\\/existing-1\\?uploadType=multipart/);
+    assert.ok(url.includes('/files/existing-1?uploadType=multipart'));
     assert.equal(init?.method, 'PATCH');
     const body = String(init?.body);
     assert.match(body, /"caseId":"updated"/);
@@ -126,7 +126,7 @@ test('preserves Google Drive HTTP status and API error reason', async () => {
 
 test('accepts a successful empty-body delete response', async () => {
   await withFetch((url, init) => {
-    assert.match(url, /files\\/file-1$/);
+    assert.ok(url.endsWith('/files/file-1'));
     assert.equal(init?.method, 'DELETE');
     return new Response(null, { status: 204 });
   }, async () => {
