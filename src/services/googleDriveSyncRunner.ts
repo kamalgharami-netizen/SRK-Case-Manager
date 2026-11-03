@@ -4,7 +4,7 @@ import {
   getValidAndroidGoogleDriveCredentials,
 } from './googleDriveAndroidAuth';
 import { getValidWindowsGoogleDriveCredentials } from './googleDriveWindowsAuth';
-import { getSelectedGoogleDriveFolder } from './googleDriveSelectedFolder';
+import { getSelectedGoogleDriveFolder } from './googleDriveSelectedFolder';\nimport { registerCurrentGoogleDriveDevice } from './googleDriveDeviceRegistry';
 import { SyncJournal } from './syncJournal';
 import { SyncInbox } from './googleDriveSyncInbox';
 import { syncGoogleDriveNow, type GoogleDriveSyncCoordinatorResult } from './googleDriveSyncCoordinator';
