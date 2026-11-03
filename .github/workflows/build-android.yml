@@ -94,7 +94,8 @@ jobs:
           emulator-boot-timeout: 1800
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 4096 -cores 2
           # Use 4 GiB RAM with 2 vCPUs: the 2 GiB profile booted slowly and Android system services crashed with Broken pipe before instrumentation tests could start.
-          disable-animations: true
+          # Avoid the action's adb input keyevent command; emulator system services intermittently die immediately after boot.
+          disable-animations: false
           working-directory: android
           # This action invokes each physical script line in a separate /usr/bin/sh process.
           # Keep the complete loop and test/diagnostic sequence on one shell line.
