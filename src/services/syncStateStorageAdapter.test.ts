@@ -67,6 +67,15 @@ test('native adapter rejects malformed, unexpected, and duplicate read results',
     /unexpected key/,
   );
 
+  const malformedEntry = new MemoryNativeStore();
+  malformedEntry.getItems = async () => ({
+    items: [{ key: 'srk_sync_journal_v1', value: 7 as unknown as string }],
+  });
+  await assert.rejects(
+    createNativeSyncStateStorage(malformedEntry).getItem('srk_sync_journal_v1'),
+    /malformed entry/,
+  );
+
   const duplicate = new MemoryNativeStore();
   duplicate.getItems = async () => ({
     items: [
