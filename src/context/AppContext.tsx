@@ -556,7 +556,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const deviceId = await getOrCreateSyncDeviceIdAsync(storage);
         const journal = new AsyncSyncJournal<unknown>(storage);
         const envelopes = createSyncEnvelopes(changes, deviceId);
-        for (const envelope of envelopes) await journal.enqueue(envelope);
+        // One durable journal transaction prevents partial batches from being
+        // re-created with new change IDs if a later write fails.
+        await journal.enqueueMany(envelopes);
         previousSyncSnapshot.current = companies;
       })
       .catch(error => {
