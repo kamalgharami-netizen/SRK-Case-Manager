@@ -114,6 +114,7 @@ test('async coordinator checkpoints durable pull before a failed push', async ()
     syncGoogleDriveNowAsync(journal, inbox, {
       accessToken: 'token',
       folderId: 'folder-1',
+      pullMaxPages: 1,
       onPullCheckpoint: nextPageToken => { checkpoint = nextPageToken; },
     }, {
       pull: {
