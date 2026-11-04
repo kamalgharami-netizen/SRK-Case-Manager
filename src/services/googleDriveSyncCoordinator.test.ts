@@ -107,6 +107,41 @@ test('coordinator stages non-conflicting remote changes and never auto-applies t
   assert.equal(journal.getPendingCount(), 0);
 });
 
+test('persists the durable pull checkpoint before a failed push', async () => {
+  const storage = new MemoryStorage();
+  const journal = new SyncJournal<{ title: string }>(storage);
+  const inbox = new SyncInbox<{ title: string }>(storage);
+  const remote = envelope({
+    deviceId: 'device_remote_123456',
+    changeId: 'change_remote_checkpoint',
+    recordId: 'case:checkpoint',
+  });
+  let checkpoint: string | undefined;
+  await assert.rejects(
+    syncGoogleDriveNow(journal, inbox, {
+      accessToken: 'test-token',
+      folderId: 'folder-1',
+      onPullCheckpoint: nextPageToken => { checkpoint = nextPageToken; },
+    }, {
+      pull: {
+        listFiles: async () => ({
+          files: [{ id: 'remote-checkpoint', name: 'srk-change-change_remote_checkpoint.json', mimeType: 'application/json' }],
+          nextPageToken: 'page-after-checkpoint',
+        }),
+        downloadJson: async () => remote,
+      },
+      push: {
+        listFiles: async () => ({ files: [] }),
+        downloadJson: async () => null,
+        uploadJson: async () => { throw new Error('temporary push failure'); },
+      },
+    }),
+    /temporary push failure/
+  );
+  assert.equal(checkpoint, 'page-after-checkpoint');
+  assert.deepEqual(inbox.getAll(), [remote]);
+});
+
 test('coordinator rejects missing credentials or folder before network access', async () => {
   const storage = new MemoryStorage();
   const journal = new SyncJournal<{ title: string }>(storage);
