@@ -8,6 +8,11 @@ import { getSelectedGoogleDriveFolder } from './googleDriveSelectedFolder';
 import { registerCurrentGoogleDriveDevice } from './googleDriveDeviceRegistry';
 import { SyncJournal } from './syncJournal';
 import { SyncInbox } from './googleDriveSyncInbox';
+import { AsyncSyncInbox, AsyncSyncJournal } from './asyncSyncRepositories';
+import { getOrCreateSyncDeviceIdAsync } from './driveSyncProtocol';
+import { createPlatformSyncStateStorage, type AsyncSyncStateStorage } from './syncStateStorageAdapter';
+import { getSelectedGoogleDriveFolderAsync } from './googleDriveSelectedFolder';
+import { syncGoogleDriveNowAsync } from './asyncGoogleDriveSyncCoordinator';
 import { syncGoogleDriveNow, type GoogleDriveSyncCoordinatorResult } from './googleDriveSyncCoordinator';
 
 let activeCycle: Promise<GoogleDriveSyncCoordinatorResult | null> | null = null;
@@ -71,6 +76,68 @@ export function runGoogleDriveSyncCycle(
     if (result.nextPageToken) localStorage.setItem(pageTokenKey, result.nextPageToken);
     else localStorage.removeItem(pageTokenKey);
     localStorage.setItem('srk_drive_sync_last_success_v1', String(Date.now()));
+    return result;
+  })().finally(() => {
+    activeCycle = null;
+  });
+
+  return activeCycle;
+}
+
+
+/**
+ * Unified async-storage sync path. It is intentionally not wired to automatic
+ * startup/resume until the Android metadata migration and AppContext consumers
+ * have completed their cutover gates. Android never falls back to localStorage.
+ */
+export function runGoogleDriveSyncCycleAsync(
+  options: GoogleDriveSyncCycleOptions & { storage?: AsyncSyncStateStorage } = {},
+): Promise<GoogleDriveSyncCoordinatorResult | null> {
+  if (activeCycle) return activeCycle;
+
+  activeCycle = (async () => {
+    const storage = options.storage ?? createPlatformSyncStateStorage();
+    const folder = await getSelectedGoogleDriveFolderAsync(storage);
+    if (!folder?.id) return null;
+
+    let credentials: Awaited<ReturnType<typeof getAndroidGoogleDriveCredentials>> = null;
+    if (Capacitor.getPlatform() === 'android') {
+      if (options.allowAndroidReauthorization) {
+        credentials = await getValidAndroidGoogleDriveCredentials();
+      } else {
+        credentials = await getAndroidGoogleDriveCredentials();
+        if (!credentials || credentials.expiresAt <= Date.now() + 5 * 60 * 1000) return null;
+      }
+    } else {
+      const isWindowsDesktop = typeof window !== 'undefined' &&
+        Boolean((window as Window & { electronAPI?: { googleOAuth?: unknown } }).electronAPI?.googleOAuth);
+      if (!isWindowsDesktop) return null;
+      credentials = await getValidWindowsGoogleDriveCredentials();
+    }
+    if (!credentials) return null;
+
+    const deviceId = await getOrCreateSyncDeviceIdAsync(storage);
+    await registerCurrentGoogleDriveDevice({
+      accessToken: credentials.accessToken,
+      folderId: folder.id,
+      deviceId,
+    });
+
+    const pageTokenKey = `srk_drive_sync_page_token_v1_${folder.id}`;
+    const pageToken = (await storage.getItem(pageTokenKey)) || undefined;
+    const journal = new AsyncSyncJournal<unknown>(storage);
+    const inbox = new AsyncSyncInbox<unknown>(storage);
+    const result = await syncGoogleDriveNowAsync(journal, inbox, {
+      accessToken: credentials.accessToken,
+      folderId: folder.id,
+      pageToken,
+      pullMaxPages: 10,
+      pushBatchSize: 25,
+    });
+
+    if (result.nextPageToken) await storage.setItem(pageTokenKey, result.nextPageToken);
+    else await storage.removeItem(pageTokenKey);
+    await storage.setItem('srk_drive_sync_last_success_v1', String(Date.now()));
     return result;
   })().finally(() => {
     activeCycle = null;
