@@ -12,6 +12,14 @@ export interface AsyncSyncStateStorage {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
   removeItem(key: string): Promise<void>;
+  /**
+   * Atomically read and replace/remove one key from the perspective of this
+   * adapter instance. The updater must be synchronous and side-effect free.
+   */
+  updateItem<T>(
+    key: string,
+    updater: (current: string | null) => { value: string | null; result: T },
+  ): Promise<T>;
 }
 
 export interface NativeSyncStatePlugin {
@@ -43,6 +51,16 @@ export function createLocalSyncStateStorage(storage: Storage): AsyncSyncStateSto
     async removeItem(key) {
       validateKey(key);
       storage.removeItem(key);
+    },
+    async updateItem<T>(key, updater) {
+      validateKey(key);
+      const next = updater(storage.getItem(key));
+      if (!next || (next.value !== null && (typeof next.value !== 'string' || next.value.length > MAX_VALUE_LENGTH))) {
+        throw new Error('Sync-state update returned an invalid or oversized value.');
+      }
+      if (next.value === null) storage.removeItem(key);
+      else storage.setItem(key, next.value);
+      return next.result;
     },
   };
 }
@@ -96,6 +114,27 @@ export function createNativeSyncStateStorage(
         throw new Error('Native sync-state removal returned an invalid result.');
       }
     },
+    async updateItem<T>(key, updater) {
+      validateKey(key);
+      const current = await nativeStore.getItems({ keys: [key] });
+      if (!current || !Array.isArray(current.items) || current.items.some(item => !item || item.key !== key || typeof item.value !== 'string') || current.items.length > 1) {
+        throw new Error('Native sync-state update read returned an invalid result.');
+      }
+      const next = updater(current.items[0]?.value ?? null);
+      if (!next || (next.value !== null && (typeof next.value !== 'string' || next.value.length > MAX_VALUE_LENGTH))) {
+        throw new Error('Sync-state update returned an invalid or oversized value.');
+      }
+      if (next.value === null) {
+        const removed = await nativeStore.removeItems({ keys: [key] });
+        if (!removed || !Number.isInteger(removed.removed) || removed.removed < 0 || removed.removed > 1) {
+          throw new Error('Native sync-state update removal was not verified.');
+        }
+      } else {
+        const saved = await nativeStore.setItems({ items: [{ key, value: next.value }] });
+        if (!saved || saved.saved !== 1) throw new Error('Native sync-state update write was not fully committed.');
+      }
+      return next.result;
+    },
   };
 }
 
@@ -146,6 +185,20 @@ export function createSerializedSyncStateStorage(
     },
     removeItem(key) {
       return runExclusive(key, () => storage.removeItem(key));
+    },
+    updateItem<T>(key, updater) {
+      return runExclusive(key, async () => {
+        // Keep the complete read/modify/write sequence inside one per-key lock.
+        // Calling the public wrapper methods here would deadlock on that same lock.
+        const current = await storage.getItem(key);
+        const next = updater(current);
+        if (!next || (next.value !== null && typeof next.value !== 'string')) {
+          throw new Error('Sync-state update returned an invalid value.');
+        }
+        if (next.value === null) await storage.removeItem(key);
+        else await storage.setItem(key, next.value);
+        return next.result;
+      });
     },
   };
 }
