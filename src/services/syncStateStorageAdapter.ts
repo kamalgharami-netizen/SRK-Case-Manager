@@ -162,7 +162,7 @@ export function createSerializedSyncStateStorage(
     removeItem(key) {
       return runExclusive(key, () => storage.removeItem(key));
     },
-    updateItem<T>(key, updater) {
+    updateItem<T>(key: string, updater: (current: string | null) => { value: string | null; result: T }) {
       return runExclusive(key, async () => {
         // Keep the complete read/modify/write sequence inside one per-key lock.
         // Calling the public wrapper methods here would deadlock on that same lock.
