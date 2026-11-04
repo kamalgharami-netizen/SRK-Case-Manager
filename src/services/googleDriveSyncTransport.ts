@@ -56,6 +56,11 @@ export async function pushPendingChanges<T>(
       name,
     });
 
+    if (existing.files.length > 1) {
+      throw new Error(
+        `Multiple Drive files exist for change "${change.changeId}". The local change was kept pending because the remote state is ambiguous.`,
+      );
+    }
     if (existing.files.length > 0) {
       // A deterministic filename alone is not proof that the remote content
       // matches this pending change. Verify the complete envelope before ack.
