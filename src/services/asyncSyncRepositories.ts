@@ -105,6 +105,33 @@ export class AsyncSyncJournal<T> {
     });
   }
 
+  /** Atomically append a complete local snapshot batch or leave the journal unchanged. */
+  async enqueueMany(changes: readonly SyncEnvelope<T>[]): Promise<number> {
+    changes.forEach(validateEnvelope);
+    if (!changes.length) return 0;
+    return this.storage.updateItem(JOURNAL_KEY, raw => {
+      const state = parseState(raw, {
+        schemaVersion: SCHEMA_VERSION, pending: [], syncedChangeIds: [],
+      } as AsyncSyncJournalState<T>, JOURNAL_KEY);
+      validateJournal(state);
+      const known = new Set([
+        ...state.pending.map(item => item.changeId),
+        ...state.syncedChangeIds,
+      ]);
+      let added = 0;
+      for (const change of changes) {
+        if (known.has(change.changeId)) continue;
+        known.add(change.changeId);
+        state.pending.push(change);
+        added += 1;
+      }
+      return {
+        value: added ? JSON.stringify(state) : raw,
+        result: added,
+      };
+    });
+  }
+
   async getPending(limit = 100): Promise<SyncEnvelope<T>[]> {
     const state = await this.readJournal();
     return state.pending.slice(0, Math.max(1, Math.min(500, Math.floor(limit))));
