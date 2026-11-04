@@ -290,6 +290,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
 
   const previousSyncSnapshot = useRef<Company[]>(companies);
+  const syncCaptureQueue = useRef<Promise<void>>(Promise.resolve());
   const skipNextSyncTracking = useRef(false);
 
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(() => {
@@ -536,7 +537,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [toast, setToast] = useState<ToastState | null>(null);
 
   // Record local changes through the same verified platform store used by the
-  // async Drive runner. On Android, migration must finish before the first write.
+  // async Drive runner. Serialize snapshots so rapid edits cannot race each other.
   useEffect(() => {
     if (skipNextSyncTracking.current) {
       skipNextSyncTracking.current = false;
@@ -544,9 +545,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return;
     }
 
-    let cancelled = false;
-    void (async () => {
-      try {
+    syncCaptureQueue.current = syncCaptureQueue.current
+      .then(async () => {
         const previous = previousSyncSnapshot.current as unknown as TrackedCompany[];
         const current = companies as unknown as TrackedCompany[];
         const changes = collectCompanyChanges(previous, current);
@@ -556,25 +556,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
 
         const storage = await getReadyPlatformSyncStateStorage();
-        if (cancelled) return;
         const deviceId = await getOrCreateSyncDeviceIdAsync(storage);
         const journal = new AsyncSyncJournal<unknown>(storage);
         const envelopes = createSyncEnvelopes(changes, deviceId);
-        for (const envelope of envelopes) {
-          if (cancelled) return;
-          await journal.enqueue(envelope);
-        }
+        for (const envelope of envelopes) await journal.enqueue(envelope);
         previousSyncSnapshot.current = companies;
-      } catch (error) {
-        // A sync-state failure must not block normal local case management.
-        // Keep the previous snapshot so the next render can retry the full diff.
+      })
+      .catch(error => {
+        // A sync-state failure must not block ordinary case management.
+        // Keep the last successful snapshot so the next edit retries the diff.
         console.error('Could not record local changes for cloud sync:', error);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
+      });
   }, [companies]);
   // Sync to localStorage
   useEffect(() => {
