@@ -158,3 +158,42 @@ test('coordinator rejects missing credentials or folder before network access', 
     /Select a Google Drive sync folder/,
   );
 });
+
+
+test('coordinator blocks outbound push when durable pull checkpoint persistence fails', async () => {
+  const storage = new MemoryStorage();
+  const journal = new SyncJournal<{ title: string }>(storage);
+  const inbox = new SyncInbox<{ title: string }>(storage);
+  journal.enqueue(envelope({ changeId: 'change_local_checkpoint_storage', recordId: 'case:local-storage' }));
+  const remote = envelope({
+    deviceId: 'device_remote_123456',
+    changeId: 'change_remote_checkpoint_storage',
+    recordId: 'case:remote-storage',
+  });
+  let pushCalls = 0;
+  await assert.rejects(
+    syncGoogleDriveNow(journal, inbox, {
+      accessToken: 'test-token',
+      folderId: 'folder-1',
+      pullMaxPages: 1,
+      onPullCheckpoint: async () => { throw new Error('checkpoint storage unavailable'); },
+    }, {
+      pull: {
+        listFiles: async () => ({
+          files: [{ id: 'remote-storage', name: 'srk-change-change_remote_checkpoint_storage.json', mimeType: 'application/json' }],
+          nextPageToken: 'page-after-storage',
+        }),
+        downloadJson: async () => remote,
+      },
+      push: {
+        listFiles: async () => { pushCalls += 1; return { files: [] }; },
+        downloadJson: async () => null,
+        uploadJson: async () => { pushCalls += 1; throw new Error('push must not run'); },
+      },
+    }),
+    /checkpoint storage unavailable/,
+  );
+  assert.equal(pushCalls, 0);
+  assert.deepEqual(inbox.getAll(), [remote]);
+  assert.equal(journal.getPendingCount(), 1);
+});
