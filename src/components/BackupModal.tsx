@@ -323,6 +323,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
       } else {
         await disconnectWindowsGoogleDrive();
       }
+      const storage = await getReadyPlatformSyncStateStorage();
+      await clearSelectedGoogleDriveFolderAsync(storage);
       setDriveAuthStatus('disconnected');
       setSelectedDriveFolder(null);
       showToast('Google sign-in credentials and selected folder removed from this device.', 'success');
