@@ -129,6 +129,41 @@ test('does not upload changes when an existing registry belongs to another Googl
 });
 
 
+
+test('fails closed when an existing registry response omits its parent folder', async () => {
+  const requests: string[] = [];
+  await withDriveFetch((url) => {
+    requests.push(url);
+    if (url.includes('openidconnect.googleapis.com')) return jsonResponse({ sub: 'google-subject-1' });
+    if (url.includes('/files/folder-1?')) return jsonResponse(folder);
+    if (url.includes('/files?')) {
+      return jsonResponse({
+        files: [{ id: 'registry-1', name: 'srk-device-registry-v1.json', mimeType: 'application/json' }],
+      });
+    }
+    if (url.includes('/files/registry-1?') && !url.includes('alt=media')) {
+      return jsonResponse({
+        id: 'registry-1',
+        name: 'srk-device-registry-v1.json',
+        mimeType: 'application/json',
+      });
+    }
+    throw new Error('Unexpected Drive request: ' + url);
+  }, async () => {
+    await assert.rejects(
+      registerCurrentGoogleDriveDevice({
+        accessToken: 'access-token',
+        folderId: 'folder-1',
+        storage: { getItem: () => null, setItem: () => undefined },
+      }),
+      /outside the selected SRK data folder/,
+    );
+  });
+  assert.equal(requests.some(url => url.includes('alt=media')), false);
+  assert.equal(requests.some(url => url.includes('/upload/drive')), false);
+});
+
+
 test('registers a new device and creates one account-bound registry in the selected folder', async () => {
   const requests: Array<{ url: string; method: string; body?: string }> = [];
   const deviceId = 'srk_00000000000000000000000000000001';
