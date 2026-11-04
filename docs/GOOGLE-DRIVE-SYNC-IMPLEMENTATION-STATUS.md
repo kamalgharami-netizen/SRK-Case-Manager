@@ -257,3 +257,29 @@ The historical status above describes the earlier staged milestones. The followi
 5. Do not enable Android WorkManager until persistent-store and restart/recovery tests pass.
 
 PR #7 remains draft/unmerged until the release gates above are satisfied.
+
+
+## Latest verified CI checkpoint — 2026-11-04 (Run #712)
+
+- Source commit: `eeec4f08440ddeea93ec038d2cf6f23224b3dbb7`.
+- GitHub Actions run #712 completed successfully: https://github.com/kamalgharami-netizen/SRK-Case-Manager/actions/runs/41791512459
+- Windows EXE job, Android APK job, and build-status report job all completed successfully.
+- Android TypeScript check, serial sync safety test suite, web build, Capacitor sync, native instrumentation-test compilation, and Android Emulator instrumentation execution all passed.
+- The Android instrumentation runner reported **6 tests, 0 failed, 0 ignored**. This is the first verified successful runtime execution after the previous emulator package-integrity installation failures.
+- Android Release APK packaging succeeded. `apksigner verify --verbose` succeeded; APK Signature Scheme v2 was verified. The signer fingerprint reported by this CI build is SHA-1 `d58a97a1619be31a29f10d092805853549b22a2e` and SHA-256 `c563d37511633a90658b4e519c27db052a773601e133c2c1156c2e55bac8527d`.
+- These fingerprints identify the certificate currently used by CI. They do not establish that the historically committed signing key has been rotated. Treat that historical key as exposed; replacement-key generation, GitHub secret replacement, and Google Cloud Android OAuth SHA-1 alignment remain release gates.
+- Artifacts uploaded for this run:
+  - Android APK: https://github.com/kamalgharami-netizen/SRK-Case-Manager/actions/runs/41791512459/artifacts/13303868382
+  - Windows EXE: https://github.com/kamalgharami-netizen/SRK-Case-Manager/actions/runs/41791512459/artifacts/13303742435
+  - Android instrumentation reports: https://github.com/kamalgharami-netizen/SRK-Case-Manager/actions/runs/41791512459/artifacts/13303693839
+- Run #711 was also queued for the same source commit and remained active at the last inspection; Run #712 independently completed all required jobs successfully for the current PR head. The PR remains Draft and unmerged.
+
+### Remaining release gates after CI success
+
+1. Generate and install a replacement signing key after confirming the app distribution/update path; never send keystore material or passwords in chat.
+2. Replace GitHub Actions signing secrets with the replacement key and compare the resulting signed APK certificate fingerprint with the configured Android OAuth client SHA-1.
+3. Test physical Android Google authorization/Picker and Windows OAuth/Picker.
+4. Perform actual Windows-to-Android and Android-to-Windows sync round trips, including conflicts, deletions, offline retry, process restart, folder/account mismatch and revocation.
+5. Keep Android WorkManager and full-exit Windows background sync marked unimplemented until separately designed and verified.
+
+Do not merge PR #7 or label the release production-ready until the remaining signing and physical-device gates are passed.
