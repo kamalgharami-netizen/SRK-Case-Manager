@@ -55,6 +55,7 @@ export async function syncGoogleDriveNowAsync<T>(
 
   await options.onPullCheckpoint?.(pulled.nextPageToken);
   if (options.signal?.aborted) throw new Error('Google Drive sync was cancelled.');
+  if (options.signal?.aborted) throw new Error('Google Drive sync was cancelled.');
   const pushed = await pushPendingChangesAsync(journal, {
     accessToken: options.accessToken,
     folderId: options.folderId,
