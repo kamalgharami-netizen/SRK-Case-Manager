@@ -49,7 +49,9 @@ import {
   getAndroidGoogleDriveCredentials,
 } from '../services/googleDriveAndroidAuth';
 import {
-  getSelectedGoogleDriveFolder,
+  getSelectedGoogleDriveFolderAsync,
+  saveSelectedGoogleDriveFolderAsync,
+  clearSelectedGoogleDriveFolderAsync,
   type SelectedGoogleDriveFolder,
 } from '../services/googleDriveSelectedFolder';
 import { getValidWindowsGoogleDriveCredentials } from '../services/googleDriveWindowsAuth';
@@ -57,8 +59,7 @@ import { getValidAndroidGoogleDriveCredentials } from '../services/googleDriveAn
 import { AsyncSyncInbox, AsyncSyncJournal } from '../services/asyncSyncRepositories';
 import { getReadyPlatformSyncStateStorage } from '../services/readySyncStateStorage';
 import type { SyncConflict } from '../services/driveSyncProtocol';
-import { SyncInbox } from '../services/googleDriveSyncInbox';
-import { runGoogleDriveSyncCycle } from '../services/googleDriveSyncRunner';
+import { runGoogleDriveSyncCycleAsync } from '../services/googleDriveSyncRunner';
 import { listRegisteredGoogleDriveDevices, revokeGoogleDriveDevice } from '../services/googleDriveDeviceRegistry';
 import type { SyncDeviceRegistration } from '../services/syncDeviceRegistry';
 
@@ -204,7 +205,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     }
     let active = true;
     setDriveAuthStatus('checking');
-    setSelectedDriveFolder(getSelectedGoogleDriveFolder());
+    void getReadyPlatformSyncStateStorage()
+      .then(storage => getSelectedGoogleDriveFolderAsync(storage))
+      .then(folder => { if (active) setSelectedDriveFolder(folder); })
+      .catch(() => { if (active) setDriveAuthStatus('error'); });
     const credentialCheck = isAndroid
       ? getAndroidGoogleDriveCredentials()
       : getWindowsGoogleDriveCredentials();
@@ -224,6 +228,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
       const result = Capacitor.getPlatform() === 'android'
         ? await connectAndroidGoogleDrive()
         : await connectWindowsGoogleDrive();
+      const storage = await getReadyPlatformSyncStateStorage();
+      await saveSelectedGoogleDriveFolderAsync(result.folder, storage);
       setSelectedDriveFolder(result.folder);
       setDriveAuthStatus('authorized');
       showToast('Google account authorized and Drive folder selected. You can now use Sync Now; incoming changes remain staged for review.', 'success');
@@ -241,7 +247,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     setSyncBusy(true);
     setSyncMessage('Synchronisation started…');
     try {
-      const result = await runGoogleDriveSyncCycle({ allowAndroidReauthorization: true });
+      const result = await runGoogleDriveSyncCycleAsync({ allowAndroidReauthorization: true });
       if (!result) throw new Error('Connect Google Drive and select a sync folder before syncing.');
       refreshSyncCounts();
       setSyncMessage(
