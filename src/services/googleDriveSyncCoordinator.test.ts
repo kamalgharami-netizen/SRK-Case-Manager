@@ -117,6 +117,8 @@ test('persists the durable pull checkpoint before a failed push', async () => {
     recordId: 'case:checkpoint',
   });
   let checkpoint: string | undefined;
+  // Ensure the push phase has pending work so its injected failure is exercised.
+  journal.enqueue(envelope({ changeId: 'change_local_checkpoint_push', recordId: 'case:local-checkpoint' }));
   await assert.rejects(
     syncGoogleDriveNow(journal, inbox, {
       accessToken: 'test-token',
