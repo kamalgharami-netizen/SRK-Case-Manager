@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { SyncInbox } from './googleDriveSyncInbox';
 import { applyStagedInboxChanges } from './applyStagedInboxChanges';
+import { AsyncSyncInbox } from './asyncSyncRepositories';
+import { applyStagedInboxChangesAsync } from './applyStagedInboxChangesAsync';
+import type { AsyncSyncStateStorage } from './syncStateStorageAdapter';
 
 class MemoryStorage {
   values = new Map<string, string>();
@@ -94,4 +97,48 @@ test('acknowledges applied diary changes after persistence', () => {
   assert.equal(result.applied, 1);
   assert.equal(result.acknowledged, 1);
   assert.equal(result.remaining, 0);
+});
+
+
+class AsyncMemoryStorage implements AsyncSyncStateStorage {
+  values = new Map<string, string>();
+  async getItem(key: string) { return this.values.get(key) ?? null; }
+  async setItem(key: string, value: string) { this.values.set(key, value); }
+  async removeItem(key: string) { this.values.delete(key); }
+  async updateItem<T>(key: string, updater: (current: string | null) => { value: string | null; result: T }) {
+    const next = updater(this.values.get(key) ?? null);
+    if (next.value === null) this.values.delete(key);
+    else this.values.set(key, next.value);
+    return next.result;
+  }
+}
+
+test('async staged apply persists company data before acknowledging native inbox state', async () => {
+  const inbox = new AsyncSyncInbox<unknown>(new AsyncMemoryStorage());
+  await inbox.add([change]);
+  let persisted = false;
+  const result = await applyStagedInboxChangesAsync(
+    [{ id: 'company1', cases: [] }],
+    inbox,
+    async companies => {
+      assert.deepEqual((companies[0] as { cases: unknown[] }).cases, [{ id: 'c1', title: 'Remote case' }]);
+      persisted = true;
+    },
+  );
+  assert.equal(persisted, true);
+  assert.equal(result.applied, 1);
+  assert.equal(result.acknowledged, 1);
+  assert.equal(result.remaining, 0);
+});
+
+test('async staged apply retains inbox data when durable company persistence fails', async () => {
+  const inbox = new AsyncSyncInbox<unknown>(new AsyncMemoryStorage());
+  await inbox.add([change]);
+  await assert.rejects(
+    () => applyStagedInboxChangesAsync([{ id: 'company1', cases: [] }], inbox, async () => {
+      throw new Error('native persistence unavailable');
+    }),
+    /native persistence unavailable/,
+  );
+  assert.equal((await inbox.getAll()).length, 1);
 });
