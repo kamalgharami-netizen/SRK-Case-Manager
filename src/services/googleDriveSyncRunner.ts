@@ -72,10 +72,11 @@ export function runGoogleDriveSyncCycle(
       pageToken,
       pullMaxPages: 10,
       pushBatchSize: 25,
+      onPullCheckpoint: nextPageToken => {
+        if (nextPageToken) localStorage.setItem(pageTokenKey, nextPageToken);
+        else localStorage.removeItem(pageTokenKey);
+      },
     });
-
-    if (result.nextPageToken) localStorage.setItem(pageTokenKey, result.nextPageToken);
-    else localStorage.removeItem(pageTokenKey);
     localStorage.setItem('srk_drive_sync_last_success_v1', String(Date.now()));
     return result;
   })().finally(() => {
@@ -135,10 +136,11 @@ export function runGoogleDriveSyncCycleAsync(
       pageToken,
       pullMaxPages: 10,
       pushBatchSize: 25,
+      onPullCheckpoint: async nextPageToken => {
+        if (nextPageToken) await storage.setItem(pageTokenKey, nextPageToken);
+        else await storage.removeItem(pageTokenKey);
+      },
     });
-
-    if (result.nextPageToken) await storage.setItem(pageTokenKey, result.nextPageToken);
-    else await storage.removeItem(pageTokenKey);
     await storage.setItem('srk_drive_sync_last_success_v1', String(Date.now()));
     return result;
   })().finally(() => {
