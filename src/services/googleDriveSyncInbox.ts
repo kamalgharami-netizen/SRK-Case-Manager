@@ -156,7 +156,12 @@ export async function pullRemoteChanges<T>(
         continue;
       }
       if (!fileChangeId) continue;
-      if (inbox.hasSeen(fileChangeId) || remoteChangeIds.has(fileChangeId)) {
+      // Multiple Drive objects with one deterministic change ID are ambiguous.
+      if (remoteChangeIds.has(fileChangeId)) {
+        throw new Error(`Multiple Drive files exist for change "${fileChangeId}". Remote state is ambiguous; no changes were staged.`);
+      }
+      remoteChangeIds.add(fileChangeId);
+      if (inbox.hasSeen(fileChangeId)) {
         duplicates += 1;
         continue;
       }
