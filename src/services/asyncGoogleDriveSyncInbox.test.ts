@@ -80,3 +80,51 @@ test('async coordinator performs pull before push and keeps remote data staged',
   assert.equal(result.remainingOutbox, 0);
   assert.equal(result.remainingInbox, 0);
 });
+
+test('async coordinator preserves staged inbox and local outbox across a failed push and retry', async () => {
+  const storage = new MemoryStorage();
+  const firstJournal = new AsyncSyncJournal<unknown>(storage);
+  const firstInbox = new AsyncSyncInbox<unknown>(storage);
+  await firstJournal.enqueue({
+    schemaVersion: 1, deviceId: 'local_device_123456', changeId: 'local-pending-1',
+    recordId: 'cases:local-case', companyId: 'company-1', updatedAt: 100,
+    deleted: false, payload: { id: 'local-case' },
+  });
+  const remoteChange = remote('remote-change-retry');
+  let failUpload = true;
+  let remoteListCalls = 0;
+  const dependencies = {
+    pull: {
+      listFiles: async () => {
+        remoteListCalls += 1;
+        return { files: [{ id: 'remote-drive-file', name: 'srk-change-remote-change-retry.json', mimeType: 'application/json' }] };
+      },
+      downloadJson: async () => remoteChange,
+    },
+    push: {
+      listFiles: async () => ({ files: [] }),
+      downloadJson: async () => null,
+      uploadJson: async options => {
+        if (failUpload) throw new Error('temporary network interruption');
+        return { id: 'uploaded-after-retry', name: options.name, mimeType: 'application/json' };
+      },
+    },
+  };
+  await assert.rejects(() => syncGoogleDriveNowAsync(
+    firstJournal, firstInbox, { accessToken: 'token', folderId: 'folder-1' }, dependencies,
+  ), /temporary network interruption/);
+  const restartedJournal = new AsyncSyncJournal<unknown>(storage);
+  const restartedInbox = new AsyncSyncInbox<unknown>(storage);
+  assert.equal(await restartedJournal.getPendingCount(), 1);
+  assert.deepEqual(await restartedInbox.getAll(), [remoteChange]);
+  failUpload = false;
+  const retried = await syncGoogleDriveNowAsync(
+    restartedJournal, restartedInbox, { accessToken: 'token', folderId: 'folder-1' }, dependencies,
+  );
+  assert.equal(remoteListCalls, 2);
+  assert.equal(retried.pulled.staged, 0);
+  assert.equal(retried.pulled.duplicates, 1);
+  assert.equal(retried.pushed.acknowledged, 1);
+  assert.equal(retried.remainingOutbox, 0);
+  assert.deepEqual(await restartedInbox.getAll(), [remoteChange]);
+});
