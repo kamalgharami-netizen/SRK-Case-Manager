@@ -30,6 +30,28 @@ const remote = (changeId: string) => ({
   payload: { id: 'case-1', title: 'Remote case' },
 });
 
+test('async pull fails closed when Drive contains multiple files for one change ID', async () => {
+  const storage = new MemoryStorage();
+  const journal = new AsyncSyncJournal<unknown>(storage);
+  const inbox = new AsyncSyncInbox<unknown>(storage);
+  let downloads = 0;
+  await assert.rejects(
+    pullRemoteChangesAsync(journal, inbox, { accessToken: 'token', folderId: 'folder-1' }, {
+      listFiles: async () => ({
+        files: [
+          { id: 'file-1', name: 'srk-change-duplicate-async.json', mimeType: 'application/json' },
+          { id: 'file-2', name: 'srk-change-duplicate-async.json', mimeType: 'application/json' },
+        ],
+      }),
+      downloadJson: async () => { downloads += 1; return remote('duplicate-async'); },
+    }),
+    /Multiple Drive files exist for change/
+  );
+  assert.equal(downloads, 1);
+  assert.equal((await inbox.getAll()).length, 0);
+  assert.equal(await inbox.hasSeen('duplicate-async'), false);
+});
+
 test('async pull stages verified remote records and returns Drive continuation token', async () => {
   const storage = new MemoryStorage();
   const journal = new AsyncSyncJournal<unknown>(storage);
