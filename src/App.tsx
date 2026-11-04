@@ -116,7 +116,7 @@ const MainAppContent: React.FC = () => {
     const runMinimizedWindowsSync = async () => {
       if (disposed || !isWindowsDesktop || navigator.onLine === false) return;
       try {
-        await runGoogleDriveSyncCycle({ allowAndroidReauthorization: false });
+        await runGoogleDriveSyncCycleAsync({ allowAndroidReauthorization: false });
       } catch (error) {
         console.warn('Scheduled minimized Windows Google Drive sync did not complete:', error);
       }
