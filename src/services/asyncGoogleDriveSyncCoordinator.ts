@@ -10,6 +10,8 @@ export interface AsyncGoogleDriveSyncCoordinatorOptions {
   signal?: AbortSignal;
   pullMaxPages?: number;
   pushBatchSize?: number;
+  /** Persist the next Drive page only after pulled inbox/conflicts are durable. */
+  onPullCheckpoint?: (nextPageToken?: string) => void | Promise<void>;
 }
 
 export interface AsyncGoogleDriveSyncCoordinatorDependencies {
@@ -51,6 +53,7 @@ export async function syncGoogleDriveNowAsync<T>(
     maxPages: options.pullMaxPages ?? 10,
   }, dependencies.pull);
 
+  await options.onPullCheckpoint?.(pulled.nextPageToken);
   if (options.signal?.aborted) throw new Error('Google Drive sync was cancelled.');
   const pushed = await pushPendingChangesAsync(journal, {
     accessToken: options.accessToken,
