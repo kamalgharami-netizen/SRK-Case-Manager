@@ -58,7 +58,7 @@ export async function registerCurrentGoogleDriveDevice(options: {
   if (matches.files.length === 1) {
     existingFileId = matches.files[0].id;
     const metadata = await getDriveFileMetadata({ accessToken: options.accessToken, fileId: existingFileId });
-    if (metadata.parents && !metadata.parents.includes(options.folderId)) {
+    if (!Array.isArray(metadata.parents) || !metadata.parents.includes(options.folderId)) {
       throw new Error('The device registry is outside the selected SRK data folder.');
     }
     const response = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(existingFileId)}?alt=media`, {
