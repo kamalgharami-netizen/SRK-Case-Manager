@@ -85,6 +85,20 @@ test('rejects non-loopback or altered callback redirect URIs before network acce
   assert.equal(requested, false);
 });
 
+
+test('rejects expiry arithmetic that exceeds the safe integer range', async () => {
+  await assert.rejects(() => refreshGoogleAccessToken({
+    clientId: 'desktop-client-id',
+    refreshToken: 'refresh',
+    now: Number.MAX_SAFE_INTEGER - 1000,
+    fetcher: async () => response({
+      access_token: 'access',
+      token_type: 'Bearer',
+      expires_in: 3600,
+    }),
+  }), /unsafe OAuth expiry timestamp/);
+});
+
 test('rejects malformed PKCE verifier and unsafe expiry timestamps', async () => {
   const fetcher = async () => response({
     access_token: 'access', token_type: 'Bearer', expires_in: 3600,

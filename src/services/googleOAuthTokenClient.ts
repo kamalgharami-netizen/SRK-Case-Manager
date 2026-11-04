@@ -70,11 +70,15 @@ function parseTokenResponse(payload: unknown, now: number,
     throw new Error('Google returned incomplete or invalid OAuth token fields.');
   }
   const expiresIn = value.expires_in as number;
+  const expiresAt = now + expiresIn * 1000;
+  if (!Number.isSafeInteger(expiresAt) || expiresAt <= now) {
+    throw new Error("Google returned an unsafe OAuth expiry timestamp.");
+  }
   return {
     accessToken: value.access_token,
     refreshToken: value.refresh_token ?? previousRefreshToken,
     tokenType: 'Bearer',
-    expiresAt: now + expiresIn * 1000,
+    expiresAt,
     scope: value.scope ?? null,
   };
 }
