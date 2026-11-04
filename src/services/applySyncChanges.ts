@@ -81,7 +81,13 @@ export function applySyncEnvelopes<T extends TrackedCompany>(
           if (next.length !== entries.length) found = true;
           return [caseId, next];
         }));
-        if (!found) { skipped += 1; continue; }
+        // A previously persisted tombstone is already satisfied. Treat it as
+        // applied so retries after a crash can safely finish inbox/conflict ack.
+        if (!found) {
+          applied += 1;
+          appliedChangeIds.push(change.changeId);
+          continue;
+        }
         companies[companyIndex] = { ...company, diaryData: nextDiary } as T;
         applied += 1;
         appliedChangeIds.push(change.changeId);
@@ -112,7 +118,13 @@ export function applySyncEnvelopes<T extends TrackedCompany>(
     const existing = Array.isArray(getField(company, collection)) ? getField(company, collection) as unknown[] : [];
     if (change.deleted) {
       const next = existing.filter(item => !(isRecord(item) && item.id === recordId));
-      if (next.length === existing.length) { skipped += 1; continue; }
+      // Missing target records already satisfy a delete tombstone. Mark the
+      // envelope applied to make retries idempotent after persistence succeeds.
+      if (next.length === existing.length) {
+        applied += 1;
+        appliedChangeIds.push(change.changeId);
+        continue;
+      }
       companies[companyIndex] = { ...company, [collection]: next } as T;
       applied += 1;
       appliedChangeIds.push(change.changeId);
