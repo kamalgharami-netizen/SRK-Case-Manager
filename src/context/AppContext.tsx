@@ -6,15 +6,13 @@ import { AppLanguage, translations, Translations } from '../data/translations';
 import { INITIAL_SAMPLE_DRAFTS } from '../data/sampleDraftTemplates';
 import { APP_VERSION, APP_BUILD_DATE, APP_RELEASE_NAME } from '../config/version';
 import { autoMergeAllPreviousData, mergeCompanyLists, extractCompaniesFromPayload } from '../utils/dataMergeMigration';
-import { SyncJournal } from '../services/syncJournal';
-import { getOrCreateSyncDeviceId } from '../services/driveSyncProtocol';
 import { AsyncSyncJournal } from '../services/asyncSyncRepositories';
 import { getOrCreateSyncDeviceIdAsync } from '../services/driveSyncProtocol';
 import { getReadyPlatformSyncStateStorage } from '../services/readySyncStateStorage';
 import { collectCompanyChanges, createSyncEnvelopes, type TrackedCompany } from '../services/companyChangeTracker';
-import { SyncInbox } from '../services/googleDriveSyncInbox';
-import { applyStagedInboxChanges } from '../services/applyStagedInboxChanges';
 import { applySyncEnvelopes } from '../services/applySyncChanges';
+import { AsyncSyncInbox, AsyncSyncJournal } from '../services/asyncSyncRepositories';
+import { applyStagedInboxChangesAsync } from '../services/applyStagedInboxChangesAsync';
 import type { SyncConflict } from '../services/driveSyncProtocol';
 
 const STORAGE_KEY = 'srk_case_manager_v5';
@@ -159,8 +157,8 @@ interface AppContextType {
     }
   ) => boolean;
   updateCompanyDetails: (details: Partial<Company>) => boolean;
-  applyStagedSyncChanges: () => { applied: number; skipped: number; manualReview: number; remaining: number } | null;
-  resolveSyncConflict: (conflict: SyncConflict<unknown>, choice: 'local' | 'remote') => boolean;
+  applyStagedSyncChanges: () => Promise<{ applied: number; skipped: number; manualReview: number; remaining: number } | null>;
+  resolveSyncConflict: (conflict: SyncConflict<unknown>, choice: 'local' | 'remote') => Promise<boolean>;
   selectCompany: (companyId: string) => void;
   deleteCompany: (companyId: string) => void;
   loginUser: (identifier: string, passcodeOrPassword?: string, companyId?: string) => boolean;
@@ -1869,18 +1867,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const applyStagedSyncChanges = () => {
+  const applyStagedSyncChanges = async () => {
     if (STORAGE_LOAD_FAILED) {
       showToast('Local data could not be verified. Remote changes were not applied.', 'error');
       return null;
     }
     try {
-      const inbox = new SyncInbox<unknown>(localStorage);
-      const result = applyStagedInboxChanges(
-        companies,
+      const storage = await getReadyPlatformSyncStateStorage();
+      const inbox = new AsyncSyncInbox<unknown>(storage);
+      const result = await applyStagedInboxChangesAsync(
+        companies as unknown as TrackedCompany[],
         inbox,
-        nextCompanies => {
-          // Persist the approved result before inbox acknowledgement.
+        async nextCompanies => {
+          // Persist the approved result before acknowledging inbox entries.
           localStorage.setItem(STORAGE_KEY, JSON.stringify({
             companies: nextCompanies,
             activeCompanyId,
@@ -1891,9 +1890,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
       );
       if (result.applied > 0) {
-        // Remote-approved records must not be re-enqueued as fresh local edits.
         skipNextSyncTracking.current = true;
-        setCompanies(result.companies);
+        setCompanies(result.companies as unknown as Company[]);
         showToast(`Applied ${result.applied} remote change(s). ${result.remaining} item(s) remain for review.`, 'success');
       } else if (result.manualReview > 0 || result.skipped > 0) {
         showToast(`${result.manualReview} item(s) require manual review; ${result.skipped} item(s) were not applied.`, 'warning');
@@ -1908,13 +1906,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const resolveSyncConflict = (conflict: SyncConflict<unknown>, choice: 'local' | 'remote') => {
+  const resolveSyncConflict = async (conflict: SyncConflict<unknown>, choice: 'local' | 'remote') => {
     if (STORAGE_LOAD_FAILED) {
       showToast('Local data could not be verified. The conflict was not resolved.', 'error');
       return false;
     }
     try {
-      const journal = new SyncJournal<unknown>(localStorage);
+      const storage = await getReadyPlatformSyncStateStorage();
+      const journal = new AsyncSyncJournal<unknown>(storage);
       if (choice === 'remote') {
         const result = applySyncEnvelopes(
           companies as unknown as TrackedCompany[],
@@ -1924,8 +1923,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           showToast('The remote version cannot be safely applied to this record. The conflict remains available.', 'warning');
           return false;
         }
-        // Persist the selected remote version before replacing the conflict with
-        // a new outbound resolution envelope.
+        // Persist the selected remote version before replacing the conflict
+        // with a new outbound resolution envelope.
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
           companies: result.companies,
           activeCompanyId,
@@ -1936,12 +1935,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         skipNextSyncTracking.current = true;
         setCompanies(result.companies as unknown as Company[]);
       }
-      const resolved = journal.resolveConflictAndQueue(
+      const deviceId = await getOrCreateSyncDeviceIdAsync(storage);
+      const resolved = await journal.resolveConflictAndQueue(
         conflict.recordId,
         conflict.local.changeId,
         conflict.remote.changeId,
         choice,
-        getOrCreateSyncDeviceId(localStorage)
+        deviceId
       );
       if (!resolved) {
         showToast('This conflict is no longer available. Refresh the sync status.', 'warning');
@@ -1953,11 +1953,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return true;
     } catch (error) {
       console.error('Could not resolve sync conflict:', error);
-      showToast('Could not resolve this conflict. Check local storage and try again.', 'error');
+      showToast('Could not resolve this conflict. Check sync storage and try again.', 'error');
       return false;
     }
   };
-
   const forceAppUpdateAndReplace = async () => {
     try {
       showToast('Clearing stale cache and updating to latest app version...', 'info');
