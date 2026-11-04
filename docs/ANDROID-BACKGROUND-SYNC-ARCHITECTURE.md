@@ -161,3 +161,32 @@ The repository does not yet include a user-facing native-store test screen or An
 - Workflow run #321 built the Windows EXE successfully, but the Android job failed before the instrumentation tests could reliably execute: the API 34 emulator stopped responding to ADB, the Android package manager never became ready, and Gradle reported no compatible device. The log contains emulator/Keystore service stalls and Android system ANRs; it does not identify an assertion failure in the native sync-store tests.
 - The workflow emulator profile has therefore been changed to API 35 Google APIs, Pixel 2, x86_64, with a 2 GiB guest-memory setting. This is a CI-environment mitigation, not proof of native-store correctness.
 - The next workflow run must be checked independently. If the emulator again fails to boot or respond, preserve the test gate and investigate runner/emulator stability; do not skip or mark instrumentation as passed.
+
+
+## Superseding implementation status (2026-11-04)
+
+This section supersedes the earlier Stage 1 and manual migration-gate descriptions above where they conflict with the current code. The earlier sections are retained as implementation history, not as current runtime instructions.
+
+### Current storage boundary
+
+- The main case/business database remains in WebView `localStorage` under `srk_case_manager_v5`; it has not been migrated to SQLite.
+- On Android, sync metadata (journal/outbox, inbox, conflict state, device identity, selected Drive folder, and pagination state) is accessed through the encrypted SQLite-backed Capacitor sync-state store.
+- Android startup obtains the ready sync-state adapter only after the legacy localStorage-to-native migration reports `migrated` or `already-migrated`. A failed/partial migration blocks access to the native sync-state consumer; the source localStorage values are retained.
+- The async sync runner, automatic foreground sync, Backup UI counts/actions, and staged-inbox/conflict operations use the ready async storage path. Windows and browser continue using their localStorage-backed adapter.
+- This is a sync-metadata migration only. It does not move the case/business database into SQLite.
+
+### Current sync execution boundary
+
+- Sync is available through foreground/startup/resume/network-return paths and the user's manual Sync Now action.
+- Android WorkManager periodic/background sync is not implemented. Do not describe Android as continuously syncing while the app is closed or force-stopped.
+- Windows retry is best-effort while the desktop application remains running; full-exit background sync is not implemented.
+- Android refresh-token persistence is not implemented; do not assume silent credential renewal after the short-lived access token expires.
+- Physical-device Google sign-in, Drive Picker, Windows-to-Android and Android-to-Windows round trips, offline/restart recovery, and conflict/deletion scenarios remain release tests.
+
+### Current CI status and release blockers
+
+- The current workflow compiles the native instrumentation test APK and attempts to execute the native SQLite/Keystore tests on an Android emulator. Compilation is not a passing runtime test; only a green emulator test step counts as runtime CI evidence.
+- CI run #707 failed at emulator test APK installation with `INSTALL_FAILED_VERIFICATION_FAILURE: Integrity verification timed out`; the instrumentation test assertions did not run. The Windows EXE job succeeded.
+- The workflow was changed to use the API 34 `default` emulator system image instead of `google_apis` because package-verification settings on the previous emulator did not prevent integrity-verification timeouts. The next workflow run must be inspected before marking this gate passed.
+- A signing keystore was committed in repository history. The file is removed from the current PR branch and ignore rules cover keystore formats, but historical copies remain in Git history. Treat that key as exposed and rotate it before production distribution. Update the Google OAuth Android client SHA-1 to match the replacement certificate.
+- Keep PR #7 Draft and unmerged until CI, replacement-key/OAuth verification, and physical-device release tests are complete.
