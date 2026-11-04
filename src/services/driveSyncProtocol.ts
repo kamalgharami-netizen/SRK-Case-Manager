@@ -129,3 +129,25 @@ export function getOrCreateSyncDeviceId(storage: Pick<Storage, 'getItem' | 'setI
   storage.setItem(key, deviceId);
   return deviceId;
 }
+
+
+/** Async variant used when device identity is stored in the selected sync-state adapter. */
+export async function getOrCreateSyncDeviceIdAsync(storage: {
+  updateItem<T>(
+    key: string,
+    updater: (current: string | null) => { value: string | null; result: T },
+  ): Promise<T>;
+}): Promise<string> {
+  return storage.updateItem('srk_sync_device_id_v1', current => {
+    if (current && /^srk_[a-f0-9]{32}$/.test(current)) {
+      return { value: current, result: current };
+    }
+    if (typeof crypto === 'undefined' || typeof crypto.getRandomValues !== 'function') {
+      throw new Error('Secure random generation is unavailable; this device cannot be registered safely.');
+    }
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    const randomPart = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+    const deviceId = `srk_${randomPart}`;
+    return { value: deviceId, result: deviceId };
+  });
+}
