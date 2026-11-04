@@ -40,6 +40,29 @@ jobs:
       - name: Accept Android SDK licences
         run: yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --licenses || true
 
+      - name: Preinstall Android emulator system image with retry
+        shell: bash
+        run: |
+          SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          IMAGE="system-images;android-34;google_apis;x86_64"
+          installed=0
+          for attempt in 1 2 3; do
+            echo "Installing Android emulator image (attempt $attempt/3)"
+            if "$SDKMANAGER" --install "$IMAGE" --channel=0; then
+              if [ -s "${ANDROID_HOME}/system-images/android-34/google_apis/x86_64/source.properties" ]; then
+                installed=1
+                break
+              fi
+            fi
+            echo "SDK image archive was incomplete; clearing SDK download cache before retry."
+            rm -rf "${ANDROID_HOME}/.temp" "${HOME}/.android/cache" || true
+            sleep 5
+          done
+          if [ "$installed" -ne 1 ]; then
+            echo "::error::Android API 34 Google APIs system image could not be installed after three attempts."
+            exit 1
+          fi
+
       - name: Install project dependencies
         run: npm install --legacy-peer-deps
 
