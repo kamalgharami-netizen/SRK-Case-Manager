@@ -80,3 +80,13 @@ test('async conflict resolution queues selected value before removing conflict',
   assert.notEqual(pending[0].changeId, remote.changeId);
   assert.deepEqual(await journal.getConflicts(), []);
 });
+
+test('async inbox accepts version-1 inboxes created before seenChangeIds existed', async () => {
+  const storage = new MemoryAsyncStorage();
+  const remote = envelope('legacy_remote_1');
+  storage.seed('srk_sync_inbox_v1', JSON.stringify({ schemaVersion: 1, changes: [remote] }));
+  const inbox = new AsyncSyncInbox<{ title: string }>(storage);
+  assert.deepEqual(await inbox.getAll(), [remote]);
+  assert.equal(await inbox.hasSeen(remote.changeId), true);
+  assert.equal(await inbox.add([remote]), 0);
+});
