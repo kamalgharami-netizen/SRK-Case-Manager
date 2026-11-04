@@ -10,7 +10,8 @@ import { SyncJournal } from './syncJournal';
 import { SyncInbox } from './googleDriveSyncInbox';
 import { AsyncSyncInbox, AsyncSyncJournal } from './asyncSyncRepositories';
 import { getOrCreateSyncDeviceIdAsync } from './driveSyncProtocol';
-import { createPlatformSyncStateStorage, type AsyncSyncStateStorage } from './syncStateStorageAdapter';
+import type { AsyncSyncStateStorage } from './syncStateStorageAdapter';
+import { getReadyPlatformSyncStateStorage } from './readySyncStateStorage';
 import { getSelectedGoogleDriveFolderAsync } from './googleDriveSelectedFolder';
 import { syncGoogleDriveNowAsync } from './asyncGoogleDriveSyncCoordinator';
 import { syncGoogleDriveNow, type GoogleDriveSyncCoordinatorResult } from './googleDriveSyncCoordinator';
@@ -96,7 +97,7 @@ export function runGoogleDriveSyncCycleAsync(
   if (activeCycle) return activeCycle;
 
   activeCycle = (async () => {
-    const storage = options.storage ?? createPlatformSyncStateStorage();
+    const storage = options.storage ?? await getReadyPlatformSyncStateStorage();
     const folder = await getSelectedGoogleDriveFolderAsync(storage);
     if (!folder?.id) return null;
 
