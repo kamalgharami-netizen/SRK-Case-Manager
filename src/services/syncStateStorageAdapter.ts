@@ -8,10 +8,13 @@ import {
 const MAX_KEY_LENGTH = 256;
 const MAX_VALUE_LENGTH = 2 * 1024 * 1024;
 
-export interface AsyncSyncStateStorage {
+export interface SyncStateStorageDriver {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
   removeItem(key: string): Promise<void>;
+}
+
+export interface AsyncSyncStateStorage extends SyncStateStorageDriver {
   /**
    * Atomically read and replace/remove one key from the perspective of this
    * adapter instance. The updater must be synchronous and side-effect free.
@@ -161,7 +164,7 @@ export function createPlatformSyncStateStorage(options: {
  * the queue for later retries.
  */
 export function createSerializedSyncStateStorage(
-  storage: AsyncSyncStateStorage,
+  storage: SyncStateStorageDriver,
 ): AsyncSyncStateStorage {
   const tails = new Map<string, Promise<void>>();
 
