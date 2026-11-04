@@ -76,7 +76,7 @@ export function createLocalSyncStateStorage(storage: Storage): AsyncSyncStateSto
 export function createNativeSyncStateStorage(
   nativeStore: NativeSyncStatePlugin = SyncStateStore as SyncStateStorePlugin,
 ): AsyncSyncStateStorage {
-  return {
+  return createSerializedSyncStateStorage({
     async getItem(key) {
       validateKey(key);
       const result = await nativeStore.getItems({ keys: [key] });
@@ -138,7 +138,7 @@ export function createNativeSyncStateStorage(
       }
       return next.result;
     },
-  };
+  });
 }
 
 /** Select one complete storage implementation; never silently fall back on Android. */
@@ -149,7 +149,7 @@ export function createPlatformSyncStateStorage(options: {
 } = {}): AsyncSyncStateStorage {
   const platform = options.platform ?? Capacitor.getPlatform();
   if (platform === 'android') {
-    return createSerializedSyncStateStorage(createNativeSyncStateStorage(options.nativeStore));
+    return createNativeSyncStateStorage(options.nativeStore);
   }
   const storage = options.localStorage ?? (typeof localStorage !== 'undefined' ? localStorage : undefined);
   if (!storage) throw new Error('Local sync-state storage is unavailable on this platform.');
