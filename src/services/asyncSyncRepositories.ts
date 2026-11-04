@@ -67,10 +67,13 @@ function validateConflicts<T>(state: AsyncSyncConflictState<T>): void {
 
 function validateInbox<T>(state: AsyncSyncInboxState<T>): void {
   if (state.schemaVersion !== SCHEMA_VERSION || !Array.isArray(state.changes) ||
-      !Array.isArray(state.seenChangeIds) ||
-      !state.seenChangeIds.every(id => typeof id === 'string' && id.length > 0)) {
+      (state.seenChangeIds !== undefined &&
+        (!Array.isArray(state.seenChangeIds) ||
+          !state.seenChangeIds.every(id => typeof id === 'string' && id.length > 0)))) {
     throw new Error('Sync inbox format is invalid; existing data was left untouched.');
   }
+  // Version-1 inboxes created by the original SyncInbox omitted this optional field.
+  state.seenChangeIds = state.seenChangeIds ?? [];
   state.changes.forEach(validateEnvelope);
 }
 
