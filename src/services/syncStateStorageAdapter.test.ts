@@ -261,3 +261,60 @@ test('a failed serialized write does not block later operations for the same key
   assert.equal(await storage.getItem('journal'), 'recovered');
   assert.equal(calls, 2);
 });
+
+
+test('serialized updateItem keeps read-modify-write atomic for concurrent same-key updates', async () => {
+  const values = new Map<string, string>([['journal', '0']]);
+  const storage = createSerializedSyncStateStorage({
+    async getItem(key) { return values.get(key) ?? null; },
+    async setItem(key, value) { values.set(key, value); },
+    async removeItem(key) { values.delete(key); },
+  });
+
+  const updates = await Promise.all(Array.from({ length: 40 }, () =>
+    storage.updateItem('journal', current => {
+      const next = Number(current ?? '0') + 1;
+      return { value: String(next), result: next };
+    })
+  ));
+
+  assert.equal(await storage.getItem('journal'), '40');
+  assert.equal(new Set(updates).size, 40);
+  assert.equal(Math.max(...updates), 40);
+});
+
+test('serialized updateItem does not write when its updater throws and remains usable', async () => {
+  const values = new Map<string, string>([['journal', 'preserve-me']]);
+  const storage = createSerializedSyncStateStorage({
+    async getItem(key) { return values.get(key) ?? null; },
+    async setItem(key, value) { values.set(key, value); },
+    async removeItem(key) { values.delete(key); },
+  });
+
+  await assert.rejects(
+    storage.updateItem('journal', () => { throw new Error('validation failed'); }),
+    /validation failed/,
+  );
+  assert.equal(await storage.getItem('journal'), 'preserve-me');
+
+  const result = await storage.updateItem('journal', current => ({
+    value: current === null ? 'created' : current + '-updated',
+    result: 'saved',
+  }));
+  assert.equal(result, 'saved');
+  assert.equal(await storage.getItem('journal'), 'preserve-me-updated');
+});
+
+test('local adapter supports atomic single-key updates and removal', async () => {
+  const local = new MemoryStorage();
+  const storage = createLocalSyncStateStorage(local as unknown as Storage);
+  await storage.setItem('journal', 'before');
+  const result = await storage.updateItem('journal', current => ({
+    value: current === 'before' ? 'after' : null,
+    result: current,
+  }));
+  assert.equal(result, 'before');
+  assert.equal(await storage.getItem('journal'), 'after');
+  await storage.updateItem('journal', () => ({ value: null, result: undefined }));
+  assert.equal(await storage.getItem('journal'), null);
+});
