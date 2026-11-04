@@ -283,3 +283,34 @@ PR #7 remains draft/unmerged until the release gates above are satisfied.
 5. Keep Android WorkManager and full-exit Windows background sync marked unimplemented until separately designed and verified.
 
 Do not merge PR #7 or label the release production-ready until the remaining signing and physical-device gates are passed.
+
+
+## Latest verified CI checkpoint — 2026-11-04 (Run #714)
+
+- Source commit: `ae7942f6fe7fe45b366f6a575e5b591b5d4b95a2`.
+- GitHub Actions run #714 (run ID `41794777782`) completed successfully: https://github.com/kamalgharami-netizen/SRK-Case-Manager/actions/runs/41794777782
+- Android APK job, Windows EXE job, and build-status report job all completed successfully.
+- The Android job passed TypeScript checks, all 25 serial test files, web build, Capacitor sync, native instrumentation-test compilation, and Android API 34 emulator instrumentation. The instrumentation suite reported **6 tests, 0 failures**.
+- Signed release APK packaging and `apksigner verify --verbose` succeeded. Windows installer packaging and artifact upload also succeeded.
+- Artifacts (available from the Actions run page; retention is controlled by GitHub):
+  - Android APK artifact ID: `13305712879` (about 4.3 MB).
+  - Windows EXE artifact ID: `13304967393` (about 114.3 MB).
+  - Android instrumentation reports artifact ID: `13305891834`.
+- This confirms CI build, packaging, and emulator instrumentation only. It does not verify physical-device OAuth/Picker or a real Windows↔Android Drive round trip.
+
+### Owner decision — signing-key rotation deferred during direct-APK testing
+
+- The owner confirmed that the app has been installed directly by APK and is intended for Google Play publication later.
+- Do not rotate the Android signing key during the current testing phase. Keep the existing CI signing configuration unchanged so existing direct-APK test installations are not unexpectedly blocked from normal updates.
+- The previously committed keystore remains exposed in Git history. This is a known production-release security issue, not a reason to disrupt current test installations now.
+- Before the first Google Play production release, establish the intended Play App Signing/upload-key arrangement, rotate or replace the compromised key as appropriate, update the Android OAuth SHA-1 registration to the certificate actually used by the installed app, and verify the final release identity. Do not distribute a production APK until this is resolved.
+
+### Work still outstanding
+
+1. Physical Android Google sign-in, folder Picker, native-store migration persistence and recovery checks.
+2. Physical Windows OAuth/Picker checks.
+3. Actual Windows→Android and Android→Windows Drive round trips, including conflicts, deletions, pagination, offline retry, restart/recovery, account/folder mismatch and device revocation.
+4. Android WorkManager remains unimplemented. Do not add a worker until shared native sync state, cross-process locking, and a supported credential-renewal path are implemented and tested.
+5. Windows retry remains limited to the running application; full-exit background sync is not implemented.
+
+PR #7 remains Draft and unmerged. CI success must not be presented as proof of production readiness.
