@@ -48,6 +48,11 @@ export async function pushPendingChangesAsync<T>(
       parentId: options.folderId,
       name,
     });
+    if (existing.files.length > 1) {
+      throw new Error(
+        `Multiple Drive files exist for change "${change.changeId}". The local change was kept pending because the remote state is ambiguous.`,
+      );
+    }
     if (existing.files.length > 0) {
       const remote = await dependencies.downloadJson({
         accessToken: options.accessToken,
