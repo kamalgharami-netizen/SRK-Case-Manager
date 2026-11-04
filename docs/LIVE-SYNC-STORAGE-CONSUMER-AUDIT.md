@@ -3,48 +3,60 @@
 Date: 2026-11-04
 Branch: `feature/google-drive-two-way-sync`
 
-## Result
+## Current implementation status
 
-The Android encrypted SQLite sync-state adapter exists, but it is **not yet connected to the live Google Drive sync path**. The current live path still reads and writes sync metadata through synchronous `localStorage` APIs. Enabling the native adapter only in the runner would split one sync cycle across two stores and is therefore unsafe.
+The live application entry points now use the asynchronous Google Drive sync path and a shared platform storage initializer:
 
-This audit records the concrete consumers that must move together. It does not change runtime behavior.
+- `src/App.tsx` automatic foreground sync calls `runGoogleDriveSyncCycleAsync`.
+- `src/components/BackupModal.tsx` manual Sync Now, selected-folder read/write/clear, sync counts, staged apply, and conflict actions use the async repositories.
+- `src/context/AppContext.tsx` local change capture uses the same ready storage and an async journal; staged apply and conflict resolution are asynchronous.
+- `src/services/readySyncStateStorage.ts` runs the Android legacy metadata migration before returning the native adapter. A failed migration rejects initialization; there is no Android localStorage fallback.
+- `src/services/googleDriveSyncRunner.ts` injects one store into device ID, journal, inbox, folder, cursor, and last-success operations.
+- The Android native encrypted SQLite adapter remains separate from the main case database. The main business database remains localStorage-backed.
 
-## Confirmed consumers
+The prior synchronous runner/repositories remain in the code for compatibility and tests, but current app call sites were switched to the async runner.
 
-| Area | Current synchronous access | Required change |
+## Consumer cutover
+
+| Area | Current implementation | Verification still required |
 |---|---|---|
-| Outbox and conflict journal | `SyncJournal` in `src/services/syncJournal.ts` | Introduce async repository methods over `AsyncSyncStateStorage`; preserve validation, idempotent enqueue, explicit acknowledgements, and conflict-resolution ordering. |
-| Remote inbox | `SyncInbox` in `src/services/googleDriveSyncInbox.ts` | Async reads/writes for staged changes and seen IDs; preserve write-before-ack ordering. |
-| Pull and push | `pullRemoteChanges`, `pushPendingChanges`, `syncGoogleDriveNow` | Await every repository operation; never advance a Drive page cursor or acknowledge an outbox item before durable storage confirms success. |
-| Sync runner | `src/services/googleDriveSyncRunner.ts` | Initialize one platform store, run Android migration before any repository read, then inject that same store into all sync consumers. |
-| Selected folder | `src/services/googleDriveSelectedFolder.ts` | Replace direct `localStorage` calls with the injected storage; selection, clearing, and reading must use the same store. |
-| Device identity / registry | `src/services/googleDriveDeviceRegistry.ts` | Replace the `Storage` dependency with the async store and await device-ID persistence before Drive registration. |
-| Company change capture | `src/context/AppContext.tsx` company-change effect | Queue tracked changes asynchronously without blocking ordinary case edits; serialize writes and surface recoverable sync-state errors. |
-| Apply staged changes | `src/context/AppContext.tsx` + `applyStagedInboxChanges.ts` | Make the action async; persist approved company data first, then acknowledge inbox IDs in the same injected store. |
-| Conflict resolution | `src/context/AppContext.tsx` | Make the action async; persist selected live data before queueing the resolution envelope and removing the conflict. |
-| UI callers | Context consumers of `applyStagedSyncChanges` and `resolveSyncConflict` | Await the new Promise results and prevent duplicate submissions while an action is running. |
+| Outbox and conflicts | `AsyncSyncJournal` over injected `AsyncSyncStateStorage`; atomic `enqueueMany` for AppContext snapshot batches | CI test run for latest commit; crash/restart testing on physical devices |
+| Remote inbox | `AsyncSyncInbox` over the same injected store | CI test run for latest commit; native persistence/restart testing |
+| Pull and push | Async transport and coordinator; cursor is persisted after pull processing | Real Drive roundtrip and pagination/failure injection |
+| Sync runner | App startup/resume and manual Sync Now call `runGoogleDriveSyncCycleAsync` | Real Google OAuth/Picker and Windows↔Android tests |
+| Selected folder | Async get/save/clear using ready platform store | Android upgrade migration and folder persistence test |
+| Device identity | Async ID generated from the same store and passed into Drive registry | Physical reinstall/restore and registry concurrency tests |
+| Company change capture | Serialized AppContext queue; complete snapshot batch persisted through atomic `enqueueMany` | Test rapid edits, process termination, and quota/native write failures |
+| Apply staged changes | Async inbox; approved company data persists before inbox acknowledgement | Physical crash between database persistence and acknowledgement |
+| Conflict resolution | Async journal; remote value persists before resolution envelope/ack sequence | Physical crash/retry and competing-device conflict tests |
+| UI callers | Manual sync, status refresh, staged apply, and conflict controls use async APIs | Manual UI verification on Windows and Android |
 
-## Non-negotiable safety constraints
+## Safety constraints retained
 
-1. Android migration must complete with `migrated` or `already-migrated` before the first sync-state read. A retry/error result blocks sync.
-2. One injected store instance must be used for outbox, inbox, conflicts, selected folder, device ID, page cursor, and last-success metadata for the whole cycle.
-3. No Android fallback to localStorage after a native read/write error.
-4. The main case database key `srk_case_manager_v5` and OAuth credentials remain outside this migration.
-5. A failed durable write must not acknowledge a remote inbox item, acknowledge an outbound change, or advance the Drive pagination cursor.
-6. Foreground sync cycles and conflict/apply operations must not race on the same sync state.
-7. Windows and browser builds continue using the localStorage-backed async adapter.
-8. Do not enable Android WorkManager until this cutover and its physical-device recovery tests pass.
+1. Android migration must complete with `migrated` or `already-migrated` before the ready native adapter is returned. Errors/retry-required results block sync.
+2. Outbox, inbox, conflicts, selected folder, device ID, page cursor, and last-success metadata use the same injected store during an async sync cycle.
+3. Android native storage has no silent localStorage fallback.
+4. The main case database key `srk_case_manager_v5` and OAuth credentials are excluded from the sync-metadata migration.
+5. Outbound acknowledgements and remote cursor advancement occur only after the corresponding durable operations complete.
+6. AppContext snapshot batches are written as one journal update, avoiding partial batches being re-created with new change IDs.
+7. Remote delete tombstones are idempotent when retried after the target record has already been removed.
+8. Windows/browser use the localStorage-backed async adapter.
+9. Android WorkManager/background sync is not enabled.
 
-## Implementation order
+## Known limitations and open release gates
 
-1. Add asynchronous journal and inbox repositories with parity tests against the existing synchronous behavior.
-2. Convert pull/push/coordinator APIs to await those repositories and add failure-ordering tests.
-3. Convert selected-folder and device-ID consumers.
-4. Convert AppContext change capture, apply, and conflict-resolution actions plus their UI callers.
-5. Wire the Android migration gate before creating any repository.
-6. Run typecheck, unit tests, Windows package build, Android APK build, and instrumentation tests.
-7. Only then perform physical Android upgrade/restart/Keystore-recovery and real Windows-to-Android / Android-to-Windows Drive roundtrip tests.
+- The storage adapter serializes read/modify/write operations per key **within one adapter instance**. It is not a cross-process lock or database compare-and-swap primitive. Do not describe it as globally atomic across app processes.
+- Google Drive device-registry updates are best-effort because Drive does not provide compare-and-swap; the ten-device limit is not race-free under simultaneous registrations.
+- Android refresh tokens are not stored for silent background renewal; background WorkManager remains out of scope.
+- The main business database still uses the existing localStorage persistence path; this cutover only unifies sync metadata.
+- Physical Android upgrade/restart/Keystore-recovery tests, real Google sign-in and Picker tests, and actual Windows-to-Android / Android-to-Windows roundtrip tests remain outstanding.
+- A signing keystore previously exposed in Git history must be rotated and the Google OAuth Android SHA-1 registration updated before release.
 
-## Current release status
+## CI status at audit time
 
-The existing API 34 CI run previously verified Windows packaging, Android APK packaging, and Android instrumentation tests. Those CI results do not prove live native-store integration or real Google Drive interoperability. The pull request must remain draft/unmerged until the implementation and physical-device release gates above are satisfied. The historical signing-key exposure also remains a release blocker until the key is rotated and the Google OAuth Android SHA-1 registration is updated.
+- Earlier CI run `41771448060` completed Windows EXE Build successfully and passed TypeScript check, web build, Capacitor sync, and native instrumentation-test compilation; the Android emulator instrumentation step was still running at the last inspection.
+- CI run `41775632340` failed at TypeScript check because one `App.tsx` automatic-sync call still referenced the old runner. That call was corrected in commit `5def1b56aaca22d4bcd5a6e830706ae7a691fea7`.
+- CI run `41776711580` passed TypeScript check, sync-journal safety tests, web build, Capacitor sync, and native instrumentation-test compilation; Windows EXE build succeeded. Android emulator instrumentation was still running at the last inspection.
+- Later commits added atomic snapshot batch enqueue and idempotent tombstone retry tests. Their CI run is `41777026470` and must be checked before treating those additions as verified.
+
+Keep PR #7 draft/unmerged until the latest CI is green and physical-device / real Drive release gates are completed.
