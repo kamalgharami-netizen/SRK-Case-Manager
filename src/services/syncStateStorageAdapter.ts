@@ -39,7 +39,9 @@ function validateKey(key: string): void {
 
 /** Async wrapper for browser/Windows localStorage; it preserves the existing key layout. */
 export function createLocalSyncStateStorage(storage: Storage): AsyncSyncStateStorage {
-  return {
+  // Serialize the full read/modify/write sequence just as we do for the native
+  // bridge. This also makes direct adapter consumers safe, not only platform users.
+  return createSerializedSyncStateStorage({
     async getItem(key) {
       validateKey(key);
       return storage.getItem(key);
@@ -65,7 +67,7 @@ export function createLocalSyncStateStorage(storage: Storage): AsyncSyncStateSto
       else storage.setItem(key, next.value);
       return next.result;
     },
-  };
+  });
 }
 
 /**
@@ -153,7 +155,7 @@ export function createPlatformSyncStateStorage(options: {
   }
   const storage = options.localStorage ?? (typeof localStorage !== 'undefined' ? localStorage : undefined);
   if (!storage) throw new Error('Local sync-state storage is unavailable on this platform.');
-  return createSerializedSyncStateStorage(createLocalSyncStateStorage(storage));
+  return createLocalSyncStateStorage(storage);
 }
 
 
