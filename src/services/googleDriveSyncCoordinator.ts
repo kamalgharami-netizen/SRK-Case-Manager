@@ -88,6 +88,7 @@ export async function syncGoogleDriveNow<T>(
   if (options.signal?.aborted) throw new Error('Google Drive sync was cancelled.');
 
   await options.onPullCheckpoint?.(pulled.nextPageToken);
+  if (options.signal?.aborted) throw new Error('Google Drive sync was cancelled.');
 
   const pushed = await pushPendingChanges(
     journal,
