@@ -314,3 +314,31 @@ Do not merge PR #7 or label the release production-ready until the remaining sig
 5. Windows retry remains limited to the running application; full-exit background sync is not implemented.
 
 PR #7 remains Draft and unmerged. CI success must not be presented as proof of production readiness.
+
+## Latest verified CI checkpoint — 2026-11-04 (Run #718)
+
+- Source commit: `d905fb26b30d709e21725ac2a69b0552a5bb88c8` (current PR #7 head at verification time).
+- GitHub Actions run #718 (run ID `41799664993`) completed with conclusion `success`: https://github.com/kamalgharami-netizen/SRK-Case-Manager/actions/runs/41799664993
+- All three jobs succeeded: Android APK, Windows EXE, and build-status report.
+- Android API 34 instrumentation runner reported **6 tests, 0 failed, 0 ignored**.
+- Android Release APK packaging completed and `apksigner verify --verbose` succeeded.
+- Windows installer packaging and artifact upload completed successfully.
+- Artifacts:
+  - Android APK: https://github.com/kamalgharami-netizen/SRK-Case-Manager/actions/runs/41799664993/artifacts/13308418481 (about 4.3 MB).
+  - Windows EXE installer: https://github.com/kamalgharami-netizen/SRK-Case-Manager/actions/runs/41799664993/artifacts/13307612668 (about 114.3 MB).
+  - Android instrumentation reports: https://github.com/kamalgharami-netizen/SRK-Case-Manager/actions/runs/41799664993/artifacts/13309216040.
+- The Windows packaging log states that no code-signing certificate is configured, so Windows installer Authenticode signing was skipped. The installer build succeeding must not be described as a signed Windows release.
+- GitHub Actions emitted a non-blocking Node.js 20 deprecation warning for several `actions/*@v4` workflow dependencies. Review and upgrade compatible action versions in a separate CI-maintenance change; do not make unverified major-version substitutions.
+- Emulator instrumentation emitted Android keystore diagnostic warnings, but the test runner completed all 6 tests with no failures. This is emulator evidence only, not proof of physical Android Keystore persistence.
+- This run verifies build, packaging, APK signature verification and emulator instrumentation for the exact source commit. It does not verify physical-device OAuth/Picker or a real Windows↔Android Drive round trip.
+
+### Current next actions
+
+1. Use the APK and Windows installer artifacts from this same run/commit for controlled physical-device acceptance testing.
+2. Complete Windows and Android Google sign-in/Picker, then both directions of record sync, conflict resolution, deletion, offline retry and restart/recovery using disposable test records.
+3. Keep the PR Draft and unmerged until physical-device checks pass.
+4. Preserve the owner's decision to defer signing-key rotation during direct-APK testing. Before Google Play production release, resolve the historical exposed-key issue and verify the final Play App Signing/upload-key and Android OAuth SHA-1 arrangement.
+5. Windows installer code signing is not configured in this run; decide and configure a trusted Windows signing certificate before distributing a production installer.
+
+Android WorkManager and full-exit Windows background sync remain unimplemented. The Drive-only 10-device registry remains best-effort under simultaneous registrations. Do not claim continuous background sync or strict race-free device-cap enforcement.
+
