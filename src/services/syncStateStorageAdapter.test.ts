@@ -332,3 +332,17 @@ test('native adapter serializes concurrent atomic updates on one adapter instanc
   ));
   assert.equal(native.values.get('journal'), '30');
 });
+
+
+test('direct local adapter serializes concurrent atomic updates', async () => {
+  const local = new MemoryStorage();
+  local.setItem('journal', '0');
+  const storage = createLocalSyncStateStorage(local as unknown as Storage);
+  await Promise.all(Array.from({ length: 40 }, () =>
+    storage.updateItem('journal', current => ({
+      value: String(Number(current ?? '0') + 1),
+      result: true,
+    }))
+  ));
+  assert.equal(await storage.getItem('journal'), '40');
+});
