@@ -4,6 +4,7 @@ import {
   createLocalSyncStateStorage,
   createNativeSyncStateStorage,
   createPlatformSyncStateStorage,
+  createSerializedSyncStateStorage,
   type NativeSyncStatePlugin,
 } from './syncStateStorageAdapter';
 import type { NativeSyncStateEntry } from '@srk/capacitor-sync-state';
@@ -216,10 +217,9 @@ test('platform storage serializes same-key writes and reads in call order', asyn
       values.delete(key);
     },
   };
-  const storage = createPlatformSyncStateStorage({
-    platform: 'web',
-    localStorage: underlying as unknown as Storage,
-  });
+  // Exercise the async queue directly. Browser localStorage is synchronous;
+  // this fake intentionally models a native/remote async store.
+  const storage = createSerializedSyncStateStorage(underlying);
 
   const first = storage.setItem('journal', 'first');
   const second = storage.setItem('journal', 'second');
@@ -250,10 +250,9 @@ test('a failed serialized write does not block later operations for the same key
     },
     async removeItem(key: string) { values.delete(key); },
   };
-  const storage = createPlatformSyncStateStorage({
-    platform: 'web',
-    localStorage: underlying as unknown as Storage,
-  });
+  // Exercise the async queue directly. Browser localStorage is synchronous;
+  // this fake intentionally models a native/remote async store.
+  const storage = createSerializedSyncStateStorage(underlying);
 
   // Await the first failure fully before queuing the retry. This directly
   // verifies that a rejected operation does not poison the per-key queue.
