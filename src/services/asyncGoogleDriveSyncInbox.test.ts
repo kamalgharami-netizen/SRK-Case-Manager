@@ -108,6 +108,11 @@ test('async coordinator checkpoints durable pull before a failed push', async ()
   const storage = new MemoryStorage();
   const journal = new AsyncSyncJournal<unknown>(storage);
   const inbox = new AsyncSyncInbox<unknown>(storage);
+  await journal.enqueue({
+    schemaVersion: 1, deviceId: 'local_device_123456', changeId: 'local-checkpoint-async',
+    recordId: 'cases:local-case', companyId: 'company-1', updatedAt: 100,
+    deleted: false, payload: { id: 'local-case' },
+  });
   const remoteChange = remote('remote-checkpoint-async');
   let checkpoint: string | undefined;
   await assert.rejects(
