@@ -28,3 +28,22 @@ test('replaces a malformed legacy device ID with a secure ID', () => {
   assert.match(id, /^srk_[a-f0-9]{32}$/);
   assert.notEqual(id, 'device_1234567890123456');
 });
+
+
+test('async device identifier is stable across calls and stored through the adapter', async () => {
+  const { getOrCreateSyncDeviceIdAsync } = await import('./driveSyncProtocol');
+  const values = new Map<string, string>();
+  const storage = {
+    async updateItem<T>(key: string, updater: (current: string | null) => { value: string | null; result: T }): Promise<T> {
+      const next = updater(values.get(key) ?? null);
+      if (next.value === null) values.delete(key);
+      else values.set(key, next.value);
+      return next.result;
+    },
+  };
+  const first = await getOrCreateSyncDeviceIdAsync(storage);
+  const second = await getOrCreateSyncDeviceIdAsync(storage);
+  assert.match(first, /^srk_[a-f0-9]{32}$/);
+  assert.equal(second, first);
+  assert.equal(values.get('srk_sync_device_id_v1'), first);
+});
