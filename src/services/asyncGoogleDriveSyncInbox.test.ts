@@ -104,6 +104,37 @@ test('async coordinator performs pull before push and keeps remote data staged',
   assert.equal(result.remainingInbox, 0);
 });
 
+test('async coordinator checkpoints durable pull before a failed push', async () => {
+  const storage = new MemoryStorage();
+  const journal = new AsyncSyncJournal<unknown>(storage);
+  const inbox = new AsyncSyncInbox<unknown>(storage);
+  const remoteChange = remote('remote-checkpoint-async');
+  let checkpoint: string | undefined;
+  await assert.rejects(
+    syncGoogleDriveNowAsync(journal, inbox, {
+      accessToken: 'token',
+      folderId: 'folder-1',
+      onPullCheckpoint: nextPageToken => { checkpoint = nextPageToken; },
+    }, {
+      pull: {
+        listFiles: async () => ({
+          files: [{ id: 'file-checkpoint', name: 'srk-change-remote-checkpoint-async.json', mimeType: 'application/json' }],
+          nextPageToken: 'page-after-checkpoint',
+        }),
+        downloadJson: async () => remoteChange,
+      },
+      push: {
+        listFiles: async () => ({ files: [] }),
+        downloadJson: async () => null,
+        uploadJson: async () => { throw new Error('temporary async push failure'); },
+      },
+    }),
+    /temporary async push failure/
+  );
+  assert.equal(checkpoint, 'page-after-checkpoint');
+  assert.deepEqual(await inbox.getAll(), [remoteChange]);
+});
+
 test('async coordinator preserves staged inbox and local outbox across a failed push and retry', async () => {
   const storage = new MemoryStorage();
   const firstJournal = new AsyncSyncJournal<unknown>(storage);
