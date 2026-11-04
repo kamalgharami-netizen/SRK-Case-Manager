@@ -71,3 +71,20 @@ test('applies the custom chain deed template from a remote company profile', () 
   assert.equal(result.applied, 1);
   assert.equal(result.companies[0].chainSampleTemplate, 'Updated template');
 });
+
+
+test('treats an already-absent collection record as an applied tombstone on retry', () => {
+  const initial = [{ id: 'company1', cases: [] }];
+  const result = applySyncEnvelopes(initial, [envelope('cases:already_deleted', null, true)]);
+  assert.equal(result.applied, 1);
+  assert.deepEqual(result.appliedChangeIds, ['change_cases:already_deleted']);
+  assert.equal(result.skipped, 0);
+});
+
+test('treats an already-absent diary entry as an applied tombstone on retry', () => {
+  const initial = [{ id: 'company1', diaryData: { case1: [] } }];
+  const result = applySyncEnvelopes(initial, [envelope('diary:already_deleted', null, true)]);
+  assert.equal(result.applied, 1);
+  assert.deepEqual(result.appliedChangeIds, ['change_diary:already_deleted']);
+  assert.equal(result.skipped, 0);
+});
