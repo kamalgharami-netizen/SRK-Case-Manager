@@ -29,7 +29,9 @@ export interface RegisteredSyncDeviceResult {
 export async function registerCurrentGoogleDriveDevice(options: {
   accessToken: string;
   folderId: string;
-  storage: Pick<Storage, 'getItem' | 'setItem'>;
+  storage?: Pick<Storage, 'getItem' | 'setItem'>;
+  /** Preloaded from the unified async sync-state adapter when using native storage. */
+  deviceId?: string;
 }): Promise<RegisteredSyncDeviceResult> {
   if (!options.accessToken?.trim()) throw new Error('Connect Google Drive before registering this device.');
   if (!options.folderId?.trim()) throw new Error('Select a Google Drive folder before registering this device.');
@@ -78,7 +80,10 @@ export async function registerCurrentGoogleDriveDevice(options: {
     };
   }
 
-  const deviceId = getOrCreateSyncDeviceId(options.storage);
+  const deviceId = options.deviceId ?? (options.storage
+    ? getOrCreateSyncDeviceId(options.storage)
+    : null);
+  if (!deviceId) throw new Error('A durable sync device ID is required before registering this device.');
   const platform = /android/i.test(navigator.userAgent) ? 'android'
     : (typeof window !== 'undefined' && Boolean(
         (window as Window & { electronAPI?: unknown }).electronAPI
