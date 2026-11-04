@@ -10,6 +10,7 @@ const testFiles = [
   'src/services/googleDriveSelectedFolder.test.ts',
   'src/services/companyChangeTracker.test.ts',
   'src/services/googleDriveSyncTransport.test.ts',
+  'src/services/asyncGoogleDriveSyncTransport.test.ts',
   'src/services/googleDriveSyncInbox.test.ts',
   'src/services/driveSyncProtocol.equalTimestamp.test.ts',
   'src/services/driveSyncProtocol.deviceId.test.ts',
