@@ -289,6 +289,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const previousSyncSnapshot = useRef<Company[]>(companies);
   const syncCaptureQueue = useRef<Promise<void>>(Promise.resolve());
   const skipNextSyncTracking = useRef(false);
+  const [syncCaptureError, setSyncCaptureError] = useState(false);
 
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(() => {
     try {
@@ -560,11 +561,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         // re-created with new change IDs if a later write fails.
         await journal.enqueueMany(envelopes);
         previousSyncSnapshot.current = companies;
+        setSyncCaptureError(false);
       })
       .catch(error => {
         // A sync-state failure must not block ordinary case management.
         // Keep the last successful snapshot so the next edit retries the diff.
         console.error('Could not record local changes for cloud sync:', error);
+        setSyncCaptureError(true);
       });
   }, [companies]);
   // Sync to localStorage
@@ -644,6 +647,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const hideToast = () => {
     setToast(null);
   };
+
+  useEffect(() => {
+    if (syncCaptureError) {
+      showToast(
+        'Cloud sync could not save a local change. Your case data remains local; check Sync Status and retry.',
+        'warning',
+        undefined,
+        6000,
+      );
+    }
+  }, [syncCaptureError]);
 
   const activeCompany = companies.find(c => c.id === activeCompanyId) || (companies.length > 0 ? companies[0] : null);
   const activeUser =
