@@ -7,6 +7,7 @@ const testFiles = [
   'src/services/googleOAuthSession.test.ts',
   'src/services/syncJournal.test.ts',
   'src/services/asyncSyncRepositories.test.ts',
+  'src/services/googleDriveSelectedFolder.test.ts',
   'src/services/companyChangeTracker.test.ts',
   'src/services/googleDriveSyncTransport.test.ts',
   'src/services/googleDriveSyncInbox.test.ts',
