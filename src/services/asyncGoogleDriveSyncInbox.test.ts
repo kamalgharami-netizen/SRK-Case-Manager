@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { AsyncSyncInbox, AsyncSyncJournal } from './asyncSyncRepositories';
 import { pullRemoteChangesAsync } from './asyncGoogleDriveSyncInbox';
 import { syncGoogleDriveNowAsync } from './asyncGoogleDriveSyncCoordinator';
+import type { AsyncSyncPushDependencies } from './asyncGoogleDriveSyncTransport';
 import type { AsyncSyncStateStorage } from './syncStateStorageAdapter';
 
 class MemoryStorage implements AsyncSyncStateStorage {
@@ -68,7 +69,7 @@ test('async coordinator performs pull before push and keeps remote data staged',
     },
     push: {
       listFiles: async () => { calls.push('push-check'); return { files: [] }; },
-      uploadJson: async options => {
+      uploadJson: async (options: Parameters<AsyncSyncPushDependencies['uploadJson']>[0]) => {
         calls.push('push-upload');
         return { id: 'uploaded', name: options.name, mimeType: 'application/json' };
       },
