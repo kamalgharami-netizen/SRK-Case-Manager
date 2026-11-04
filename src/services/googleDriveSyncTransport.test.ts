@@ -94,6 +94,28 @@ test('does not acknowledge an existing Drive file with a different change identi
   assert.equal(journal.getPendingCount(), 1);
 });
 
+
+test('does not acknowledge a change when duplicate Drive filenames exist', async () => {
+  const journal = new SyncJournal<unknown>(new MemoryStorage());
+  journal.enqueue(envelope('change-duplicate'));
+  let downloadCalls = 0;
+  await assert.rejects(
+    pushPendingChanges(journal, { accessToken: 'token', folderId: 'folder1' }, {
+      listFiles: async () => ({
+        files: [
+          { id: 'existing-a', name: 'srk-change-change-duplicate.json', mimeType: 'application/json' },
+          { id: 'existing-b', name: 'srk-change-change-duplicate.json', mimeType: 'application/json' },
+        ],
+      }),
+      downloadJson: async () => { downloadCalls += 1; return envelope('change-duplicate'); },
+      uploadJson: async () => ({ id: 'unused', name: 'unused', mimeType: 'application/json' }),
+    }),
+    /Multiple Drive files exist for change/,
+  );
+  assert.equal(downloadCalls, 0);
+  assert.equal(journal.getPendingCount(), 1);
+});
+
 test('keeps unacknowledged changes when a Drive upload fails', async () => {
   const journal = new SyncJournal<unknown>(new MemoryStorage());
   journal.enqueue(envelope('change1'));
