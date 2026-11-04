@@ -8,6 +8,9 @@ import { APP_VERSION, APP_BUILD_DATE, APP_RELEASE_NAME } from '../config/version
 import { autoMergeAllPreviousData, mergeCompanyLists, extractCompaniesFromPayload } from '../utils/dataMergeMigration';
 import { SyncJournal } from '../services/syncJournal';
 import { getOrCreateSyncDeviceId } from '../services/driveSyncProtocol';
+import { AsyncSyncJournal } from '../services/asyncSyncRepositories';
+import { getOrCreateSyncDeviceIdAsync } from '../services/driveSyncProtocol';
+import { getReadyPlatformSyncStateStorage } from '../services/readySyncStateStorage';
 import { collectCompanyChanges, createSyncEnvelopes, type TrackedCompany } from '../services/companyChangeTracker';
 import { SyncInbox } from '../services/googleDriveSyncInbox';
 import { applyStagedInboxChanges } from '../services/applyStagedInboxChanges';
@@ -532,31 +535,47 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const [toast, setToast] = useState<ToastState | null>(null);
 
-  // Record local record-level changes in the durable outbox. This does not
-  // contact Google Drive or apply remote data; offline app state remains primary.
+  // Record local changes through the same verified platform store used by the
+  // async Drive runner. On Android, migration must finish before the first write.
   useEffect(() => {
     if (skipNextSyncTracking.current) {
       skipNextSyncTracking.current = false;
       previousSyncSnapshot.current = companies;
       return;
     }
-    try {
-      const previous = previousSyncSnapshot.current as unknown as TrackedCompany[];
-      const current = companies as unknown as TrackedCompany[];
-      const changes = collectCompanyChanges(previous, current);
-      if (changes.length > 0) {
-        const deviceId = getOrCreateSyncDeviceId(localStorage);
-        const journal = new SyncJournal<unknown>(localStorage);
-        const envelopes = createSyncEnvelopes(changes, deviceId);
-        envelopes.forEach(envelope => journal.enqueue(envelope));
-      }
-      previousSyncSnapshot.current = companies;
-    } catch (error) {
-      // A sync-journal failure must never block normal local case management.
-      console.error('Could not record local changes for cloud sync:', error);
-    }
-  }, [companies]);
 
+    let cancelled = false;
+    void (async () => {
+      try {
+        const previous = previousSyncSnapshot.current as unknown as TrackedCompany[];
+        const current = companies as unknown as TrackedCompany[];
+        const changes = collectCompanyChanges(previous, current);
+        if (changes.length === 0) {
+          previousSyncSnapshot.current = companies;
+          return;
+        }
+
+        const storage = await getReadyPlatformSyncStateStorage();
+        if (cancelled) return;
+        const deviceId = await getOrCreateSyncDeviceIdAsync(storage);
+        const journal = new AsyncSyncJournal<unknown>(storage);
+        const envelopes = createSyncEnvelopes(changes, deviceId);
+        for (const envelope of envelopes) {
+          if (cancelled) return;
+          await journal.enqueue(envelope);
+        }
+        previousSyncSnapshot.current = companies;
+      } catch (error) {
+        // A sync-state failure must not block normal local case management.
+        // Keep the previous snapshot so the next render can retry the full diff.
+        console.error('Could not record local changes for cloud sync:', error);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [companies]);
   // Sync to localStorage
   useEffect(() => {
     // Do not overwrite unreadable existing data with an empty first-render state.
