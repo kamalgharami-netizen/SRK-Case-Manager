@@ -87,9 +87,10 @@ export function runGoogleDriveSyncCycle(
 
 
 /**
- * Unified async-storage sync path. It is intentionally not wired to automatic
- * startup/resume until the Android metadata migration and AppContext consumers
- * have completed their cutover gates. Android never falls back to localStorage.
+ * Unified async-storage sync path used by automatic foreground sync and the
+ * Backup UI's manual Sync Now action. Android migration is completed by the
+ * ready-storage gate before any sync metadata is read; Android never falls
+ * back to localStorage after native storage initialization fails.
  */
 export function runGoogleDriveSyncCycleAsync(
   options: GoogleDriveSyncCycleOptions & { storage?: AsyncSyncStateStorage } = {},
