@@ -225,3 +225,35 @@ The following items supersede earlier notes above that described these component
 - Physical Google sign-in, Picker, account binding, device listing/revocation, and cross-device round-trip tests remain pending. No production-ready claim is made.
 
 - Updated `npm test` to use `scripts/run-tests-serial.mjs`: each test file is launched as a separate Node test process in a fixed order, and the sequence stops immediately on the first failure. This is the configured verification order for the next CI run.
+
+
+---
+
+## Updated implementation status — 2026-11-04
+
+The historical status above describes the earlier staged milestones. The following subsequent work has since been added on `feature/google-drive-two-way-sync`:
+
+- Async journal and inbox repositories, async Drive pull/push coordinator, and async selected-folder persistence.
+- `getReadyPlatformSyncStateStorage` gates Android sync-state use on successful legacy metadata migration to encrypted native SQLite; migration errors stop sync rather than falling back to localStorage.
+- Automatic foreground sync in `src/App.tsx` and manual Sync Now in `src/components/BackupModal.tsx` use `runGoogleDriveSyncCycleAsync`.
+- AppContext local change capture uses the async journal. Snapshot batches are persisted with one `enqueueMany` update; a failed journal write produces a recoverable warning and does not advance the captured snapshot.
+- Staged remote changes and conflict actions use async repositories. Approved company data is persisted before inbox acknowledgement.
+- Remote deletion tombstones are idempotent when a retry finds the target already absent.
+- The same in-process sync-cycle lock is shared by legacy and async runner entry points.
+- The serial test script runs 25 test files, including async repository, async transport, async inbox, Android migration, native storage adapter, staged apply, and tombstone tests.
+
+### Current CI verification snapshot
+
+- Run #702 (`41777306522`): Windows EXE job completed successfully. Android APK job reached the signed release APK build step; signature verification and artifact upload had not completed at the last inspection.
+- Later commits after run #702 changed only sync-runner documentation and must receive a fresh CI run before those exact commits are considered verified.
+- A successful CI package build is not proof of actual Google Drive sync between physical Windows and Android devices.
+
+### Remaining release gates
+
+1. Verify the latest CI run including Android instrumentation tests, signed APK signature verification, and artifact upload.
+2. Test Google sign-in and Drive folder Picker on a physical Windows installation and Android device.
+3. Test actual Windows→Android and Android→Windows changes, conflicts, deletions, pagination, offline retry, process termination, restart, and migration recovery.
+4. Rotate the signing key previously exposed in Git history and update the Android OAuth SHA-1 registration before production release.
+5. Do not enable Android WorkManager until persistent-store and restart/recovery tests pass.
+
+PR #7 remains draft/unmerged until the release gates above are satisfied.
