@@ -318,3 +318,17 @@ test('local adapter supports atomic single-key updates and removal', async () =>
   await storage.updateItem('journal', () => ({ value: null, result: undefined }));
   assert.equal(await storage.getItem('journal'), null);
 });
+
+
+test('native adapter serializes concurrent atomic updates on one adapter instance', async () => {
+  const native = new MemoryNativeStore();
+  native.values.set('journal', '0');
+  const storage = createNativeSyncStateStorage(native);
+  await Promise.all(Array.from({ length: 30 }, () =>
+    storage.updateItem('journal', current => ({
+      value: String(Number(current ?? '0') + 1),
+      result: true,
+    }))
+  ));
+  assert.equal(native.values.get('journal'), '30');
+});
