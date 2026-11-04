@@ -6,7 +6,6 @@ import { AppLanguage, translations, Translations } from '../data/translations';
 import { INITIAL_SAMPLE_DRAFTS } from '../data/sampleDraftTemplates';
 import { APP_VERSION, APP_BUILD_DATE, APP_RELEASE_NAME } from '../config/version';
 import { autoMergeAllPreviousData, mergeCompanyLists, extractCompaniesFromPayload } from '../utils/dataMergeMigration';
-import { AsyncSyncJournal } from '../services/asyncSyncRepositories';
 import { getOrCreateSyncDeviceIdAsync } from '../services/driveSyncProtocol';
 import { getReadyPlatformSyncStateStorage } from '../services/readySyncStateStorage';
 import { collectCompanyChanges, createSyncEnvelopes, type TrackedCompany } from '../services/companyChangeTracker';
