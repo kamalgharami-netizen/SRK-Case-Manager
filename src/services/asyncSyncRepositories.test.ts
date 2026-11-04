@@ -90,3 +90,24 @@ test('async inbox accepts version-1 inboxes created before seenChangeIds existed
   assert.equal(await inbox.hasSeen(remote.changeId), true);
   assert.equal(await inbox.add([remote]), 0);
 });
+
+
+test('async journal atomically enqueues a snapshot batch and deduplicates IDs', async () => {
+  const storage = new MemoryAsyncStorage();
+  const journal = new AsyncSyncJournal<{ title: string }>(storage);
+  const first = envelope('batch_1');
+  const second = { ...envelope('batch_2'), recordId: 'case_2' };
+  assert.equal(await journal.enqueueMany([first, second, first]), 2);
+  assert.equal(await journal.enqueueMany([first, second]), 0);
+  assert.equal(await journal.getPendingCount(), 2);
+  assert.deepEqual(await journal.getPending(), [first, second]);
+});
+
+test('async journal validates an entire batch before writing any entry', async () => {
+  const storage = new MemoryAsyncStorage();
+  const journal = new AsyncSyncJournal<{ title: string }>(storage);
+  const first = envelope('valid_batch_entry');
+  const invalid = { ...envelope('invalid_batch_entry'), updatedAt: Number.NaN };
+  await assert.rejects(journal.enqueueMany([first, invalid]), /invalid|envelope/i);
+  assert.equal(await journal.getPendingCount(), 0);
+});
