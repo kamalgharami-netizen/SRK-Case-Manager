@@ -121,6 +121,7 @@ test('persists the durable pull checkpoint before a failed push', async () => {
     syncGoogleDriveNow(journal, inbox, {
       accessToken: 'test-token',
       folderId: 'folder-1',
+      pullMaxPages: 1,
       onPullCheckpoint: nextPageToken => { checkpoint = nextPageToken; },
     }, {
       pull: {
