@@ -105,7 +105,7 @@ test('async coordinator preserves staged inbox and local outbox across a failed 
     push: {
       listFiles: async () => ({ files: [] }),
       downloadJson: async () => null,
-      uploadJson: async options => {
+      uploadJson: async (options: Parameters<AsyncSyncPushDependencies['uploadJson']>[0]) => {
         if (failUpload) throw new Error('temporary network interruption');
         return { id: 'uploaded-after-retry', name: options.name, mimeType: 'application/json' };
       },
