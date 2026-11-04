@@ -21,7 +21,7 @@ import { CashBankRegister } from './components/CashBankRegister';
 import { FinancialReports } from './components/FinancialReports';
 import { CaseDetailModal } from './components/CaseDetailModal';
 import { BackupModal } from './components/BackupModal';
-import { runGoogleDriveSyncCycle } from './services/googleDriveSyncRunner';
+import { runGoogleDriveSyncCycleAsync } from './services/googleDriveSyncRunner';
 import { ViewingOptionsModal } from './components/ViewingOptionsModal';
 import { ChainDeedModal } from './components/ChainDeedModal';
 import { BackupPathModal } from './components/BackupPathModal';
@@ -95,7 +95,7 @@ const MainAppContent: React.FC = () => {
       if (Date.now() - lastAttemptAt < 60_000) return;
       lastAttemptAt = Date.now();
       try {
-        await runGoogleDriveSyncCycle({ allowAndroidReauthorization: false });
+        await runGoogleDriveSyncCycleAsync({ allowAndroidReauthorization: false });
       } catch (error) {
         // Keep the app usable offline; the Sync Status screen and manual Sync Now
         // provide the detailed error and retry path.
