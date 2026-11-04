@@ -1401,9 +1401,9 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                 <button
                   type="button"
                   disabled={syncCounts.staged === 0 || syncCounts.error}
-                  onClick={() => {
+                  onClick={async () => {
                     if (!window.confirm(`Apply all eligible ${syncCounts.staged} staged remote change(s) to this device? This applies eligible changes in one operation; it does not show a per-record preview. Conflicting or unsupported changes may remain for manual review. This action updates local records and cannot be automatically undone. Please ensure you have a current backup.`)) return;
-                    const result = applyStagedSyncChanges();
+                    const result = await applyStagedSyncChanges();
                     if (result) refreshSyncCounts();
                   }}
                   className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold"
@@ -1454,18 +1454,18 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                           <div className="text-xs font-bold text-sky-700 dark:text-sky-300">LOCAL VERSION</div>
                           <div className="text-[10px] text-slate-500 break-all">Device: {conflict.local.deviceId} · {new Date(conflict.local.updatedAt).toLocaleString()}</div>
                           <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-slate-100 dark:bg-slate-900 p-2 text-[10px]">{JSON.stringify(conflict.local.deleted ? '[Record deleted]' : conflict.local.payload, null, 2)?.slice(0, 1600)}</pre>
-                          <button type="button" onClick={() => {
+                          <button type="button" onClick={async () => {
                             if (!window.confirm('Keep the LOCAL version for this record and queue it for synchronisation?')) return;
-                            if (resolveSyncConflict(conflict, 'local')) refreshSyncCounts();
+                            if (await resolveSyncConflict(conflict, 'local')) refreshSyncCounts();
                           }} className="px-3 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold">Keep Local Version</button>
                         </div>
                         <div className="min-w-0 space-y-1">
                           <div className="text-xs font-bold text-emerald-700 dark:text-emerald-300">REMOTE VERSION</div>
                           <div className="text-[10px] text-slate-500 break-all">Device: {conflict.remote.deviceId} · {new Date(conflict.remote.updatedAt).toLocaleString()}</div>
                           <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-slate-100 dark:bg-slate-900 p-2 text-[10px]">{JSON.stringify(conflict.remote.deleted ? '[Record deleted]' : conflict.remote.payload, null, 2)?.slice(0, 1600)}</pre>
-                          <button type="button" onClick={() => {
+                          <button type="button" onClick={async () => {
                             if (!window.confirm('Use the REMOTE version on this device and queue it for synchronisation? This will update the local record.')) return;
-                            if (resolveSyncConflict(conflict, 'remote')) refreshSyncCounts();
+                            if (await resolveSyncConflict(conflict, 'remote')) refreshSyncCounts();
                           }} className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold">Use Remote Version</button>
                         </div>
                       </div>
