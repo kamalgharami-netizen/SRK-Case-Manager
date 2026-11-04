@@ -54,6 +54,28 @@ test('async transport verifies an existing remote file before acknowledging', as
   assert.equal(await journal.getPendingCount(), 1);
 });
 
+
+test('async transport fails closed when duplicate Drive files exist for one change', async () => {
+  const journal = new AsyncSyncJournal<unknown>(new MemoryStorage());
+  await journal.enqueue(change('async-change-duplicate'));
+  let downloadCalls = 0;
+  await assert.rejects(
+    pushPendingChangesAsync(journal, { accessToken: 'token', folderId: 'folder1' }, {
+      listFiles: async () => ({
+        files: [
+          { id: 'existing-a', name: 'srk-change-async-change-duplicate.json', mimeType: 'application/json' },
+          { id: 'existing-b', name: 'srk-change-async-change-duplicate.json', mimeType: 'application/json' },
+        ],
+      }),
+      downloadJson: async () => { downloadCalls += 1; return change('async-change-duplicate'); },
+      uploadJson: async () => ({ id: 'unused', name: 'unused', mimeType: 'application/json' }),
+    }),
+    /Multiple Drive files exist for change/,
+  );
+  assert.equal(downloadCalls, 0);
+  assert.equal(await journal.getPendingCount(), 1);
+});
+
 test('async transport keeps outbox entries when upload fails', async () => {
   const journal = new AsyncSyncJournal<unknown>(new MemoryStorage());
   await journal.enqueue(change('async-change-3'));
