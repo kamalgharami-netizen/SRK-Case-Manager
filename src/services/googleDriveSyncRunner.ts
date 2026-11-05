@@ -108,6 +108,13 @@ export function runGoogleDriveSyncCycleAsync(
           : `android-sync-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       : null;
     let leaseAcquired = false;
+    let leaseLost = false;
+    let leaseHeartbeat: ReturnType<typeof setInterval> | null = null;
+    const assertLeaseHeld = () => {
+      if (leaseLost) {
+        throw new Error('The shared Android sync lease was lost; this sync cycle has been stopped safely.');
+      }
+    };
     if (leaseOwnerId) {
       const lease = await SyncStateStore.acquireSyncLease({
         ownerId: leaseOwnerId,
@@ -115,9 +122,23 @@ export function runGoogleDriveSyncCycleAsync(
       });
       if (!lease?.acquired) return null;
       leaseAcquired = true;
+      // Renew well before expiry. The native SQLite operation only extends
+      // the lease when this exact owner still holds it.
+      leaseHeartbeat = setInterval(() => {
+        void SyncStateStore.acquireSyncLease({
+          ownerId: leaseOwnerId,
+          leaseDurationMs: 10 * 60 * 1000,
+        }).then(result => {
+          if (!result?.acquired) leaseLost = true;
+        }).catch(() => {
+          leaseLost = true;
+        });
+      }, 2 * 60 * 1000);
     }
     try {
+    assertLeaseHeld();
     const folder = await getSelectedGoogleDriveFolderAsync(storage);
+    assertLeaseHeld();
     if (!folder?.id) return null;
 
     let credentials: Awaited<ReturnType<typeof getAndroidGoogleDriveCredentials>> = null;
@@ -135,13 +156,16 @@ export function runGoogleDriveSyncCycleAsync(
       credentials = await getValidWindowsGoogleDriveCredentials();
     }
     if (!credentials) return null;
+    assertLeaseHeld();
 
     const deviceId = await getOrCreateSyncDeviceIdAsync(storage);
+    assertLeaseHeld();
     await registerCurrentGoogleDriveDevice({
       accessToken: credentials.accessToken,
       folderId: folder.id,
       deviceId,
     });
+    assertLeaseHeld();
 
     const pageTokenKey = `srk_drive_sync_page_token_v1_${folder.id}`;
     const pageToken = (await storage.getItem(pageTokenKey)) || undefined;
@@ -154,15 +178,23 @@ export function runGoogleDriveSyncCycleAsync(
       pullMaxPages: 10,
       pushBatchSize: 25,
       onPullCheckpoint: async nextPageToken => {
+        assertLeaseHeld();
         if (nextPageToken) await storage.setItem(pageTokenKey, nextPageToken);
         else await storage.removeItem(pageTokenKey);
       },
     });
+    assertLeaseHeld();
     await storage.setItem('srk_drive_sync_last_success_v1', String(Date.now()));
     return result;
     } finally {
+      if (leaseHeartbeat !== null) clearInterval(leaseHeartbeat);
       if (leaseAcquired && leaseOwnerId) {
-        await SyncStateStore.releaseSyncLease({ ownerId: leaseOwnerId });
+        // A failed release is safe: the bounded lease expires automatically.
+        try {
+          await SyncStateStore.releaseSyncLease({ ownerId: leaseOwnerId });
+        } catch {
+          // Do not mask the sync result/error; the lease has a finite expiry.
+        }
       }
     }
   })().finally(() => {
