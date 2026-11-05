@@ -128,6 +128,43 @@ public class SyncStateStorePlugin extends Plugin {
     }
 
     @PluginMethod
+    public void acquireSyncLease(PluginCall call) {
+        String ownerId = call.getString("ownerId");
+        Long durationMs = call.getLong("leaseDurationMs");
+        if (ownerId == null || ownerId.trim().isEmpty() || ownerId.length() > 128 ||
+                durationMs == null || durationMs < 5000 || durationMs > 600000) {
+            call.reject("A valid lease owner and duration from 5 seconds to 10 minutes are required.");
+            return;
+        }
+        try {
+            long now = System.currentTimeMillis();
+            boolean acquired = database.acquireSyncLease(ownerId, now, now + durationMs);
+            JSObject response = new JSObject();
+            response.put("acquired", acquired);
+            response.put("leaseUntil", acquired ? now + durationMs : 0);
+            call.resolve(response);
+        } catch (Exception error) {
+            call.reject("Could not acquire the shared sync lease.", error);
+        }
+    }
+
+    @PluginMethod
+    public void releaseSyncLease(PluginCall call) {
+        String ownerId = call.getString("ownerId");
+        if (ownerId == null || ownerId.trim().isEmpty() || ownerId.length() > 128) {
+            call.reject("A valid lease owner is required.");
+            return;
+        }
+        try {
+            JSObject response = new JSObject();
+            response.put("released", database.releaseSyncLease(ownerId));
+            call.resolve(response);
+        } catch (Exception error) {
+            call.reject("Could not release the shared sync lease.", error);
+        }
+    }
+
+    @PluginMethod
     public void selectBackupFolder(PluginCall call) {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION |
