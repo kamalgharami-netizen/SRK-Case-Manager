@@ -110,7 +110,7 @@ jobs:
       - name: Run native sync-store instrumentation tests on Android Emulator
         working-directory: android
         shell: bash
-        timeout-minutes: 30
+        timeout-minutes: 25
         run: |
           set -euo pipefail
           echo "Creating isolated Android API 35 emulator for instrumentation tests."
@@ -119,6 +119,7 @@ jobs:
           AVDMANAGER="${SDK_BIN}/avdmanager"
           EMULATOR="${ANDROID_HOME}/emulator/emulator"
           ADB="${ANDROID_HOME}/platform-tools/adb"
+          EMULATOR_LOG="$RUNNER_TEMP/srk-emulator.log"
           for tool in "$AVDMANAGER" "$EMULATOR" "$ADB"; do
             if [ ! -x "$tool" ]; then
               echo "::error::Required Android SDK tool is missing or not executable: $tool"
@@ -126,36 +127,73 @@ jobs:
               exit 1
             fi
           done
+
           echo "Android SDK tool paths verified."
           echo no | "$AVDMANAGER" create avd --force -n srk-sync-ci --package "system-images;android-35;default;x86_64" --device pixel_2
-          "$EMULATOR" -avd srk-sync-ci -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 2048 -cores 2 -no-metrics > "$RUNNER_TEMP/srk-emulator.log" 2>&1 &
+          "$ADB" start-server
+          "$EMULATOR" -avd srk-sync-ci -port 5554 -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 3072 -cores 2 -no-metrics > "$EMULATOR_LOG" 2>&1 &
           EMULATOR_PID=$!
+
           cleanup() {
-            adb -s emulator-5554 emu kill >/dev/null 2>&1 || true
+            "$ADB" -s emulator-5554 emu kill >/dev/null 2>&1 || true
             kill "$EMULATOR_PID" >/dev/null 2>&1 || true
           }
           trap cleanup EXIT
-          adb wait-for-device
-          ready=0
-          for attempt in $(seq 1 180); do
-            booted="$(adb -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
-            if [ "$booted" = "1" ]; then
-              ready=1
+
+          # Do not allow ADB startup to hang the workflow indefinitely.
+          device_ready=0
+          for attempt in $(seq 1 240); do
+            if ! kill -0 "$EMULATOR_PID" 2>/dev/null; then
+              echo "::error::Android emulator process exited before registering with ADB."
+              tail -n 250 "$EMULATOR_LOG" || true
+              exit 1
+            fi
+            if "$ADB" devices | grep -qE '^emulator-5554[[:space:]]+device$'; then
+              device_ready=1
               break
             fi
-            sleep 5
+            if [ $((attempt % 15)) -eq 0 ]; then
+              echo "Waiting for emulator device registration ($((attempt * 2))/480 seconds)."
+              "$ADB" devices -l || true
+              tail -n 40 "$EMULATOR_LOG" || true
+            fi
+            sleep 2
           done
-          if [ "$ready" -ne 1 ]; then
-            echo "::error::Android emulator did not finish booting."
-            adb devices -l || true
-            tail -n 300 "$RUNNER_TEMP/srk-emulator.log" || true
+
+          if [ "$device_ready" -ne 1 ]; then
+            echo "::error::Android emulator did not register with ADB within 8 minutes."
+            "$ADB" devices -l || true
+            tail -n 300 "$EMULATOR_LOG" || true
             exit 1
           fi
+
+          booted=0
+          for attempt in $(seq 1 180); do
+            value="$("$ADB" -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+            if [ "$value" = "1" ]; then
+              booted=1
+              break
+            fi
+            if ! kill -0 "$EMULATOR_PID" 2>/dev/null; then
+              echo "::error::Android emulator exited while booting."
+              tail -n 300 "$EMULATOR_LOG" || true
+              exit 1
+            fi
+            sleep 2
+          done
+
+          if [ "$booted" -ne 1 ]; then
+            echo "::error::Android emulator registered but did not finish booting within 6 minutes."
+            "$ADB" devices -l || true
+            tail -n 300 "$EMULATOR_LOG" || true
+            exit 1
+          fi
+
           echo "Emulator boot completed. Running instrumentation tests."
-          adb -s emulator-5554 shell settings put global window_animation_scale 0 || true
-          adb -s emulator-5554 shell settings put global transition_animation_scale 0 || true
-          adb -s emulator-5554 shell settings put global animator_duration_scale 0 || true
-          ./gradlew :srk-capacitor-sync-state:connectedDebugAndroidTest --no-daemon --stacktrace
+          "$ADB" -s emulator-5554 shell settings put global window_animation_scale 0 || true
+          "$ADB" -s emulator-5554 shell settings put global transition_animation_scale 0 || true
+          "$ADB" -s emulator-5554 shell settings put global animator_duration_scale 0 || true
+          timeout 15m ./gradlew :srk-capacitor-sync-state:connectedDebugAndroidTest --no-daemon --stacktrace
 
       - name: Upload Android instrumentation test reports
         if: always()
