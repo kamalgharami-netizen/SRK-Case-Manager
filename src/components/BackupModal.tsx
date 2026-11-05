@@ -36,7 +36,7 @@ import {
   Search
 } from 'lucide-react';
 import { CompanyLogo, BADGE_OPTIONS, COLOR_OPTIONS } from './CompanyLogo';
-import { THEME_OPTIONS } from '../data/themes';
+import { ThemeDropdown } from './ThemeDropdown';
 import { VaultFile, Role } from '../types';
 import {
   connectWindowsGoogleDrive,
@@ -937,30 +937,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   <Palette className="w-4 h-4 text-blue-600" />
                   <span>Courtroom Color Theme (কালার থিম নির্বাচন)</span>
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
-                  {THEME_OPTIONS.map(opt => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => setTheme(opt.id)}
-                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                        theme === opt.id
-                          ? 'border-blue-600 bg-blue-50/70 ring-2 ring-blue-600 font-bold shadow-xs'
-                          : 'border-slate-200 bg-white hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span
-                          className="w-5 h-5 rounded-full border shadow-2xs"
-                          style={{ backgroundColor: opt.bgHex }}
-                        />
-                        {theme === opt.id && <Check className="w-3.5 h-3.5 text-blue-600 stroke-[3]" />}
-                      </div>
-                      <div className="text-xs font-bold text-slate-900">{opt.name}</div>
-                      <div className="text-[10px] text-slate-500">{opt.nameBn}</div>
-                    </button>
-                  ))}
-                </div>
+                <ThemeDropdown variant="full" className="w-full" />
               </div>
 
               {/* Information Density & View Mode */}
