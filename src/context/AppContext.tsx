@@ -66,6 +66,7 @@ export interface ToastState {
 
 export type ViewDensity = 'comfortable' | 'compact';
 export type ViewMode = 'grid' | 'table';
+export type UIStyle = '3d' | 'modern' | 'glass' | 'classic';
 export type FontSize = 'normal' | 'large';
 import { AppTheme, THEME_OPTIONS } from '../data/themes';
 export type { AppTheme };
@@ -96,6 +97,8 @@ interface AppContextType {
   toggleViewDensity: () => void;
   viewMode: ViewMode;
   setViewMode: (m: ViewMode) => void;
+  uiStyle: UIStyle;
+  setUIStyle: (style: UIStyle) => void;
   toggleViewMode: () => void;
   fontSize: FontSize;
   setFontSize: (s: FontSize) => void;
@@ -366,6 +369,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return 'grid';
   });
 
+  const [uiStyle, setUIStyleState] = useState<UIStyle>(() => {
+    try {
+      const saved = localStorage.getItem('srk_ui_style');
+      if (saved === '3d' || saved === 'modern' || saved === 'glass' || saved === 'classic') return saved;
+    } catch {}
+    return '3d';
+  });
+
   const [fontSize, setFontSizeState] = useState<FontSize>(() => {
     try {
       const saved = localStorage.getItem('srk_font_size');
@@ -463,6 +474,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const setViewMode = (m: ViewMode) => setViewModeState(m);
   const toggleViewMode = () => setViewModeState(prev => (prev === 'grid' ? 'table' : 'grid'));
 
+  const setUIStyle = (style: UIStyle) => setUIStyleState(style);
+
   const setFontSize = (s: FontSize) => setFontSizeState(s);
   const toggleFontSize = () => setFontSizeState(prev => (prev === 'normal' ? 'large' : 'normal'));
 
@@ -479,6 +492,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const resetViewPreferences = () => {
     setViewDensityState('comfortable');
     setViewModeState('grid');
+    setUIStyleState('3d');
     setFontSizeState('normal');
     setHighContrastState(false);
     setThemeState('navy');
@@ -502,6 +516,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       localStorage.setItem('srk_view_mode', viewMode);
     } catch {}
   }, [viewMode]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('srk_ui_style', uiStyle);
+      const root = document.documentElement;
+      ['3d', 'modern', 'glass', 'classic'].forEach(style => root.classList.remove(`ui-style-${style}`));
+      root.classList.add(`ui-style-${uiStyle}`);
+    } catch {}
+  }, [uiStyle]);
 
   useEffect(() => {
     try {
@@ -2023,6 +2046,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         viewMode,
         setViewMode,
         toggleViewMode,
+        uiStyle,
+        setUIStyle,
         fontSize,
         setFontSize,
         toggleFontSize,
