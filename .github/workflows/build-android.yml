@@ -44,12 +44,12 @@ jobs:
         shell: bash
         run: |
           SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
-          IMAGE="system-images;android-29;default;x86_64"
+          IMAGE="system-images;android-35;google_apis;x86_64"
           installed=0
           for attempt in 1 2 3; do
             echo "Installing Android emulator image (attempt $attempt/3)"
             if "$SDKMANAGER" --install "$IMAGE" --channel=0; then
-              if [ -s "${ANDROID_HOME}/system-images/android-29/default/x86_64/source.properties" ]; then
+              if [ -s "${ANDROID_HOME}/system-images/android-35/google_apis/x86_64/source.properties" ]; then
                 installed=1
                 break
               fi
@@ -110,13 +110,13 @@ jobs:
       - name: Run native sync-store instrumentation tests on Android Emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 29
-          target: default
+          api-level: 35
+          target: google_apis
           arch: x86_64
           profile: pixel_2
           emulator-boot-timeout: 1800
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 2048 -cores 2 -no-metrics
-          # Use the lighter Android 10 default image with 2 GiB RAM and 2 vCPUs to reduce emulator resource pressure on GitHub-hosted runners. Previous API 30 emulator became unresponsive during APK installation.
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 4096 -cores 2 -no-metrics
+          # Use the current Google APIs Android 15 image with 4 GiB RAM and 2 vCPUs. The previous Android 10 default image became unresponsive and reported API level 1 during instrumentation APK installation.
           # Avoid the action's adb input keyevent command; emulator system services intermittently die immediately after boot.
           disable-animations: false
           working-directory: android
