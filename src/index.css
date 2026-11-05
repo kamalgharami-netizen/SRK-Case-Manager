@@ -147,7 +147,7 @@ main .rounded-xl {
   box-shadow:
     0 8px 20px -4px rgba(15, 23, 42, 0.08),
     0 3px 0 0 rgba(148, 163, 184, 0.32),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.85);
+    inset 0 1px 0 0 rgba(96, 165, 250, 0.16);
 }
 
 main button.rounded-xl,
@@ -159,7 +159,7 @@ header button.rounded-lg {
   box-shadow:
     0 3px 6px rgba(15, 23, 42, 0.08),
     0 2px 0 0 rgba(148, 163, 184, 0.28),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.35);
+    inset 0 1px 0 0 rgba(96, 165, 250, 0.18);
   transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
@@ -810,7 +810,7 @@ html[class*="theme-"] body #root main :is(input,select,textarea) {
 /* User-selectable application UI presentation styles (independent of colour themes) */
 /* 3D Professional is the default and retains the existing dimensional treatment. */
 html.ui-style-3d #root main :is(.rounded-xl, .rounded-2xl)[class*="border"] {
-  box-shadow: 0 7px 15px rgba(12,58,111,.12), 0 3px 0 rgba(120,160,205,.22), inset 0 1px 0 rgba(255,255,255,.82);
+  box-shadow: 0 7px 15px rgba(5,35,75,.28), 0 3px 0 rgba(45,105,175,.42), inset 0 1px 0 rgba(100,170,245,.18);
 }
 html.ui-style-modern #root main :is(.rounded-xl, .rounded-2xl)[class*="border"] {
   border-radius: .65rem !important;
@@ -825,10 +825,10 @@ html.ui-style-glass #root main :is(.rounded-xl, .rounded-2xl)[class*="border"] {
   border-color: rgba(125,180,230,.58) !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 10px 26px rgba(15,55,105,.13), inset 0 1px 0 rgba(255,255,255,.9) !important;
+  box-shadow: 0 10px 26px rgba(5,35,75,.24), inset 0 1px 0 rgba(96,165,250,.2) !important;
 }
 html.ui-style-glass #root main button:not(:disabled) {
-  box-shadow: 0 4px 12px rgba(15,55,105,.12), inset 0 1px 0 rgba(255,255,255,.55);
+  box-shadow: 0 4px 12px rgba(5,35,75,.22), inset 0 1px 0 rgba(96,165,250,.18);
 }
 html.ui-style-classic #root main :is(.rounded-xl, .rounded-2xl)[class*="border"] {
   border-radius: .35rem !important;
@@ -871,7 +871,7 @@ html.ui-style-modern #root main table thead th {
   letter-spacing: .01em;
 }
 html.ui-style-glass #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
-  background-image: linear-gradient(145deg,rgba(255,255,255,.32),rgba(191,219,254,.10));
+  background-image: linear-gradient(145deg,rgba(96,165,250,.22),rgba(30,64,175,.12));
 }
 html.ui-style-classic #root main {
   gap: .75rem;
