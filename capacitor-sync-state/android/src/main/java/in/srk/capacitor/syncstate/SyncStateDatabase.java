@@ -19,7 +19,7 @@ import javax.crypto.spec.GCMParameterSpec;
 
 final class SyncStateDatabase extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "srk_sync_state_v1.db";
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
     private static final String TABLE = "sync_state";
     private static final String KEY_ALIAS = "srk_sync_state_aes_gcm_v1";
     private static final int GCM_TAG_LENGTH_BITS = 128;
@@ -38,12 +38,69 @@ final class SyncStateDatabase extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE " + TABLE +
             " (state_key TEXT PRIMARY KEY NOT NULL, state_value TEXT NOT NULL, updated_at INTEGER NOT NULL)");
+        createLeaseTable(db);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // No destructive migrations. Future schema changes must be additive and versioned.
-        throw new IllegalStateException("Unsupported sync-state database upgrade: " + oldVersion + " -> " + newVersion);
+        // Additive-only migration: existing encrypted sync-state rows are untouched.
+        if (oldVersion < 2) createLeaseTable(db);
+        if (newVersion > 2) {
+            throw new IllegalStateException("Unsupported sync-state database upgrade: " + oldVersion + " -> " + newVersion);
+        }
+    }
+
+    private void createLeaseTable(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS sync_lease (" +
+            "lease_id INTEGER PRIMARY KEY CHECK (lease_id = 1), " +
+            "owner_id TEXT NOT NULL, lease_until INTEGER NOT NULL)");
+    }
+
+    /** Atomically acquires the shared foreground/worker lease. */
+    boolean acquireSyncLease(String ownerId, long now, long leaseUntil) {
+        if (ownerId == null || ownerId.trim().isEmpty() || leaseUntil <= now) {
+            throw new IllegalArgumentException("A valid owner and future lease expiry are required.");
+        }
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            int changed = db.update("sync_lease", leaseValues(ownerId, leaseUntil),
+                "lease_id = 1 AND (lease_until <= ? OR owner_id = ?)",
+                new String[]{String.valueOf(now), ownerId});
+            if (changed == 0) {
+                ContentValues values = leaseValues(ownerId, leaseUntil);
+                values.put("lease_id", 1);
+                long inserted = db.insertWithOnConflict("sync_lease", null, values, SQLiteDatabase.CONFLICT_IGNORE);
+                if (inserted == -1) {
+                    db.setTransactionSuccessful();
+                    return false;
+                }
+            }
+            db.setTransactionSuccessful();
+            return true;
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    boolean releaseSyncLease(String ownerId) {
+        if (ownerId == null || ownerId.trim().isEmpty()) return false;
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            int removed = db.delete("sync_lease", "lease_id = 1 AND owner_id = ?", new String[]{ownerId});
+            db.setTransactionSuccessful();
+            return removed == 1;
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    private ContentValues leaseValues(String ownerId, long leaseUntil) {
+        ContentValues values = new ContentValues();
+        values.put("owner_id", ownerId);
+        values.put("lease_until", leaseUntil);
+        return values;
     }
 
     int putAll(java.util.List<SyncStateEntry> entries) throws Exception {
