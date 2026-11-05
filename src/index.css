@@ -459,3 +459,51 @@ body #root main button[class*="bg-green-"] {
 #root :is(button, input, select, textarea) {
   font-family: inherit;
 }
+
+
+/* Accessible, high-contrast theme surfaces */
+html.theme-light, html.theme-light body, html.theme-light main, html.theme-light .app-shell-bg { background-color: #E9EEF5 !important; color: #172033 !important; color-scheme: light !important; }
+html.theme-light .bg-white { background-color: #F8FAFC !important; }
+html.theme-light .bg-slate-50, html.theme-light .bg-slate-100 { background-color: #DCE4EE !important; }
+html.theme-light .text-slate-400, html.theme-light .text-slate-500 { color: #475569 !important; }
+html.theme-sepia, html.theme-sepia body, html.theme-sepia main, html.theme-sepia .app-shell-bg { background-color: #F3E8D2 !important; color: #2D2114 !important; color-scheme: light !important; }
+html.theme-sepia .bg-white { background-color: #FFF9ED !important; }
+html.theme-sepia .bg-slate-50, html.theme-sepia .bg-slate-100 { background-color: #E9DCC3 !important; }
+html.theme-azure, html.theme-azure body, html.theme-azure main, html.theme-azure .app-shell-bg { background-color: #DCEBFA !important; color: #102A43 !important; color-scheme: light !important; }
+html.theme-azure .bg-white { background-color: #F4F9FF !important; }
+html.theme-azure .bg-slate-50, html.theme-azure .bg-slate-100 { background-color: #C8DDF2 !important; }
+html.theme-mint, html.theme-mint body, html.theme-mint main, html.theme-mint .app-shell-bg { background-color: #DDF1E5 !important; color: #12352B !important; color-scheme: light !important; }
+html.theme-mint .bg-white { background-color: #F4FBF6 !important; }
+html.theme-mint .bg-slate-50, html.theme-mint .bg-slate-100 { background-color: #C9E5D4 !important; }
+
+/* Dark themes deliberately override common Tailwind utility surfaces so text never disappears on white cards. */
+html.theme-navy, html.theme-navy body, html.theme-navy main, html.theme-navy .app-shell-bg { background: #101D33 !important; color: #F1F5F9 !important; color-scheme: dark !important; }
+html.theme-navy .bg-white, html.theme-navy .bg-slate-50, html.theme-navy .bg-slate-100 { background-color: #1B2B45 !important; }
+html.theme-navy .bg-slate-200 { background-color: #2B3D59 !important; }
+html.theme-navy [class*="text-slate-900"], html.theme-navy [class*="text-slate-800"], html.theme-navy [class*="text-slate-700"] { color: #F1F5F9 !important; }
+html.theme-navy [class*="text-slate-600"], html.theme-navy [class*="text-slate-500"], html.theme-navy [class*="text-slate-400"] { color: #CBD5E1 !important; }
+html.theme-navy [class*="border-slate-"] { border-color: #3B4D68 !important; }
+
+html.theme-charcoal, html.theme-charcoal body, html.theme-charcoal main, html.theme-charcoal .app-shell-bg { background: #20252D !important; color: #F3F4F6 !important; color-scheme: dark !important; }
+html.theme-charcoal .bg-white, html.theme-charcoal .bg-slate-50, html.theme-charcoal .bg-slate-100 { background-color: #2B323D !important; }
+html.theme-charcoal .bg-slate-200 { background-color: #3B4552 !important; }
+html.theme-charcoal [class*="text-slate-900"], html.theme-charcoal [class*="text-slate-800"], html.theme-charcoal [class*="text-slate-700"] { color: #F3F4F6 !important; }
+html.theme-charcoal [class*="text-slate-600"], html.theme-charcoal [class*="text-slate-500"], html.theme-charcoal [class*="text-slate-400"] { color: #D1D5DB !important; }
+html.theme-charcoal [class*="border-slate-"] { border-color: #4B5563 !important; }
+
+html.theme-emerald, html.theme-emerald body, html.theme-emerald main, html.theme-emerald .app-shell-bg { background: #102A26 !important; color: #ECFDF5 !important; color-scheme: dark !important; }
+html.theme-emerald .bg-white, html.theme-emerald .bg-slate-50, html.theme-emerald .bg-slate-100 { background-color: #1B3A33 !important; }
+html.theme-emerald .bg-slate-200 { background-color: #285247 !important; }
+html.theme-emerald [class*="text-slate-900"], html.theme-emerald [class*="text-slate-800"], html.theme-emerald [class*="text-slate-700"] { color: #ECFDF5 !important; }
+html.theme-emerald [class*="text-slate-600"], html.theme-emerald [class*="text-slate-500"], html.theme-emerald [class*="text-slate-400"] { color: #C6E7DA !important; }
+html.theme-emerald [class*="border-slate-"] { border-color: #37685A !important; }
+
+html.theme-indigo, html.theme-indigo body, html.theme-indigo main, html.theme-indigo .app-shell-bg { background: #211D3A !important; color: #F5F3FF !important; color-scheme: dark !important; }
+html.theme-indigo .bg-white, html.theme-indigo .bg-slate-50, html.theme-indigo .bg-slate-100 { background-color: #302A50 !important; }
+html.theme-indigo .bg-slate-200 { background-color: #403963 !important; }
+html.theme-indigo [class*="text-slate-900"], html.theme-indigo [class*="text-slate-800"], html.theme-indigo [class*="text-slate-700"] { color: #F5F3FF !important; }
+html.theme-indigo [class*="text-slate-600"], html.theme-indigo [class*="text-slate-500"], html.theme-indigo [class*="text-slate-400"] { color: #DDD6FE !important; }
+html.theme-indigo [class*="border-slate-"] { border-color: #514875 !important; }
+
+/* Always-visible focus and readable controls across themes */
+html[class*="theme-"] button:focus-visible, html[class*="theme-"] input:focus-visible, html[class*="theme-"] select:focus-visible, html[class*="theme-"] textarea:focus-visible { outline: 3px solid #F59E0B !important; outline-offset: 2px !important; }
