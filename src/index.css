@@ -953,3 +953,27 @@ html.ui-style-soft #root header.sticky{background:linear-gradient(100deg,#244d73
 @media(prefers-reduced-motion:reduce){
  html.ui-style-executive #root main *,html.ui-style-royal #root main *,html.ui-style-compact #root main *,html.ui-style-soft #root main *{transition-duration:.01ms!important}
 }
+
+
+/* Additional responsive UI presentation presets (desktop + mobile) */
+html.ui-style-midnight #root aside{background:linear-gradient(180deg,#111827,#020617)!important;color:#e5e7eb!important;border-right:1px solid #334155!important}
+html.ui-style-midnight #root header.sticky{background:linear-gradient(100deg,#0f172a,#1e293b)!important;border-bottom:2px solid #38bdf8!important}
+html.ui-style-midnight #root main{background:#0b1220!important;color:#e2e8f0!important}
+html.ui-style-midnight #root main :is(.rounded-xl,.rounded-2xl)[class*="border"]{background:#172338!important;border-color:#334b68!important;color:#e2e8f0!important;box-shadow:0 4px 0 rgba(2,6,23,.55),0 8px 18px rgba(0,0,0,.22)!important}
+html.ui-style-midnight #root main button:not(:disabled){box-shadow:0 3px 0 #075985!important}
+html.ui-style-ocean #root aside{background:linear-gradient(180deg,#064e5b,#083344)!important;color:#ecfeff!important}
+html.ui-style-ocean #root header.sticky{background:linear-gradient(100deg,#0e7490,#0891b2)!important;border-bottom:3px solid #67e8f9!important}
+html.ui-style-ocean #root main{background:linear-gradient(145deg,#ecfeff,#cffafe)!important}
+html.ui-style-ocean #root main :is(.rounded-xl,.rounded-2xl)[class*="border"]{background:#f0fdff!important;border-color:#67cbd8!important;box-shadow:0 4px 0 rgba(8,145,178,.25),0 8px 16px rgba(8,51,68,.1)!important}
+html.ui-style-ocean #root main button:not(:disabled){box-shadow:0 3px 0 rgba(8,145,178,.42)!important}
+html.ui-style-emerald #root aside{background:linear-gradient(180deg,#064e3b,#022c22)!important;color:#ecfdf5!important}
+html.ui-style-emerald #root header.sticky{background:linear-gradient(100deg,#047857,#059669)!important;border-bottom:3px solid #a7f3d0!important}
+html.ui-style-emerald #root main{background:#ecfdf5!important}
+html.ui-style-emerald #root main :is(.rounded-xl,.rounded-2xl)[class*="border"]{background:#f0fdf4!important;border-color:#86c9a5!important;box-shadow:0 4px 0 rgba(5,150,105,.25),0 8px 16px rgba(6,78,59,.1)!important}
+html.ui-style-emerald #root main button:not(:disabled){box-shadow:0 3px 0 rgba(4,120,87,.4)!important}
+html.ui-style-copper #root aside{background:linear-gradient(180deg,#292524,#1c1917)!important;color:#fafaf9!important;border-right:2px solid #b87333!important}
+html.ui-style-copper #root header.sticky{background:linear-gradient(100deg,#292524,#57534e)!important;border-bottom:3px solid #c08457!important}
+html.ui-style-copper #root main{background:#f5f0e9!important;color:#292524!important}
+html.ui-style-copper #root main :is(.rounded-xl,.rounded-2xl)[class*="border"]{background:#fffaf3!important;border-color:#d6a77a!important;box-shadow:0 4px 0 rgba(120,72,35,.25),0 8px 16px rgba(41,37,36,.1)!important}
+html.ui-style-copper #root main button:not(:disabled){box-shadow:0 3px 0 rgba(146,86,45,.4)!important}
+@media(max-width:767px){html[class*="ui-style-"] #root main{min-width:0!important}html[class*="ui-style-"] #root main :is(.rounded-xl,.rounded-2xl){max-width:100%}html[class*="ui-style-"] #root aside{max-width:85vw}}
