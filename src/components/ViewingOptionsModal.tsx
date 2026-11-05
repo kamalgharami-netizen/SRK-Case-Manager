@@ -167,18 +167,18 @@ export const ViewingOptionsModal: React.FC = () => {
                 </label>
                 <p className="mt-1 text-xs font-medium text-slate-700">
                   {language === 'bn'
-                    ? 'থিমের মতোই এখানে পুরো অ্যাপের কার্ড, মেনু, বাটন ও প্যানেলের উপস্থাপনা বদলাতে পারবেন।'
-                    : 'Change the visual presentation of cards, menus, buttons and panels without changing your data or features.'}
+                    ? 'আপনার দেওয়া SRK Case Manager ও Business Manager ছবির ধাঁচে কার্ড, প্যানেল ও কাজের জায়গার উপস্থাপনা বেছে নিন। তথ্য ও মডিউল অপরিবর্তিত থাকবে।'
+                    : 'Choose a visual layout style inspired by the supplied SRK Case Manager and Business Manager reference screens. Your case data and modules stay unchanged.'}
                 </p>
               </div>
               <span className="shrink-0 rounded-full bg-indigo-800 px-3 py-1.5 text-[10px] font-extrabold text-white">4 STYLES</span>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {([
-                { id: '3d', name: '3D Professional', bn: '৩ডি প্রফেশনাল', desc: 'Raised cards, depth and dimensional icons', descBn: 'উঁচু কার্ড, গভীরতা ও ৩ডি আইকন', panel: 'bg-gradient-to-br from-white to-blue-100', tile: 'shadow-[0_5px_0_#8eb8e6,0_8px_12px_#173c6928]', radius: 'rounded-xl', button: 'bg-gradient-to-b from-blue-500 to-blue-800' },
-                { id: 'modern', name: 'Modern Flat', bn: 'মডার্ন ফ্ল্যাট', desc: 'Clean surfaces, crisp lines and minimal shadows', descBn: 'পরিষ্কার প্যানেল, স্পষ্ট রেখা ও কম ছায়া', panel: 'bg-white', tile: 'border border-slate-300 shadow-none', radius: 'rounded-lg', button: 'bg-blue-700' },
-                { id: 'glass', name: 'Glass Workspace', bn: 'গ্লাস ওয়ার্কস্পেস', desc: 'Soft translucent panels and layered surfaces', descBn: 'স্বচ্ছ আবহের প্যানেল ও স্তরযুক্ত ডিজাইন', panel: 'bg-sky-100/80', tile: 'border border-white/80 shadow-[0_8px_24px_#1e3a8a22]', radius: 'rounded-2xl', button: 'bg-gradient-to-r from-cyan-500 to-blue-700' },
-                { id: 'classic', name: 'Classic Office', bn: 'ক্লাসিক অফিস', desc: 'Square layout, firm borders and formal styling', descBn: 'চৌকো বিন্যাস, দৃঢ় বর্ডার ও আনুষ্ঠানিক ডিজাইন', panel: 'bg-slate-100', tile: 'border-2 border-slate-400 shadow-none', radius: 'rounded-md', button: 'bg-slate-700' }
+                { id: '3d', name: 'SRK Reference 3D', bn: 'SRK রেফারেন্স 3D', desc: 'Navy sidebar, blue header, colourful case cards and raised panels', descBn: 'নেভি সাইডবার, নীল হেডার, রঙিন কেস কার্ড ও 3D প্যানেল', panel: 'bg-gradient-to-br from-sky-50 to-blue-100', tile: 'shadow-[0_5px_0_#8eb8e6,0_8px_12px_#173c6928]', radius: 'rounded-xl', button: 'bg-gradient-to-b from-blue-500 to-blue-800' },
+                { id: 'modern', name: 'Clean Workspace', bn: 'ক্লিন ওয়ার্কস্পেস', desc: 'Business-inspired dashboard panels, clear tables and crisp actions', descBn: 'বিজনেস-স্টাইল ড্যাশবোর্ড প্যানেল, পরিষ্কার টেবিল ও স্পষ্ট অ্যাকশন', panel: 'bg-white', tile: 'border border-slate-300 shadow-none', radius: 'rounded-lg', button: 'bg-blue-700' },
+                { id: 'glass', name: 'Layered Glass', bn: 'লেয়ারড গ্লাস', desc: 'Translucent layered panels with soft depth', descBn: 'স্বচ্ছ স্তরযুক্ত প্যানেল ও নরম গভীরতা', panel: 'bg-sky-100/80', tile: 'border border-white/80 shadow-[0_8px_24px_#1e3a8a22]', radius: 'rounded-2xl', button: 'bg-gradient-to-r from-cyan-500 to-blue-700' },
+                { id: 'classic', name: 'Compact Office', bn: 'কমপ্যাক্ট অফিস', desc: 'Denser workspace, firm borders and formal styling', descBn: 'কম জায়গায় বেশি তথ্য, দৃঢ় বর্ডার ও আনুষ্ঠানিক ডিজাইন', panel: 'bg-slate-100', tile: 'border-2 border-slate-400 shadow-none', radius: 'rounded-md', button: 'bg-slate-700' }
               ] as const).map(option => {
                 const selected = uiStyle === option.id;
                 return (
