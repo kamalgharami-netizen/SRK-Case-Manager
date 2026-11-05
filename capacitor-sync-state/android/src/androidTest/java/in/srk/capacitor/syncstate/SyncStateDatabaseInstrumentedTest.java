@@ -191,6 +191,43 @@ public class SyncStateDatabaseInstrumentedTest {
         assertEquals(corruptedCiphertext, readStoredCiphertext("test.tamper"));
     }
 
+    @Test
+    public void sharedLeaseAllowsOnlyOneActiveOwnerAndCanBeReleased() throws Exception {
+        SyncStateDatabase foreground = new SyncStateDatabase(context);
+        SyncStateDatabase worker = new SyncStateDatabase(context);
+        long now = System.currentTimeMillis();
+
+        assertTrue(foreground.acquireSyncLease("foreground-A", now, now + 60000));
+        assertFalse("A second process must not overlap an active sync",
+            worker.acquireSyncLease("worker-B", now + 1, now + 60000));
+        assertFalse("A different owner cannot release the active lease",
+            worker.releaseSyncLease("worker-B"));
+        assertTrue("The owning process can release its lease",
+            foreground.releaseSyncLease("foreground-A"));
+        assertTrue("A waiting worker can acquire after release",
+            worker.acquireSyncLease("worker-B", now + 2, now + 60000));
+
+        worker.close();
+        foreground.close();
+    }
+
+    @Test
+    public void expiredLeaseCanBeRecoveredAfterProcessDeath() throws Exception {
+        SyncStateDatabase firstProcess = new SyncStateDatabase(context);
+        SyncStateDatabase restartedProcess = new SyncStateDatabase(context);
+        long now = System.currentTimeMillis();
+
+        assertTrue(firstProcess.acquireSyncLease("process-before-crash", now, now + 1000));
+        assertTrue("An expired lease must not block recovery after a crash",
+            restartedProcess.acquireSyncLease("process-after-restart", now + 1001, now + 61001));
+        assertFalse("The previous owner cannot release the recovered lease",
+            firstProcess.releaseSyncLease("process-before-crash"));
+        assertTrue(restartedProcess.releaseSyncLease("process-after-restart"));
+
+        restartedProcess.close();
+        firstProcess.close();
+    }
+
     private File databaseFile() {
         return new File(context.getNoBackupFilesDir(), DATABASE_NAME);
     }
