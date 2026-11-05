@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import { SyncStateStore } from '@srk/capacitor-sync-state';
 import {
   getAndroidGoogleDriveCredentials,
   getValidAndroidGoogleDriveCredentials,
@@ -100,6 +101,22 @@ export function runGoogleDriveSyncCycleAsync(
 
   activeCycle = (async () => {
     const storage = options.storage ?? await getReadyPlatformSyncStateStorage();
+    const useNativeLease = Capacitor.getPlatform() === 'android' && !options.storage;
+    const leaseOwnerId = useNativeLease
+      ? (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : `android-sync-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+      : null;
+    let leaseAcquired = false;
+    if (leaseOwnerId) {
+      const lease = await SyncStateStore.acquireSyncLease({
+        ownerId: leaseOwnerId,
+        leaseDurationMs: 10 * 60 * 1000,
+      });
+      if (!lease?.acquired) return null;
+      leaseAcquired = true;
+    }
+    try {
     const folder = await getSelectedGoogleDriveFolderAsync(storage);
     if (!folder?.id) return null;
 
@@ -143,6 +160,11 @@ export function runGoogleDriveSyncCycleAsync(
     });
     await storage.setItem('srk_drive_sync_last_success_v1', String(Date.now()));
     return result;
+    } finally {
+      if (leaseAcquired && leaseOwnerId) {
+        await SyncStateStore.releaseSyncLease({ ownerId: leaseOwnerId });
+      }
+    }
   })().finally(() => {
     activeCycle = null;
   });
