@@ -108,22 +108,41 @@ jobs:
           ./gradlew :srk-capacitor-sync-state:assembleDebugAndroidTest --no-daemon
 
       - name: Run native sync-store instrumentation tests on Android Emulator
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 35
-          target: default
-          arch: x86_64
-          profile: pixel_2
-          emulator-boot-timeout: 1800
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 2048 -cores 2 -no-metrics
-          # Use the Android 15 default image without Google Play services: the previous Google APIs image repeatedly crashed Android system services and system_server on the non-KVM GitHub Linux runner. Keep guest RAM bounded to reduce host memory pressure.
-          # Avoid the action's adb input keyevent command; emulator system services intermittently die immediately after boot.
-          disable-animations: false
-          working-directory: android
-          # This action invokes each physical script line in a separate /usr/bin/sh process.
-          # Keep the complete loop and test/diagnostic sequence on one shell line.
-          script: |
-            echo "===== Wait for fully booted Android emulator ====="; ready=0; for attempt in $(seq 1 120); do booted="$(adb -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d "\r" || true)"; api="$(adb -s emulator-5554 shell getprop ro.build.version.sdk 2>/dev/null | tr -d "\r" || true)"; if [ "$booted" = "1" ] && [ "$api" -ge 24 ] 2>/dev/null && adb -s emulator-5554 shell pm path android >/dev/null 2>&1; then ready=1; break; fi; sleep 5; done; if [ "$ready" -ne 1 ]; then echo "Android emulator did not complete boot or report a valid API level."; adb devices -l || true; adb -s emulator-5554 shell getprop ro.build.version.sdk || true; adb -s emulator-5554 logcat -b all -d -v time | tail -n 300 || true; exit 1; fi; echo "Android emulator is ready (API $api)."; echo "===== Confirm emulator shell remains responsive ====="; for probe in 1 2 3; do adb -s emulator-5554 shell getprop ro.build.version.sdk >/dev/null || { echo "Emulator shell health check failed ($probe/3)."; exit 1; }; sleep 2; done; echo "===== Verify Android emulator package manager readiness ====="; adb -s emulator-5554 shell pm list packages >/dev/null; ./gradlew :srk-capacitor-sync-state:connectedDebugAndroidTest --no-daemon --stacktrace; test_status=$?; echo "===== Connected Android devices ====="; adb devices -l || true; echo "===== Emulator crash diagnostics ====="; adb -s emulator-5554 logcat -b all -d -v time | grep -E "FATAL EXCEPTION|AndroidRuntime|am_crash|am_anr|INSTRUMENTATION|Process .* died|Fatal signal|keystore|SyncStateDatabase|TestRunner" | tail -n 400 || true; exit "$test_status"
+        working-directory: android
+        shell: bash
+        timeout-minutes: 30
+        run: |
+          set -euo pipefail
+          echo "Creating isolated Android API 35 emulator for instrumentation tests."
+          echo no | avdmanager create avd --force -n srk-sync-ci --package "system-images;android-35;default;x86_64" --device pixel_2
+          emulator -avd srk-sync-ci -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 2048 -cores 2 -no-metrics > "$RUNNER_TEMP/srk-emulator.log" 2>&1 &
+          EMULATOR_PID=$!
+          cleanup() {
+            adb -s emulator-5554 emu kill >/dev/null 2>&1 || true
+            kill "$EMULATOR_PID" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          adb wait-for-device
+          ready=0
+          for attempt in $(seq 1 180); do
+            booted="$(adb -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+            if [ "$booted" = "1" ]; then
+              ready=1
+              break
+            fi
+            sleep 5
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo "::error::Android emulator did not finish booting."
+            adb devices -l || true
+            tail -n 300 "$RUNNER_TEMP/srk-emulator.log" || true
+            exit 1
+          fi
+          echo "Emulator boot completed. Running instrumentation tests."
+          adb -s emulator-5554 shell settings put global window_animation_scale 0 || true
+          adb -s emulator-5554 shell settings put global transition_animation_scale 0 || true
+          adb -s emulator-5554 shell settings put global animator_duration_scale 0 || true
+          ./gradlew :srk-capacitor-sync-state:connectedDebugAndroidTest --no-daemon --stacktrace
 
       - name: Upload Android instrumentation test reports
         if: always()
