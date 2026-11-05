@@ -617,9 +617,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       // Always remove dark class
       root.classList.remove('dark');
       root.classList.add(`theme-${theme}`);
-      root.style.colorScheme = 'light';
-
       const activeOpt = THEME_OPTIONS.find(t => t.id === theme) || THEME_OPTIONS[0];
+      root.style.colorScheme = activeOpt.category === 'Dark' ? 'dark' : 'light';
       const metaTheme = document.querySelector('meta[name="theme-color"]');
       if (metaTheme && activeOpt) {
         metaTheme.setAttribute('content', activeOpt.bgHex);
