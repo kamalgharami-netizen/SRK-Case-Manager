@@ -192,6 +192,24 @@ public class SyncStateDatabaseInstrumentedTest {
     }
 
     @Test
+    public void versionOneDatabaseMigratesAdditivelyAndPreservesExistingRows() throws Exception {
+        SQLiteDatabase legacy = SQLiteDatabase.openOrCreateDatabase(databaseFile(), null);
+        legacy.execSQL("CREATE TABLE sync_state (state_key TEXT PRIMARY KEY NOT NULL, state_value TEXT NOT NULL, updated_at INTEGER NOT NULL)");
+        legacy.execSQL("INSERT INTO sync_state (state_key, state_value, updated_at) VALUES ('legacy.marker', 'ciphertext-placeholder', 1)");
+        legacy.setVersion(1);
+        legacy.close();
+
+        SyncStateDatabase upgraded = new SyncStateDatabase(context);
+        assertTrue("Existing encrypted sync rows must survive the additive schema upgrade",
+            rowExists("legacy.marker"));
+        long now = System.currentTimeMillis();
+        assertTrue("The new lease table must be available after upgrading v1",
+            upgraded.acquireSyncLease("migration-test", now, now + 30000));
+        assertTrue(upgraded.releaseSyncLease("migration-test"));
+        upgraded.close();
+    }
+
+    @Test
     public void sharedLeaseAllowsOnlyOneActiveOwnerAndCanBeReleased() throws Exception {
         SyncStateDatabase foreground = new SyncStateDatabase(context);
         SyncStateDatabase worker = new SyncStateDatabase(context);
@@ -226,6 +244,16 @@ public class SyncStateDatabaseInstrumentedTest {
 
         restartedProcess.close();
         firstProcess.close();
+    }
+
+    private boolean rowExists(String key) {
+        SQLiteDatabase raw = SQLiteDatabase.openDatabase(
+            databaseFile().getAbsolutePath(), null, SQLiteDatabase.OPEN_READONLY);
+        try (Cursor cursor = raw.rawQuery("SELECT 1 FROM sync_state WHERE state_key = ?", new String[]{key})) {
+            return cursor.moveToFirst();
+        } finally {
+            raw.close();
+        }
     }
 
     private File databaseFile() {
