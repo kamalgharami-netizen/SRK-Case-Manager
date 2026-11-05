@@ -87,8 +87,8 @@ export const ThemeDropdown: React.FC<ThemeDropdownProps> = ({
               <div className="flex flex-col gap-2">{THEME_OPTIONS.filter(item => item.category === 'Light').map(renderTheme)}</div>
             </section>
             <section>
-              <div className="mb-2 flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-slate-700"><Moon className="h-4 w-4 text-indigo-700" />{language === 'bn' ? 'গাঢ় রঙের থিম' : 'Deep Colour Themes'}</div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">{THEME_OPTIONS.filter(item => item.category === 'Dark').map(renderTheme)}</div>
+              <div className="mb-2 flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-blue-100"><Moon className="h-4 w-4 text-indigo-700" />{language === 'bn' ? 'গাঢ় রঙের থিম' : 'Deep Colour Themes'}</div>
+              <div className="flex flex-col gap-2">{THEME_OPTIONS.filter(item => item.category === 'Dark').map(renderTheme)}</div>
             </section>
           </div>
           <div className="border-t border-blue-400/40 bg-[#0A2340] px-3 py-2 text-[10px] font-semibold text-blue-100">
