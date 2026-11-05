@@ -114,8 +114,21 @@ jobs:
         run: |
           set -euo pipefail
           echo "Creating isolated Android API 35 emulator for instrumentation tests."
-          echo no | avdmanager create avd --force -n srk-sync-ci --package "system-images;android-35;default;x86_64" --device pixel_2
-          emulator -avd srk-sync-ci -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 2048 -cores 2 -no-metrics > "$RUNNER_TEMP/srk-emulator.log" 2>&1 &
+          SDK_BIN="${ANDROID_HOME}/cmdline-tools/latest/bin"
+          export PATH="${SDK_BIN}:${ANDROID_HOME}/emulator:${ANDROID_HOME}/platform-tools:${PATH}"
+          AVDMANAGER="${SDK_BIN}/avdmanager"
+          EMULATOR="${ANDROID_HOME}/emulator/emulator"
+          ADB="${ANDROID_HOME}/platform-tools/adb"
+          for tool in "$AVDMANAGER" "$EMULATOR" "$ADB"; do
+            if [ ! -x "$tool" ]; then
+              echo "::error::Required Android SDK tool is missing or not executable: $tool"
+              ls -la "${ANDROID_HOME}/cmdline-tools" "${ANDROID_HOME}/emulator" "${ANDROID_HOME}/platform-tools" || true
+              exit 1
+            fi
+          done
+          echo "Android SDK tool paths verified."
+          echo no | "$AVDMANAGER" create avd --force -n srk-sync-ci --package "system-images;android-35;default;x86_64" --device pixel_2
+          "$EMULATOR" -avd srk-sync-ci -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 2048 -cores 2 -no-metrics > "$RUNNER_TEMP/srk-emulator.log" 2>&1 &
           EMULATOR_PID=$!
           cleanup() {
             adb -s emulator-5554 emu kill >/dev/null 2>&1 || true
