@@ -805,3 +805,44 @@ html[class*="theme-"] body #root main :is(input,select,textarea) {
   color:var(--srk-ink) !important;
   border:1px solid var(--srk-border) !important;
 }
+
+
+/* User-selectable application UI presentation styles (independent of colour themes) */
+/* 3D Professional is the default and retains the existing dimensional treatment. */
+html.ui-style-3d #root main :is(.rounded-xl, .rounded-2xl)[class*="border"] {
+  box-shadow: 0 7px 15px rgba(12,58,111,.12), 0 3px 0 rgba(120,160,205,.22), inset 0 1px 0 rgba(255,255,255,.82);
+}
+html.ui-style-modern #root main :is(.rounded-xl, .rounded-2xl)[class*="border"] {
+  border-radius: .65rem !important;
+  box-shadow: none !important;
+}
+html.ui-style-modern #root main button:not(:disabled) {
+  box-shadow: none !important;
+  transform: none !important;
+}
+html.ui-style-glass #root main :is(.rounded-xl, .rounded-2xl)[class*="border"] {
+  background-color: rgba(255,255,255,.78) !important;
+  border-color: rgba(125,180,230,.58) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 10px 26px rgba(15,55,105,.13), inset 0 1px 0 rgba(255,255,255,.9) !important;
+}
+html.ui-style-glass #root main button:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(15,55,105,.12), inset 0 1px 0 rgba(255,255,255,.55);
+}
+html.ui-style-classic #root main :is(.rounded-xl, .rounded-2xl)[class*="border"] {
+  border-radius: .35rem !important;
+  border-width: 1.5px !important;
+  box-shadow: none !important;
+}
+html.ui-style-classic #root main button:not(:disabled) {
+  border-radius: .35rem !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html.ui-style-3d #root main *,
+  html.ui-style-modern #root main *,
+  html.ui-style-glass #root main *,
+  html.ui-style-classic #root main * { transition-duration: 0.01ms !important; }
+}
