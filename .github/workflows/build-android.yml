@@ -49,7 +49,7 @@ jobs:
           for attempt in 1 2 3; do
             echo "Installing Android emulator image (attempt $attempt/3)"
             if "$SDKMANAGER" --install "$IMAGE" --channel=0; then
-              if [ -s "${ANDROID_HOME}/system-images/android-35/google_apis/x86_64/source.properties" ]; then
+              if [ -s "${ANDROID_HOME}/system-images/android-35/default/x86_64/source.properties" ]; then
                 installed=1
                 break
               fi
