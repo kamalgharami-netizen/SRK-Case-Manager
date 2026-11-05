@@ -65,9 +65,9 @@ export const ThemeDropdown: React.FC<ThemeDropdownProps> = ({
         onClick={() => setIsOpen(value => !value)}
         aria-haspopup="true"
         aria-expanded={isOpen}
-        className={variant === 'sidebar'
-          ? 'flex w-full items-center justify-between gap-2 rounded-xl border border-white/25 bg-white/10 px-3 py-2.5 text-xs font-bold text-white shadow-md hover:bg-white/20'
-          : 'flex items-center gap-2 rounded-xl border border-blue-300 bg-blue-50 px-3 py-2 text-xs font-bold text-slate-900 shadow-md hover:bg-blue-100'}
+        className={variant === 'sidebar' || variant === 'full'
+          ? 'flex w-full items-center justify-between gap-2 rounded-xl border border-blue-300 bg-[#0B2B4D] px-3 py-3 text-xs font-bold text-white shadow-[0_5px_0_rgba(3,18,38,.55)] hover:bg-[#174875]'
+          : 'flex items-center gap-2 rounded-xl border border-blue-300 bg-[#0B2B4D] px-3 py-2 text-xs font-bold text-white shadow-md hover:bg-[#174875]'}
         title={`Active theme: ${activeTheme.name}`}
       >
         <span className="h-4 w-4 shrink-0 rounded-full border-2 border-white shadow" style={{ backgroundColor: activeTheme.bgHex }} />
@@ -76,22 +76,22 @@ export const ThemeDropdown: React.FC<ThemeDropdownProps> = ({
       </button>
 
       {isOpen && (
-        <div className={`absolute right-0 z-[80] mt-2 w-[min(92vw,420px)] overflow-hidden rounded-2xl border border-slate-300 bg-slate-100 shadow-2xl ${variant === 'sidebar' ? 'bottom-full left-0 right-auto mb-2' : ''}`}>
+        <div className={`absolute right-0 z-[80] mt-2 w-[min(92vw,420px)] overflow-hidden rounded-2xl border border-blue-400 bg-[#102B4C] shadow-[0_18px_40px_rgba(0,0,0,.48)] ${variant === 'sidebar' ? 'bottom-full left-0 right-auto mb-2' : ''}`}>
           <div className="flex items-center justify-between gap-2 bg-gradient-to-r from-[#082B52] to-[#0876D5] px-4 py-3 text-white">
             <div className="flex items-center gap-2 text-sm font-extrabold"><Palette className="h-4 w-4" />{language === 'bn' ? 'রঙিন থিম নির্বাচন' : 'Choose a Colour Theme'}</div>
             <span className="rounded-full bg-white/20 px-2 py-1 text-[10px] font-bold">{THEME_OPTIONS.length} themes</span>
           </div>
           <div className="max-h-[65vh] space-y-3 overflow-y-auto p-3">
             <section>
-              <div className="mb-2 flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-slate-700"><Sun className="h-4 w-4 text-amber-600" />{language === 'bn' ? 'উজ্জ্বল রঙের থিম' : 'Bright Colour Themes'}</div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">{THEME_OPTIONS.filter(item => item.category === 'Light').map(renderTheme)}</div>
+              <div className="mb-2 flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-blue-100"><Sun className="h-4 w-4 text-amber-600" />{language === 'bn' ? 'উজ্জ্বল রঙের থিম' : 'Bright Colour Themes'}</div>
+              <div className="flex flex-col gap-2">{THEME_OPTIONS.filter(item => item.category === 'Light').map(renderTheme)}</div>
             </section>
             <section>
               <div className="mb-2 flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-slate-700"><Moon className="h-4 w-4 text-indigo-700" />{language === 'bn' ? 'গাঢ় রঙের থিম' : 'Deep Colour Themes'}</div>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">{THEME_OPTIONS.filter(item => item.category === 'Dark').map(renderTheme)}</div>
             </section>
           </div>
-          <div className="border-t border-slate-300 bg-white px-3 py-2 text-[10px] font-semibold text-slate-600">
+          <div className="border-t border-blue-400/40 bg-[#0A2340] px-3 py-2 text-[10px] font-semibold text-blue-100">
             {language === 'bn' ? 'নির্বাচিত থিম সঙ্গে সঙ্গে পুরো অ্যাপে প্রয়োগ হবে।' : 'Your selection is applied across the app immediately.'}
           </div>
         </div>
