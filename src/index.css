@@ -761,3 +761,47 @@ html[class*="theme-"] textarea:focus-visible {
   outline:3px solid var(--srk-accent) !important;
   outline-offset:2px !important;
 }
+
+
+/* Stronger, non-faded colour surfaces requested for the nine selectable themes. */
+html.theme-white {
+  --srk-canvas:#DCEBFA; --srk-surface:#FFFFFF; --srk-surface-raised:#FFFFFF;
+  --srk-ink:#14243B; --srk-muted:#405873; --srk-accent:#0757B8;
+  --srk-header:#123D70; --srk-sidebar:#082B52; --srk-border:#9FC4E8;
+}
+html.theme-light {
+  --srk-canvas:#C9D6E5; --srk-surface:#F8FAFD; --srk-surface-raised:#FFFFFF;
+  --srk-ink:#17283F; --srk-muted:#40556D; --srk-accent:#245A9B;
+  --srk-header:#19395E; --srk-sidebar:#102D4C; --srk-border:#9FB3CA;
+}
+html.theme-sepia {
+  --srk-canvas:#E8D1A4; --srk-surface:#FFF9ED; --srk-surface-raised:#FFFCF5;
+  --srk-ink:#302115; --srk-muted:#61482F; --srk-accent:#8A4318;
+  --srk-header:#49321F; --srk-sidebar:#382719; --srk-border:#C9A875;
+}
+html.theme-azure {
+  --srk-canvas:#A8D4F5; --srk-surface:#F4F9FF; --srk-surface-raised:#FFFFFF;
+  --srk-ink:#102A43; --srk-muted:#34556F; --srk-accent:#075A91;
+  --srk-header:#10436B; --srk-sidebar:#0C3454; --srk-border:#75B4E2;
+}
+html.theme-mint {
+  --srk-canvas:#A9D8B7; --srk-surface:#F4FBF6; --srk-surface-raised:#FFFFFF;
+  --srk-ink:#12352B; --srk-muted:#355F4D; --srk-accent:#17613E;
+  --srk-header:#174B3A; --srk-sidebar:#103B2E; --srk-border:#79B991;
+}
+
+/* Use the selected colour on the workspace while keeping document panels crisp and readable. */
+html[class*="theme-"] body #root .app-shell-bg,
+html[class*="theme-"] body #root main {
+  background:var(--srk-canvas) !important;
+  color:var(--srk-ink) !important;
+}
+html[class*="theme-"] body #root main :is(.bg-white,.bg-slate-50,.bg-slate-100) {
+  background:var(--srk-surface) !important;
+  color:var(--srk-ink) !important;
+}
+html[class*="theme-"] body #root main :is(input,select,textarea) {
+  background:var(--srk-surface-raised) !important;
+  color:var(--srk-ink) !important;
+  border:1px solid var(--srk-border) !important;
+}
