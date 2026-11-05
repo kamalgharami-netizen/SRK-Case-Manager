@@ -56,21 +56,21 @@ export const ViewingOptionsModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[92vh]">
+      <div className="w-full max-w-2xl bg-[#102B4C] text-slate-50 rounded-2xl shadow-[0_18px_45px_rgba(3,20,45,.55)] border border-blue-400/50 overflow-hidden flex flex-col max-h-[92vh]">
         {/* Modal Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50/70 dark:bg-slate-950/50">
+        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 bg-[#0A2340]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-600/25">
               <SlidersHorizontal className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <h2 className="text-base sm:text-lg font-bold text-slate-50 flex items-center gap-2">
                 <span>{t.displayPreferences}</span>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">
                   SRK View
                 </span>
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-blue-100">
                 {language === 'bn'
                   ? 'কোর্টরুম থিম, ফন্ট সাইজ ও তথ্য ঘনত্ব আপনার পছন্দমতো সাজান'
                   : 'Customize courtroom theme, reading typography, and information density'}
@@ -79,7 +79,7 @@ export const ViewingOptionsModal: React.FC = () => {
           </div>
           <button
             onClick={closeViewModal}
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-blue-700 transition-colors cursor-pointer"
             title="Close"
           >
             <X className="w-5 h-5" />
@@ -89,14 +89,14 @@ export const ViewingOptionsModal: React.FC = () => {
         {/* Scrollable Configuration Body */}
         <div className="p-4 sm:p-6 overflow-y-auto space-y-6 text-xs sm:text-sm">
           {/* SECTION 1: Reorganised theme gallery — bright and deep palettes separated */}
-          <section className="space-y-4 rounded-2xl border border-blue-200 bg-slate-100 p-3 sm:p-4 shadow-inner">
+          <section className="space-y-4 rounded-2xl border border-blue-400/60 bg-[#173B63] p-3 sm:p-4 shadow-[0_7px_0_rgba(4,23,48,.45)]">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <label className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                <label className="text-sm font-extrabold text-white flex items-center gap-2">
                   <Palette className="w-4 h-4 text-blue-700" />
                   {language === 'bn' ? 'রঙ ও থিম নির্বাচন করুন' : 'Choose your colour theme'}
                 </label>
-                <p className="mt-1 text-xs font-medium text-slate-700">
+                <p className="mt-1 text-xs font-medium text-blue-100">
                   {language === 'bn' ? 'ফিকে সাদা নয়—স্পষ্ট রঙ, গাঢ় লেখা ও উজ্জ্বল অ্যাকসেন্ট। নির্বাচন করলে সঙ্গে সঙ্গে পুরো অ্যাপে প্রিভিউ হবে।' : 'Clear colour, readable text and strong accents — no washed-out theme previews.'}
                 </p>
               </div>
@@ -104,9 +104,9 @@ export const ViewingOptionsModal: React.FC = () => {
             </div>
             {(['Light', 'Dark'] as const).map(category => (
               <div key={category} className="space-y-2">
-                <div className="flex items-center gap-2 border-b border-slate-300 pb-2">
+                <div className="flex items-center gap-2 border-b border-blue-300/40 pb-2">
                   {category === 'Light' ? <Sun className="h-4 w-4 text-amber-600" /> : <Moon className="h-4 w-4 text-indigo-700" />}
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-800">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-blue-50">
                     {category === 'Light'
                       ? (language === 'bn' ? 'উজ্জ্বল ও রঙিন থিম' : 'Bright Colour Themes')
                       : (language === 'bn' ? 'গাঢ় ও প্রিমিয়াম থিম' : 'Deep Premium Themes')}
@@ -119,7 +119,7 @@ export const ViewingOptionsModal: React.FC = () => {
                     const dark = option.category === 'Dark';
                     const ink = dark ? '#F8FAFC' : '#172033';
                     const muted = dark ? '#D7E4F2' : '#3F526B';
-                    const panel = dark ? (option.id === 'navy' ? '#1B2B45' : option.id === 'charcoal' ? '#2B323D' : option.id === 'emerald' ? '#1B3A33' : '#302A50') : '#FFFFFF';
+                    const panel = dark ? (option.id === 'navy' ? '#1B2B45' : option.id === 'charcoal' ? '#2B323D' : option.id === 'emerald' ? '#1B3A33' : '#302A50') : '#DCEBFA';
                     return (
                       <button key={option.id} type="button" onClick={() => setTheme(option.id)}
                         aria-pressed={selected}
@@ -176,9 +176,9 @@ export const ViewingOptionsModal: React.FC = () => {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {([
                 { id: '3d', name: 'SRK Reference 3D', bn: 'SRK রেফারেন্স 3D', desc: 'Navy sidebar, blue header, colourful case cards and raised panels', descBn: 'নেভি সাইডবার, নীল হেডার, রঙিন কেস কার্ড ও 3D প্যানেল', panel: 'bg-gradient-to-br from-sky-50 to-blue-100', tile: 'shadow-[0_5px_0_#8eb8e6,0_8px_12px_#173c6928]', radius: 'rounded-xl', button: 'bg-gradient-to-b from-blue-500 to-blue-800' },
-                { id: 'modern', name: 'Clean Workspace', bn: 'ক্লিন ওয়ার্কস্পেস', desc: 'Business-inspired dashboard panels, clear tables and crisp actions', descBn: 'বিজনেস-স্টাইল ড্যাশবোর্ড প্যানেল, পরিষ্কার টেবিল ও স্পষ্ট অ্যাকশন', panel: 'bg-white', tile: 'border border-slate-300 shadow-none', radius: 'rounded-lg', button: 'bg-blue-700' },
-                { id: 'glass', name: 'Layered Glass', bn: 'লেয়ারড গ্লাস', desc: 'Translucent layered panels with soft depth', descBn: 'স্বচ্ছ স্তরযুক্ত প্যানেল ও নরম গভীরতা', panel: 'bg-sky-100/80', tile: 'border border-white/80 shadow-[0_8px_24px_#1e3a8a22]', radius: 'rounded-2xl', button: 'bg-gradient-to-r from-cyan-500 to-blue-700' },
-                { id: 'classic', name: 'Compact Office', bn: 'কমপ্যাক্ট অফিস', desc: 'Denser workspace, firm borders and formal styling', descBn: 'কম জায়গায় বেশি তথ্য, দৃঢ় বর্ডার ও আনুষ্ঠানিক ডিজাইন', panel: 'bg-slate-100', tile: 'border-2 border-slate-400 shadow-none', radius: 'rounded-md', button: 'bg-slate-700' }
+                { id: 'modern', name: 'Blue Reference Workspace', bn: 'ব্লু রেফারেন্স ওয়ার্কস্পেস', desc: 'Blue workspace, navy navigation and colourful case cards', descBn: 'নীল কর্মক্ষেত্র, নেভি মেনু ও রঙিন কেস কার্ড', panel: 'bg-[#DCEBFA]', tile: 'border border-blue-300 shadow-[0_4px_0_#8eb8e6]', radius: 'rounded-lg', button: 'bg-gradient-to-b from-blue-500 to-blue-800' },
+                { id: 'glass', name: 'Layered Blue Panels', bn: 'লেয়ারড ব্লু প্যানেল', desc: 'Layered blue panels with visible depth and bright accents', descBn: 'স্তরযুক্ত নীল প্যানেল, স্পষ্ট গভীরতা ও উজ্জ্বল অ্যাকসেন্ট', panel: 'bg-[#B9D8F7]', tile: 'border border-blue-400 shadow-[0_7px_0_#6598ce]', radius: 'rounded-2xl', button: 'bg-gradient-to-r from-cyan-500 to-blue-700' },
+                { id: 'classic', name: 'Navy Office', bn: 'নেভি অফিস', desc: 'Navy-framed compact workspace with blue raised controls', descBn: 'নেভি ফ্রেমের কমপ্যাক্ট কর্মক্ষেত্র ও উঁচু নীল কন্ট্রোল', panel: 'bg-[#C8DDF2]', tile: 'border-2 border-blue-500 shadow-[0_4px_0_#6d98c2]', radius: 'rounded-md', button: 'bg-[#123D70]' }
               ] as const).map(option => {
                 const selected = uiStyle === option.id;
                 return (
@@ -190,7 +190,7 @@ export const ViewingOptionsModal: React.FC = () => {
                         <span className="text-xs font-extrabold text-slate-900">{language === 'bn' ? option.bn : option.name}</span>
                         {selected ? <Check className="h-5 w-5 rounded-full bg-emerald-600 p-1 text-white" /> : <span className="text-[9px] font-bold text-indigo-800">{language === 'bn' ? 'নির্বাচন করুন' : 'SELECT'}</span>}
                       </div>
-                      <div className={`p-3 ${option.tile} ${option.radius} bg-white`}>
+                      <div className={`p-3 ${option.tile} ${option.radius} bg-[#DCEBFA]`}>
                         <div className="mb-2 flex items-center gap-2">
                           <div className={`flex h-8 w-8 items-center justify-center rounded-lg text-white shadow-md ${option.button}`}><Scale className="h-4 w-4" /></div>
                           <div className="min-w-0 flex-1">
