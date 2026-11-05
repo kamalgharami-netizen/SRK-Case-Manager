@@ -133,6 +133,10 @@ export const ViewingOptionsModal: React.FC = () => {
               <option value="royal">Royal Blue Chamber — Bright Blue Accents</option>
               <option value="compact">Compact Case Desk — Dense Working Layout</option>
               <option value="soft">Soft Blue Workspace — Calm High-Contrast Panels</option>
+              <option value="midnight">Midnight Docket — Dark Slate & Electric Blue</option>
+              <option value="ocean">Ocean Command — Deep Teal & Aqua</option>
+              <option value="emerald">Emerald Chamber — Forest Green & Jade</option>
+              <option value="copper">Copper Heritage — Charcoal & Warm Copper</option>
             </select>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <div className="rounded-lg border border-blue-300 bg-[#0D3157] p-2 text-center text-[10px] font-bold text-white">NAVY</div>
