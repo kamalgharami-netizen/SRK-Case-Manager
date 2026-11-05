@@ -86,166 +86,59 @@ export const ViewingOptionsModal: React.FC = () => {
 
         {/* Scrollable Configuration Body */}
         <div className="p-4 sm:p-6 overflow-y-auto space-y-6 text-xs sm:text-sm">
-          {/* SECTION 1: Theme Mode */}
-          <div>
-            <div className="flex items-center justify-between mb-2.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
-                <Sun className="w-4 h-4 text-amber-500" />
-                <span>{t.themeMode}</span>
-              </label>
-              <span className="text-[11px] text-slate-400">
-                {theme === 'white'
-                  ? language === 'bn'
-                    ? 'পিওর সাদা (Pure White)'
-                    : 'Pure White (#FFFFFF)'
-                  : theme === 'light'
-                  ? t.lightTheme
-                  : t.darkTheme}
-              </span>
+          {/* SECTION 1: Accessible theme gallery */}
+          <section className="space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <label className="text-sm font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                  <Palette className="w-4 h-4 text-blue-600" />
+                  {language === 'bn' ? 'রঙ ও থিম নির্বাচন করুন' : 'Choose your colour theme'}
+                </label>
+                <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                  {language === 'bn' ? 'প্রতিটি থিমে ব্যাকগ্রাউন্ড, কার্ড ও লেখার নমুনা দেখুন। নির্বাচন করলে সঙ্গে সঙ্গে পুরো অ্যাপে প্রিভিউ হবে।' : 'Preview the page, card and text colours. Selecting a theme previews it across the app immediately.'}
+                </p>
+              </div>
+              <span className="shrink-0 rounded-full bg-blue-100 px-2.5 py-1 text-[10px] font-bold text-blue-800">{THEME_OPTIONS.length} themes</span>
             </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
-              {/* Pure White */}
-              <button
-                type="button"
-                onClick={() => setTheme('white')}
-                className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
-                  theme === 'white'
-                    ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-500/30 shadow-xs'
-                    : 'border-slate-200 bg-white hover:border-slate-300'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-7 h-7 rounded-lg bg-white border border-slate-300 text-slate-900 flex items-center justify-center font-bold shadow-2xs">
-                    <Sun className="w-4 h-4 text-amber-500" />
-                  </div>
-                  {theme === 'white' && (
-                    <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center">
-                      <Check className="w-2.5 h-2.5 stroke-[3]" />
-                    </span>
-                  )}
-                </div>
-                <div className="font-bold text-slate-900 text-xs">
-                  {language === 'bn' ? 'সাদা' : 'White'}
-                </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">
-                  #FFFFFF paper
-                </div>
-              </button>
-
-              {/* Soft Light */}
-              <button
-                type="button"
-                onClick={() => setTheme('light')}
-                className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
-                  theme === 'light'
-                    ? 'border-blue-600 bg-blue-50/70 ring-2 ring-blue-500/30 shadow-xs'
-                    : 'border-slate-200 bg-white hover:border-slate-300'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-7 h-7 rounded-lg bg-slate-100 text-blue-700 flex items-center justify-center font-bold">
-                    <Sun className="w-4 h-4 text-blue-600" />
-                  </div>
-                  {theme === 'light' && (
-                    <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center">
-                      <Check className="w-2.5 h-2.5 stroke-[3]" />
-                    </span>
-                  )}
-                </div>
-                <div className="font-bold text-slate-900 text-xs">
-                  {language === 'bn' ? 'স্লেট লাইট' : 'Soft Light'}
-                </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">
-                  Daylight slate
-                </div>
-              </button>
-
-              {/* Warm Sepia */}
-              <button
-                type="button"
-                onClick={() => setTheme('sepia')}
-                className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
-                  theme === 'sepia'
-                    ? 'border-amber-600 bg-amber-50/70 ring-2 ring-amber-500/30 shadow-xs'
-                    : 'border-slate-200 bg-[#FBF5E8] hover:border-amber-300'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-7 h-7 rounded-lg bg-[#F4E9D4] text-amber-800 flex items-center justify-center font-bold">
-                    <Sun className="w-4 h-4 text-amber-700" />
-                  </div>
-                  {theme === 'sepia' && (
-                    <span className="w-4 h-4 rounded-full bg-amber-600 text-white flex items-center justify-center">
-                      <Check className="w-2.5 h-2.5 stroke-[3]" />
-                    </span>
-                  )}
-                </div>
-                <div className="font-bold text-slate-900 text-xs">
-                  {language === 'bn' ? 'সেপিয়া' : 'Sepia'}
-                </div>
-                <div className="text-[10px] text-slate-600 mt-0.5">
-                  Warm parchment
-                </div>
-              </button>
-
-              {/* Courtroom Azure */}
-              <button
-                type="button"
-                onClick={() => setTheme('azure')}
-                className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
-                  theme === 'azure'
-                    ? 'border-sky-600 bg-sky-50 ring-2 ring-sky-500/30 shadow-xs'
-                    : 'border-slate-200 bg-[#F0F7FF] hover:border-sky-300'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-7 h-7 rounded-lg bg-sky-100 text-sky-800 flex items-center justify-center font-bold">
-                    <Sun className="w-4 h-4 text-sky-600" />
-                  </div>
-                  {theme === 'azure' && (
-                    <span className="w-4 h-4 rounded-full bg-sky-600 text-white flex items-center justify-center">
-                      <Check className="w-2.5 h-2.5 stroke-[3]" />
-                    </span>
-                  )}
-                </div>
-                <div className="font-bold text-slate-900 text-xs">
-                  {language === 'bn' ? 'এজুর ব্লু' : 'Azure'}
-                </div>
-                <div className="text-[10px] text-slate-600 mt-0.5">
-                  Sky daylight
-                </div>
-              </button>
-
-              {/* Land Revenue Mint */}
-              <button
-                type="button"
-                onClick={() => setTheme('mint')}
-                className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
-                  theme === 'mint'
-                    ? 'border-emerald-600 bg-emerald-50 ring-2 ring-emerald-500/30 shadow-xs'
-                    : 'border-slate-200 bg-[#F0FDF4] hover:border-emerald-300'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
-                    <Sun className="w-4 h-4 text-emerald-600" />
-                  </div>
-                  {theme === 'mint' && (
-                    <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center">
-                      <Check className="w-2.5 h-2.5 stroke-[3]" />
-                    </span>
-                  )}
-                </div>
-                <div className="font-bold text-slate-900 text-xs">
-                  {language === 'bn' ? 'মিন্ট গ্রিন' : 'Mint Paper'}
-                </div>
-                <div className="text-[10px] text-slate-600 mt-0.5">
-                  Land record mint
-                </div>
-              </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {THEME_OPTIONS.map(option => {
+                const selected = theme === option.id;
+                const dark = option.category === 'Dark';
+                const cardText = dark ? '#F8FAFC' : '#172033';
+                const mutedText = dark ? '#CBD5E1' : '#475569';
+                const panel = dark ? (option.id === 'navy' ? '#1B2B45' : option.id === 'charcoal' ? '#2B323D' : option.id === 'emerald' ? '#1B3A33' : '#302A50') : '#FFFFFF';
+                return (
+                  <button key={option.id} type="button" onClick={() => setTheme(option.id)}
+                    aria-pressed={selected}
+                    className={`rounded-xl border-2 p-2.5 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${selected ? 'border-blue-500 ring-2 ring-blue-500/30 shadow-lg' : 'border-slate-300 dark:border-slate-600 hover:border-blue-400'}`}
+                    style={{ backgroundColor: option.bgHex, color: cardText }}>
+                    <div className="rounded-lg p-2.5 mb-2.5 border" style={{ backgroundColor: panel, borderColor: dark ? '#64748B' : '#CBD5E1', color: cardText }}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-extrabold tracking-wide">{language === 'bn' ? 'SRK কেস ম্যানেজার' : 'SRK CASE MANAGER'}</span>
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: option.accentHex }} />
+                      </div>
+                      <div className="rounded-md p-2 mb-2" style={{ backgroundColor: option.bgHex, color: cardText }}>
+                        <div className="text-xs font-bold">{language === 'bn' ? 'মামলার তালিকা' : 'Case Overview'}</div>
+                        <div className="text-[10px] mt-1" style={{ color: mutedText }}>{language === 'bn' ? 'মামলা • শুনানি • নথি' : 'Cases • Hearings • Documents'}</div>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <span className="h-1.5 flex-1 rounded-full" style={{ backgroundColor: option.accentHex }} />
+                        <span className="h-1.5 flex-1 rounded-full" style={{ backgroundColor: dark ? '#64748B' : '#CBD5E1' }} />
+                        <span className="h-1.5 flex-1 rounded-full" style={{ backgroundColor: dark ? '#475569' : '#E2E8F0' }} />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="min-w-0">
+                        <span className="block text-xs font-extrabold">{language === 'bn' ? option.nameBn : option.name}</span>
+                        <span className="block text-[10px] mt-0.5" style={{ color: mutedText }}>{option.tagline}</span>
+                      </span>
+                      {selected ? <span className="rounded-full bg-blue-600 text-white p-1"><Check className="w-3.5 h-3.5" /></span> : <span className="text-[9px] font-bold px-2 py-1 rounded-full border" style={{ borderColor: mutedText, color: cardText }}>{language === 'bn' ? 'বেছে নিন' : 'SELECT'}</span>}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
-          </div>
+          </section>
 
           {/* SECTION 2: Information Density */}
           <div>
