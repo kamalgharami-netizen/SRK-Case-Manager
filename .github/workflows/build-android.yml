@@ -44,12 +44,12 @@ jobs:
         shell: bash
         run: |
           SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
-          IMAGE="system-images;android-34;google_apis;x86_64"
+          IMAGE="system-images;android-30;default;x86_64"
           installed=0
           for attempt in 1 2 3; do
             echo "Installing Android emulator image (attempt $attempt/3)"
             if "$SDKMANAGER" --install "$IMAGE" --channel=0; then
-              if [ -s "${ANDROID_HOME}/system-images/android-34/google_apis/x86_64/source.properties" ]; then
+              if [ -s "${ANDROID_HOME}/system-images/android-30/default/x86_64/source.properties" ]; then
                 installed=1
                 break
               fi
@@ -110,13 +110,13 @@ jobs:
       - name: Run native sync-store instrumentation tests on Android Emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
-          target: google_apis
+          api-level: 30
+          target: default
           arch: x86_64
           profile: pixel_2
           emulator-boot-timeout: 1800
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 4096 -cores 2
-          # Use 4 GiB RAM with 2 vCPUs: the 2 GiB profile booted slowly and Android system services crashed with Broken pipe before instrumentation tests could start.
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 3072 -cores 4 -no-metrics
+          # Use the lighter Android 11 default image with 3 GiB RAM and 4 vCPUs. The API 34 Google APIs image repeatedly lost system_server/package services before APK installation.
           # Avoid the action's adb input keyevent command; emulator system services intermittently die immediately after boot.
           disable-animations: false
           working-directory: android
