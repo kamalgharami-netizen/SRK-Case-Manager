@@ -111,7 +111,7 @@ export const ThemeDropdown: React.FC<ThemeDropdownProps> = ({
           <div className="p-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
               <Palette className="w-3.5 h-3.5 text-blue-600" />
-              <span>{language === 'bn' ? 'থিম নির্বাচন (Light Themes)' : 'Courtroom Light Themes'}</span>
+              <span>{language === 'bn' ? 'থিম নির্বাচন' : 'Choose a Theme'}</span>
             </div>
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">
               {THEME_OPTIONS.length} Themes
@@ -131,7 +131,7 @@ export const ThemeDropdown: React.FC<ThemeDropdownProps> = ({
                   }}
                   className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-all cursor-pointer ${
                     isSelected
-                      ? 'bg-blue-50 text-blue-900 font-bold border border-blue-200 shadow-2xs'
+                      ? item.category === 'Dark' ? 'bg-slate-800 text-white font-bold border border-slate-600 shadow-2xs' : 'bg-blue-50 text-blue-900 font-bold border border-blue-200 shadow-2xs'
                       : 'text-slate-700 hover:bg-slate-100 border border-transparent'
                   }`}
                 >
