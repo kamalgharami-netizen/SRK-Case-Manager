@@ -66,7 +66,7 @@ export interface ToastState {
 
 export type ViewDensity = 'comfortable' | 'compact';
 export type ViewMode = 'grid' | 'table';
-export type UIStyle = '3d' | 'modern' | 'glass' | 'classic';
+export type UIStyle = '3d' | 'modern' | 'glass' | 'classic' | 'executive' | 'royal' | 'compact' | 'soft';
 export type FontSize = 'normal' | 'large';
 import { AppTheme, THEME_OPTIONS } from '../data/themes';
 export type { AppTheme };
@@ -372,7 +372,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [uiStyle, setUIStyleState] = useState<UIStyle>(() => {
     try {
       const saved = localStorage.getItem('srk_ui_style');
-      if (saved === '3d' || saved === 'modern' || saved === 'glass' || saved === 'classic') return saved;
+      if (saved === '3d' || saved === 'modern' || saved === 'glass' || saved === 'classic' || saved === 'executive' || saved === 'royal' || saved === 'compact' || saved === 'soft') return saved;
     } catch {}
     return '3d';
   });
@@ -521,7 +521,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       localStorage.setItem('srk_ui_style', uiStyle);
       const root = document.documentElement;
-      ['3d', 'modern', 'glass', 'classic'].forEach(style => root.classList.remove(`ui-style-${style}`));
+      ['3d', 'modern', 'glass', 'classic', 'executive', 'royal', 'compact', 'soft'].forEach(style => root.classList.remove(`ui-style-${style}`));
       root.classList.add(`ui-style-${uiStyle}`);
     } catch {}
   }, [uiStyle]);
