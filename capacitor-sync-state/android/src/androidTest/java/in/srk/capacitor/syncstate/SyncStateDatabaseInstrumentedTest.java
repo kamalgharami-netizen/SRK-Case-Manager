@@ -230,6 +230,27 @@ public class SyncStateDatabaseInstrumentedTest {
     }
 
     @Test
+    public void activeOwnerCanRenewLeaseButPreviousOwnerCannotRenewAfterTakeover() throws Exception {
+        SyncStateDatabase foreground = new SyncStateDatabase(context);
+        SyncStateDatabase worker = new SyncStateDatabase(context);
+        long now = System.currentTimeMillis();
+
+        assertTrue(foreground.acquireSyncLease("foreground-renew", now, now + 1000));
+        assertTrue("The current owner can extend its own active lease",
+            foreground.acquireSyncLease("foreground-renew", now + 500, now + 60000));
+        assertFalse("A different owner cannot replace a renewed active lease",
+            worker.acquireSyncLease("worker-waiting", now + 1001, now + 61001));
+
+        assertTrue("A different owner can take over after the renewed expiry",
+            worker.acquireSyncLease("worker-waiting", now + 60001, now + 120001));
+        assertFalse("The old owner cannot renew after ownership has changed",
+            foreground.acquireSyncLease("foreground-renew", now + 60002, now + 120002));
+
+        worker.close();
+        foreground.close();
+    }
+
+    @Test
     public void expiredLeaseCanBeRecoveredAfterProcessDeath() throws Exception {
         SyncStateDatabase firstProcess = new SyncStateDatabase(context);
         SyncStateDatabase restartedProcess = new SyncStateDatabase(context);
