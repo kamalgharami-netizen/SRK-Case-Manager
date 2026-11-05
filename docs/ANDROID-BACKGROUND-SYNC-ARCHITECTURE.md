@@ -190,3 +190,13 @@ This section supersedes the earlier Stage 1 and manual migration-gate descriptio
 - The workflow was changed to use the API 34 `default` emulator system image instead of `google_apis` because package-verification settings on the previous emulator did not prevent integrity-verification timeouts. The next workflow run must be inspected before marking this gate passed.
 - A signing keystore was committed in repository history. The file is removed from the current PR branch and ignore rules cover keystore formats, but historical copies remain in Git history. Treat that key as exposed and rotate it before production distribution. Update the Google OAuth Android client SHA-1 to match the replacement certificate.
 - Keep PR #7 Draft and unmerged until CI, replacement-key/OAuth verification, and physical-device release tests are complete.
+## Stage 1.2 — transactional cross-process sync lease (2026-11-05)
+
+Implemented on the feature branch as a prerequisite for any Android worker:
+
+- Native sync-state SQLite schema is now version 2. The migration from version 1 adds a dedicated singleton lease table and does not rewrite or delete encrypted sync-state rows.
+- The native Capacitor plugin exposes acquireSyncLease and releaseSyncLease. Acquisition and release run inside SQLite write transactions, so foreground and worker processes sharing the app database cannot both own an unexpired lease.
+- A lease has a bounded lifetime (5 seconds to 10 minutes), is owned by a caller-supplied process/cycle ID, and can be reclaimed after expiry if a process dies. A different owner cannot release it.
+- Instrumentation coverage now includes active-owner exclusion, owner-only release, expired-lease recovery, and additive v1→v2 migration with preservation of an existing row.
+
+This is only the shared-lock primitive. The production TypeScript sync runner does not yet acquire this lease, and no WorkManager worker is enabled by this stage. The next implementation must wire foreground sync to the lease first, test it, then make the worker use the same database lease and shared journal/inbox. Do not describe background sync as implemented until those steps and physical-device checks pass.
