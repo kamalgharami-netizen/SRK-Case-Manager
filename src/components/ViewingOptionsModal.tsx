@@ -88,73 +88,22 @@ export const ViewingOptionsModal: React.FC = () => {
 
         {/* Scrollable Configuration Body */}
         <div className="p-4 sm:p-6 overflow-y-auto space-y-6 text-xs sm:text-sm">
-          {/* SECTION 1: Reorganised theme gallery — bright and deep palettes separated */}
-          <section className="space-y-4 rounded-2xl border border-blue-400/60 bg-[#173B63] p-3 sm:p-4 shadow-[0_7px_0_rgba(4,23,48,.45)]">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <label className="text-sm font-extrabold text-white flex items-center gap-2">
-                  <Palette className="w-4 h-4 text-blue-700" />
-                  {language === 'bn' ? 'রঙ ও থিম নির্বাচন করুন' : 'Choose your colour theme'}
-                </label>
-                <p className="mt-1 text-xs font-medium text-blue-100">
-                  {language === 'bn' ? 'ফিকে সাদা নয়—স্পষ্ট রঙ, গাঢ় লেখা ও উজ্জ্বল অ্যাকসেন্ট। নির্বাচন করলে সঙ্গে সঙ্গে পুরো অ্যাপে প্রিভিউ হবে।' : 'Clear colour, readable text and strong accents — no washed-out theme previews.'}
-                </p>
-              </div>
-              <span className="shrink-0 rounded-full bg-blue-800 px-3 py-1.5 text-[10px] font-extrabold text-white shadow">{THEME_OPTIONS.length} THEMES</span>
+          {/* SECTION 1: Colour themes are selected from a dropdown list */}
+          <section className="space-y-3 rounded-2xl border border-blue-400/60 bg-[#173B63] p-3 sm:p-4 shadow-[0_7px_0_rgba(4,23,48,.45)]">
+            <div>
+              <label className="text-sm font-extrabold text-white flex items-center gap-2">
+                <Palette className="w-4 h-4 text-sky-300" />
+                {language === 'bn' ? 'রঙ ও থিম নির্বাচন করুন' : 'Choose your colour theme'}
+              </label>
+              <p className="mt-1 text-xs font-medium text-blue-100">
+                {language === 'bn'
+                  ? 'ড্রপডাউন তালিকা খুলে পছন্দের রঙ নির্বাচন করুন। নির্বাচন সঙ্গে সঙ্গে পুরো অ্যাপে প্রয়োগ হবে।'
+                  : 'Open the dropdown list and select a colour theme. Your choice is applied across the app immediately.'}
+              </p>
             </div>
-            {(['Light', 'Dark'] as const).map(category => (
-              <div key={category} className="space-y-2">
-                <div className="flex items-center gap-2 border-b border-blue-300/40 pb-2">
-                  {category === 'Light' ? <Sun className="h-4 w-4 text-amber-600" /> : <Moon className="h-4 w-4 text-indigo-700" />}
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-blue-50">
-                    {category === 'Light'
-                      ? (language === 'bn' ? 'উজ্জ্বল ও রঙিন থিম' : 'Bright Colour Themes')
-                      : (language === 'bn' ? 'গাঢ় ও প্রিমিয়াম থিম' : 'Deep Premium Themes')}
-                  </h3>
-                  <span className="ml-auto text-[10px] font-bold text-slate-600">{THEME_OPTIONS.filter(option => option.category === category).length}</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {THEME_OPTIONS.filter(option => option.category === category).map(option => {
-                    const selected = theme === option.id;
-                    const dark = option.category === 'Dark';
-                    const ink = dark ? '#F8FAFC' : '#172033';
-                    const muted = dark ? '#D7E4F2' : '#3F526B';
-                    const panel = dark ? (option.id === 'navy' ? '#1B2B45' : option.id === 'charcoal' ? '#2B323D' : option.id === 'emerald' ? '#1B3A33' : '#302A50') : '#DCEBFA';
-                    return (
-                      <button key={option.id} type="button" onClick={() => setTheme(option.id)}
-                        aria-pressed={selected}
-                        className={`group overflow-hidden rounded-xl border-2 text-left transition-all hover:-translate-y-0.5 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${selected ? 'border-amber-500 ring-2 ring-amber-400/50 shadow-xl' : 'border-slate-300 hover:border-blue-600'}`}
-                        style={{ backgroundColor: option.bgHex, color: ink }}>
-                        <div className="h-2.5 w-full" style={{ background: `linear-gradient(90deg, ${option.bgHex}, ${option.accentHex})` }} />
-                        <div className="p-3">
-                          <div className="mb-2 flex items-center justify-between gap-2">
-                            <span className="text-xs font-extrabold">{language === 'bn' ? option.nameBn : option.name}</span>
-                            {selected
-                              ? <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-white shadow"><Check className="h-4 w-4 stroke-[3]" /></span>
-                              : <span className="rounded-full border px-2 py-1 text-[9px] font-extrabold" style={{ borderColor: muted, color: ink }}>{language === 'bn' ? 'বেছে নিন' : 'SELECT'}</span>}
-                          </div>
-                          <div className="rounded-lg border p-2.5 shadow-inner" style={{ backgroundColor: panel, borderColor: dark ? '#64748B' : '#CBD5E1', color: dark ? '#F8FAFC' : '#172033' }}>
-                            <div className="mb-2 flex items-center justify-between">
-                              <span className="text-[10px] font-extrabold tracking-wide">SRK CASE MANAGER</span>
-                              <span className="h-3 w-3 rounded-full border border-white shadow" style={{ backgroundColor: option.accentHex }} />
-                            </div>
-                            <div className="rounded-md p-2" style={{ backgroundColor: option.bgHex, color: ink }}>
-                              <div className="text-xs font-bold">{language === 'bn' ? 'মামলার তালিকা' : 'Case Overview'}</div>
-                              <div className="mt-1 text-[10px] font-semibold" style={{ color: muted }}>{option.tagline}</div>
-                            </div>
-                            <div className="mt-2 flex gap-1.5">
-                              <span className="h-1.5 flex-1 rounded-full" style={{ backgroundColor: option.accentHex }} />
-                              <span className="h-1.5 flex-1 rounded-full" style={{ backgroundColor: dark ? '#64748B' : '#94A3B8' }} />
-                              <span className="h-1.5 flex-1 rounded-full" style={{ backgroundColor: dark ? '#475569' : '#CBD5E1' }} />
-                            </div>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+            <div className="max-w-md">
+              <ThemeDropdown variant="full" className="w-full" />
+            </div>
           </section>
 
           {/* SECTION 2: Application UI view style selector */}
