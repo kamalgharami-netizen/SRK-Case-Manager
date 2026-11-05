@@ -507,3 +507,125 @@ html.theme-indigo [class*="border-slate-"] { border-color: #514875 !important; }
 
 /* Always-visible focus and readable controls across themes */
 html[class*="theme-"] button:focus-visible, html[class*="theme-"] input:focus-visible, html[class*="theme-"] select:focus-visible, html[class*="theme-"] textarea:focus-visible { outline: 3px solid #F59E0B !important; outline-offset: 2px !important; }
+
+
+/* Midnight Navy — approved SRK dashboard visual system.
+   Scoped to the selected theme so the other eight themes remain available. */
+html.theme-navy,
+html.theme-navy body,
+html.theme-navy #root {
+  background: #041a35 !important;
+  color: #eaf3ff !important;
+  color-scheme: dark !important;
+}
+html.theme-navy body #root .app-shell-bg,
+html.theme-navy body #root main {
+  background: radial-gradient(ellipse at 50% 0%, #0b376b 0%, #061f40 48%, #03152c 100%) !important;
+  color: #eaf3ff !important;
+}
+html.theme-navy body #root header.sticky {
+  min-height: 5rem;
+  background: linear-gradient(100deg, #03152e 0%, #082b56 55%, #061d3b 100%) !important;
+  color: #f4f8ff !important;
+  border-bottom: 1px solid #1766ad !important;
+  box-shadow: 0 5px 22px rgba(0,0,0,.34) !important;
+}
+html.theme-navy body #root header.sticky :is(div,span,button,svg) { color: inherit; }
+html.theme-navy body #root header.sticky input {
+  color: #f3f8ff !important;
+  background: #09284c !important;
+  border-color: #24639a !important;
+}
+html.theme-navy body #root aside {
+  background: linear-gradient(180deg, #082b55 0%, #041a35 100%) !important;
+  color: #edf5ff !important;
+  border-color: #14518b !important;
+  box-shadow: 5px 0 22px rgba(0,0,0,.28) !important;
+}
+html.theme-navy body #root aside :is(div,span,button,svg) { color: inherit; }
+html.theme-navy body #root aside button {
+  color: #dceaff !important;
+  border-color: transparent !important;
+}
+html.theme-navy body #root aside button:hover {
+  background: rgba(24,119,220,.22) !important;
+  color: #fff !important;
+}
+html.theme-navy body #root aside button[class*="bg-blue-600"] {
+  background: linear-gradient(100deg,#1684f5 0%,#0756bd 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 5px 15px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.3) !important;
+}
+html.theme-navy body #root aside [class*="border-t"],
+html.theme-navy body #root aside [class*="border-b"] { border-color: #1b4d7b !important; }
+
+/* Dark glass surfaces throughout every module, while preserving semantic action colours. */
+html.theme-navy body #root main :is(.bg-white,.bg-slate-50,.bg-slate-100) {
+  background-color: #0a2b50 !important;
+  color: #eaf3ff !important;
+}
+html.theme-navy body #root main :is([class*="bg-white/"],[class*="bg-slate-"]) {
+  color: #eaf3ff;
+}
+html.theme-navy body #root main :is(.text-slate-900,.text-slate-800,.text-slate-700,.text-slate-600) {
+  color: #e4efff !important;
+}
+html.theme-navy body #root main :is(.text-slate-500,.text-slate-400) { color: #a9c2df !important; }
+html.theme-navy body #root main :is(.border-slate-200,.border-slate-300,.border-slate-400) {
+  border-color: #245783 !important;
+}
+html.theme-navy body #root main :is(.divide-slate-200 > :not([hidden]) ~ :not([hidden])) {
+  border-color: #245783 !important;
+}
+html.theme-navy body #root main :is(input,select,textarea) {
+  background: #061f3d !important;
+  color: #f2f7ff !important;
+  border-color: #326b9d !important;
+}
+html.theme-navy body #root main input::placeholder,
+html.theme-navy body #root main textarea::placeholder { color: #9bb6d4 !important; }
+html.theme-navy body #root main table thead th { background: #103963 !important; color: #f0f6ff !important; }
+html.theme-navy body #root main table tbody tr:hover { background: #10345a !important; }
+html.theme-navy body #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-color: #1e6099 !important;
+  box-shadow: 0 8px 20px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.07) !important;
+}
+html.theme-navy body #root main button[class*="bg-blue-"],
+html.theme-navy body #root main button[class*="bg-emerald-"],
+html.theme-navy body #root main button[class*="bg-green-"] { color: #fff !important; }
+
+/* Dashboard: deep navy canvas, luminous courthouse banner and raised metric tiles. */
+html.theme-navy .srk-dashboard { color: #eaf3ff !important; }
+html.theme-navy .srk-dashboard .srk-dashboard-hero {
+  background: linear-gradient(110deg,#062957 0%,#0756a8 58%,#0874c9 100%) !important;
+  border: 1px solid #3d91db !important;
+  box-shadow: 0 12px 28px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.18) !important;
+}
+html.theme-navy .srk-dashboard h2,
+html.theme-navy .srk-dashboard h3 { color: #f0f6ff !important; }
+html.theme-navy .srk-dashboard [class*="min-h-[104px]"],
+html.theme-navy .srk-dashboard [class*="min-h-[136px]"] {
+  background: linear-gradient(145deg,#103d70 0%,#08284c 100%) !important;
+  color: #f1f7ff !important;
+  border: 1px solid #286da8 !important;
+  border-bottom: 4px solid #164c7b !important;
+  box-shadow: 0 9px 0 rgba(0,0,0,.12), 0 13px 22px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.12) !important;
+}
+html.theme-navy .srk-dashboard [class*="min-h-[104px]"] :is(.text-slate-900,.text-slate-800,.text-slate-700),
+html.theme-navy .srk-dashboard [class*="min-h-[136px]"] :is(.text-slate-900,.text-slate-800,.text-slate-700) {
+  color: #f0f6ff !important;
+}
+html.theme-navy .srk-dashboard [class*="min-h-[104px]"] :is(.text-slate-500,.text-slate-400),
+html.theme-navy .srk-dashboard [class*="min-h-[136px]"] :is(.text-slate-500,.text-slate-400) {
+  color: #bdd2e9 !important;
+}
+html.theme-navy .srk-dashboard [class*="min-h-[136px]"] { border-radius: 16px !important; }
+html.theme-navy .srk-dashboard :is(.bg-white,.bg-slate-50,.bg-slate-100) {
+  background-color: #0b2d53 !important;
+}
+html.theme-navy .srk-dashboard :is(.border-slate-200,.border-slate-300) { border-color: #28608e !important; }
+html.theme-navy .srk-dashboard table thead { background: #103963 !important; color: #f0f6ff !important; }
+html.theme-navy .srk-dashboard table tbody tr:hover { background: #123a62 !important; }
+@media (max-width: 1023px) {
+  html.theme-navy body #root main { padding-bottom: max(4.5rem, env(safe-area-inset-bottom)) !important; }
+}
