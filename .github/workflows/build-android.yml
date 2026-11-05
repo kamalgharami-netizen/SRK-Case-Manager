@@ -44,7 +44,7 @@ jobs:
         shell: bash
         run: |
           SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
-          IMAGE="system-images;android-35;google_apis;x86_64"
+          IMAGE="system-images;android-35;default;x86_64"
           installed=0
           for attempt in 1 2 3; do
             echo "Installing Android emulator image (attempt $attempt/3)"
@@ -59,7 +59,7 @@ jobs:
             sleep 5
           done
           if [ "$installed" -ne 1 ]; then
-            echo "::error::Android API 29 default system image could not be installed after three attempts."
+            echo "::error::Android API 35 default system image could not be installed after three attempts."
             exit 1
           fi
 
@@ -111,12 +111,12 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
-          target: google_apis
+          target: default
           arch: x86_64
           profile: pixel_2
           emulator-boot-timeout: 1800
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 4096 -cores 2 -no-metrics
-          # Use the current Google APIs Android 15 image with 4 GiB RAM and 2 vCPUs. The previous Android 10 default image became unresponsive and reported API level 1 during instrumentation APK installation.
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 2048 -cores 2 -no-metrics
+          # Use the Android 15 default image without Google Play services: the previous Google APIs image repeatedly crashed Android system services and system_server on the non-KVM GitHub Linux runner. Keep guest RAM bounded to reduce host memory pressure.
           # Avoid the action's adb input keyevent command; emulator system services intermittently die immediately after boot.
           disable-animations: false
           working-directory: android
