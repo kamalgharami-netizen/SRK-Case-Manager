@@ -629,3 +629,135 @@ html.theme-navy .srk-dashboard table tbody tr:hover { background: #123a62 !impor
 @media (max-width: 1023px) {
   html.theme-navy body #root main { padding-bottom: max(4.5rem, env(safe-area-inset-bottom)) !important; }
 }
+
+
+/* SRK unified theme palette v2 — consistent contrast and coordinated surfaces.
+   Theme selection remains user-controlled; Midnight Navy remains the default. */
+html.theme-white {
+  --srk-canvas:#F4F7FC; --srk-surface:#FFFFFF; --srk-surface-raised:#FFFFFF;
+  --srk-ink:#17243A; --srk-muted:#52637A; --srk-accent:#2563EB;
+  --srk-header:#142B4E; --srk-sidebar:#102744; --srk-border:#D9E3F0;
+}
+html.theme-light {
+  --srk-canvas:#EAF0F7; --srk-surface:#F8FAFD; --srk-surface-raised:#FFFFFF;
+  --srk-ink:#1B2C43; --srk-muted:#52657C; --srk-accent:#3478C8;
+  --srk-header:#19395E; --srk-sidebar:#132E4D; --srk-border:#CAD7E6;
+}
+html.theme-sepia {
+  --srk-canvas:#F5EBDD; --srk-surface:#FFF9EF; --srk-surface-raised:#FFFCF6;
+  --srk-ink:#302518; --srk-muted:#725B43; --srk-accent:#A45B24;
+  --srk-header:#49321F; --srk-sidebar:#382719; --srk-border:#E3CFB2;
+}
+html.theme-azure {
+  --srk-canvas:#E7F2FC; --srk-surface:#F8FCFF; --srk-surface-raised:#FFFFFF;
+  --srk-ink:#12314E; --srk-muted:#4C6C87; --srk-accent:#0D6EAA;
+  --srk-header:#10436B; --srk-sidebar:#0C3454; --srk-border:#C4DDEE;
+}
+html.theme-mint {
+  --srk-canvas:#E8F4EC; --srk-surface:#F8FCF9; --srk-surface-raised:#FFFFFF;
+  --srk-ink:#16382B; --srk-muted:#527265; --srk-accent:#21845B;
+  --srk-header:#174B3A; --srk-sidebar:#103B2E; --srk-border:#C9E1D2;
+}
+html.theme-navy {
+  --srk-canvas:#081A2E; --srk-surface:#102943; --srk-surface-raised:#153653;
+  --srk-ink:#EAF3FF; --srk-muted:#AFC4DA; --srk-accent:#48A4FF;
+  --srk-header:#06172B; --srk-sidebar:#071F39; --srk-border:#285477;
+}
+html.theme-charcoal {
+  --srk-canvas:#171F2A; --srk-surface:#242F3D; --srk-surface-raised:#2B3848;
+  --srk-ink:#F1F5F9; --srk-muted:#B7C2D0; --srk-accent:#9BB4D8;
+  --srk-header:#151D27; --srk-sidebar:#101720; --srk-border:#465568;
+}
+html.theme-emerald {
+  --srk-canvas:#10251F; --srk-surface:#19372E; --srk-surface-raised:#214438;
+  --srk-ink:#ECFDF5; --srk-muted:#B8D9CB; --srk-accent:#56D6A2;
+  --srk-header:#0D211B; --srk-sidebar:#0B1C17; --srk-border:#376858;
+}
+html.theme-indigo {
+  --srk-canvas:#1D1B35; --srk-surface:#2B2850; --srk-surface-raised:#35315D;
+  --srk-ink:#F5F3FF; --srk-muted:#D0C9F0; --srk-accent:#B7A5FF;
+  --srk-header:#19172F; --srk-sidebar:#141226; --srk-border:#514A79;
+}
+
+/* Shared structure: the selected palette controls every shell, module and form. */
+html[class*="theme-"], html[class*="theme-"] body, html[class*="theme-"] #root {
+  background:var(--srk-canvas) !important;
+  color:var(--srk-ink) !important;
+}
+html[class*="theme-"] body #root .app-shell-bg,
+html[class*="theme-"] body #root main {
+  background:var(--srk-canvas) !important;
+  color:var(--srk-ink) !important;
+}
+html[class*="theme-"] body #root header.sticky {
+  background:linear-gradient(105deg,var(--srk-header),var(--srk-sidebar)) !important;
+  color:#FFFFFF !important;
+  border-color:var(--srk-border) !important;
+}
+html[class*="theme-"] body #root header.sticky :is(button,span,div,svg) { color:inherit; }
+html[class*="theme-"] body #root aside {
+  background:linear-gradient(180deg,var(--srk-sidebar),var(--srk-header)) !important;
+  color:#F7FAFF !important;
+  border-color:var(--srk-border) !important;
+}
+html[class*="theme-"] body #root aside :is(button,span,div,svg) { color:inherit; }
+html[class*="theme-"] body #root aside button { color:#EAF2FC !important; }
+html[class*="theme-"] body #root aside button:hover {
+  background:color-mix(in srgb,var(--srk-accent) 28%,transparent) !important;
+  color:#FFFFFF !important;
+}
+html[class*="theme-"] body #root aside button[class*="bg-blue-600"] {
+  background:linear-gradient(100deg,var(--srk-accent),color-mix(in srgb,var(--srk-accent) 72%,#102744)) !important;
+  color:#FFFFFF !important;
+}
+html[class*="theme-"] body #root main :is(.bg-white,.bg-slate-50,.bg-slate-100) {
+  background:var(--srk-surface) !important;
+  color:var(--srk-ink) !important;
+}
+html[class*="theme-"] body #root main [class*="text-slate-900"],
+html[class*="theme-"] body #root main [class*="text-slate-800"],
+html[class*="theme-"] body #root main [class*="text-slate-700"],
+html[class*="theme-"] body #root main [class*="text-slate-600"] { color:var(--srk-ink) !important; }
+html[class*="theme-"] body #root main [class*="text-slate-500"],
+html[class*="theme-"] body #root main [class*="text-slate-400"] { color:var(--srk-muted) !important; }
+html[class*="theme-"] body #root main [class*="border-slate-"] { border-color:var(--srk-border) !important; }
+html[class*="theme-"] body #root main :is(input,select,textarea) {
+  background:var(--srk-surface-raised) !important;
+  color:var(--srk-ink) !important;
+  border-color:var(--srk-border) !important;
+}
+html[class*="theme-"] body #root main :is(input,textarea)::placeholder { color:var(--srk-muted) !important; opacity:.85; }
+html[class*="theme-"] body #root main table thead th {
+  background:color-mix(in srgb,var(--srk-accent) 13%,var(--srk-surface)) !important;
+  color:var(--srk-ink) !important;
+}
+html[class*="theme-"] body #root main table tbody tr:hover {
+  background:color-mix(in srgb,var(--srk-accent) 9%,var(--srk-surface)) !important;
+}
+html[class*="theme-"] body #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-color:var(--srk-border) !important;
+  box-shadow:0 6px 16px rgba(8,28,52,.12),inset 0 1px 0 rgba(255,255,255,.12) !important;
+}
+html[class*="theme-"] .srk-dashboard { color:var(--srk-ink) !important; }
+html[class*="theme-"] .srk-dashboard .srk-dashboard-hero {
+  background:linear-gradient(110deg,var(--srk-header),var(--srk-accent)) !important;
+  border-color:var(--srk-border) !important;
+}
+html[class*="theme-"] .srk-dashboard .srk-dashboard-hero :is(h1,p,span) { color:#FFFFFF !important; }
+html[class*="theme-"] .srk-dashboard h2,
+html[class*="theme-"] .srk-dashboard h3 { color:var(--srk-ink) !important; }
+html[class*="theme-"] .srk-dashboard [class*="min-h-[104px]"],
+html[class*="theme-"] .srk-dashboard [class*="min-h-[136px]"] {
+  background:linear-gradient(145deg,var(--srk-surface-raised),var(--srk-surface)) !important;
+  color:var(--srk-ink) !important;
+  border-color:var(--srk-border) !important;
+}
+html[class*="theme-"] .srk-dashboard [class*="min-h-[104px]"] [class*="text-slate-"],
+html[class*="theme-"] .srk-dashboard [class*="min-h-[136px]"] [class*="text-slate-"] { color:var(--srk-ink) !important; }
+html[class*="theme-"] button:focus-visible,
+html[class*="theme-"] input:focus-visible,
+html[class*="theme-"] select:focus-visible,
+html[class*="theme-"] textarea:focus-visible {
+  outline:3px solid var(--srk-accent) !important;
+  outline-offset:2px !important;
+}
