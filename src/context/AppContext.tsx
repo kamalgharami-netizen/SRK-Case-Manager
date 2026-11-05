@@ -326,12 +326,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const [theme, setThemeState] = useState<AppTheme>(() => {
     try {
-      const savedTheme = localStorage.getItem('srk_theme_v2') as AppTheme;
-      if (savedTheme && THEME_OPTIONS.some(t => t.id === savedTheme)) {
-        return savedTheme;
+      const savedTheme = localStorage.getItem('srk_theme_v2') as AppTheme | null;
+      const migrationKey = 'srk_theme_default_migration_v1';
+      const migrated = localStorage.getItem(migrationKey) === 'done';
+      if (!migrated) {
+        // Move installations still using the old white default to the newly selected Navy default once.
+        const initialTheme = !savedTheme || savedTheme === 'white' ? 'navy' : savedTheme;
+        localStorage.setItem('srk_theme_v2', initialTheme);
+        localStorage.setItem(migrationKey, 'done');
+        if (THEME_OPTIONS.some(t => t.id === initialTheme)) return initialTheme as AppTheme;
       }
+      if (savedTheme && THEME_OPTIONS.some(t => t.id === savedTheme)) return savedTheme;
     } catch {}
-    return 'white';
+    return 'navy';
   });
 
   const [language, setLanguageState] = useState<AppLanguage>(() => {
@@ -464,7 +471,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const toggleTheme = () =>
     setThemeState(prev => {
-      const order: AppTheme[] = ['white', 'light', 'sepia', 'azure', 'mint'];
+      const order: AppTheme[] = THEME_OPTIONS.map(option => option.id);
       const idx = order.indexOf(prev);
       return idx >= 0 && idx < order.length - 1 ? order[idx + 1] : order[0];
     });
@@ -474,7 +481,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setViewModeState('grid');
     setFontSizeState('normal');
     setHighContrastState(false);
-    setThemeState('white');
+    setThemeState('navy');
     showToast(language === 'bn' ? 'ডিসপ্লে সেটিংস ডিফল্ট করা হয়েছে' : 'Display preferences reset to default', 'info');
   };
 
