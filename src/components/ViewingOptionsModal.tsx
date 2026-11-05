@@ -106,64 +106,42 @@ export const ViewingOptionsModal: React.FC = () => {
             </div>
           </section>
 
-          {/* SECTION 2: Application UI view style selector */}
-          <section className="space-y-3 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-3 sm:p-4 shadow-inner">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <label className="flex items-center gap-2 text-sm font-extrabold text-slate-900">
-                  <LayoutGrid className="h-4 w-4 text-indigo-700" />
-                  {language === 'bn' ? 'অ্যাপের UI দেখার ধরন নির্বাচন করুন' : 'Choose application UI style'}
-                </label>
-                <p className="mt-1 text-xs font-medium text-slate-700">
-                  {language === 'bn'
-                    ? 'আপনার দেওয়া SRK Case Manager ও Business Manager ছবির ধাঁচে কার্ড, প্যানেল ও কাজের জায়গার উপস্থাপনা বেছে নিন। তথ্য ও মডিউল অপরিবর্তিত থাকবে।'
-                    : 'Choose a visual layout style inspired by the supplied SRK Case Manager and Business Manager reference screens. Your case data and modules stay unchanged.'}
-                </p>
-              </div>
-              <span className="shrink-0 rounded-full bg-indigo-800 px-3 py-1.5 text-[10px] font-extrabold text-white">4 STYLES</span>
+          {/* SECTION 2: UI presentation presets — selectable only through a Settings dropdown */}
+          <section className="space-y-3 rounded-2xl border border-blue-300 bg-[#DCEBFA] p-3 sm:p-4 shadow-[0_5px_0_rgba(64,117,174,.35)]">
+            <div>
+              <label htmlFor="srk-ui-style-select" className="flex items-center gap-2 text-sm font-extrabold text-[#102F52]">
+                <LayoutGrid className="h-4 w-4 text-blue-700" />
+                {language === 'bn' ? 'অ্যাপের UI ডিজাইন নির্বাচন করুন' : 'Choose application UI design'}
+              </label>
+              <p className="mt-1 text-xs font-medium text-[#365879]">
+                {language === 'bn'
+                  ? 'ড্রপডাউন তালিকা থেকে ডিজাইন নির্বাচন করুন। নির্বাচনের সঙ্গে সঙ্গে অ্যাপের উপস্থাপনা বদলাবে; আপনার কেসের তথ্য ও মডিউল অপরিবর্তিত থাকবে।'
+                  : 'Choose a design from the dropdown. The presentation changes immediately; case data and modules remain unchanged.'}
+              </p>
             </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {([
-                { id: '3d', name: 'SRK Reference 3D', bn: 'SRK রেফারেন্স 3D', desc: 'Navy sidebar, blue header, colourful case cards and raised panels', descBn: 'নেভি সাইডবার, নীল হেডার, রঙিন কেস কার্ড ও 3D প্যানেল', panel: 'bg-gradient-to-br from-sky-50 to-blue-100', tile: 'shadow-[0_5px_0_#8eb8e6,0_8px_12px_#173c6928]', radius: 'rounded-xl', button: 'bg-gradient-to-b from-blue-500 to-blue-800' },
-                { id: 'modern', name: 'Blue Reference Workspace', bn: 'ব্লু রেফারেন্স ওয়ার্কস্পেস', desc: 'Blue workspace, navy navigation and colourful case cards', descBn: 'নীল কর্মক্ষেত্র, নেভি মেনু ও রঙিন কেস কার্ড', panel: 'bg-[#DCEBFA]', tile: 'border border-blue-300 shadow-[0_4px_0_#8eb8e6]', radius: 'rounded-lg', button: 'bg-gradient-to-b from-blue-500 to-blue-800' },
-                { id: 'glass', name: 'Layered Blue Panels', bn: 'লেয়ারড ব্লু প্যানেল', desc: 'Layered blue panels with visible depth and bright accents', descBn: 'স্তরযুক্ত নীল প্যানেল, স্পষ্ট গভীরতা ও উজ্জ্বল অ্যাকসেন্ট', panel: 'bg-[#B9D8F7]', tile: 'border border-blue-400 shadow-[0_7px_0_#6598ce]', radius: 'rounded-2xl', button: 'bg-gradient-to-r from-cyan-500 to-blue-700' },
-                { id: 'classic', name: 'Navy Office', bn: 'নেভি অফিস', desc: 'Navy-framed compact workspace with blue raised controls', descBn: 'নেভি ফ্রেমের কমপ্যাক্ট কর্মক্ষেত্র ও উঁচু নীল কন্ট্রোল', panel: 'bg-[#C8DDF2]', tile: 'border-2 border-blue-500 shadow-[0_4px_0_#6d98c2]', radius: 'rounded-md', button: 'bg-[#123D70]' }
-              ] as const).map(option => {
-                const selected = uiStyle === option.id;
-                return (
-                  <button key={option.id} type="button" onClick={() => setUIStyle(option.id)}
-                    aria-pressed={selected}
-                    className={`overflow-hidden border-2 text-left transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${option.radius} ${selected ? 'border-indigo-600 ring-2 ring-indigo-400/40 shadow-lg' : 'border-slate-300 hover:border-indigo-400'}`}>
-                    <div className={`p-3 ${option.panel}`}>
-                      <div className="mb-2 flex items-center justify-between gap-2">
-                        <span className="text-xs font-extrabold text-slate-900">{language === 'bn' ? option.bn : option.name}</span>
-                        {selected ? <Check className="h-5 w-5 rounded-full bg-emerald-600 p-1 text-white" /> : <span className="text-[9px] font-bold text-indigo-800">{language === 'bn' ? 'নির্বাচন করুন' : 'SELECT'}</span>}
-                      </div>
-                      <div className={`p-3 ${option.tile} ${option.radius} bg-[#DCEBFA]`}>
-                        <div className="mb-2 flex items-center gap-2">
-                          <div className={`flex h-8 w-8 items-center justify-center rounded-lg text-white shadow-md ${option.button}`}><Scale className="h-4 w-4" /></div>
-                          <div className="min-w-0 flex-1">
-                            <div className="text-[10px] font-extrabold text-slate-900">SRK CASE MANAGER</div>
-                            <div className="text-[9px] text-slate-500">{language === 'bn' ? 'মামলার ড্যাশবোর্ড' : 'Case Dashboard'}</div>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-3 gap-1.5">
-                          <div className={`h-7 ${option.radius} bg-blue-100`} />
-                          <div className={`h-7 ${option.radius} bg-emerald-100`} />
-                          <div className={`h-7 ${option.radius} bg-amber-100`} />
-                        </div>
-                        <div className="mt-2 flex gap-1"><span className="h-1.5 w-2/3 rounded-full bg-slate-300"/><span className="h-1.5 flex-1 rounded-full bg-slate-200"/></div>
-                      </div>
-                    </div>
-                    <div className="border-t border-slate-200 bg-white px-3 py-2">
-                      <p className="text-[10px] font-semibold text-slate-600">{language === 'bn' ? option.descBn : option.desc}</p>
-                    </div>
-                  </button>
-                );
-              })}
+            <select
+              id="srk-ui-style-select"
+              value={uiStyle}
+              onChange={(event) => setUIStyle(event.target.value as typeof uiStyle)}
+              className="w-full rounded-xl border-2 border-blue-500 bg-[#0D3157] px-4 py-3 text-sm font-extrabold text-white shadow-[0_4px_0_#062344] outline-none transition focus:ring-2 focus:ring-sky-400"
+            >
+              <option value="3d">SRK Reference 3D — Navy + Blue + Raised Cards</option>
+              <option value="modern">Modern Blue Workspace — Clean Panels</option>
+              <option value="glass">Layered Blue Panels — Depth & Transparency</option>
+              <option value="classic">Classic Navy Office — Formal Compact Layout</option>
+              <option value="executive">Executive Legal Suite — Premium Navy & Gold</option>
+              <option value="royal">Royal Blue Chamber — Bright Blue Accents</option>
+              <option value="compact">Compact Case Desk — Dense Working Layout</option>
+              <option value="soft">Soft Blue Workspace — Calm High-Contrast Panels</option>
+            </select>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="rounded-lg border border-blue-300 bg-[#0D3157] p-2 text-center text-[10px] font-bold text-white">NAVY</div>
+              <div className="rounded-lg border border-blue-300 bg-[#1689F8] p-2 text-center text-[10px] font-bold text-white">BLUE</div>
+              <div className="rounded-lg border border-blue-300 bg-[#DCEBFA] p-2 text-center text-[10px] font-bold text-[#102F52]">PANEL</div>
+              <div className="rounded-lg border border-blue-300 bg-[#EAB84A] p-2 text-center text-[10px] font-bold text-[#382600]">ACCENT</div>
             </div>
-            <p className="text-[10px] font-semibold text-indigo-900">
-              {language === 'bn' ? 'নির্বাচন করলে সঙ্গে সঙ্গে প্রিভিউ হবে; Apply চাপলে সেটিংস বন্ধ হবে।' : 'Selection previews immediately. Choose Apply to close and keep the preference.'}
+            <p className="text-[10px] font-semibold text-[#25496D]">
+              {language === 'bn' ? 'ডিজাইন পরিবর্তন সঙ্গে সঙ্গে সংরক্ষিত হবে। রঙের থিম আলাদা Colour Theme dropdown থেকে নির্বাচন করুন।' : 'Design selection is saved automatically. Choose colours separately from the Colour Theme dropdown.'}
             </p>
           </section>
 
