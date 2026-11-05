@@ -30,6 +30,8 @@ export const ViewingOptionsModal: React.FC = () => {
     setViewDensity,
     viewMode,
     setViewMode,
+    uiStyle,
+    setUIStyle,
     fontSize,
     setFontSize,
     highContrast,
@@ -155,7 +157,68 @@ export const ViewingOptionsModal: React.FC = () => {
             ))}
           </section>
 
-          {/* SECTION 2: Information Density */}
+          {/* SECTION 2: Application UI view style selector */}
+          <section className="space-y-3 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-3 sm:p-4 shadow-inner">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <label className="flex items-center gap-2 text-sm font-extrabold text-slate-900">
+                  <LayoutGrid className="h-4 w-4 text-indigo-700" />
+                  {language === 'bn' ? 'অ্যাপের UI দেখার ধরন নির্বাচন করুন' : 'Choose application UI style'}
+                </label>
+                <p className="mt-1 text-xs font-medium text-slate-700">
+                  {language === 'bn'
+                    ? 'থিমের মতোই এখানে পুরো অ্যাপের কার্ড, মেনু, বাটন ও প্যানেলের উপস্থাপনা বদলাতে পারবেন।'
+                    : 'Change the visual presentation of cards, menus, buttons and panels without changing your data or features.'}
+                </p>
+              </div>
+              <span className="shrink-0 rounded-full bg-indigo-800 px-3 py-1.5 text-[10px] font-extrabold text-white">4 STYLES</span>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {([
+                { id: '3d', name: '3D Professional', bn: '৩ডি প্রফেশনাল', desc: 'Raised cards, depth and dimensional icons', descBn: 'উঁচু কার্ড, গভীরতা ও ৩ডি আইকন', panel: 'bg-gradient-to-br from-white to-blue-100', tile: 'shadow-[0_5px_0_#8eb8e6,0_8px_12px_#173c6928]', radius: 'rounded-xl', button: 'bg-gradient-to-b from-blue-500 to-blue-800' },
+                { id: 'modern', name: 'Modern Flat', bn: 'মডার্ন ফ্ল্যাট', desc: 'Clean surfaces, crisp lines and minimal shadows', descBn: 'পরিষ্কার প্যানেল, স্পষ্ট রেখা ও কম ছায়া', panel: 'bg-white', tile: 'border border-slate-300 shadow-none', radius: 'rounded-lg', button: 'bg-blue-700' },
+                { id: 'glass', name: 'Glass Workspace', bn: 'গ্লাস ওয়ার্কস্পেস', desc: 'Soft translucent panels and layered surfaces', descBn: 'স্বচ্ছ আবহের প্যানেল ও স্তরযুক্ত ডিজাইন', panel: 'bg-sky-100/80', tile: 'border border-white/80 shadow-[0_8px_24px_#1e3a8a22]', radius: 'rounded-2xl', button: 'bg-gradient-to-r from-cyan-500 to-blue-700' },
+                { id: 'classic', name: 'Classic Office', bn: 'ক্লাসিক অফিস', desc: 'Square layout, firm borders and formal styling', descBn: 'চৌকো বিন্যাস, দৃঢ় বর্ডার ও আনুষ্ঠানিক ডিজাইন', panel: 'bg-slate-100', tile: 'border-2 border-slate-400 shadow-none', radius: 'rounded-md', button: 'bg-slate-700' }
+              ] as const).map(option => {
+                const selected = uiStyle === option.id;
+                return (
+                  <button key={option.id} type="button" onClick={() => setUIStyle(option.id)}
+                    aria-pressed={selected}
+                    className={`overflow-hidden border-2 text-left transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${option.radius} ${selected ? 'border-indigo-600 ring-2 ring-indigo-400/40 shadow-lg' : 'border-slate-300 hover:border-indigo-400'}`}>
+                    <div className={`p-3 ${option.panel}`}>
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <span className="text-xs font-extrabold text-slate-900">{language === 'bn' ? option.bn : option.name}</span>
+                        {selected ? <Check className="h-5 w-5 rounded-full bg-emerald-600 p-1 text-white" /> : <span className="text-[9px] font-bold text-indigo-800">{language === 'bn' ? 'নির্বাচন করুন' : 'SELECT'}</span>}
+                      </div>
+                      <div className={`p-3 ${option.tile} ${option.radius} bg-white`}>
+                        <div className="mb-2 flex items-center gap-2">
+                          <div className={`flex h-8 w-8 items-center justify-center rounded-lg text-white shadow-md ${option.button}`}><Scale className="h-4 w-4" /></div>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[10px] font-extrabold text-slate-900">SRK CASE MANAGER</div>
+                            <div className="text-[9px] text-slate-500">{language === 'bn' ? 'মামলার ড্যাশবোর্ড' : 'Case Dashboard'}</div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          <div className={`h-7 ${option.radius} bg-blue-100`} />
+                          <div className={`h-7 ${option.radius} bg-emerald-100`} />
+                          <div className={`h-7 ${option.radius} bg-amber-100`} />
+                        </div>
+                        <div className="mt-2 flex gap-1"><span className="h-1.5 w-2/3 rounded-full bg-slate-300"/><span className="h-1.5 flex-1 rounded-full bg-slate-200"/></div>
+                      </div>
+                    </div>
+                    <div className="border-t border-slate-200 bg-white px-3 py-2">
+                      <p className="text-[10px] font-semibold text-slate-600">{language === 'bn' ? option.descBn : option.desc}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[10px] font-semibold text-indigo-900">
+              {language === 'bn' ? 'নির্বাচন করলে সঙ্গে সঙ্গে প্রিভিউ হবে; Apply চাপলে সেটিংস বন্ধ হবে।' : 'Selection previews immediately. Choose Apply to close and keep the preference.'}
+            </p>
+          </section>
+
+          {/* SECTION 3: Information Density */}
           <div>
             <div className="flex items-center justify-between mb-2.5">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
@@ -220,7 +283,7 @@ export const ViewingOptionsModal: React.FC = () => {
             </div>
           </div>
 
-          {/* SECTION 3: Case Layout (Grid vs Table) */}
+          {/* SECTION 4: Case Layout (Grid vs Table) */}
           <div>
             <div className="flex items-center justify-between mb-2.5">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
@@ -267,7 +330,7 @@ export const ViewingOptionsModal: React.FC = () => {
             </div>
           </div>
 
-          {/* SECTION 4: Typography & Reading Scale */}
+          {/* SECTION 5: Typography & Reading Scale */}
           <div>
             <div className="flex items-center justify-between mb-2.5">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
@@ -314,7 +377,7 @@ export const ViewingOptionsModal: React.FC = () => {
             </div>
           </div>
 
-          {/* SECTION 5: High-Contrast Toggle */}
+          {/* SECTION 6: High-Contrast Toggle */}
           <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
@@ -338,7 +401,7 @@ export const ViewingOptionsModal: React.FC = () => {
             </button>
           </div>
 
-          {/* SECTION 6: Interactive Live Visual Preview */}
+          {/* SECTION 7: Interactive Live Visual Preview */}
           <div className="pt-2">
             <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
               <Eye className="w-3.5 h-3.5 text-blue-500" />
