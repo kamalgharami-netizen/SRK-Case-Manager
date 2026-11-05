@@ -890,12 +890,12 @@ body{background:#d9eaff!important;color:var(--srk-ink)}
 #root .app-shell-bg,#root main{background:linear-gradient(145deg,#eaf4ff 0%,#d7e9fc 52%,#e8f3ff 100%)!important}
 #root main{padding:clamp(12px,2vw,26px)!important;min-width:0}
 #root main>.srk-dashboard{max-width:1600px;margin-inline:auto}
-#root main .srk-dashboard-hero{border:1px solid #397fc5!important;border-bottom:5px solid #06366f!important;border-radius:22px!important;background:linear-gradient(125deg,#082c55 0%,#0759a9 58%,#1685e8 100%)!important;box-shadow:0 12px 22px rgba(8,47,91,.22),inset 0 1px 0 rgba(255,255,255,.25)!important}
+#root main .srk-dashboard-hero{border:1px solid #397fc5!important;border-bottom:5px solid #06366f!important;border-radius:22px!important;background:linear-gradient(125deg,#082c55 0%,#0759a9 58%,#1685e8 100%)!important;box-shadow:0 12px 22px rgba(8,47,91,.22),inset 0 1px 0 rgba(67,145,224,.24)!important}
 #root main .srk-dashboard :is(section,article){border-color:#a9ccef}
-#root main .srk-dashboard :is(.rounded-2xl,.rounded-xl)[class*="border"]{background-color:#e4f0ff;border-color:#a7c9ed!important;box-shadow:0 7px 0 rgba(75,125,183,.34),0 11px 18px rgba(10,52,99,.10),inset 0 1px 0 rgba(255,255,255,.9)!important}
+#root main .srk-dashboard :is(.rounded-2xl,.rounded-xl)[class*="border"]{background-color:#e4f0ff;border-color:#a7c9ed!important;box-shadow:0 7px 0 rgba(75,125,183,.34),0 11px 18px rgba(10,52,99,.10),inset 0 1px 0 rgba(67,145,224,.24)!important}
 #root main .srk-dashboard :is(.rounded-2xl,.rounded-xl)[class*="border"] :is(h2,h3,h4){color:#123b68}
-#root main .srk-dashboard button:not(:disabled){border-color:#9fc3e9;box-shadow:0 4px 0 rgba(59,105,159,.38),0 7px 12px rgba(9,48,91,.12),inset 0 1px 0 rgba(255,255,255,.55)!important;transition:transform .16s ease,box-shadow .16s ease,filter .16s ease}
-#root main .srk-dashboard button:not(:disabled):hover{transform:translateY(-2px);filter:saturate(1.08);box-shadow:0 6px 0 rgba(59,105,159,.38),0 11px 17px rgba(9,48,91,.16),inset 0 1px 0 rgba(255,255,255,.6)!important}
+#root main .srk-dashboard button:not(:disabled){border-color:#9fc3e9;box-shadow:0 4px 0 rgba(59,105,159,.38),0 7px 12px rgba(9,48,91,.12),inset 0 1px 0 rgba(67,145,224,.24)!important;transition:transform .16s ease,box-shadow .16s ease,filter .16s ease}
+#root main .srk-dashboard button:not(:disabled):hover{transform:translateY(-2px);filter:saturate(1.08);box-shadow:0 6px 0 rgba(59,105,159,.38),0 11px 17px rgba(9,48,91,.16),inset 0 1px 0 rgba(67,145,224,.28)!important}
 #root main .srk-dashboard button:not(:disabled):active{transform:translateY(2px);box-shadow:0 1px 0 rgba(59,105,159,.45),inset 0 1px 2px rgba(9,48,91,.16)!important}
 #root main .srk-dashboard button svg{filter:drop-shadow(0 2px 1px rgba(6,35,70,.18))}
 #root main .srk-dashboard table thead{background:linear-gradient(90deg,#0d3b6b,#1268b7)!important;color:#fff!important}
@@ -918,7 +918,7 @@ body{background:#d9eaff!important;color:var(--srk-ink)}
 #root aside :is(.border-slate-200,.border-slate-300){border-color:rgba(173,211,249,.24)!important}
 #root header.sticky{min-height:64px;background:linear-gradient(100deg,#073665 0%,#075db2 58%,#087de4 100%)!important;border-bottom:3px solid #06417d!important;box-shadow:0 6px 15px rgba(5,43,84,.22)!important}
 #root header.sticky :is(button,span,svg){color:#fff}
-#root header.sticky button{border:1px solid rgba(210,233,255,.35)!important;border-radius:10px!important;box-shadow:0 3px 0 rgba(2,34,71,.45),inset 0 1px 0 rgba(255,255,255,.22)!important}
+#root header.sticky button{border:1px solid rgba(210,233,255,.35)!important;border-radius:10px!important;box-shadow:0 3px 0 rgba(2,34,71,.45),inset 0 1px 0 rgba(67,145,224,.24)!important}
 #root main :is(input,select,textarea){background-color:#f7fbff!important;border-color:#9dbfe3!important;color:#102b4c!important;box-shadow:inset 0 2px 4px rgba(10,48,88,.08)!important}
 #root main :is(input,select,textarea):focus{outline:2px solid #55a9f7!important;outline-offset:1px}
 #root main :is(.border-slate-200,.border-slate-300){border-color:#a9c9eb!important}
