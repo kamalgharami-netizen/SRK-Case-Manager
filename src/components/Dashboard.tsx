@@ -854,11 +854,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <div
                 key={card.type}
                 onClick={() => onNavigate(card.page)}
-                className={`p-3.5 rounded-xl bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 ${card.borderHover} shadow-[0_8px_18px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_8px_18px_rgba(0,0,0,0.45)] hover:-translate-y-1 hover:shadow-[0_14px_24px_rgba(37,99,235,0.15)] active:translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between gap-2.5`}
+                className={`p-3.5 rounded-xl bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 ${card.borderHover} shadow-[0_9px_20px_rgba(15,23,42,0.18),0_3px_0_rgba(30,64,175,0.18)] dark:shadow-[0_8px_18px_rgba(0,0,0,0.45)] hover:-translate-y-1 hover:shadow-[0_14px_24px_rgba(37,99,235,0.15)] active:translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between gap-2.5`}
               >
                 <div className="flex items-center justify-between gap-1">
                   <div
-                    className={`w-10 h-10 rounded-xl ${card.bg} ${card.color} flex items-center justify-center shadow-[0_4px_10px_rgba(15,23,42,0.12),inset_0_2px_2px_rgba(255,255,255,0.8),inset_0_-2px_3px_rgba(0,0,0,0.12)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.5)] border border-white/80 dark:border-white/10 group-hover:scale-105 transition-transform shrink-0`}
+                    className={`w-10 h-10 rounded-xl ${card.bg} ${card.color} flex items-center justify-center shadow-[0_5px_10px_rgba(15,23,42,0.22),0_2px_0_rgba(30,64,175,0.22)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.5)] border border-slate-300 dark:border-slate-700 group-hover:scale-105 transition-transform shrink-0`}
                   >
                     <Icon className="w-5 h-5 drop-shadow-2xs stroke-[2.2]" />
                   </div>
@@ -912,11 +912,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <div
                 key={tool.page}
                 onClick={() => (tool.onClick ? tool.onClick() : onNavigate(tool.page))}
-                className="p-3.5 rounded-xl bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 hover:border-blue-500 shadow-[0_8px_18px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_8px_18px_rgba(0,0,0,0.45)] hover:-translate-y-1 hover:shadow-[0_14px_24px_rgba(37,99,235,0.15)] active:translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between gap-2.5"
+                className="p-3.5 rounded-xl bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 hover:border-blue-500 shadow-[0_9px_20px_rgba(15,23,42,0.18),0_3px_0_rgba(30,64,175,0.18)] dark:shadow-[0_8px_18px_rgba(0,0,0,0.45)] hover:-translate-y-1 hover:shadow-[0_14px_24px_rgba(37,99,235,0.15)] active:translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between gap-2.5"
               >
                 <div className="flex items-center justify-between gap-1">
                   <div
-                    className={`w-10 h-10 rounded-xl ${tool.bg} ${tool.color} flex items-center justify-center shadow-[0_4px_10px_rgba(15,23,42,0.12),inset_0_2px_2px_rgba(255,255,255,0.8),inset_0_-2px_3px_rgba(0,0,0,0.12)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.5)] border border-white/80 dark:border-white/10 group-hover:scale-105 transition-transform shrink-0`}
+                    className={`w-10 h-10 rounded-xl ${tool.bg} ${tool.color} flex items-center justify-center shadow-[0_5px_10px_rgba(15,23,42,0.22),0_2px_0_rgba(30,64,175,0.22)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.5)] border border-slate-300 dark:border-slate-700 group-hover:scale-105 transition-transform shrink-0`}
                   >
                     <Icon className="w-5 h-5 drop-shadow-2xs stroke-[2.2]" />
                   </div>
@@ -944,7 +944,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* Bottom Section: Today's Cause List + Active Case Tracker — Matching Image 4 with 3D Visuals */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Left: Today's Cause List Preview (7 cols) */}
-        <div className="lg:col-span-7 bg-gradient-to-b from-white to-slate-50/80 dark:from-slate-900 dark:to-slate-950 rounded-xl border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 shadow-[0_10px_25px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] overflow-hidden flex flex-col justify-between">
+        <div className="lg:col-span-7 bg-gradient-to-b from-white to-slate-50/80 dark:from-slate-900 dark:to-slate-950 rounded-xl border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 shadow-[0_10px_24px_rgba(15,23,42,0.18),0_3px_0_rgba(30,64,175,0.16)] overflow-hidden flex flex-col justify-between">
           <div>
             <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -1031,7 +1031,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* Right: Active Case Tracker & Quick Tools (5 cols) */}
-        <div className="lg:col-span-5 bg-gradient-to-b from-white to-slate-50/80 dark:from-slate-900 dark:to-slate-950 rounded-xl border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 shadow-[0_10px_25px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] p-4 flex flex-col justify-between">
+        <div className="lg:col-span-5 bg-gradient-to-b from-white to-slate-50/80 dark:from-slate-900 dark:to-slate-950 rounded-xl border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 shadow-[0_10px_24px_rgba(15,23,42,0.18),0_3px_0_rgba(30,64,175,0.16)] p-4 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 mb-3">
               <h3 className="text-sm font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
