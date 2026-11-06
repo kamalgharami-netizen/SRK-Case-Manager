@@ -1713,3 +1713,23 @@ body { color-scheme:dark!important; }
 #root svg { flex-shrink:0; }
 #root :is(.rounded-xl,.rounded-2xl) { border-color:var(--srk-border); }
 @media (prefers-reduced-motion:reduce) { #root *, #root *::before, #root *::after { animation-duration:.01ms!important; transition-duration:.01ms!important; } }
+
+
+/* Opacity-suffixed utility classes and legacy arbitrary black/white fills */
+#root [class*="bg-white"], #root [class*="bg-black"], #root [class*="bg-slate-"], #root [class*="bg-gray-"] {
+  background-color:var(--srk-surface)!important;
+  color:var(--srk-ink)!important;
+}
+#root [class*="bg-[#fff"], #root [class*="bg-[#FFF"], #root [class*="bg-[#000"], #root [class*="bg-[white"], #root [class*="bg-[black"] {
+  background-color:var(--srk-surface)!important;
+  color:var(--srk-ink)!important;
+}
+#root [class~="dark:bg-slate-900"], #root [class~="dark:bg-slate-950"], #root [class~="dark:bg-slate-800"], #root [class~="dark:bg-slate-850"] {
+  background-color:var(--srk-raised)!important;
+}
+#root [class~="bg-black/40"], #root [class~="bg-black/50"], #root [class~="bg-black/60"], #root [class~="bg-black/70"], #root [class~="bg-black/80"] {
+  background-color:rgba(34,78,119,.82)!important;
+}
+#root [class*="shadow-["] {
+  box-shadow:0 7px 18px var(--srk-shadow), inset 0 1px 0 rgba(164,207,239,.10)!important;
+}
