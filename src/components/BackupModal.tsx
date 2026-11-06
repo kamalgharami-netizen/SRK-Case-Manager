@@ -532,95 +532,24 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           </div>
         </div>
 
-        {/* Unified Tab Navigator */}
-        <div className="grid grid-cols-3 sm:grid-cols-7 gap-1 p-2 bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 shrink-0 text-xs font-bold">
-          <button
-            type="button"
-            onClick={() => setActiveTab('chambers')}
-            className={`py-2 px-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${
-              activeTab === 'chambers'
-                ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs font-extrabold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-            title="Chambers, + Firm & Switch"
-          >
-            <Building2 className="w-3.5 h-3.5 text-blue-600" />
-            <span className="truncate">Chambers &amp; Switch</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('team')}
-            className={`py-2 px-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${
-              activeTab === 'team'
-                ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs font-extrabold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-            title="Team & Chamber Staff"
-          >
-            <Users className="w-3.5 h-3.5 text-indigo-600" />
-            <span className="truncate">Team &amp; Staff</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('display')}
-            className={`py-2 px-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${
-              activeTab === 'display'
-                ? 'bg-white text-blue-700 shadow-xs font-extrabold ring-1 ring-blue-200'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-            title="Theme & Display Settings (কালার থিম ও ডিসপ্লে)"
-          >
-            <Palette className="w-3.5 h-3.5 text-blue-600" />
-            <span className="truncate">Theme &amp; Display</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('branding')}
-            className={`py-2 px-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${
-              activeTab === 'branding'
-                ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-xs font-extrabold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-            title="Logo & Brand Crest"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span className="truncate">Logo &amp; Brand</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('vault')}
-            className={`py-2 px-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${
-              activeTab === 'vault'
-                ? 'bg-white dark:bg-slate-900 text-violet-600 dark:text-violet-400 shadow-xs font-extrabold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-            title="Document Vault"
-          >
-            <Archive className="w-3.5 h-3.5 text-violet-600" />
-            <span className="truncate">Document Vault</span>
-          </button>
-
-          <button type="button" onClick={() => setActiveTab('sync')} className={`py-2 px-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${activeTab === 'sync' ? 'bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 shadow-xs font-extrabold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`} title="Google Drive Synchronisation">
-            <RotateCcw className="w-3.5 h-3.5 text-sky-600" /><span className="truncate">Sync Status</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('backup')}
-            className={`py-2 px-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${
-              activeTab === 'backup'
-                ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs font-extrabold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-            title="Data Backup & Storage"
-          >
-            <Download className="w-3.5 h-3.5 text-emerald-600" />
-            <span className="truncate">Data Backup</span>
-          </button>
+        {/* Reorganised Settings Navigator: Workspace → Appearance → People → Records → Data */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 bg-[var(--srk-surface)] border-b border-[var(--srk-border)] shrink-0 text-xs font-bold">
+          {[
+            { id:'chambers', label:'Workspace', icon:Building2, tone:'blue' },
+            { id:'display', label:'Appearance', icon:Palette, tone:'sky' },
+            { id:'team', label:'Team & Access', icon:Users, tone:'indigo' },
+            { id:'branding', label:'Logo & Identity', icon:Sparkles, tone:'amber' },
+            { id:'vault', label:'Documents', icon:Archive, tone:'violet' },
+            { id:'sync', label:'Cloud Sync', icon:RotateCcw, tone:'sky' },
+            { id:'backup', label:'Backup & Restore', icon:Download, tone:'emerald' },
+          ].map(item => {
+            const Icon = item.icon;
+            const selected = activeTab === item.id;
+            return <button key={item.id} type="button" onClick={() => setActiveTab(item.id as SettingsTab)}
+              className={`min-h-11 px-3 py-2 rounded-xl border flex items-center justify-center gap-2 text-center transition-all ${selected ? 'bg-[var(--srk-accent-strong)] text-[#F0F6FC] border-[var(--srk-accent)] shadow-md' : 'bg-[var(--srk-raised)] text-[var(--srk-ink)] border-[var(--srk-border)] hover:bg-[var(--srk-header)]'}`}>
+              <Icon className="w-4 h-4" /><span>{item.label}</span>
+            </button>;
+          })}
         </div>
 
         {/* Modal Body */}
