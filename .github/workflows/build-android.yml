@@ -368,7 +368,9 @@ jobs:
           node-version: "22"
 
       - name: Install project dependencies
-        run: npm install --legacy-peer-deps
+        # Resolve platform-specific optional native packages on the Windows runner.
+        # The committed lockfile was generated on Linux and omits Windows Lightning CSS binaries.
+        run: npm install --package-lock=false --legacy-peer-deps --include=optional
 
       - name: Build Windows installer
         run: npm run dist:win
