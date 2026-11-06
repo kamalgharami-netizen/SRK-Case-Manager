@@ -141,7 +141,7 @@ export const ViewingOptionsModal: React.FC = () => {
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <div className="rounded-lg border border-blue-300 bg-[#0D3157] p-2 text-center text-[10px] font-bold text-white">NAVY</div>
               <div className="rounded-lg border border-blue-300 bg-[#1689F8] p-2 text-center text-[10px] font-bold text-white">BLUE</div>
-              <div className="rounded-lg border border-blue-300 bg-[#DCEBFA] p-2 text-center text-[10px] font-bold text-[#102F52]">PANEL</div>
+              <div className="rounded-lg border border-blue-300 bg-[#25496D] p-2 text-center text-[10px] font-bold text-white">PANEL</div>
               <div className="rounded-lg border border-blue-300 bg-[#EAB84A] p-2 text-center text-[10px] font-bold text-[#382600]">ACCENT</div>
             </div>
             <p className="text-[10px] font-semibold text-[#C5D8ED]">
