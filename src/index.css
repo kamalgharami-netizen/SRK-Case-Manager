@@ -926,57 +926,24 @@ body{background:#d9eaff!important;color:var(--srk-ink)}
 @media(max-width:1023px){#root aside{border-radius:0 18px 18px 0!important}#root main{padding:12px!important}#root main .srk-dashboard-hero{border-radius:17px!important}}
 
 
-/* Additional selectable UI presets — Settings > UI design dropdown */
-html.ui-style-executive #root aside{background:linear-gradient(180deg,#142b46,#091b30)!important;border-right:2px solid #b68a3a!important}
-html.ui-style-executive #root header.sticky{background:linear-gradient(100deg,#142b46,#24466b)!important;border-bottom:3px solid #b68a3a!important}
-html.ui-style-executive #root main .srk-dashboard-hero{background:linear-gradient(120deg,#142b46,#31577c)!important;border-bottom:5px solid #a77b32!important}
-html.ui-style-executive #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"]{border-color:#c4a66b!important;background:#e9eff5!important;box-shadow:0 4px 0 rgba(126,98,48,.35),0 8px 15px rgba(14,37,62,.12)!important}
-html.ui-style-executive #root main button:not(:disabled){box-shadow:0 3px 0 rgba(126,98,48,.38),0 6px 10px rgba(14,37,62,.12)!important}
-html.ui-style-royal #root aside{background:linear-gradient(180deg,#073d83,#052654)!important}
-html.ui-style-royal #root header.sticky{background:linear-gradient(100deg,#0754b5,#1689f8)!important;border-bottom:3px solid #06418a!important}
-html.ui-style-royal #root main .srk-dashboard-hero{background:linear-gradient(120deg,#06418a,#1689f8)!important}
-html.ui-style-royal #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"]{background:#e7f2ff!important;border-color:#79b8f2!important;box-shadow:0 5px 0 rgba(33,111,190,.34),0 9px 16px rgba(5,55,110,.12)!important}
-html.ui-style-royal #root main button:not(:disabled){box-shadow:0 4px 0 rgba(16,87,157,.38),0 7px 12px rgba(5,55,110,.12)!important}
-html.ui-style-compact #root main{padding:10px!important;gap:10px!important}
-html.ui-style-compact #root main :is(.rounded-xl,.rounded-2xl){border-radius:9px!important}
-html.ui-style-compact #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"]{padding:10px!important;box-shadow:0 3px 0 rgba(59,105,159,.3)!important}
-html.ui-style-compact #root main .srk-dashboard button{min-height:32px;padding-top:6px!important;padding-bottom:6px!important}
-html.ui-style-compact #root aside{width:238px!important}
-html.ui-style-soft #root main{background:linear-gradient(145deg,#edf5fc,#dceaf7)!important}
-html.ui-style-soft #root main .srk-dashboard-hero{background:linear-gradient(120deg,#214d75,#477ca8)!important}
-html.ui-style-soft #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"]{background:#edf5fc!important;border-color:#b4cde2!important;box-shadow:0 4px 0 rgba(104,142,176,.28),0 7px 13px rgba(35,72,108,.08)!important}
-html.ui-style-soft #root aside{background:linear-gradient(180deg,#244d73,#183b5d)!important}
-html.ui-style-soft #root header.sticky{background:linear-gradient(100deg,#244d73,#477ca8)!important}
-@media(prefers-reduced-motion:reduce){
- html.ui-style-executive #root main *,html.ui-style-royal #root main *,html.ui-style-compact #root main *,html.ui-style-soft #root main *{transition-duration:.01ms!important}
+/* Twelve selectable presentation presets.
+   These rules control layout, shape, density and interaction only.
+   Colour, text and surface palettes remain owned by the independent Colour Theme setting. */
+
+/* 1. SRK Reference 3D — retain the raised-card baseline above. */
+html.ui-style-3d #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-radius: 16px !important;
+  box-shadow: 0 5px 0 rgba(15, 55, 96, .28), 0 10px 20px rgba(4, 24, 48, .12) !important;
+}
+html.ui-style-3d #root main button:not(:disabled) {
+  transform: translateY(0);
+  transition: transform .16s ease, box-shadow .16s ease;
+}
+html.ui-style-3d #root main button:not(:disabled):active {
+  transform: translateY(2px);
 }
 
-
-/* Additional responsive UI presentation presets (desktop + mobile) */
-html.ui-style-midnight #root aside{background:linear-gradient(180deg,#111827,#020617)!important;color:#e5e7eb!important;border-right:1px solid #334155!important}
-html.ui-style-midnight #root header.sticky{background:linear-gradient(100deg,#0f172a,#1e293b)!important;border-bottom:2px solid #38bdf8!important}
-html.ui-style-midnight #root main{background:#0b1220!important;color:#e2e8f0!important}
-html.ui-style-midnight #root main :is(.rounded-xl,.rounded-2xl)[class*="border"]{background:#172338!important;border-color:#334b68!important;color:#e2e8f0!important;box-shadow:0 4px 0 rgba(2,6,23,.55),0 8px 18px rgba(0,0,0,.22)!important}
-html.ui-style-midnight #root main button:not(:disabled){box-shadow:0 3px 0 #075985!important}
-html.ui-style-ocean #root aside{background:linear-gradient(180deg,#064e5b,#083344)!important;color:#ecfeff!important}
-html.ui-style-ocean #root header.sticky{background:linear-gradient(100deg,#0e7490,#0891b2)!important;border-bottom:3px solid #67e8f9!important}
-html.ui-style-ocean #root main{background:linear-gradient(145deg,#ecfeff,#cffafe)!important}
-html.ui-style-ocean #root main :is(.rounded-xl,.rounded-2xl)[class*="border"]{background:#f0fdff!important;border-color:#67cbd8!important;box-shadow:0 4px 0 rgba(8,145,178,.25),0 8px 16px rgba(8,51,68,.1)!important}
-html.ui-style-ocean #root main button:not(:disabled){box-shadow:0 3px 0 rgba(8,145,178,.42)!important}
-html.ui-style-emerald #root aside{background:linear-gradient(180deg,#064e3b,#022c22)!important;color:#ecfdf5!important}
-html.ui-style-emerald #root header.sticky{background:linear-gradient(100deg,#047857,#059669)!important;border-bottom:3px solid #a7f3d0!important}
-html.ui-style-emerald #root main{background:#ecfdf5!important}
-html.ui-style-emerald #root main :is(.rounded-xl,.rounded-2xl)[class*="border"]{background:#f0fdf4!important;border-color:#86c9a5!important;box-shadow:0 4px 0 rgba(5,150,105,.25),0 8px 16px rgba(6,78,59,.1)!important}
-html.ui-style-emerald #root main button:not(:disabled){box-shadow:0 3px 0 rgba(4,120,87,.4)!important}
-html.ui-style-copper #root aside{background:linear-gradient(180deg,#292524,#1c1917)!important;color:#fafaf9!important;border-right:2px solid #b87333!important}
-html.ui-style-copper #root header.sticky{background:linear-gradient(100deg,#292524,#57534e)!important;border-bottom:3px solid #c08457!important}
-html.ui-style-copper #root main{background:#f5f0e9!important;color:#292524!important}
-html.ui-style-copper #root main :is(.rounded-xl,.rounded-2xl)[class*="border"]{background:#fffaf3!important;border-color:#d6a77a!important;box-shadow:0 4px 0 rgba(120,72,35,.25),0 8px 16px rgba(41,37,36,.1)!important}
-html.ui-style-copper #root main button:not(:disabled){box-shadow:0 3px 0 rgba(146,86,45,.4)!important}
-@media(max-width:767px){html[class*="ui-style-"] #root main{min-width:0!important}html[class*="ui-style-"] #root main :is(.rounded-xl,.rounded-2xl){max-width:100%}html[class*="ui-style-"] #root aside{max-width:85vw}}
-
-/* SRK UI presentation refinements — structural only.
-   Colour remains controlled independently by the Colour Theme selector. */
+/* 2. Modern Blue Workspace — flat, clean panels. */
 html.ui-style-modern #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
   border-radius: 14px !important;
   box-shadow: none !important;
@@ -989,16 +956,13 @@ html.ui-style-modern #root aside button {
   box-shadow: none !important;
 }
 html.ui-style-modern #root main button:not(:disabled):hover,
-html.ui-style-modern #root aside button:hover {
-  transform: none !important;
-}
-html.ui-style-modern #root main {
-  gap: 1rem !important;
-}
+html.ui-style-modern #root aside button:hover { transform: none !important; }
+html.ui-style-modern #root main { gap: 1rem !important; }
 
+/* 3. Layered Glass — translucent depth without imposing a colour palette. */
 html.ui-style-glass #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
   border-radius: 18px !important;
-  background-color: color-mix(in srgb, Canvas 86%, transparent) !important;
+  background-color: color-mix(in srgb, currentColor 4%, transparent) !important;
   border-color: color-mix(in srgb, currentColor 18%, transparent) !important;
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
@@ -1008,15 +972,14 @@ html.ui-style-glass #root main button:not(:disabled) {
   border-radius: 12px !important;
   box-shadow: 0 3px 8px rgba(0, 18, 42, .14) !important;
 }
-html.ui-style-glass #root main button:not(:disabled):hover {
-  transform: translateY(-1px);
-}
+html.ui-style-glass #root main button:not(:disabled):hover { transform: translateY(-1px); }
 html.ui-style-glass #root main :is(input,select,textarea) {
   border-radius: 11px !important;
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 
+/* 4. Classic Office — square corners, formal tables and restrained controls. */
 html.ui-style-classic #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
   border-radius: 6px !important;
   border-width: 1px !important;
@@ -1029,35 +992,106 @@ html.ui-style-classic #root aside button {
   box-shadow: none !important;
 }
 html.ui-style-classic #root main button:not(:disabled):hover,
-html.ui-style-classic #root aside button:hover {
-  transform: none !important;
-}
-html.ui-style-classic #root main table {
-  border-collapse: separate;
-  border-spacing: 0;
-}
+html.ui-style-classic #root aside button:hover { transform: none !important; }
+html.ui-style-classic #root main table { border-collapse: separate; border-spacing: 0; }
 html.ui-style-classic #root main table th,
 html.ui-style-classic #root main table td {
   border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent);
 }
 
+/* 5. Executive Suite — spacious, formal hierarchy and larger content cards. */
+html.ui-style-executive #root aside { width: 286px !important; }
+html.ui-style-executive #root main { padding: 24px !important; gap: 22px !important; }
+html.ui-style-executive #root main .srk-dashboard-hero { border-radius: 10px !important; }
+html.ui-style-executive #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-radius: 10px !important;
+  padding: 20px !important;
+  box-shadow: 0 4px 0 rgba(30, 45, 65, .18), 0 10px 18px rgba(14, 37, 62, .10) !important;
+}
+
+/* 6. Royal Chamber — broad navigation and prominent action controls. */
+html.ui-style-royal #root aside { width: 286px !important; }
+html.ui-style-royal #root aside button { min-height: 48px !important; border-radius: 14px !important; }
+html.ui-style-royal #root header.sticky { min-height: 72px !important; }
+html.ui-style-royal #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-radius: 20px !important;
+  box-shadow: 0 5px 0 rgba(20, 55, 95, .22), 0 10px 18px rgba(5, 35, 75, .10) !important;
+}
+html.ui-style-royal #root main button:not(:disabled) { border-radius: 14px !important; min-height: 42px; }
+
+/* 7. Compact Case Desk — high information density. */
+html.ui-style-compact #root main { padding: 10px !important; gap: 10px !important; }
+html.ui-style-compact #root main :is(.rounded-xl,.rounded-2xl) { border-radius: 9px !important; }
+html.ui-style-compact #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  padding: 10px !important;
+  box-shadow: 0 3px 0 rgba(35, 65, 100, .20) !important;
+}
+html.ui-style-compact #root main button { min-height: 32px; padding-top: 6px !important; padding-bottom: 6px !important; }
+html.ui-style-compact #root aside { width: 238px !important; }
+html.ui-style-compact #root header.sticky { min-height: 54px !important; }
+
+/* 8. Soft Workspace — generous spacing and gentle rounded geometry. */
+html.ui-style-soft #root main { padding: 22px !important; gap: 22px !important; }
+html.ui-style-soft #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-radius: 20px !important;
+  padding: 18px !important;
+  box-shadow: 0 4px 0 rgba(55, 85, 115, .16), 0 8px 16px rgba(35, 72, 108, .07) !important;
+}
+html.ui-style-soft #root main button:not(:disabled) { border-radius: 15px !important; }
+
+/* 9. Midnight Docket — narrow navigation and dense docket-style rows. */
+html.ui-style-midnight #root aside { width: 248px !important; }
+html.ui-style-midnight #root aside button { min-height: 38px !important; border-radius: 8px !important; }
+html.ui-style-midnight #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-radius: 10px !important;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .22), 0 8px 18px rgba(0, 0, 0, .12) !important;
+}
+html.ui-style-midnight #root main table th,
+html.ui-style-midnight #root main table td { padding: 9px 10px !important; }
+
+/* 10. Ocean Command — rounded command surfaces and pill-shaped actions. */
+html.ui-style-ocean #root aside { width: 276px !important; }
+html.ui-style-ocean #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"] { border-radius: 24px !important; }
+html.ui-style-ocean #root main button:not(:disabled) { border-radius: 999px !important; padding-left: 16px !important; padding-right: 16px !important; }
+html.ui-style-ocean #root header.sticky { border-radius: 0 0 18px 18px !important; }
+
+/* 11. Emerald Chamber — balanced grid cards and compact menu rows. */
+html.ui-style-emerald #root main .srk-dashboard { gap: 14px !important; }
+html.ui-style-emerald #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-radius: 12px !important;
+  padding: 14px !important;
+  box-shadow: 0 4px 0 rgba(20, 70, 50, .18) !important;
+}
+html.ui-style-emerald #root aside { width: 258px !important; }
+html.ui-style-emerald #root aside button { min-height: 40px !important; }
+
+/* 12. Copper Heritage — framed panels and formal squared-off controls. */
+html.ui-style-copper #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-radius: 4px !important;
+  border-width: 2px !important;
+  box-shadow: 0 4px 0 rgba(65, 45, 30, .18) !important;
+}
+html.ui-style-copper #root main button:not(:disabled) { border-radius: 4px !important; }
+html.ui-style-copper #root main table { border: 1px solid currentColor; border-collapse: collapse; }
+html.ui-style-copper #root main table th,
+html.ui-style-copper #root main table td { border: 1px solid color-mix(in srgb, currentColor 20%, transparent); }
+
+/* Responsive behaviour and reduced-motion accessibility for every preset. */
 @media (max-width: 767px) {
-  html.ui-style-modern #root main,
-  html.ui-style-glass #root main,
-  html.ui-style-classic #root main {
-    padding: 12px !important;
-    min-width: 0 !important;
-  }
+  html[class*="ui-style-"] #root main { min-width: 0 !important; padding: 12px !important; }
+  html[class*="ui-style-"] #root main :is(.rounded-xl,.rounded-2xl) { max-width: 100%; }
+  html[class*="ui-style-"] #root aside { max-width: 85vw; }
   html.ui-style-glass #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
     -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  html.ui-style-modern #root *,
-  html.ui-style-glass #root *,
-  html.ui-style-classic #root * {
+  html[class*="ui-style-"] #root *,
+  html[class*="ui-style-"] #root *::before,
+  html[class*="ui-style-"] #root *::after {
     transition-duration: .01ms !important;
     animation-duration: .01ms !important;
+    scroll-behavior: auto !important;
   }
 }
