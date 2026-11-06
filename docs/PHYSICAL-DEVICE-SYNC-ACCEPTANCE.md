@@ -1,7 +1,8 @@
 # SRK Case Manager — Physical Device Acceptance Test
 
-Branch: `feature/google-drive-two-way-sync`  
-Related PR: https://github.com/kamalgharami-netizen/SRK-Case-Manager/pull/7
+Branch: `main`  
+Merged PR: https://github.com/kamalgharami-netizen/SRK-Case-Manager/pull/7  
+Merge commit: `7a2fc999e518b6848dfa3c8c138412ea623da133`
 
 This checklist is for validating the packaged app on actual Windows and Android devices. CI emulator success is not a substitute. Do not use the only copy of real case data: create a test company and test records, and export a separate backup before starting.
 
@@ -86,4 +87,4 @@ Do not paste access tokens, refresh tokens, passwords, private keys, or real cli
 
 ## Release decision
 
-Keep PR #7 Draft and unmerged until both physical platforms pass sign-in/Picker checks and all applicable round-trip, conflict, deletion, offline, restart and recovery tests. Record failures and fix them before changing the release status.
+PR #7 has been merged into `main`; merge status does not mean the app is production-ready. Keep the release marked as **not physically validated** until both physical platforms pass sign-in/Picker checks and all applicable round-trip, conflict, deletion, offline, restart and recovery tests. Record failures and fix them before publishing a production release. Do not use emulator results as a substitute for these device checks.
