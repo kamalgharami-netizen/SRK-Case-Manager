@@ -679,47 +679,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="srk-dashboard space-y-5 sm:space-y-7">
-      {/* Chamber welcome panel and primary actions */}
-      <section className="srk-dashboard-hero relative overflow-hidden rounded-2xl border border-blue-200/80 dark:border-blue-900/80 bg-gradient-to-br from-blue-950 via-blue-800 to-indigo-800 text-white shadow-lg">
-        <div className="absolute -right-10 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl pointer-events-none" />
-        <div className="absolute right-24 -bottom-24 h-48 w-48 rounded-full bg-cyan-300/10 blur-2xl pointer-events-none" />
-        <div className="relative flex flex-col gap-5 p-5 sm:p-7 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 text-[10px] sm:text-xs font-bold uppercase tracking-[0.18em] text-blue-100">
-              <Scale className="h-4 w-4" />
-              <span>SRK Case Manager</span>
-              <span className="h-1 w-1 rounded-full bg-blue-200/80" />
-              <span>{language === 'bn' ? 'চেম্বার ড্যাশবোর্ড' : 'Chamber Dashboard'}</span>
-            </div>
-            <h1 className="mt-2 text-xl sm:text-2xl font-extrabold tracking-tight break-words">
-              {activeCompany?.name || (language === 'bn' ? 'আপনার লিগ্যাল চেম্বার' : 'Your Legal Chamber')}
-            </h1>
-            <p className="mt-1 max-w-2xl text-xs sm:text-sm leading-relaxed text-blue-100">
-              {language === 'bn'
-                ? 'মামলা, শুনানি, মক্কেল এবং নথিপত্র—আপনার চেম্বারের কাজ এক জায়গা থেকে পরিচালনা করুন।'
-                : 'Manage cases, hearings, clients and legal records from one organised workspace.'}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => onOpenNewCase('mutation')}
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-extrabold text-blue-900 shadow-md transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-blue-800"
-            >
-              <Plus className="h-4 w-4" />
-              {language === 'bn' ? 'নতুন মামলা' : 'New Case'}
-            </button>
-            <button
-              type="button"
-              onClick={() => onNavigate('causelist')}
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-xs font-bold text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-            >
-              <Calendar className="h-4 w-4" />
-              {language === 'bn' ? 'শুনানির তালিকা' : 'Cause List'}
-            </button>
-          </div>
-        </div>
-      </section>
+      {/* Chamber welcome banner removed as requested. */}
       {/* Visual Data Backup Reminder Banner: displayed strictly ONE TIME ONLY in a day on Dashboard */}
       {backupStatus.isOverdue && showDailyBackupReminder && (
         <div className="flex items-center justify-between gap-3 p-3 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 shadow-xs animate-in fade-in duration-200">
