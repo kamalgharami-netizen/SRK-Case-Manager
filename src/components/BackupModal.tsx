@@ -101,8 +101,6 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     applyStagedSyncChanges,
     addUser,
     deleteUser,
-    theme,
-    setTheme,
     viewDensity,
     setViewDensity,
     viewMode,
