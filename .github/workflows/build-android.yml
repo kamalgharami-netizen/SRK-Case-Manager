@@ -12,7 +12,8 @@ permissions:
 
 concurrency:
   group: srk-case-manager-build-${{ github.ref }}
-  cancel-in-progress: true
+  # Do not cancel an in-progress Windows/Android build when a newer commit arrives.
+  cancel-in-progress: false
 
 jobs:
   build-android:
@@ -20,10 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      HAS_ANDROID_SIGNING: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -42,8 +40,37 @@ jobs:
       - name: Accept Android SDK licences
         run: yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --licenses || true
 
+      - name: Preinstall Android emulator system image with retry
+        shell: bash
+        run: |
+          SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          IMAGE="system-images;android-35;default;x86_64"
+          installed=0
+          for attempt in 1 2 3; do
+            echo "Installing Android emulator image (attempt $attempt/3)"
+            if "$SDKMANAGER" --install "$IMAGE" --channel=0; then
+              if [ -s "${ANDROID_HOME}/system-images/android-35/default/x86_64/source.properties" ]; then
+                installed=1
+                break
+              fi
+            fi
+            echo "SDK image archive was incomplete; clearing SDK download cache before retry."
+            rm -rf "${ANDROID_HOME}/.temp" "${HOME}/.android/cache" || true
+            sleep 5
+          done
+          if [ "$installed" -ne 1 ]; then
+            echo "::error::Android API 35 default system image could not be installed after three attempts."
+            exit 1
+          fi
+
       - name: Install project dependencies
         run: npm install --legacy-peer-deps
+
+      - name: Type-check TypeScript
+        run: npm run lint
+
+      - name: Test sync journal safety
+        run: npm test
 
       - name: Build web application
         run: npm run build
@@ -55,6 +82,166 @@ jobs:
           fi
           npx cap sync android
 
+      - name: Set Android minimum supported SDK
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          path = Path("android/variables.gradle")
+          if not path.exists():
+              raise SystemExit("Capacitor variables.gradle was not generated; refusing to build with an unknown Android minimum SDK.")
+          content = path.read_text()
+          match = re.search(r"(minSdkVersion\s*=\s*)(\d+)", content)
+          if not match:
+              raise SystemExit("Could not find minSdkVersion in android/variables.gradle.")
+          current = int(match.group(2))
+          if current < 24:
+              content = content[:match.start(2)] + "24" + content[match.end(2):]
+              path.write_text(content)
+          print(f"Android minimum SDK: {max(current, 24)} (Android 7.0 or later)")
+          PY
+
+      - name: Compile native sync-store instrumentation tests
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew :srk-capacitor-sync-state:assembleDebugAndroidTest --no-daemon
+
+      - name: Run native sync-store instrumentation tests on Android Emulator
+        working-directory: android
+        shell: bash
+        timeout-minutes: 25
+        run: |
+          set -euo pipefail
+          echo "Creating isolated Android API 35 emulator for instrumentation tests."
+          SDK_BIN="${ANDROID_HOME}/cmdline-tools/latest/bin"
+          export PATH="${SDK_BIN}:${ANDROID_HOME}/emulator:${ANDROID_HOME}/platform-tools:${PATH}"
+          AVDMANAGER="${SDK_BIN}/avdmanager"
+          EMULATOR="${ANDROID_HOME}/emulator/emulator"
+          ADB="${ANDROID_HOME}/platform-tools/adb"
+          EMULATOR_LOG="$RUNNER_TEMP/srk-emulator.log"
+          for tool in "$AVDMANAGER" "$EMULATOR" "$ADB"; do
+            if [ ! -x "$tool" ]; then
+              echo "::error::Required Android SDK tool is missing or not executable: $tool"
+              ls -la "${ANDROID_HOME}/cmdline-tools" "${ANDROID_HOME}/emulator" "${ANDROID_HOME}/platform-tools" || true
+              exit 1
+            fi
+          done
+
+          echo "Android SDK tool paths verified."
+          # GitHub-hosted Ubuntu runners may expose /dev/kvm without granting
+          # the runner user access. Android x86_64 emulation requires KVM.
+          if [ -e /dev/kvm ]; then
+            echo "Enabling KVM access for the Android emulator."
+            sudo chmod 666 /dev/kvm
+            if [ ! -r /dev/kvm ] || [ ! -w /dev/kvm ]; then
+              echo "::error::KVM device exists but is still not readable and writable."
+              ls -l /dev/kvm || true
+              id
+              exit 1
+            fi
+            ls -l /dev/kvm
+          else
+            echo "::error::This runner does not expose /dev/kvm; x86_64 Android emulator cannot start."
+            exit 1
+          fi
+          # Keep AVD creation and emulator lookup on the same explicit directory.
+          # The previous CI failure created no discoverable srk-sync-ci.ini file.
+          export ANDROID_USER_HOME="${HOME}/.android"
+          export ANDROID_AVD_HOME="${ANDROID_USER_HOME}/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          AVD_INI="$ANDROID_AVD_HOME/srk-sync-ci.ini"
+          AVD_DIR="$ANDROID_AVD_HOME/srk-sync-ci.avd"
+          rm -rf "$AVD_INI" "$AVD_DIR"
+          printf 'no\n' | "$AVDMANAGER" create avd --force \
+            -n srk-sync-ci \
+            -k "system-images;android-35;default;x86_64" \
+            -d pixel_2 \
+            -p "$AVD_DIR"
+          if [ ! -s "$AVD_INI" ] || [ ! -s "$AVD_DIR/config.ini" ]; then
+            echo "::error::Android Virtual Device creation did not produce the expected configuration files."
+            "$AVDMANAGER" list avd || true
+            find "$ANDROID_USER_HOME" -maxdepth 4 -type f -name '*.ini' -o -name config.ini || true
+            exit 1
+          fi
+          echo "Created AVD configuration:"
+          cat "$AVD_INI"
+          "$ADB" start-server
+          "$EMULATOR" -avd srk-sync-ci -port 5554 -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 3072 -cores 2 -no-metrics > "$EMULATOR_LOG" 2>&1 &
+          EMULATOR_PID=$!
+
+          cleanup() {
+            "$ADB" -s emulator-5554 emu kill >/dev/null 2>&1 || true
+            kill "$EMULATOR_PID" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          # Do not allow ADB startup to hang the workflow indefinitely.
+          device_ready=0
+          for attempt in $(seq 1 240); do
+            if ! kill -0 "$EMULATOR_PID" 2>/dev/null; then
+              echo "::error::Android emulator process exited before registering with ADB."
+              tail -n 250 "$EMULATOR_LOG" || true
+              exit 1
+            fi
+            if "$ADB" devices | grep -qE '^emulator-5554[[:space:]]+device$'; then
+              device_ready=1
+              break
+            fi
+            if [ $((attempt % 15)) -eq 0 ]; then
+              echo "Waiting for emulator device registration ($((attempt * 2))/480 seconds)."
+              "$ADB" devices -l || true
+              tail -n 40 "$EMULATOR_LOG" || true
+            fi
+            sleep 2
+          done
+
+          if [ "$device_ready" -ne 1 ]; then
+            echo "::error::Android emulator did not register with ADB within 8 minutes."
+            "$ADB" devices -l || true
+            tail -n 300 "$EMULATOR_LOG" || true
+            exit 1
+          fi
+
+          booted=0
+          for attempt in $(seq 1 180); do
+            value="$("$ADB" -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+            if [ "$value" = "1" ]; then
+              booted=1
+              break
+            fi
+            if ! kill -0 "$EMULATOR_PID" 2>/dev/null; then
+              echo "::error::Android emulator exited while booting."
+              tail -n 300 "$EMULATOR_LOG" || true
+              exit 1
+            fi
+            sleep 2
+          done
+
+          if [ "$booted" -ne 1 ]; then
+            echo "::error::Android emulator registered but did not finish booting within 6 minutes."
+            "$ADB" devices -l || true
+            tail -n 300 "$EMULATOR_LOG" || true
+            exit 1
+          fi
+
+          echo "Emulator boot completed. Running instrumentation tests."
+          "$ADB" -s emulator-5554 shell settings put global window_animation_scale 0 || true
+          "$ADB" -s emulator-5554 shell settings put global transition_animation_scale 0 || true
+          "$ADB" -s emulator-5554 shell settings put global animator_duration_scale 0 || true
+          timeout 15m ./gradlew :srk-capacitor-sync-state:connectedDebugAndroidTest --no-daemon --stacktrace
+
+      - name: Upload Android instrumentation test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SRK-Case-Manager-Android-Instrumentation-Reports
+          path: |
+            capacitor-sync-state/android/build/reports/androidTests/connected/debug
+            capacitor-sync-state/android/build/outputs/androidTest-results/connected/debug
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: Set Android version
         shell: bash
         run: |
@@ -64,7 +251,12 @@ jobs:
           sed -i -E "s/versionName .*/versionName \"${VERSION}\"/" android/app/build.gradle
 
       - name: Configure persistent release signing
-        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' && env.ANDROID_KEYSTORE_PASSWORD != '' && env.ANDROID_KEY_ALIAS != '' && env.ANDROID_KEY_PASSWORD != '' }}
+        if: ${{ env.HAS_ANDROID_SIGNING == 'true' }}
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         working-directory: android
         run: |
           echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/srk-release.keystore"
@@ -97,14 +289,47 @@ jobs:
           PY
 
       - name: Build signed release APK
-        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' && env.ANDROID_KEYSTORE_PASSWORD != '' && env.ANDROID_KEY_ALIAS != '' && env.ANDROID_KEY_PASSWORD != '' }}
+        if: ${{ env.HAS_ANDROID_SIGNING == 'true' }}
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         working-directory: android
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
 
+      - name: Verify release APK signature and report certificate fingerprints
+        if: ${{ env.HAS_ANDROID_SIGNING == 'true' }}
+        working-directory: android
+        run: |
+          APK="app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner -perm -u+x | sort -V | tail -n 1)"
+          if [ -z "$APKSIGNER" ]; then
+            echo "::error::Android SDK Build Tools apksigner was not found."
+            find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name apksigner -print || true
+            exit 1
+          fi
+          "$APKSIGNER" verify --verbose "$APK"
+          echo "## Android release signing certificate" >> "$GITHUB_STEP_SUMMARY"
+          "$APKSIGNER" verify --print-certs "$APK" | tee "$RUNNER_TEMP/srk-apk-certificate.txt"
+          SHA1="$(sed -n 's/^V[0-9][0-9]* Signer: certificate SHA-1 digest: //p' "$RUNNER_TEMP/srk-apk-certificate.txt" | head -n 1)"
+          SHA256="$(sed -n 's/^V[0-9][0-9]* Signer: certificate SHA-256 digest: //p' "$RUNNER_TEMP/srk-apk-certificate.txt" | head -n 1)"
+          test -n "$SHA1"
+          test -n "$SHA256"
+          {
+            echo ""
+            echo "| Fingerprint | Value |"
+            echo "|---|---|"
+            echo "| SHA-1 | ${SHA1} |"
+            echo "| SHA-256 | ${SHA256} |"
+            echo ""
+            echo "These are public certificate fingerprints, not private signing-key material."
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Build debug APK (temporary fallback until signing secrets are configured)
-        if: ${{ env.ANDROID_KEYSTORE_BASE64 == '' || env.ANDROID_KEYSTORE_PASSWORD == '' || env.ANDROID_KEY_ALIAS == '' || env.ANDROID_KEY_PASSWORD == '' }}
+        if: ${{ env.HAS_ANDROID_SIGNING != 'true' }}
         working-directory: android
         run: |
           echo "::warning::A persistent Android signing key is not configured. This debug APK is not guaranteed to update an APK from a previous GitHub Actions run."
@@ -112,7 +337,7 @@ jobs:
           ./gradlew assembleDebug --no-daemon
 
       - name: Upload signed Android APK
-        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' && env.ANDROID_KEYSTORE_PASSWORD != '' && env.ANDROID_KEY_ALIAS != '' && env.ANDROID_KEY_PASSWORD != '' }}
+        if: ${{ env.HAS_ANDROID_SIGNING == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: SRK-Case-Manager-Android-APK
@@ -121,7 +346,7 @@ jobs:
           retention-days: 14
 
       - name: Upload temporary debug APK
-        if: ${{ env.ANDROID_KEYSTORE_BASE64 == '' || env.ANDROID_KEYSTORE_PASSWORD == '' || env.ANDROID_KEY_ALIAS == '' || env.ANDROID_KEY_PASSWORD == '' }}
+        if: ${{ env.HAS_ANDROID_SIGNING != 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: SRK-Case-Manager-Android-APK-DEBUG-ONLY

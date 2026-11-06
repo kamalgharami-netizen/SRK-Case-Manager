@@ -1,0 +1,18 @@
+{
+  "name": "@srk/capacitor-google-drive-auth",
+  "version": "1.0.0",
+  "description": "Native Android Google Drive authorization with the official Desktop/Mobile Picker flow",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "types": "src/index.ts",
+  "capacitor": {
+    "android": {
+      "src": "android"
+    }
+  },
+  "peerDependencies": {
+    "@capacitor/core": "^7.0.0"
+  }
+}

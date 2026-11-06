@@ -9,7 +9,7 @@ import {
   CheckCircle2,
   Phone
 } from 'lucide-react';
-import { safeOpenWhatsApp } from '../utils/printDoc';
+import { safeOpenSms, safeOpenWhatsApp } from '../utils/printDoc';
 
 export const CommunicationCenter: React.FC = () => {
   const { activeCompany, sendMessage, showToast } = useApp();
@@ -60,9 +60,11 @@ export const CommunicationCenter: React.FC = () => {
       channel
     );
 
-    // Launch WhatsApp directly
+    // Open the selected channel's composer. The user must review and send.
     if (channel === 'WhatsApp') {
       safeOpenWhatsApp(phone, messageBody.trim());
+    } else {
+      safeOpenSms(phone, messageBody.trim());
     }
 
     setMessageBody('');
@@ -89,7 +91,7 @@ export const CommunicationCenter: React.FC = () => {
         >
           <div className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 border-b border-slate-100 dark:border-slate-800 pb-2 flex items-center justify-between">
             <span>Compose Client Notice</span>
-            <span className="text-[11px] font-normal text-slate-400">Direct WhatsApp Dispatch</span>
+            <span className="text-[11px] font-normal text-slate-400">Open WhatsApp / SMS Composer</span>
           </div>
 
           <div>
@@ -202,7 +204,7 @@ export const CommunicationCenter: React.FC = () => {
               type="submit"
               className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 cursor-pointer"
             >
-              <Share2 className="w-4 h-4" /> Dispatch Notice
+              <Share2 className="w-4 h-4" /> Open Message Composer
             </button>
           </div>
         </form>
@@ -210,7 +212,7 @@ export const CommunicationCenter: React.FC = () => {
         {/* Message Log (5 cols) */}
         <div className="md:col-span-5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-3">
           <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 pb-2">
-            Dispatched Notice Log ({messages.length})
+            Message Activity Log ({messages.length})
           </div>
 
           {messages.length > 0 ? (

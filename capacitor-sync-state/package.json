@@ -1,0 +1,18 @@
+{
+  "name": "@srk/capacitor-sync-state",
+  "version": "1.0.0",
+  "description": "Transactional native SQLite key-value storage for SRK background sync state",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "types": "src/index.ts",
+  "capacitor": {
+    "android": {
+      "src": "android"
+    }
+  },
+  "peerDependencies": {
+    "@capacitor/core": "^7.0.0"
+  }
+}

@@ -1,3 +1,4 @@
+import { getLocalDateInputValue } from '../utils/localDate';
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { DiaryEntry } from '../types';
@@ -20,7 +21,7 @@ export const CaseDiary: React.FC = () => {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [entryDate, setEntryDate] = useState(
-    new Date().toISOString().slice(0, 10)
+    getLocalDateInputValue()
   );
   const [entryType, setEntryType] = useState<DiaryEntry['type']>('Hearing');
   const [title, setTitle] = useState('');

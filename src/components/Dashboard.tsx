@@ -1,3 +1,4 @@
+import { getLocalDateInputValue } from '../utils/localDate';
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { NavPage } from './Sidebar';
@@ -31,7 +32,9 @@ import {
   Scroll,
   FileSpreadsheet,
   Search,
-  CheckCircle2
+  CheckCircle2,
+  Scale,
+  Plus
 } from 'lucide-react';
 import { CaseType, CaseItem, getStatusTrackingInfo, getBackupStatus } from '../types';
 import { safePrintHtml } from '../utils/printDoc';
@@ -247,7 +250,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    const dateStr = new Date().toISOString().slice(0, 10);
+    const dateStr = getLocalDateInputValue();
     link.href = url;
     link.setAttribute('download', `chamber_cases_${dateStr}.csv`);
     document.body.appendChild(link);
@@ -497,7 +500,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `active_pending_cases_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `active_pending_cases_${getLocalDateInputValue()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -675,7 +678,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="srk-dashboard space-y-5 sm:space-y-7">
+      {/* Chamber welcome banner removed as requested. */}
       {/* Visual Data Backup Reminder Banner: displayed strictly ONE TIME ONLY in a day on Dashboard */}
       {backupStatus.isOverdue && showDailyBackupReminder && (
         <div className="flex items-center justify-between gap-3 p-3 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 shadow-xs animate-in fade-in duration-200">
@@ -730,11 +734,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
       )}
 
       {/* Top Row: 5 Compact KPI Summary Stat Cards — Total Cases, Pending Cases, Today's Hearings, Under Inquiry, Disposed (Vault Files omitted) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
         {/* 1. Total Cases */}
         <div
           onClick={() => setActiveKpiModal('total')}
-          className="bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-blue-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group"
+          className="bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-3.5 py-3 rounded-xl min-h-[104px] border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-blue-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group"
           title="Click to view all registered cases across all categories"
         >
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
@@ -754,7 +758,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* 2. Pending Cases */}
         <div
           onClick={() => setActiveKpiModal('pending')}
-          className="bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-purple-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group"
+          className="bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-3.5 py-3 rounded-xl min-h-[104px] border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-purple-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group"
           title="Click to view all Active Pending cases across all categories"
         >
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
@@ -774,7 +778,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* 3. Today's Hearings */}
         <div
           onClick={() => onNavigate('causelist')}
-          className="bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-amber-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group"
+          className="bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-3.5 py-3 rounded-xl min-h-[104px] border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-amber-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group"
           title="Click to view Today's Cause List"
         >
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
@@ -794,7 +798,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* 4. Under Inquiry */}
         <div
           onClick={() => setActiveKpiModal('inquiry')}
-          className="bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-indigo-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group"
+          className="bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-3.5 py-3 rounded-xl min-h-[104px] border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-indigo-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group"
           title="Click to view cases under inquiry &amp; field verification"
         >
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
@@ -814,7 +818,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         {/* 5. Disposed */}
         <div
           onClick={() => setActiveKpiModal('disposed')}
-          className="bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-emerald-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group"
+          className="bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-3.5 py-3 rounded-xl min-h-[104px] border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-emerald-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group"
           title="Click to view all Disposed &amp; Completed cases"
         >
           <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
@@ -843,7 +847,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4">
           {landCaseCards.map(card => {
             const Icon = card.icon;
             const count = getCaseCount(card.type);
@@ -851,11 +855,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <div
                 key={card.type}
                 onClick={() => onNavigate(card.page)}
-                className={`p-3.5 rounded-xl bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 ${card.borderHover} shadow-[0_8px_18px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_8px_18px_rgba(0,0,0,0.45)] hover:-translate-y-1 hover:shadow-[0_14px_24px_rgba(37,99,235,0.15)] active:translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between gap-2.5`}
+                className={`p-4 min-h-[136px] rounded-xl bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 ${card.borderHover} shadow-[0_8px_18px_rgba(15,23,42,0.08)] dark:shadow-[0_8px_18px_rgba(0,0,0,0.45)] hover:-translate-y-1 hover:shadow-[0_14px_24px_rgba(37,99,235,0.15)] active:translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between gap-2.5`}
               >
                 <div className="flex items-center justify-between gap-1">
                   <div
-                    className={`w-10 h-10 rounded-xl ${card.bg} ${card.color} flex items-center justify-center shadow-[0_4px_10px_rgba(15,23,42,0.12),inset_0_2px_2px_rgba(255,255,255,0.8),inset_0_-2px_3px_rgba(0,0,0,0.12)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.5)] border border-white/80 dark:border-white/10 group-hover:scale-105 transition-transform shrink-0`}
+                    className={`w-10 h-10 rounded-xl ${card.bg} ${card.color} flex items-center justify-center shadow-[0_4px_10px_rgba(15,23,42,0.12),inset_0_-2px_3px_rgba(0,0,0,0.12)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.5)] border border-white/80 dark:border-white/10 group-hover:scale-105 transition-transform shrink-0`}
                   >
                     <Icon className="w-5 h-5 drop-shadow-2xs stroke-[2.2]" />
                   </div>
@@ -902,18 +906,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4">
           {toolCards.map(tool => {
             const Icon = tool.icon;
             return (
               <div
                 key={tool.page}
                 onClick={() => (tool.onClick ? tool.onClick() : onNavigate(tool.page))}
-                className="p-3.5 rounded-xl bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 hover:border-blue-500 shadow-[0_8px_18px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_8px_18px_rgba(0,0,0,0.45)] hover:-translate-y-1 hover:shadow-[0_14px_24px_rgba(37,99,235,0.15)] active:translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between gap-2.5"
+                className="p-4 min-h-[136px] rounded-xl bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 hover:border-blue-500 shadow-[0_8px_18px_rgba(15,23,42,0.08)] dark:shadow-[0_8px_18px_rgba(0,0,0,0.45)] hover:-translate-y-1 hover:shadow-[0_14px_24px_rgba(37,99,235,0.15)] active:translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between gap-2.5"
               >
                 <div className="flex items-center justify-between gap-1">
                   <div
-                    className={`w-10 h-10 rounded-xl ${tool.bg} ${tool.color} flex items-center justify-center shadow-[0_4px_10px_rgba(15,23,42,0.12),inset_0_2px_2px_rgba(255,255,255,0.8),inset_0_-2px_3px_rgba(0,0,0,0.12)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.5)] border border-white/80 dark:border-white/10 group-hover:scale-105 transition-transform shrink-0`}
+                    className={`w-10 h-10 rounded-xl ${tool.bg} ${tool.color} flex items-center justify-center shadow-[0_4px_10px_rgba(15,23,42,0.12),inset_0_-2px_3px_rgba(0,0,0,0.12)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.5)] border border-white/80 dark:border-white/10 group-hover:scale-105 transition-transform shrink-0`}
                   >
                     <Icon className="w-5 h-5 drop-shadow-2xs stroke-[2.2]" />
                   </div>
@@ -941,7 +945,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* Bottom Section: Today's Cause List + Active Case Tracker — Matching Image 4 with 3D Visuals */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Left: Today's Cause List Preview (7 cols) */}
-        <div className="lg:col-span-7 bg-gradient-to-b from-white to-slate-50/80 dark:from-slate-900 dark:to-slate-950 rounded-xl border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 shadow-[0_10px_25px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] overflow-hidden flex flex-col justify-between">
+        <div className="lg:col-span-7 bg-gradient-to-b from-white to-slate-50/80 dark:from-slate-900 dark:to-slate-950 rounded-xl border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 shadow-[0_10px_25px_rgba(15,23,42,0.08)] overflow-hidden flex flex-col justify-between">
           <div>
             <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -1028,7 +1032,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* Right: Active Case Tracker & Quick Tools (5 cols) */}
-        <div className="lg:col-span-5 bg-gradient-to-b from-white to-slate-50/80 dark:from-slate-900 dark:to-slate-950 rounded-xl border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 shadow-[0_10px_25px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] p-4 flex flex-col justify-between">
+        <div className="lg:col-span-5 bg-gradient-to-b from-white to-slate-50/80 dark:from-slate-900 dark:to-slate-950 rounded-xl border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 shadow-[0_10px_25px_rgba(15,23,42,0.08)] p-4 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800 mb-3">
               <h3 className="text-sm font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">

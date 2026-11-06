@@ -1,0 +1,305 @@
+package in.srk.capacitor.syncstate;
+
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.io.File;
+import java.util.Arrays;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+@RunWith(AndroidJUnit4.class)
+public class SyncStateDatabaseInstrumentedTest {
+    private static final String DATABASE_NAME = "srk_sync_state_v1.db";
+    private static final String KEY_ALIAS = "srk_sync_state_aes_gcm_v1";
+    private Context context;
+
+    @Before
+    public void setUp() throws Exception {
+        context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        databaseFile().delete();
+        deleteKeystoreAlias();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        if (context != null) databaseFile().delete();
+        deleteKeystoreAlias();
+    }
+
+    @Test
+    public void valuesSurviveDatabaseReopenAndCanBeRemoved() throws Exception {
+        SyncStateDatabase database = new SyncStateDatabase(context);
+        database.putAll(Arrays.asList(
+            new SyncStateDatabase.SyncStateEntry("test.one", "first-value"),
+            new SyncStateDatabase.SyncStateEntry("test.two", "second-value")
+        ));
+        database.close();
+
+        SyncStateDatabase reopened = new SyncStateDatabase(context);
+        List<SyncStateDatabase.SyncStateEntry> restored =
+            reopened.getAll(Arrays.asList("test.one", "test.two"));
+        assertEquals(2, restored.size());
+        assertEquals("first-value", restored.get(0).value);
+        assertEquals("second-value", restored.get(1).value);
+
+        assertEquals(1, reopened.removeAll(Arrays.asList("test.one")));
+        assertEquals(1, reopened.getAll(Arrays.asList("test.two")).size());
+        assertTrue(reopened.getAll(Arrays.asList("test.one")).isEmpty());
+        reopened.close();
+    }
+
+    @Test
+    public void databaseIsStoredOutsideAndroidAutoBackupDirectory() throws Exception {
+        SyncStateDatabase database = new SyncStateDatabase(context);
+        database.putAll(Arrays.asList(
+            new SyncStateDatabase.SyncStateEntry("test.backup-policy", "local-only")
+        ));
+        database.close();
+
+        String noBackupPath = context.getNoBackupFilesDir().getAbsolutePath() + File.separator;
+        assertTrue("Sync database must be in Android's no-backup directory",
+            databaseFile().getAbsolutePath().startsWith(noBackupPath));
+        assertTrue(databaseFile().isFile());
+    }
+
+    @Test
+    public void sqliteStoresCiphertextRatherThanPlaintext() throws Exception {
+        String plainText = "do-not-store-this-plain-text";
+        SyncStateDatabase database = new SyncStateDatabase(context);
+        database.putAll(Arrays.asList(
+            new SyncStateDatabase.SyncStateEntry("test.encrypted", plainText)
+        ));
+        database.close();
+
+        SQLiteDatabase raw = SQLiteDatabase.openDatabase(
+            databaseFile().getAbsolutePath(),
+            null,
+            SQLiteDatabase.OPEN_READONLY
+        );
+        try (Cursor cursor = raw.rawQuery(
+                "SELECT state_value FROM sync_state WHERE state_key = ?",
+                new String[]{"test.encrypted"})) {
+            assertTrue(cursor.moveToFirst());
+            String stored = cursor.getString(0);
+            assertNotNull(stored);
+            assertFalse("SQLite must not contain the supplied plaintext", stored.contains(plainText));
+            assertTrue("Stored payload should be Base64 ciphertext", stored.matches("[A-Za-z0-9+/]+=*"));
+        } finally {
+            raw.close();
+        }
+    }
+
+    @Test
+    public void missingKeystoreKeyDoesNotReplaceOrOverwriteExistingCiphertext() throws Exception {
+        SyncStateDatabase database = new SyncStateDatabase(context);
+        database.putAll(Arrays.asList(
+            new SyncStateDatabase.SyncStateEntry("test.preserve", "preserve-this-value")
+        ));
+        database.close();
+
+        String ciphertextBefore = readStoredCiphertext("test.preserve");
+        deleteKeystoreAlias();
+
+        SyncStateDatabase reopened = new SyncStateDatabase(context);
+        try {
+            reopened.getAll(Arrays.asList("test.preserve"));
+            fail("A missing key with existing encrypted rows must fail safely.");
+        } catch (IllegalStateException expected) {
+            assertTrue(expected.getMessage().contains("encrypted sync data still exists"));
+        } finally {
+            reopened.close();
+        }
+
+        assertEquals(ciphertextBefore, readStoredCiphertext("test.preserve"));
+    }
+
+    @Test
+    public void failedBatchWriteRollsBackEveryRowAndPreservesExistingValues() throws Exception {
+        SyncStateDatabase database = new SyncStateDatabase(context);
+        database.putAll(Arrays.asList(
+            new SyncStateDatabase.SyncStateEntry("test.existing", "keep-existing")
+        ));
+
+        try {
+            database.putAll(Arrays.asList(
+                new SyncStateDatabase.SyncStateEntry("test.partial", "must-rollback"),
+                new SyncStateDatabase.SyncStateEntry(null, "force-constraint-failure")
+            ));
+            fail("A batch containing an invalid key must fail.");
+        } catch (Exception expected) {
+            // The transaction must roll back the first row in the failed batch.
+        }
+
+        List<SyncStateDatabase.SyncStateEntry> existing =
+            database.getAll(Arrays.asList("test.existing"));
+        assertEquals(1, existing.size());
+        assertEquals("keep-existing", existing.get(0).value);
+        assertTrue("No partial row from a failed transaction may remain",
+            database.getAll(Arrays.asList("test.partial")).isEmpty());
+        database.close();
+    }
+
+    @Test
+    public void corruptedCiphertextFailsClosedWithoutReplacingStoredPayload() throws Exception {
+        SyncStateDatabase database = new SyncStateDatabase(context);
+        database.putAll(Arrays.asList(
+            new SyncStateDatabase.SyncStateEntry("test.tamper", "original-secret")
+        ));
+        database.close();
+
+        String originalCiphertext = readStoredCiphertext("test.tamper");
+        String corruptedCiphertext = (originalCiphertext.startsWith("A") ? "B" : "A")
+            + originalCiphertext.substring(1);
+        SQLiteDatabase raw = SQLiteDatabase.openDatabase(
+            databaseFile().getAbsolutePath(),
+            null,
+            SQLiteDatabase.OPEN_READWRITE
+        );
+        try {
+            android.content.ContentValues values = new android.content.ContentValues();
+            values.put("state_value", corruptedCiphertext);
+            assertEquals(1, raw.update("sync_state", values, "state_key = ?",
+                new String[]{"test.tamper"}));
+        } finally {
+            raw.close();
+        }
+
+        SyncStateDatabase reopened = new SyncStateDatabase(context);
+        try {
+            reopened.getAll(Arrays.asList("test.tamper"));
+            fail("Modified AES-GCM ciphertext must not be accepted.");
+        } catch (java.security.GeneralSecurityException expected) {
+            // Authentication failure is expected; the stored payload must remain untouched.
+        } finally {
+            reopened.close();
+        }
+        assertEquals(corruptedCiphertext, readStoredCiphertext("test.tamper"));
+    }
+
+    @Test
+    public void versionOneDatabaseMigratesAdditivelyAndPreservesExistingRows() throws Exception {
+        SQLiteDatabase legacy = SQLiteDatabase.openOrCreateDatabase(databaseFile(), null);
+        legacy.execSQL("CREATE TABLE sync_state (state_key TEXT PRIMARY KEY NOT NULL, state_value TEXT NOT NULL, updated_at INTEGER NOT NULL)");
+        legacy.execSQL("INSERT INTO sync_state (state_key, state_value, updated_at) VALUES ('legacy.marker', 'ciphertext-placeholder', 1)");
+        legacy.setVersion(1);
+        legacy.close();
+
+        SyncStateDatabase upgraded = new SyncStateDatabase(context);
+        assertTrue("Existing encrypted sync rows must survive the additive schema upgrade",
+            rowExists("legacy.marker"));
+        long now = System.currentTimeMillis();
+        assertTrue("The new lease table must be available after upgrading v1",
+            upgraded.acquireSyncLease("migration-test", now, now + 30000));
+        assertTrue(upgraded.releaseSyncLease("migration-test"));
+        upgraded.close();
+    }
+
+    @Test
+    public void sharedLeaseAllowsOnlyOneActiveOwnerAndCanBeReleased() throws Exception {
+        SyncStateDatabase foreground = new SyncStateDatabase(context);
+        SyncStateDatabase worker = new SyncStateDatabase(context);
+        long now = System.currentTimeMillis();
+
+        assertTrue(foreground.acquireSyncLease("foreground-A", now, now + 60000));
+        assertFalse("A second process must not overlap an active sync",
+            worker.acquireSyncLease("worker-B", now + 1, now + 60000));
+        assertFalse("A different owner cannot release the active lease",
+            worker.releaseSyncLease("worker-B"));
+        assertTrue("The owning process can release its lease",
+            foreground.releaseSyncLease("foreground-A"));
+        assertTrue("A waiting worker can acquire after release",
+            worker.acquireSyncLease("worker-B", now + 2, now + 60000));
+
+        worker.close();
+        foreground.close();
+    }
+
+    @Test
+    public void activeOwnerCanRenewLeaseButPreviousOwnerCannotRenewAfterTakeover() throws Exception {
+        SyncStateDatabase foreground = new SyncStateDatabase(context);
+        SyncStateDatabase worker = new SyncStateDatabase(context);
+        long now = System.currentTimeMillis();
+
+        assertTrue(foreground.acquireSyncLease("foreground-renew", now, now + 1000));
+        assertTrue("The current owner can extend its own active lease",
+            foreground.acquireSyncLease("foreground-renew", now + 500, now + 60000));
+        assertFalse("A different owner cannot replace a renewed active lease",
+            worker.acquireSyncLease("worker-waiting", now + 1001, now + 61001));
+
+        assertTrue("A different owner can take over after the renewed expiry",
+            worker.acquireSyncLease("worker-waiting", now + 60001, now + 120001));
+        assertFalse("The old owner cannot renew after ownership has changed",
+            foreground.acquireSyncLease("foreground-renew", now + 60002, now + 120002));
+
+        worker.close();
+        foreground.close();
+    }
+
+    @Test
+    public void expiredLeaseCanBeRecoveredAfterProcessDeath() throws Exception {
+        SyncStateDatabase firstProcess = new SyncStateDatabase(context);
+        SyncStateDatabase restartedProcess = new SyncStateDatabase(context);
+        long now = System.currentTimeMillis();
+
+        assertTrue(firstProcess.acquireSyncLease("process-before-crash", now, now + 1000));
+        assertTrue("An expired lease must not block recovery after a crash",
+            restartedProcess.acquireSyncLease("process-after-restart", now + 1001, now + 61001));
+        assertFalse("The previous owner cannot release the recovered lease",
+            firstProcess.releaseSyncLease("process-before-crash"));
+        assertTrue(restartedProcess.releaseSyncLease("process-after-restart"));
+
+        restartedProcess.close();
+        firstProcess.close();
+    }
+
+    private boolean rowExists(String key) {
+        SQLiteDatabase raw = SQLiteDatabase.openDatabase(
+            databaseFile().getAbsolutePath(), null, SQLiteDatabase.OPEN_READONLY);
+        try (Cursor cursor = raw.rawQuery("SELECT 1 FROM sync_state WHERE state_key = ?", new String[]{key})) {
+            return cursor.moveToFirst();
+        } finally {
+            raw.close();
+        }
+    }
+
+    private File databaseFile() {
+        return new File(context.getNoBackupFilesDir(), DATABASE_NAME);
+    }
+
+    private String readStoredCiphertext(String key) {
+        SQLiteDatabase raw = SQLiteDatabase.openDatabase(
+            databaseFile().getAbsolutePath(),
+            null,
+            SQLiteDatabase.OPEN_READONLY
+        );
+        try (Cursor cursor = raw.rawQuery(
+                "SELECT state_value FROM sync_state WHERE state_key = ?",
+                new String[]{key})) {
+            assertTrue(cursor.moveToFirst());
+            return cursor.getString(0);
+        } finally {
+            raw.close();
+        }
+    }
+
+    private void deleteKeystoreAlias() throws Exception {
+        java.security.KeyStore keyStore = java.security.KeyStore.getInstance("AndroidKeyStore");
+        keyStore.load(null);
+        if (keyStore.containsAlias(KEY_ALIAS)) keyStore.deleteEntry(KEY_ALIAS);
+    }
+}

@@ -47,7 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
   }[activeUser?.role || 'Admin'];
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-white/95 backdrop-blur-md border-b border-slate-200 px-2 sm:px-4 lg:px-6 flex items-center justify-between gap-2 sm:gap-4 shadow-2xs">
+    <header className="sticky top-0 z-30 min-h-16 h-auto bg-white/95 backdrop-blur-md border-b border-slate-200 px-2 py-2 sm:py-0 sm:px-4 lg:px-6 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 sm:gap-4 shadow-2xs">
       {/* Zone 1: Back Button (Mobile/Subpage) + Toggle + Brand Logo Type + Chamber Switcher */}
       <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 min-w-0">
         {canGoBack && onGoBack && (
@@ -105,7 +105,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Zone 2: Real-time search filter */}
-      <div className="flex-1 max-w-md hidden sm:block">
+      <div className="order-3 basis-full max-w-none sm:order-none sm:basis-auto sm:flex-1 sm:max-w-md min-w-0">
         <div className="relative">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -113,7 +113,7 @@ export const Header: React.FC<HeaderProps> = ({
             value={searchQuery}
             onChange={e => onSearchChange(e.target.value)}
             placeholder={t.searchPlaceholder}
-            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 dark:text-slate-100 transition-colors"
+            className="w-full pl-9 pr-3 py-2 sm:py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 dark:text-slate-100 transition-colors"
           />
         </div>
       </div>

@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
+import { getLocalDateInputValue } from '../utils/localDate';
 import { useApp } from '../context/AppContext';
 import { Download, TrendingUp, TrendingDown, Wallet, Users, FileSpreadsheet } from 'lucide-react';
 
 const money = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(value);
-const currentMonth = () => new Date().toISOString().slice(0, 7);
+const currentMonth = () => getLocalDateInputValue().slice(0, 7);
 const csvCell = (value: unknown) => '"' + String(value ?? '').replace(/"/g, '""') + '"';
 
 export const FinancialReports: React.FC = () => {
@@ -76,7 +77,7 @@ export const FinancialReports: React.FC = () => {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div><h1 className="text-xl font-extrabold text-slate-900 dark:text-white">{bn ? 'আর্থিক রিপোর্ট' : 'Financial Reports'}</h1><p className="text-xs text-slate-500 mt-1">{bn ? 'আয়-ব্যয়, মক্কেলের পাওনা এবং নগদ/ব্যাংক হিসাবের সারাংশ' : 'Income, expenses, client balances and cash/bank overview'}</p></div>
         <div className="flex flex-wrap gap-2">
-          <select value={period} onChange={e=>setPeriod(e.target.value)} className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs"><option value="all">{bn ? 'সমস্ত সময়' : 'All periods'}</option><option value={currentMonth()}>{bn ? 'এই মাস' : 'This month'}</option><option value={String(new Date().getFullYear()) + '-01'} disabled>{bn ? 'বছর নির্বাচন করতে মাস বাছুন' : 'Select a month for period filter'}</option>{Array.from({length:36},(_,i)=>{const d=new Date();d.setMonth(d.getMonth()-i);const v=d.toISOString().slice(0,7);return <option key={v} value={v}>{d.toLocaleString(bn?'bn-IN':'en-IN',{month:'long',year:'numeric'})}</option>})}</select>
+          <select value={period} onChange={e=>setPeriod(e.target.value)} className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs"><option value="all">{bn ? 'সমস্ত সময়' : 'All periods'}</option><option value={currentMonth()}>{bn ? 'এই মাস' : 'This month'}</option>{Array.from({length:36},(_,i)=>{const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-i);const v=getLocalDateInputValue(d).slice(0,7);return <option key={v} value={v}>{d.toLocaleString(bn?'bn-IN':'en-IN',{month:'long',year:'numeric'})}</option>})}</select>
           <button onClick={exportCsv} className="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-bold flex items-center gap-2"><Download size={14}/>{bn ? 'CSV ডাউনলোড' : 'Export CSV'}</button>
         </div>
       </div>
@@ -97,6 +98,7 @@ export const FinancialReports: React.FC = () => {
         <section className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 space-y-3">
           <div className="flex items-center justify-between"><h2 className="font-bold text-sm">{bn?'অ্যাকাউন্ট ব্যালেন্স':'Account Balances'}</h2><Wallet size={17} className="text-blue-600"/></div>
           {accountBalances.length===0 ? <p className="text-xs text-slate-500">{bn?'এখনও কোনো Cash/Bank অ্যাকাউন্ট তৈরি হয়নি।':'No cash/bank accounts created yet.'}</p> : accountBalances.map(a=><div key={a.id} className="flex justify-between items-center text-xs border-b last:border-0 border-slate-100 dark:border-slate-800 pb-2"><span>{a.name} <span className="text-slate-400">({a.type})</span></span><strong>{money(a.balance)}</strong></div>)}
+          <p className="text-[10px] text-slate-500 pt-1">{bn?'এই ব্যালেন্স Opening Balance ও Cash/Bank Register-এর লেনদেন থেকে গণনা করা হয়। Income/Expense এন্ট্রি আলাদাভাবে সংরক্ষিত; সেগুলি এই ব্যালেন্সে স্বয়ংক্রিয়ভাবে যোগ বা বিয়োগ হয় না।':'Balances are calculated from opening balances and Cash/Bank Register transactions. Income/Expense entries are stored separately and do not automatically change these balances.'}</p>
         </section>
       </div>
 

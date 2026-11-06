@@ -8,7 +8,7 @@
     color-scheme: light !important;
   }
   body {
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Plus Jakarta Sans', 'Nirmala UI', 'Noto Sans Bengali', 'Vrinda', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     -webkit-tap-highlight-color: transparent;
     background-color: #ffffff;
     color: #0f172a;
@@ -147,7 +147,7 @@ main .rounded-xl {
   box-shadow:
     0 8px 20px -4px rgba(15, 23, 42, 0.08),
     0 3px 0 0 rgba(148, 163, 184, 0.32),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.85);
+    inset 0 1px 0 0 rgba(96, 165, 250, 0.16);
 }
 
 main button.rounded-xl,
@@ -159,7 +159,7 @@ header button.rounded-lg {
   box-shadow:
     0 3px 6px rgba(15, 23, 42, 0.08),
     0 2px 0 0 rgba(148, 163, 184, 0.28),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.35);
+    inset 0 1px 0 0 rgba(96, 165, 250, 0.18);
   transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
@@ -192,4 +192,1158 @@ header button.rounded-lg:active {
   aside, header, .no-print, button {
     display: none !important;
   }
+}
+
+
+/* SRK approved Blue-White Legal Chamber UI */
+:root {
+  --srk-navy: #073b91;
+  --srk-blue: #0969d8;
+  --srk-blue-deep: #06469b;
+  --srk-sky: #eaf4ff;
+  --srk-border: #b9d8f7;
+  --srk-green: #168b32;
+}
+
+body {
+  background: #edf6ff !important;
+}
+
+.app-shell-bg,
+main {
+  background: linear-gradient(180deg, #f5faff 0%, #eaf4ff 100%) !important;
+}
+
+/* Consistent blue application header */
+body #root header.sticky {
+  background: linear-gradient(100deg, #06449b 0%, #086bd2 100%) !important;
+  color: #fff !important;
+  border-color: #0a56b5 !important;
+  box-shadow: 0 4px 14px rgba(5, 52, 122, .18) !important;
+}
+body #root header.sticky :is(button, span, div, svg) {
+  color: inherit;
+}
+body #root header.sticky input {
+  color: #10213b !important;
+  background: #fff !important;
+  border-color: #c6dcf4 !important;
+}
+body #root header.sticky button {
+  border-color: rgba(255,255,255,.35) !important;
+}
+body #root header.sticky button:hover {
+  background: rgba(255,255,255,.15) !important;
+}
+
+/* Navy sidebar with bright-blue active navigation */
+body #root aside {
+  background: linear-gradient(180deg, #123d70 0%, #082b52 100%) !important;
+  color: #f8fbff !important;
+  border-color: #0c3d72 !important;
+  box-shadow: 5px 0 18px rgba(7, 40, 80, .16) !important;
+}
+body #root aside :is(div, span, button, svg) {
+  color: inherit;
+}
+body #root aside button {
+  color: #edf6ff !important;
+}
+body #root aside button:hover {
+  background: rgba(43, 139, 255, .22) !important;
+  color: #fff !important;
+}
+body #root aside button.bg-blue-600,
+body #root aside button[class*="bg-blue-600"] {
+  background: linear-gradient(90deg, #0879ed 0%, #0757b9 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 5px 12px rgba(0, 18, 55, .25) !important;
+}
+body #root aside button[class*="bg-white"],
+body #root aside button[class*="bg-slate-"],
+body #root aside button[class*="bg-rose-"] {
+  background: rgba(255,255,255,.12) !important;
+  color: #fff !important;
+  border-color: rgba(255,255,255,.18) !important;
+}
+body #root aside [class*="border-t"],
+body #root aside [class*="border-b"] {
+  border-color: rgba(255,255,255,.18) !important;
+}
+
+/* Clean white content panels, blue borders and consistent depth */
+body #root main .bg-white,
+body #root main [class*="bg-white/"] {
+  background-color: #fff !important;
+}
+body #root main .rounded-2xl,
+body #root main .rounded-xl {
+  border-color: var(--srk-border);
+  box-shadow: 0 5px 16px rgba(20, 76, 135, .09), 0 2px 0 rgba(121, 173, 226, .20) !important;
+}
+body #root main button[class*="bg-blue-600"],
+body #root main button[class*="bg-blue-700"] {
+  background: linear-gradient(180deg, #1680ed 0%, #0758bd 100%) !important;
+  color: #fff !important;
+}
+body #root main button[class*="bg-emerald-"],
+body #root main button[class*="bg-green-"] {
+  background: linear-gradient(180deg, #20a444 0%, #11752d 100%) !important;
+  color: #fff !important;
+}
+
+/* Keep every existing screen responsive and readable */
+@media (max-width: 1023px) {
+  body #root main {
+    padding-bottom: max(4.5rem, env(safe-area-inset-bottom)) !important;
+  }
+  body #root aside {
+    border-radius: 0 18px 18px 0 !important;
+  }
+}
+
+/* Dashboard composition: aligned with the approved SRK reference image */
+.srk-dashboard { color: #14243b; }
+.srk-dashboard .srk-dashboard-hero {
+  background: linear-gradient(105deg, #073b91 0%, #075bb8 58%, #0876d5 100%) !important;
+  border: 1px solid #8bbcf0 !important;
+  box-shadow: 0 10px 24px rgba(5, 55, 125, .18) !important;
+}
+.srk-dashboard .srk-dashboard-hero h1 { color: #fff !important; }
+.srk-dashboard .srk-dashboard-hero p { color: #e5f2ff !important; }
+.srk-dashboard .srk-dashboard-hero button:first-child {
+  background: linear-gradient(180deg, #24a64a 0%, #137b32 100%) !important;
+  color: #fff !important;
+  border: 1px solid #8ad49c !important;
+}
+.srk-dashboard .srk-dashboard-hero button:last-child {
+  background: rgba(255,255,255,.12) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,.48) !important;
+}
+.srk-dashboard h2, .srk-dashboard h3 { color: #083b83; }
+.srk-dashboard [class*="rounded-xl"][class*="border"],
+.srk-dashboard [class*="rounded-2xl"][class*="border"] {
+  border-color: #bfd9f3;
+}
+.srk-dashboard table thead { background: #eaf3ff !important; color: #123f7b !important; }
+.srk-dashboard table tbody tr:hover { background-color: #f0f7ff !important; }
+.srk-dashboard button:focus-visible,
+.srk-dashboard [role="button"]:focus-visible {
+  outline: 2px solid #0876d5;
+  outline-offset: 2px;
+}
+@media (max-width: 640px) {
+  .srk-dashboard { gap: 1rem; }
+  .srk-dashboard .srk-dashboard-hero { border-radius: 14px; }
+  .srk-dashboard .srk-dashboard-hero > div.relative { padding: 1rem; }
+}
+
+
+/* SRK 3D icon and card treatment — retain existing navigation and actions */
+.srk-dashboard [class*="min-h-[136px]"][class*="rounded-xl"] {
+  position: relative;
+  background: linear-gradient(155deg, #ffffff 0%, #f5f9ff 72%, #eaf3ff 100%) !important;
+  border: 1px solid #b7d4f2 !important;
+  border-bottom: 4px solid #8eb8e6 !important;
+  box-shadow:
+    0 9px 0 rgba(18, 76, 139, .08),
+    0 12px 20px rgba(14, 65, 126, .13),
+    inset 0 -2px 4px rgba(30, 90, 150, .06) !important;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.srk-dashboard [class*="min-h-[136px]"][class*="rounded-xl"]:hover {
+  transform: translateY(-3px);
+  border-color: #4b9be9 !important;
+  box-shadow:
+    0 11px 0 rgba(18, 76, 139, .07),
+    0 17px 26px rgba(14, 85, 166, .2) !important;
+}
+.srk-dashboard [class*="min-h-[136px]"] > div:first-child > div:first-child {
+  border: 1px solid rgba(255,255,255,.95) !important;
+  box-shadow:
+    0 5px 9px rgba(13, 52, 101, .20),
+    inset 0 -3px 4px rgba(12, 55, 105, .12) !important;
+}
+.srk-dashboard [class*="min-h-[136px]"] svg {
+  filter: drop-shadow(0 1px 1px rgba(0, 35, 85, .20));
+  stroke-width: 2.35;
+}
+.srk-dashboard [class*="min-h-[104px]"] {
+  background: linear-gradient(145deg, #fff 0%, #f2f7ff 100%) !important;
+  border: 1px solid #c0d9f2 !important;
+  border-bottom: 4px solid #a6c5e8 !important;
+  box-shadow: 0 7px 13px rgba(16, 67, 125, .12) !important;
+}
+.srk-dashboard [class*="min-h-[104px]"] > div:first-child > div {
+  box-shadow: 0 3px 7px rgba(14, 61, 117, .15) !important;
+}
+.srk-dashboard [class*="min-h-[136px]"] button {
+  box-shadow: 0 2px 0 rgba(20, 67, 120, .16), 0 3px 6px rgba(15, 55, 100, .10);
+}
+.srk-dashboard [class*="min-h-[136px]"] button:hover {
+  transform: translateY(-1px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .srk-dashboard [class*="min-h-[136px]"] { transition: none; }
+  .srk-dashboard [class*="min-h-[136px]"]:hover { transform: none; }
+}
+
+
+/* SRK application-wide 3D interface: all modules, not Dashboard alone */
+#root main button:not(:disabled) {
+  transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
+}
+#root main button:not(:disabled):active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 4px rgba(8, 45, 91, .18) !important;
+}
+#root main button:not(:disabled):hover {
+  filter: saturate(1.06);
+}
+#root main :is(input, select, textarea) {
+  border-color: #b7d2ee;
+  background-color: #fff;
+  box-shadow: inset 0 1px 3px rgba(18, 65, 116, .07);
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+#root main :is(input, select, textarea):focus {
+  border-color: #2782d8 !important;
+  box-shadow: 0 0 0 3px rgba(39, 130, 216, .14), inset 0 1px 2px rgba(18, 65, 116, .05) !important;
+  outline: none;
+}
+#root main :is(.rounded-xl, .rounded-2xl)[class*="border"] {
+  box-shadow: 0 5px 12px rgba(12, 58, 111, .09);
+}
+#root main :is(h1, h2, h3) svg,
+#root main button svg,
+#root aside button svg {
+  filter: drop-shadow(0 1px 1px rgba(0, 34, 82, .16));
+  flex-shrink: 0;
+}
+#root main button[class*="bg-blue-"],
+#root main button[class*="bg-emerald-"],
+#root main button[class*="bg-green-"] {
+  box-shadow: 0 3px 0 rgba(6, 52, 112, .15), 0 5px 10px rgba(8, 58, 115, .12);
+}
+#root main table thead th {
+  background: #eaf3ff;
+  color: #123f7b;
+}
+#root main table tbody tr {
+  transition: background-color .14s ease;
+}
+#root main table tbody tr:hover {
+  background-color: #f1f7ff;
+}
+#root aside button {
+  border: 1px solid transparent;
+  transition: transform .16s ease, background-color .16s ease, box-shadow .16s ease;
+}
+#root aside button:hover {
+  transform: translateX(2px);
+}
+#root aside button[class*="bg-blue-600"] {
+  box-shadow: 0 4px 10px rgba(0, 20, 55, .24);
+}
+@media (prefers-reduced-motion: reduce) {
+  #root main button, #root aside button, #root main table tbody tr { transition: none !important; }
+  #root aside button:hover { transform: none; }
+}
+
+
+/* Bengali-first fallback for Windows, Android and offline use */
+#root :is(button, input, select, textarea) {
+  font-family: inherit;
+}
+
+
+/* Accessible, high-contrast theme surfaces */
+html.theme-light, html.theme-light body, html.theme-light main, html.theme-light .app-shell-bg { background-color: #E9EEF5 !important; color: #172033 !important; color-scheme: light !important; }
+html.theme-light .bg-white { background-color: #F8FAFC !important; }
+html.theme-light .bg-slate-50, html.theme-light .bg-slate-100 { background-color: #DCE4EE !important; }
+html.theme-light .text-slate-400, html.theme-light .text-slate-500 { color: #475569 !important; }
+html.theme-sepia, html.theme-sepia body, html.theme-sepia main, html.theme-sepia .app-shell-bg { background-color: #F3E8D2 !important; color: #2D2114 !important; color-scheme: light !important; }
+html.theme-sepia .bg-white { background-color: #FFF9ED !important; }
+html.theme-sepia .bg-slate-50, html.theme-sepia .bg-slate-100 { background-color: #E9DCC3 !important; }
+html.theme-azure, html.theme-azure body, html.theme-azure main, html.theme-azure .app-shell-bg { background-color: #DCEBFA !important; color: #102A43 !important; color-scheme: light !important; }
+html.theme-azure .bg-white { background-color: #F4F9FF !important; }
+html.theme-azure .bg-slate-50, html.theme-azure .bg-slate-100 { background-color: #C8DDF2 !important; }
+html.theme-mint, html.theme-mint body, html.theme-mint main, html.theme-mint .app-shell-bg { background-color: #DDF1E5 !important; color: #12352B !important; color-scheme: light !important; }
+html.theme-mint .bg-white { background-color: #F4FBF6 !important; }
+html.theme-mint .bg-slate-50, html.theme-mint .bg-slate-100 { background-color: #C9E5D4 !important; }
+
+/* Dark themes deliberately override common Tailwind utility surfaces so text never disappears on white cards. */
+html.theme-navy, html.theme-navy body, html.theme-navy main, html.theme-navy .app-shell-bg { background: #101D33 !important; color: #F1F5F9 !important; color-scheme: dark !important; }
+html.theme-navy .bg-white, html.theme-navy .bg-slate-50, html.theme-navy .bg-slate-100 { background-color: #1B2B45 !important; }
+html.theme-navy .bg-slate-200 { background-color: #2B3D59 !important; }
+html.theme-navy [class*="text-slate-900"], html.theme-navy [class*="text-slate-800"], html.theme-navy [class*="text-slate-700"] { color: #F1F5F9 !important; }
+html.theme-navy [class*="text-slate-600"], html.theme-navy [class*="text-slate-500"], html.theme-navy [class*="text-slate-400"] { color: #CBD5E1 !important; }
+html.theme-navy [class*="border-slate-"] { border-color: #3B4D68 !important; }
+
+html.theme-charcoal, html.theme-charcoal body, html.theme-charcoal main, html.theme-charcoal .app-shell-bg { background: #20252D !important; color: #F3F4F6 !important; color-scheme: dark !important; }
+html.theme-charcoal .bg-white, html.theme-charcoal .bg-slate-50, html.theme-charcoal .bg-slate-100 { background-color: #2B323D !important; }
+html.theme-charcoal .bg-slate-200 { background-color: #3B4552 !important; }
+html.theme-charcoal [class*="text-slate-900"], html.theme-charcoal [class*="text-slate-800"], html.theme-charcoal [class*="text-slate-700"] { color: #F3F4F6 !important; }
+html.theme-charcoal [class*="text-slate-600"], html.theme-charcoal [class*="text-slate-500"], html.theme-charcoal [class*="text-slate-400"] { color: #D1D5DB !important; }
+html.theme-charcoal [class*="border-slate-"] { border-color: #4B5563 !important; }
+
+html.theme-emerald, html.theme-emerald body, html.theme-emerald main, html.theme-emerald .app-shell-bg { background: #102A26 !important; color: #ECFDF5 !important; color-scheme: dark !important; }
+html.theme-emerald .bg-white, html.theme-emerald .bg-slate-50, html.theme-emerald .bg-slate-100 { background-color: #1B3A33 !important; }
+html.theme-emerald .bg-slate-200 { background-color: #285247 !important; }
+html.theme-emerald [class*="text-slate-900"], html.theme-emerald [class*="text-slate-800"], html.theme-emerald [class*="text-slate-700"] { color: #ECFDF5 !important; }
+html.theme-emerald [class*="text-slate-600"], html.theme-emerald [class*="text-slate-500"], html.theme-emerald [class*="text-slate-400"] { color: #C6E7DA !important; }
+html.theme-emerald [class*="border-slate-"] { border-color: #37685A !important; }
+
+html.theme-indigo, html.theme-indigo body, html.theme-indigo main, html.theme-indigo .app-shell-bg { background: #211D3A !important; color: #F5F3FF !important; color-scheme: dark !important; }
+html.theme-indigo .bg-white, html.theme-indigo .bg-slate-50, html.theme-indigo .bg-slate-100 { background-color: #302A50 !important; }
+html.theme-indigo .bg-slate-200 { background-color: #403963 !important; }
+html.theme-indigo [class*="text-slate-900"], html.theme-indigo [class*="text-slate-800"], html.theme-indigo [class*="text-slate-700"] { color: #F5F3FF !important; }
+html.theme-indigo [class*="text-slate-600"], html.theme-indigo [class*="text-slate-500"], html.theme-indigo [class*="text-slate-400"] { color: #DDD6FE !important; }
+html.theme-indigo [class*="border-slate-"] { border-color: #514875 !important; }
+
+/* Always-visible focus and readable controls across themes */
+html[class*="theme-"] button:focus-visible, html[class*="theme-"] input:focus-visible, html[class*="theme-"] select:focus-visible, html[class*="theme-"] textarea:focus-visible { outline: 3px solid #F59E0B !important; outline-offset: 2px !important; }
+
+
+/* Midnight Navy — approved SRK dashboard visual system.
+   Scoped to the selected theme so the other eight themes remain available. */
+html.theme-navy,
+html.theme-navy body,
+html.theme-navy #root {
+  background: #041a35 !important;
+  color: #eaf3ff !important;
+  color-scheme: dark !important;
+}
+html.theme-navy body #root .app-shell-bg,
+html.theme-navy body #root main {
+  background: radial-gradient(ellipse at 50% 0%, #0b376b 0%, #061f40 48%, #03152c 100%) !important;
+  color: #eaf3ff !important;
+}
+html.theme-navy body #root header.sticky {
+  min-height: 5rem;
+  background: linear-gradient(100deg, #03152e 0%, #082b56 55%, #061d3b 100%) !important;
+  color: #f4f8ff !important;
+  border-bottom: 1px solid #1766ad !important;
+  box-shadow: 0 5px 22px rgba(0,0,0,.34) !important;
+}
+html.theme-navy body #root header.sticky :is(div,span,button,svg) { color: inherit; }
+html.theme-navy body #root header.sticky input {
+  color: #f3f8ff !important;
+  background: #09284c !important;
+  border-color: #24639a !important;
+}
+html.theme-navy body #root aside {
+  background: linear-gradient(180deg, #082b55 0%, #041a35 100%) !important;
+  color: #edf5ff !important;
+  border-color: #14518b !important;
+  box-shadow: 5px 0 22px rgba(0,0,0,.28) !important;
+}
+html.theme-navy body #root aside :is(div,span,button,svg) { color: inherit; }
+html.theme-navy body #root aside button {
+  color: #dceaff !important;
+  border-color: transparent !important;
+}
+html.theme-navy body #root aside button:hover {
+  background: rgba(24,119,220,.22) !important;
+  color: #fff !important;
+}
+html.theme-navy body #root aside button[class*="bg-blue-600"] {
+  background: linear-gradient(100deg,#1684f5 0%,#0756bd 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 5px 15px rgba(0,0,0,.28) !important;
+}
+html.theme-navy body #root aside [class*="border-t"],
+html.theme-navy body #root aside [class*="border-b"] { border-color: #1b4d7b !important; }
+
+/* Dark glass surfaces throughout every module, while preserving semantic action colours. */
+html.theme-navy body #root main :is(.bg-white,.bg-slate-50,.bg-slate-100) {
+  background-color: #0a2b50 !important;
+  color: #eaf3ff !important;
+}
+html.theme-navy body #root main :is([class*="bg-white/"],[class*="bg-slate-"]) {
+  color: #eaf3ff;
+}
+html.theme-navy body #root main :is(.text-slate-900,.text-slate-800,.text-slate-700,.text-slate-600) {
+  color: #e4efff !important;
+}
+html.theme-navy body #root main :is(.text-slate-500,.text-slate-400) { color: #a9c2df !important; }
+html.theme-navy body #root main :is(.border-slate-200,.border-slate-300,.border-slate-400) {
+  border-color: #245783 !important;
+}
+html.theme-navy body #root main :is(.divide-slate-200 > :not([hidden]) ~ :not([hidden])) {
+  border-color: #245783 !important;
+}
+html.theme-navy body #root main :is(input,select,textarea) {
+  background: #061f3d !important;
+  color: #f2f7ff !important;
+  border-color: #326b9d !important;
+}
+html.theme-navy body #root main input::placeholder,
+html.theme-navy body #root main textarea::placeholder { color: #9bb6d4 !important; }
+html.theme-navy body #root main table thead th { background: #103963 !important; color: #f0f6ff !important; }
+html.theme-navy body #root main table tbody tr:hover { background: #10345a !important; }
+html.theme-navy body #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-color: #1e6099 !important;
+  box-shadow: 0 8px 20px rgba(0,0,0,.24) !important;
+}
+html.theme-navy body #root main button[class*="bg-blue-"],
+html.theme-navy body #root main button[class*="bg-emerald-"],
+html.theme-navy body #root main button[class*="bg-green-"] { color: #fff !important; }
+
+/* Dashboard: deep navy canvas, luminous courthouse banner and raised metric tiles. */
+html.theme-navy .srk-dashboard { color: #eaf3ff !important; }
+html.theme-navy .srk-dashboard .srk-dashboard-hero {
+  background: linear-gradient(110deg,#062957 0%,#0756a8 58%,#0874c9 100%) !important;
+  border: 1px solid #3d91db !important;
+  box-shadow: 0 12px 28px rgba(0,0,0,.34) !important;
+}
+html.theme-navy .srk-dashboard h2,
+html.theme-navy .srk-dashboard h3 { color: #f0f6ff !important; }
+html.theme-navy .srk-dashboard [class*="min-h-[104px]"],
+html.theme-navy .srk-dashboard [class*="min-h-[136px]"] {
+  background: linear-gradient(145deg,#103d70 0%,#08284c 100%) !important;
+  color: #f1f7ff !important;
+  border: 1px solid #286da8 !important;
+  border-bottom: 4px solid #164c7b !important;
+  box-shadow: 0 9px 0 rgba(0,0,0,.12), 0 13px 22px rgba(0,0,0,.25) !important;
+}
+html.theme-navy .srk-dashboard [class*="min-h-[104px]"] :is(.text-slate-900,.text-slate-800,.text-slate-700),
+html.theme-navy .srk-dashboard [class*="min-h-[136px]"] :is(.text-slate-900,.text-slate-800,.text-slate-700) {
+  color: #f0f6ff !important;
+}
+html.theme-navy .srk-dashboard [class*="min-h-[104px]"] :is(.text-slate-500,.text-slate-400),
+html.theme-navy .srk-dashboard [class*="min-h-[136px]"] :is(.text-slate-500,.text-slate-400) {
+  color: #bdd2e9 !important;
+}
+html.theme-navy .srk-dashboard [class*="min-h-[136px]"] { border-radius: 16px !important; }
+html.theme-navy .srk-dashboard :is(.bg-white,.bg-slate-50,.bg-slate-100) {
+  background-color: #0b2d53 !important;
+}
+html.theme-navy .srk-dashboard :is(.border-slate-200,.border-slate-300) { border-color: #28608e !important; }
+html.theme-navy .srk-dashboard table thead { background: #103963 !important; color: #f0f6ff !important; }
+html.theme-navy .srk-dashboard table tbody tr:hover { background: #123a62 !important; }
+@media (max-width: 1023px) {
+  html.theme-navy body #root main { padding-bottom: max(4.5rem, env(safe-area-inset-bottom)) !important; }
+}
+
+
+/* SRK unified theme palette v2 — consistent contrast and coordinated surfaces.
+   Theme selection remains user-controlled; Midnight Navy remains the default. */
+html.theme-white {
+  --srk-canvas:#F4F7FC; --srk-surface:#FFFFFF; --srk-surface-raised:#FFFFFF;
+  --srk-ink:#17243A; --srk-muted:#52637A; --srk-accent:#2563EB;
+  --srk-header:#142B4E; --srk-sidebar:#102744; --srk-border:#D9E3F0;
+}
+html.theme-light {
+  --srk-canvas:#EAF0F7; --srk-surface:#F8FAFD; --srk-surface-raised:#FFFFFF;
+  --srk-ink:#1B2C43; --srk-muted:#52657C; --srk-accent:#3478C8;
+  --srk-header:#19395E; --srk-sidebar:#132E4D; --srk-border:#CAD7E6;
+}
+html.theme-sepia {
+  --srk-canvas:#F5EBDD; --srk-surface:#FFF9EF; --srk-surface-raised:#FFFCF6;
+  --srk-ink:#302518; --srk-muted:#725B43; --srk-accent:#A45B24;
+  --srk-header:#49321F; --srk-sidebar:#382719; --srk-border:#E3CFB2;
+}
+html.theme-azure {
+  --srk-canvas:#E7F2FC; --srk-surface:#F8FCFF; --srk-surface-raised:#FFFFFF;
+  --srk-ink:#12314E; --srk-muted:#4C6C87; --srk-accent:#0D6EAA;
+  --srk-header:#10436B; --srk-sidebar:#0C3454; --srk-border:#C4DDEE;
+}
+html.theme-mint {
+  --srk-canvas:#E8F4EC; --srk-surface:#F8FCF9; --srk-surface-raised:#FFFFFF;
+  --srk-ink:#16382B; --srk-muted:#527265; --srk-accent:#21845B;
+  --srk-header:#174B3A; --srk-sidebar:#103B2E; --srk-border:#C9E1D2;
+}
+html.theme-navy {
+  --srk-canvas:#081A2E; --srk-surface:#102943; --srk-surface-raised:#153653;
+  --srk-ink:#EAF3FF; --srk-muted:#AFC4DA; --srk-accent:#48A4FF;
+  --srk-header:#06172B; --srk-sidebar:#071F39; --srk-border:#285477;
+}
+html.theme-charcoal {
+  --srk-canvas:#171F2A; --srk-surface:#242F3D; --srk-surface-raised:#2B3848;
+  --srk-ink:#F1F5F9; --srk-muted:#B7C2D0; --srk-accent:#9BB4D8;
+  --srk-header:#151D27; --srk-sidebar:#101720; --srk-border:#465568;
+}
+html.theme-emerald {
+  --srk-canvas:#10251F; --srk-surface:#19372E; --srk-surface-raised:#214438;
+  --srk-ink:#ECFDF5; --srk-muted:#B8D9CB; --srk-accent:#56D6A2;
+  --srk-header:#0D211B; --srk-sidebar:#0B1C17; --srk-border:#376858;
+}
+html.theme-indigo {
+  --srk-canvas:#1D1B35; --srk-surface:#2B2850; --srk-surface-raised:#35315D;
+  --srk-ink:#F5F3FF; --srk-muted:#D0C9F0; --srk-accent:#B7A5FF;
+  --srk-header:#19172F; --srk-sidebar:#141226; --srk-border:#514A79;
+}
+
+/* Shared structure: the selected palette controls every shell, module and form. */
+html[class*="theme-"], html[class*="theme-"] body, html[class*="theme-"] #root {
+  background:var(--srk-canvas) !important;
+  color:var(--srk-ink) !important;
+}
+html[class*="theme-"] body #root .app-shell-bg,
+html[class*="theme-"] body #root main {
+  background:var(--srk-canvas) !important;
+  color:var(--srk-ink) !important;
+}
+html[class*="theme-"] body #root header.sticky {
+  background:linear-gradient(105deg,var(--srk-header),var(--srk-sidebar)) !important;
+  color:#FFFFFF !important;
+  border-color:var(--srk-border) !important;
+}
+html[class*="theme-"] body #root header.sticky :is(button,span,div,svg) { color:inherit; }
+html[class*="theme-"] body #root aside {
+  background:linear-gradient(180deg,var(--srk-sidebar),var(--srk-header)) !important;
+  color:#F7FAFF !important;
+  border-color:var(--srk-border) !important;
+}
+html[class*="theme-"] body #root aside :is(button,span,div,svg) { color:inherit; }
+html[class*="theme-"] body #root aside button { color:#EAF2FC !important; }
+html[class*="theme-"] body #root aside button:hover {
+  background:color-mix(in srgb,var(--srk-accent) 28%,transparent) !important;
+  color:#FFFFFF !important;
+}
+html[class*="theme-"] body #root aside button[class*="bg-blue-600"] {
+  background:linear-gradient(100deg,var(--srk-accent),color-mix(in srgb,var(--srk-accent) 72%,#102744)) !important;
+  color:#FFFFFF !important;
+}
+html[class*="theme-"] body #root main :is(.bg-white,.bg-slate-50,.bg-slate-100) {
+  background:var(--srk-surface) !important;
+  color:var(--srk-ink) !important;
+}
+html[class*="theme-"] body #root main [class*="text-slate-900"],
+html[class*="theme-"] body #root main [class*="text-slate-800"],
+html[class*="theme-"] body #root main [class*="text-slate-700"],
+html[class*="theme-"] body #root main [class*="text-slate-600"] { color:var(--srk-ink) !important; }
+html[class*="theme-"] body #root main [class*="text-slate-500"],
+html[class*="theme-"] body #root main [class*="text-slate-400"] { color:var(--srk-muted) !important; }
+html[class*="theme-"] body #root main [class*="border-slate-"] { border-color:var(--srk-border) !important; }
+html[class*="theme-"] body #root main :is(input,select,textarea) {
+  background:var(--srk-surface-raised) !important;
+  color:var(--srk-ink) !important;
+  border-color:var(--srk-border) !important;
+}
+html[class*="theme-"] body #root main :is(input,textarea)::placeholder { color:var(--srk-muted) !important; opacity:.85; }
+html[class*="theme-"] body #root main table thead th {
+  background:color-mix(in srgb,var(--srk-accent) 13%,var(--srk-surface)) !important;
+  color:var(--srk-ink) !important;
+}
+html[class*="theme-"] body #root main table tbody tr:hover {
+  background:color-mix(in srgb,var(--srk-accent) 9%,var(--srk-surface)) !important;
+}
+html[class*="theme-"] body #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-color:var(--srk-border) !important;
+  box-shadow:0 6px 16px rgba(8,28,52,.12) !important;
+}
+html[class*="theme-"] .srk-dashboard { color:var(--srk-ink) !important; }
+html[class*="theme-"] .srk-dashboard .srk-dashboard-hero {
+  background:linear-gradient(110deg,var(--srk-header),var(--srk-accent)) !important;
+  border-color:var(--srk-border) !important;
+}
+html[class*="theme-"] .srk-dashboard .srk-dashboard-hero :is(h1,p,span) { color:#FFFFFF !important; }
+html[class*="theme-"] .srk-dashboard h2,
+html[class*="theme-"] .srk-dashboard h3 { color:var(--srk-ink) !important; }
+html[class*="theme-"] .srk-dashboard [class*="min-h-[104px]"],
+html[class*="theme-"] .srk-dashboard [class*="min-h-[136px]"] {
+  background:linear-gradient(145deg,var(--srk-surface-raised),var(--srk-surface)) !important;
+  color:var(--srk-ink) !important;
+  border-color:var(--srk-border) !important;
+}
+html[class*="theme-"] .srk-dashboard [class*="min-h-[104px]"] [class*="text-slate-"],
+html[class*="theme-"] .srk-dashboard [class*="min-h-[136px]"] [class*="text-slate-"] { color:var(--srk-ink) !important; }
+html[class*="theme-"] button:focus-visible,
+html[class*="theme-"] input:focus-visible,
+html[class*="theme-"] select:focus-visible,
+html[class*="theme-"] textarea:focus-visible {
+  outline:3px solid var(--srk-accent) !important;
+  outline-offset:2px !important;
+}
+
+
+/* Stronger, non-faded colour surfaces requested for the nine selectable themes. */
+html.theme-white {
+  --srk-canvas:#DCEBFA; --srk-surface:#FFFFFF; --srk-surface-raised:#FFFFFF;
+  --srk-ink:#14243B; --srk-muted:#405873; --srk-accent:#0757B8;
+  --srk-header:#123D70; --srk-sidebar:#082B52; --srk-border:#9FC4E8;
+}
+html.theme-light {
+  --srk-canvas:#C9D6E5; --srk-surface:#F8FAFD; --srk-surface-raised:#FFFFFF;
+  --srk-ink:#17283F; --srk-muted:#40556D; --srk-accent:#245A9B;
+  --srk-header:#19395E; --srk-sidebar:#102D4C; --srk-border:#9FB3CA;
+}
+html.theme-sepia {
+  --srk-canvas:#E8D1A4; --srk-surface:#FFF9ED; --srk-surface-raised:#FFFCF5;
+  --srk-ink:#302115; --srk-muted:#61482F; --srk-accent:#8A4318;
+  --srk-header:#49321F; --srk-sidebar:#382719; --srk-border:#C9A875;
+}
+html.theme-azure {
+  --srk-canvas:#A8D4F5; --srk-surface:#F4F9FF; --srk-surface-raised:#FFFFFF;
+  --srk-ink:#102A43; --srk-muted:#34556F; --srk-accent:#075A91;
+  --srk-header:#10436B; --srk-sidebar:#0C3454; --srk-border:#75B4E2;
+}
+html.theme-mint {
+  --srk-canvas:#A9D8B7; --srk-surface:#F4FBF6; --srk-surface-raised:#FFFFFF;
+  --srk-ink:#12352B; --srk-muted:#355F4D; --srk-accent:#17613E;
+  --srk-header:#174B3A; --srk-sidebar:#103B2E; --srk-border:#79B991;
+}
+
+/* Use the selected colour on the workspace while keeping document panels crisp and readable. */
+html[class*="theme-"] body #root .app-shell-bg,
+html[class*="theme-"] body #root main {
+  background:var(--srk-canvas) !important;
+  color:var(--srk-ink) !important;
+}
+html[class*="theme-"] body #root main :is(.bg-white,.bg-slate-50,.bg-slate-100) {
+  background:var(--srk-surface) !important;
+  color:var(--srk-ink) !important;
+}
+html[class*="theme-"] body #root main :is(input,select,textarea) {
+  background:var(--srk-surface-raised) !important;
+  color:var(--srk-ink) !important;
+  border:1px solid var(--srk-border) !important;
+}
+
+
+/* User-selectable application UI presentation styles (independent of colour themes) */
+/* 3D Professional is the default and retains the existing dimensional treatment. */
+html.ui-style-3d #root main :is(.rounded-xl, .rounded-2xl)[class*="border"] {
+  box-shadow: 0 7px 15px rgba(5,35,75,.28), 0 3px 0 rgba(45,105,175,.42), inset 0 1px 0 rgba(100,170,245,.18);
+}
+html.ui-style-modern #root main :is(.rounded-xl, .rounded-2xl)[class*="border"] {
+  border-radius: .65rem !important;
+  background-color: #DCEBFA !important;
+  box-shadow: 0 5px 12px rgba(5,35,75,.20), 0 3px 0 rgba(45,105,175,.28) !important;
+}
+html.ui-style-modern #root main button:not(:disabled) {
+  box-shadow: 0 3px 7px rgba(5,35,75,.22), 0 2px 0 rgba(45,105,175,.28) !important;
+  transform: none !important;
+}
+html.ui-style-glass #root main :is(.rounded-xl, .rounded-2xl)[class*="border"] {
+  background-color: rgba(183,213,245,.92) !important;
+  border-color: rgba(59,130,210,.65) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 10px 26px rgba(5,35,75,.24), inset 0 1px 0 rgba(96,165,250,.2) !important;
+}
+html.ui-style-glass #root main button:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(5,35,75,.22), inset 0 1px 0 rgba(96,165,250,.18);
+}
+html.ui-style-classic #root main :is(.rounded-xl, .rounded-2xl)[class*="border"] {
+  border-radius: .35rem !important;
+  border-width: 1.5px !important;
+  background-color: #C8DDF2 !important;
+  box-shadow: 0 3px 0 rgba(45,105,175,.28) !important;
+}
+html.ui-style-classic #root main button:not(:disabled) {
+  border-radius: .35rem !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html.ui-style-3d #root main *,
+  html.ui-style-modern #root main *,
+  html.ui-style-glass #root main *,
+  html.ui-style-classic #root main * { transition-duration: 0.01ms !important; }
+}
+
+
+/* Reference PNG-inspired presentation refinements */
+html.ui-style-3d #root aside {
+  box-shadow: 5px 0 18px rgba(7,35,76,.18);
+}
+html.ui-style-3d #root main :is(button,[role="button"]) {
+  transition: transform .16s ease, box-shadow .16s ease;
+}
+html.ui-style-3d #root main :is(button,[role="button"]):not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(15,65,125,.16);
+}
+html.ui-style-modern #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  box-shadow: 0 2px 7px rgba(15,45,85,.07) !important;
+}
+html.ui-style-modern #root main table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+html.ui-style-modern #root main table thead th {
+  font-weight: 800;
+  letter-spacing: .01em;
+}
+html.ui-style-glass #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  background-image: linear-gradient(145deg,rgba(96,165,250,.22),rgba(30,64,175,.12));
+}
+html.ui-style-classic #root main {
+  gap: .75rem;
+}
+html.ui-style-classic #root main :is(.rounded-xl,.rounded-2xl) {
+  border-radius: .4rem !important;
+}
+
+
+/* SRK Case Manager: complete navy-blue layered workspace presentation */
+:root{--srk-ink:#102b4c;--srk-navy:#103b68;--srk-blue:#0878e8;--srk-panel:#e4f0ff;--srk-line:#a7c9ed}
+html,body,#root{min-height:100%}
+body{background:#d9eaff!important;color:var(--srk-ink)}
+#root .app-shell-bg,#root main{background:linear-gradient(145deg,#eaf4ff 0%,#d7e9fc 52%,#e8f3ff 100%)!important}
+#root main{padding:clamp(12px,2vw,26px)!important;min-width:0}
+#root main>.srk-dashboard{max-width:1600px;margin-inline:auto}
+#root main .srk-dashboard-hero{border:1px solid #397fc5!important;border-bottom:5px solid #06366f!important;border-radius:22px!important;background:linear-gradient(125deg,#082c55 0%,#0759a9 58%,#1685e8 100%)!important;box-shadow:0 12px 22px rgba(8,47,91,.22),inset 0 1px 0 rgba(67,145,224,.24)!important}
+#root main .srk-dashboard :is(section,article){border-color:#a9ccef}
+#root main .srk-dashboard :is(.rounded-2xl,.rounded-xl)[class*="border"]{background-color:#e4f0ff;border-color:#a7c9ed!important;box-shadow:0 7px 0 rgba(75,125,183,.34),0 11px 18px rgba(10,52,99,.10),inset 0 1px 0 rgba(67,145,224,.24)!important}
+#root main .srk-dashboard :is(.rounded-2xl,.rounded-xl)[class*="border"] :is(h2,h3,h4){color:#123b68}
+#root main .srk-dashboard button:not(:disabled){border-color:#9fc3e9;box-shadow:0 4px 0 rgba(59,105,159,.38),0 7px 12px rgba(9,48,91,.12),inset 0 1px 0 rgba(67,145,224,.24)!important;transition:transform .16s ease,box-shadow .16s ease,filter .16s ease}
+#root main .srk-dashboard button:not(:disabled):hover{transform:translateY(-2px);filter:saturate(1.08);box-shadow:0 6px 0 rgba(59,105,159,.38),0 11px 17px rgba(9,48,91,.16),inset 0 1px 0 rgba(67,145,224,.28)!important}
+#root main .srk-dashboard button:not(:disabled):active{transform:translateY(2px);box-shadow:0 1px 0 rgba(59,105,159,.45),inset 0 1px 2px rgba(9,48,91,.16)!important}
+#root main .srk-dashboard button svg{filter:drop-shadow(0 2px 1px rgba(6,35,70,.18))}
+#root main .srk-dashboard table thead{background:linear-gradient(90deg,#0d3b6b,#1268b7)!important;color:#fff!important}
+#root main .srk-dashboard table thead th{color:#fff!important}
+#root main .srk-dashboard table tbody{background:#eaf4ff}
+#root main .srk-dashboard table tbody tr:nth-child(even){background:#dcecff}
+#root main .srk-dashboard table tbody tr:hover{background:#c7e2ff}
+#root aside{width:272px!important;background:linear-gradient(180deg,#123f70 0%,#0b3159 48%,#071f3d 100%)!important;color:#f5f9ff!important;border:1px solid #174c80!important;border-radius:0 18px 18px 0!important;box-shadow:7px 0 22px rgba(5,31,61,.24)!important}
+#root aside>div:first-child{min-height:76px;background:linear-gradient(110deg,#082849,#14558e)!important;border-bottom:1px solid rgba(153,204,255,.28)!important}
+#root aside>div:first-child :is(div,span){color:#fff!important}
+#root aside>div:nth-child(2){padding:17px 12px!important}
+#root aside>div:nth-child(2)>div{margin-bottom:15px}
+#root aside button{color:#e9f4ff!important;border:1px solid transparent!important;border-radius:11px!important;min-height:42px}
+#root aside button:hover{color:#fff!important;background:linear-gradient(90deg,rgba(36,137,239,.35),rgba(18,90,158,.25))!important;border-color:rgba(126,190,255,.35)!important}
+#root aside button[class*="bg-blue-600"],#root aside button[aria-current="page"]{background:linear-gradient(180deg,#2695ff 0%,#0864c7 100%)!important;color:#fff!important;border-color:#72bdff!important;box-shadow:0 4px 0 #06417e,0 8px 14px rgba(0,14,39,.28)!important}
+#root aside button[class*="bg-white"],#root aside button[class*="bg-slate-"],#root aside button[class*="bg-rose-"]{background:rgba(221,239,255,.12)!important;border-color:rgba(173,211,249,.2)!important;color:#f3f8ff!important}
+#root aside button svg{color:inherit!important;filter:drop-shadow(0 2px 1px rgba(0,0,0,.24))}
+#root aside :is(.text-slate-400,.text-slate-500,.text-slate-600){color:#b9d8f6!important}
+#root aside :is(.bg-slate-100,.bg-slate-200){background:rgba(217,237,255,.18)!important}
+#root aside :is(.border-slate-200,.border-slate-300){border-color:rgba(173,211,249,.24)!important}
+#root header.sticky{min-height:64px;background:linear-gradient(100deg,#073665 0%,#075db2 58%,#087de4 100%)!important;border-bottom:3px solid #06417d!important;box-shadow:0 6px 15px rgba(5,43,84,.22)!important}
+#root header.sticky :is(button,span,svg){color:#fff}
+#root header.sticky button{border:1px solid rgba(210,233,255,.35)!important;border-radius:10px!important;box-shadow:0 3px 0 rgba(2,34,71,.45),inset 0 1px 0 rgba(67,145,224,.24)!important}
+#root main :is(input,select,textarea){background-color:#f7fbff!important;border-color:#9dbfe3!important;color:#102b4c!important;box-shadow:inset 0 2px 4px rgba(10,48,88,.08)!important}
+#root main :is(input,select,textarea):focus{outline:2px solid #55a9f7!important;outline-offset:1px}
+#root main :is(.border-slate-200,.border-slate-300){border-color:#a9c9eb!important}
+#root main :is(.text-slate-900,.text-slate-800){color:#102f52!important}
+#root main :is(.text-slate-600,.text-slate-500){color:#496887!important}
+#root main :is(.bg-slate-50,.bg-slate-100){background-color:#dcecff!important}
+#root main .fixed.inset-0>div[class*="max-w-"]{border:1px solid #76aee5!important;box-shadow:0 18px 42px rgba(3,24,49,.38)!important}
+@media(max-width:1023px){#root aside{border-radius:0 18px 18px 0!important}#root main{padding:12px!important}#root main .srk-dashboard-hero{border-radius:17px!important}}
+
+
+/* Twelve selectable presentation presets.
+   These rules control layout, shape, density and interaction only.
+   Colour, text and surface palettes remain owned by the independent Colour Theme setting. */
+
+/* 1. SRK Reference 3D — retain the raised-card baseline above. */
+html.ui-style-3d #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-radius: 16px !important;
+  box-shadow: 0 5px 0 rgba(15, 55, 96, .28), 0 10px 20px rgba(4, 24, 48, .12) !important;
+}
+html.ui-style-3d #root main button:not(:disabled) {
+  transform: translateY(0);
+  transition: transform .16s ease, box-shadow .16s ease;
+}
+html.ui-style-3d #root main button:not(:disabled):active {
+  transform: translateY(2px);
+}
+
+/* 2. Modern Blue Workspace — flat, clean panels. */
+html.ui-style-modern #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-radius: 14px !important;
+  box-shadow: none !important;
+  border-width: 1px !important;
+}
+html.ui-style-modern #root main button:not(:disabled),
+html.ui-style-modern #root header.sticky button,
+html.ui-style-modern #root aside button {
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+html.ui-style-modern #root main button:not(:disabled):hover,
+html.ui-style-modern #root aside button:hover { transform: none !important; }
+html.ui-style-modern #root main { gap: 1rem !important; }
+
+/* 3. Layered Glass — translucent depth without imposing a colour palette. */
+html.ui-style-glass #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-radius: 18px !important;
+  background-color: color-mix(in srgb, currentColor 4%, transparent) !important;
+  border-color: color-mix(in srgb, currentColor 18%, transparent) !important;
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 22px rgba(0, 18, 42, .14) !important;
+}
+html.ui-style-glass #root main button:not(:disabled) {
+  border-radius: 12px !important;
+  box-shadow: 0 3px 8px rgba(0, 18, 42, .14) !important;
+}
+html.ui-style-glass #root main button:not(:disabled):hover { transform: translateY(-1px); }
+html.ui-style-glass #root main :is(input,select,textarea) {
+  border-radius: 11px !important;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+/* 4. Classic Office — square corners, formal tables and restrained controls. */
+html.ui-style-classic #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-radius: 6px !important;
+  border-width: 1px !important;
+  box-shadow: none !important;
+}
+html.ui-style-classic #root main button:not(:disabled),
+html.ui-style-classic #root header.sticky button,
+html.ui-style-classic #root aside button {
+  border-radius: 5px !important;
+  box-shadow: none !important;
+}
+html.ui-style-classic #root main button:not(:disabled):hover,
+html.ui-style-classic #root aside button:hover { transform: none !important; }
+html.ui-style-classic #root main table { border-collapse: separate; border-spacing: 0; }
+html.ui-style-classic #root main table th,
+html.ui-style-classic #root main table td {
+  border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+}
+
+/* 5. Executive Suite — spacious, formal hierarchy and larger content cards. */
+html.ui-style-executive #root aside { width: 286px !important; }
+html.ui-style-executive #root main { padding: 24px !important; gap: 22px !important; }
+html.ui-style-executive #root main .srk-dashboard-hero { border-radius: 10px !important; }
+html.ui-style-executive #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-radius: 10px !important;
+  padding: 20px !important;
+  box-shadow: 0 4px 0 rgba(30, 45, 65, .18), 0 10px 18px rgba(14, 37, 62, .10) !important;
+}
+
+/* 6. Royal Chamber — broad navigation and prominent action controls. */
+html.ui-style-royal #root aside { width: 286px !important; }
+html.ui-style-royal #root aside button { min-height: 48px !important; border-radius: 14px !important; }
+html.ui-style-royal #root header.sticky { min-height: 72px !important; }
+html.ui-style-royal #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-radius: 20px !important;
+  box-shadow: 0 5px 0 rgba(20, 55, 95, .22), 0 10px 18px rgba(5, 35, 75, .10) !important;
+}
+html.ui-style-royal #root main button:not(:disabled) { border-radius: 14px !important; min-height: 42px; }
+
+/* 7. Compact Case Desk — high information density. */
+html.ui-style-compact #root main { padding: 10px !important; gap: 10px !important; }
+html.ui-style-compact #root main :is(.rounded-xl,.rounded-2xl) { border-radius: 9px !important; }
+html.ui-style-compact #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  padding: 10px !important;
+  box-shadow: 0 3px 0 rgba(35, 65, 100, .20) !important;
+}
+html.ui-style-compact #root main button { min-height: 32px; padding-top: 6px !important; padding-bottom: 6px !important; }
+html.ui-style-compact #root aside { width: 238px !important; }
+html.ui-style-compact #root header.sticky { min-height: 54px !important; }
+
+/* 8. Soft Workspace — generous spacing and gentle rounded geometry. */
+html.ui-style-soft #root main { padding: 22px !important; gap: 22px !important; }
+html.ui-style-soft #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-radius: 20px !important;
+  padding: 18px !important;
+  box-shadow: 0 4px 0 rgba(55, 85, 115, .16), 0 8px 16px rgba(35, 72, 108, .07) !important;
+}
+html.ui-style-soft #root main button:not(:disabled) { border-radius: 15px !important; }
+
+/* 9. Midnight Docket — narrow navigation and dense docket-style rows. */
+html.ui-style-midnight #root aside { width: 248px !important; }
+html.ui-style-midnight #root aside button { min-height: 38px !important; border-radius: 8px !important; }
+html.ui-style-midnight #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-radius: 10px !important;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .22), 0 8px 18px rgba(0, 0, 0, .12) !important;
+}
+html.ui-style-midnight #root main table th,
+html.ui-style-midnight #root main table td { padding: 9px 10px !important; }
+
+/* 10. Ocean Command — rounded command surfaces and pill-shaped actions. */
+html.ui-style-ocean #root aside { width: 276px !important; }
+html.ui-style-ocean #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"] { border-radius: 24px !important; }
+html.ui-style-ocean #root main button:not(:disabled) { border-radius: 999px !important; padding-left: 16px !important; padding-right: 16px !important; }
+html.ui-style-ocean #root header.sticky { border-radius: 0 0 18px 18px !important; }
+
+/* 11. Emerald Chamber — balanced grid cards and compact menu rows. */
+html.ui-style-emerald #root main .srk-dashboard { gap: 14px !important; }
+html.ui-style-emerald #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-radius: 12px !important;
+  padding: 14px !important;
+  box-shadow: 0 4px 0 rgba(20, 70, 50, .18) !important;
+}
+html.ui-style-emerald #root aside { width: 258px !important; }
+html.ui-style-emerald #root aside button { min-height: 40px !important; }
+
+/* 12. Copper Heritage — framed panels and formal squared-off controls. */
+html.ui-style-copper #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-radius: 4px !important;
+  border-width: 2px !important;
+  box-shadow: 0 4px 0 rgba(65, 45, 30, .18) !important;
+}
+html.ui-style-copper #root main button:not(:disabled) { border-radius: 4px !important; }
+html.ui-style-copper #root main table { border: 1px solid currentColor; border-collapse: collapse; }
+html.ui-style-copper #root main table th,
+html.ui-style-copper #root main table td { border: 1px solid color-mix(in srgb, currentColor 20%, transparent); }
+
+/* Responsive behaviour and reduced-motion accessibility for every preset. */
+@media (max-width: 767px) {
+  html[class*="ui-style-"] #root main { min-width: 0 !important; padding: 12px !important; }
+  html[class*="ui-style-"] #root main :is(.rounded-xl,.rounded-2xl) { max-width: 100%; }
+  html[class*="ui-style-"] #root aside { max-width: 85vw; }
+  html.ui-style-glass #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[class*="ui-style-"] #root *,
+  html[class*="ui-style-"] #root *::before,
+  html[class*="ui-style-"] #root *::after {
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* FINAL VISIBILITY OVERRIDE — remove pale/white inner glows and icon shadows.
+   Keep only dark, high-contrast depth so icons and labels remain readable. */
+#root, #root * {
+  text-shadow: none !important;
+}
+#root :is(svg, svg *) {
+  filter: none !important;
+  opacity: 1 !important;
+}
+#root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"],
+#root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  box-shadow: 0 6px 0 rgba(4, 24, 48, .30), 0 10px 18px rgba(4, 24, 48, .18) !important;
+}
+#root main .srk-dashboard button:not(:disabled),
+#root main button:not(:disabled) {
+  box-shadow: 0 3px 0 rgba(3, 25, 52, .34), 0 6px 11px rgba(3, 25, 52, .16) !important;
+}
+#root main .srk-dashboard button:not(:disabled):active,
+#root main button:not(:disabled):active {
+  box-shadow: 0 1px 0 rgba(3, 25, 52, .42) !important;
+}
+#root main :is(input,select,textarea) {
+  box-shadow: inset 0 1px 2px rgba(3, 25, 52, .12) !important;
+}
+#root aside, #root header.sticky {
+  box-shadow: 0 6px 18px rgba(0, 12, 30, .28) !important;
+}
+#root aside button svg, #root header.sticky button svg,
+#root main button svg, #root main [role="button"] svg {
+  filter: none !important;
+  opacity: 1 !important;
+  flex-shrink: 0;
+}
+#root main :is(button,[role="button"]) :is(span,p) {
+  text-shadow: none !important;
+}
+
+
+/* DARK-SURFACE ENFORCEMENT — replace washed-out white/pastel work areas.
+   White remains only as readable foreground text/icons where contrast needs it. */
+html.theme-white {
+  --srk-canvas:#0B1D33; --srk-surface:#142B46; --srk-surface-raised:#193653;
+  --srk-ink:#F1F6FC; --srk-muted:#B8CBE0; --srk-accent:#43A5FF;
+  --srk-header:#0A2D50; --srk-sidebar:#071A2E; --srk-border:#315B83;
+}
+html.theme-light {
+  --srk-canvas:#17283D; --srk-surface:#223A55; --srk-surface-raised:#294562;
+  --srk-ink:#F2F6FC; --srk-muted:#C0D0E1; --srk-accent:#82B7FF;
+  --srk-header:#142F4C; --srk-sidebar:#101F32; --srk-border:#496987;
+}
+html.theme-sepia {
+  --srk-canvas:#261D16; --srk-surface:#38291E; --srk-surface-raised:#493526;
+  --srk-ink:#FFF4E2; --srk-muted:#DCC6A5; --srk-accent:#D6A85D;
+  --srk-header:#382719; --srk-sidebar:#211810; --srk-border:#765638;
+}
+html.theme-azure {
+  --srk-canvas:#0A263D; --srk-surface:#123A58; --srk-surface-raised:#194968;
+  --srk-ink:#EFF9FF; --srk-muted:#B8D7E9; --srk-accent:#48B9F0;
+  --srk-header:#0B3454; --srk-sidebar:#071F34; --srk-border:#286487;
+}
+html.theme-mint {
+  --srk-canvas:#0B2B23; --srk-surface:#123D32; --srk-surface-raised:#195141;
+  --srk-ink:#EDFFF6; --srk-muted:#B6DDC9; --srk-accent:#55D69B;
+  --srk-header:#104332; --srk-sidebar:#08271F; --srk-border:#2B7258;
+}
+html.theme-navy {
+  --srk-canvas:#081A2E; --srk-surface:#132B46; --srk-surface-raised:#193653;
+  --srk-ink:#F1F6FC; --srk-muted:#B8CBE0; --srk-accent:#48A4FF;
+  --srk-header:#0A2D50; --srk-sidebar:#06182B; --srk-border:#315B83;
+}
+html.theme-charcoal {
+  --srk-canvas:#171D26; --srk-surface:#252E3A; --srk-surface-raised:#303C4B;
+  --srk-ink:#F3F5F8; --srk-muted:#C0CAD5; --srk-accent:#B8D0F0;
+  --srk-header:#202A36; --srk-sidebar:#141A22; --srk-border:#4A5869;
+}
+html.theme-emerald {
+  --srk-canvas:#0B2B23; --srk-surface:#164333; --srk-surface-raised:#1D5540;
+  --srk-ink:#F0FFF7; --srk-muted:#BCE2CD; --srk-accent:#72E2B4;
+  --srk-header:#124331; --srk-sidebar:#08251D; --srk-border:#34785C;
+}
+html.theme-indigo {
+  --srk-canvas:#19162F; --srk-surface:#2A2450; --srk-surface-raised:#393064;
+  --srk-ink:#F5F3FF; --srk-muted:#D0C9F0; --srk-accent:#C4B5FD;
+  --srk-header:#28204C; --srk-sidebar:#17132F; --srk-border:#5B4F8C;
+}
+html[class*="theme-"] body #root,
+html[class*="theme-"] body #root .app-shell-bg,
+html[class*="theme-"] body #root main {
+  background:var(--srk-canvas) !important;
+  color:var(--srk-ink) !important;
+  color-scheme:dark;
+}
+html[class*="theme-"] body #root main :is(.bg-white,.bg-slate-50,.bg-slate-100,[class*="bg-white/"],[class*="bg-slate-"]) {
+  background-color:var(--srk-surface) !important;
+  background-image:none !important;
+  color:var(--srk-ink) !important;
+}
+html[class*="theme-"] body #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"]:not(.srk-dashboard-hero) {
+  background-color:var(--srk-surface-raised) !important;
+  background-image:none !important;
+  color:var(--srk-ink) !important;
+  border-color:var(--srk-border) !important;
+}
+html[class*="theme-"] body #root main :is(input,select,textarea) {
+  background:var(--srk-surface-raised) !important;
+  color:var(--srk-ink) !important;
+  border-color:var(--srk-border) !important;
+}
+html[class*="theme-"] body #root main :is(input,select,textarea)::placeholder {
+  color:var(--srk-muted) !important;
+  opacity:1 !important;
+}
+html[class*="theme-"] body #root main :is(.text-slate-900,.text-slate-800,.text-slate-700) {
+  color:var(--srk-ink) !important;
+}
+html[class*="theme-"] body #root main :is(.text-slate-600,.text-slate-500,.text-slate-400) {
+  color:var(--srk-muted) !important;
+}
+html[class*="theme-"] body #root main table tbody,
+html[class*="theme-"] body #root main table tbody tr,
+html[class*="theme-"] body #root main table tbody tr:nth-child(even) {
+  background:var(--srk-surface) !important;
+  color:var(--srk-ink) !important;
+}
+html[class*="theme-"] body #root main table tbody tr:hover {
+  background:color-mix(in srgb,var(--srk-accent) 22%,var(--srk-surface)) !important;
+}
+html[class*="theme-"] body #root main :is(.bg-blue-50,.bg-sky-50,.bg-indigo-50,.bg-emerald-50,.bg-amber-50,.bg-rose-50) {
+  background-color:color-mix(in srgb,var(--srk-accent) 18%,var(--srk-surface)) !important;
+}
+html[class*="theme-"] body #root :is(svg,svg *) { filter:none !important; opacity:1 !important; }
+html[class*="theme-"] body #root * { text-shadow:none !important; }
+html[class*="theme-"] body #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  box-shadow:0 6px 0 rgba(0,0,0,.34),0 10px 18px rgba(0,0,0,.22) !important;
+}
+html[class*="theme-"] body #root main :is(input,select,textarea) {
+  box-shadow:inset 0 2px 4px rgba(0,0,0,.24) !important;
+}
+html[class*="theme-"] body #root main :is(.backdrop-blur,.backdrop-blur-sm,.backdrop-blur-md,.backdrop-blur-lg) {
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+}
+
+
+html[class*="theme-"] { color-scheme: dark !important; }
+
+
+/* FINAL NO-WHITE DISPLAY RULE — replace white glare throughout the app.
+   Uses dark navy surfaces and cool blue-grey foregrounds; no pure-white UI. */
+:root {
+  --srk-no-white-bg: #0A1B30;
+  --srk-no-white-panel: #142B45;
+  --srk-no-white-raised: #1B3654;
+  --srk-no-white-text: #D7E6F7;
+  --srk-no-white-muted: #AFC4DC;
+  --srk-no-white-border: #355575;
+}
+html, html body, body #root {
+  background: var(--srk-no-white-bg) !important;
+  color: var(--srk-no-white-text) !important;
+  color-scheme: dark !important;
+}
+#root .app-shell-bg, #root main {
+  background: var(--srk-no-white-bg) !important;
+  color: var(--srk-no-white-text) !important;
+}
+#root :is(.bg-white,.bg-slate-50,.bg-slate-100,.bg-gray-50,.bg-gray-100,
+  [class*="bg-white/"],[class*="bg-slate-50/"],[class*="bg-gray-50/"]) {
+  background-color: var(--srk-no-white-panel) !important;
+  background-image: none !important;
+}
+#root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  background-color: var(--srk-no-white-raised);
+  border-color: var(--srk-no-white-border) !important;
+}
+#root :is(input,select,textarea),
+#root main :is(input,select,textarea) {
+  background-color: var(--srk-no-white-raised) !important;
+  color: var(--srk-no-white-text) !important;
+  border-color: var(--srk-no-white-border) !important;
+  color-scheme: dark !important;
+}
+#root :is(input,select,textarea)::placeholder {
+  color: var(--srk-no-white-muted) !important;
+  opacity: 1 !important;
+}
+/* Replace pure-white foregrounds, borders and inline white styles. */
+#root .text-white,
+#root [style*="color: rgb(255, 255, 255)"],
+#root [style*="color: #fff"],
+#root [style*="color: white"] {
+  color: var(--srk-no-white-text) !important;
+}
+#root .border-white,
+#root [class*="border-white/"],
+#root [style*="border-color: rgb(255, 255, 255)"] {
+  border-color: var(--srk-no-white-border) !important;
+}
+#root [style*="background-color: rgb(255, 255, 255)"],
+#root [style*="background-color: #fff"],
+#root [style*="background: rgb(255, 255, 255)"],
+#root [style*="background: #fff"] {
+  background: var(--srk-no-white-panel) !important;
+  background-color: var(--srk-no-white-panel) !important;
+}
+#root table thead, #root table tbody, #root table tbody tr {
+  background-color: var(--srk-no-white-panel) !important;
+  color: var(--srk-no-white-text) !important;
+}
+#root table th, #root table td {
+  border-color: var(--srk-no-white-border) !important;
+}
+#root * { text-shadow: none !important; }
+
+
+/* 3D STYLE: zero white glare; use dark navy depth and blue edge highlights only. */
+html.ui-style-3d #root,
+html.ui-style-3d #root * {
+  text-shadow: none !important;
+}
+html.ui-style-3d #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  background: linear-gradient(155deg,#1B3654 0%,#142B45 72%,#10243D 100%) !important;
+  border-color: #355575 !important;
+  border-top-color: #42698E !important;
+  box-shadow: 0 8px 0 rgba(2,12,26,.42), 0 13px 22px rgba(0,8,20,.30), inset 0 1px 0 rgba(55,105,155,.16) !important;
+}
+html.ui-style-3d #root main button:not(:disabled),
+html.ui-style-3d #root aside button {
+  box-shadow: 0 4px 0 rgba(2,12,26,.46), 0 7px 12px rgba(0,8,20,.28) !important;
+}
+html.ui-style-3d #root main button:not(:disabled):active,
+html.ui-style-3d #root aside button:active {
+  box-shadow: 0 1px 0 rgba(2,12,26,.5) !important;
+}
+html.ui-style-3d #root main :is(input,select,textarea) {
+  background: #10243D !important;
+  color: #D7E6F7 !important;
+  border-color: #355575 !important;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.32) !important;
+}
+html.ui-style-3d #root main :is(.bg-white,.bg-slate-50,.bg-slate-100,.bg-gray-50,.bg-gray-100) {
+  background: #142B45 !important;
+}
+html.ui-style-3d #root main :is(.text-white,.border-white,[class*="border-white/"]) {
+  color: #D7E6F7 !important;
+  border-color: #355575 !important;
+}
+html.ui-style-3d #root :is(svg,svg *) {
+  filter: none !important;
+  opacity: 1 !important;
 }

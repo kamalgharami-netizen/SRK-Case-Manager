@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getLocalDateInputValue } from '../utils/localDate';
 import { useApp } from '../context/AppContext';
 import { VaultFile } from '../types';
 import {
@@ -58,7 +59,7 @@ export const DocumentVault: React.FC = () => {
         name: f.name,
         size: sizeStr,
         type: fType,
-        date: new Date().toISOString().slice(0, 10),
+        date: getLocalDateInputValue(),
         category: categoryFilter !== 'All' ? categoryFilter : 'Registered Deeds',
         aiLearned: true
       });

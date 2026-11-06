@@ -1,4 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { getLocalDateInputValue } from '../utils/localDate';
+import { Capacitor } from '@capacitor/core';
 import { useApp } from '../context/AppContext';
 import {
   Settings,
@@ -34,8 +36,32 @@ import {
   Search
 } from 'lucide-react';
 import { CompanyLogo, BADGE_OPTIONS, COLOR_OPTIONS } from './CompanyLogo';
-import { THEME_OPTIONS } from '../data/themes';
+import { ThemeDropdown } from './ThemeDropdown';
 import { VaultFile, Role } from '../types';
+import {
+  connectWindowsGoogleDrive,
+  disconnectWindowsGoogleDrive,
+  getWindowsGoogleDriveCredentials,
+} from '../services/googleDriveWindowsAuth';
+import {
+  connectAndroidGoogleDrive,
+  disconnectAndroidGoogleDrive,
+  getAndroidGoogleDriveCredentials,
+} from '../services/googleDriveAndroidAuth';
+import {
+  getSelectedGoogleDriveFolderAsync,
+  saveSelectedGoogleDriveFolderAsync,
+  clearSelectedGoogleDriveFolderAsync,
+  type SelectedGoogleDriveFolder,
+} from '../services/googleDriveSelectedFolder';
+import { getValidWindowsGoogleDriveCredentials } from '../services/googleDriveWindowsAuth';
+import { getValidAndroidGoogleDriveCredentials } from '../services/googleDriveAndroidAuth';
+import { AsyncSyncInbox, AsyncSyncJournal } from '../services/asyncSyncRepositories';
+import { getReadyPlatformSyncStateStorage } from '../services/readySyncStateStorage';
+import type { SyncConflict } from '../services/driveSyncProtocol';
+import { runGoogleDriveSyncCycleAsync } from '../services/googleDriveSyncRunner';
+import { listRegisteredGoogleDriveDevices, revokeGoogleDriveDevice } from '../services/googleDriveDeviceRegistry';
+import type { SyncDeviceRegistration } from '../services/syncDeviceRegistry';
 
 export const VAULT_CATEGORIES = [
   'Mutation Petitions & Orders',
@@ -51,7 +77,7 @@ export const VAULT_CATEGORIES = [
   'General Legal Formats & Affidavits'
 ];
 
-export type SettingsTab = 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup';
+export type SettingsTab = 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup' | 'sync';
 
 interface BackupModalProps {
   isOpen: boolean;
@@ -72,10 +98,13 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     deleteCompany,
     openChamberSetup,
     updateCompanyDetails,
+    applyStagedSyncChanges,
     addUser,
     deleteUser,
     theme,
     setTheme,
+    uiStyle,
+    setUIStyle,
     viewDensity,
     setViewDensity,
     viewMode,
@@ -100,7 +129,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     language,
     t,
     mergeExternalData,
-    triggerAutoDataMerge
+    triggerAutoDataMerge,
+    resolveSyncConflict
   } = useApp();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -109,6 +139,33 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   const vaultUploadInputRef = useRef<HTMLInputElement>(null);
 
   const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
+  const [syncCounts, setSyncCounts] = useState({ pending: 0, staged: 0, conflicts: 0, error: false });
+  const [driveAuthStatus, setDriveAuthStatus] = useState<'checking' | 'disconnected' | 'authorized' | 'unsupported' | 'error'>('disconnected');
+  const [driveAuthBusy, setDriveAuthBusy] = useState(false);
+  const [selectedDriveFolder, setSelectedDriveFolder] = useState<SelectedGoogleDriveFolder | null>(null);
+  const [syncBusy, setSyncBusy] = useState(false);
+  const [syncMessage, setSyncMessage] = useState('');
+  const [syncConflicts, setSyncConflicts] = useState<SyncConflict<unknown>[]>([]);
+  const [registeredDevices, setRegisteredDevices] = useState<SyncDeviceRegistration[]>([]);
+  const [deviceRegistryBusy, setDeviceRegistryBusy] = useState(false);
+  const [deviceRegistryMessage, setDeviceRegistryMessage] = useState('');
+
+  const refreshSyncCounts = async () => {
+    try {
+      const storage = await getReadyPlatformSyncStateStorage();
+      const journal = new AsyncSyncJournal<unknown>(storage);
+      const inbox = new AsyncSyncInbox<unknown>(storage);
+      const [pending, staged, conflicts] = await Promise.all([
+        journal.getPendingCount(),
+        inbox.getAll(),
+        journal.getConflicts(),
+      ]);
+      setSyncConflicts(conflicts);
+      setSyncCounts({ pending, staged: staged.length, conflicts: conflicts.length, error: false });
+    } catch {
+      setSyncCounts(previous => ({ ...previous, error: true }));
+    }
+  };
 
   // Vault Tab state - category dropdown selection strictly without 'All'
   const [selectedVaultCategory, setSelectedVaultCategory] = useState<string>(VAULT_CATEGORIES[0]);
@@ -133,6 +190,152 @@ export const BackupModal: React.FC<BackupModalProps> = ({
       setActiveTab(initialTab);
     }
   }, [initialTab, isOpen]);
+
+  useEffect(() => {
+    if (isOpen && activeTab === 'sync') void refreshSyncCounts();
+  }, [isOpen, activeTab]);
+
+  useEffect(() => {
+    if (!isOpen || activeTab !== 'sync') return;
+    const isAndroid = Capacitor.getPlatform() === 'android';
+    const isWindowsDesktop = typeof window !== 'undefined' &&
+      Boolean((window as Window & { electronAPI?: { googleOAuth?: unknown } })
+        .electronAPI?.googleOAuth);
+    if (!isAndroid && !isWindowsDesktop) {
+      setDriveAuthStatus('unsupported');
+      return;
+    }
+    let active = true;
+    setDriveAuthStatus('checking');
+    void getReadyPlatformSyncStateStorage()
+      .then(storage => getSelectedGoogleDriveFolderAsync(storage))
+      .then(folder => { if (active) setSelectedDriveFolder(folder); })
+      .catch(() => { if (active) setDriveAuthStatus('error'); });
+    const credentialCheck = isAndroid
+      ? getAndroidGoogleDriveCredentials()
+      : getWindowsGoogleDriveCredentials();
+    credentialCheck
+      .then(credentials => {
+        if (active) setDriveAuthStatus(credentials ? 'authorized' : 'disconnected');
+      })
+      .catch(() => {
+        if (active) setDriveAuthStatus('error');
+      });
+    return () => { active = false; };
+  }, [isOpen, activeTab]);
+
+  const handleConnectGoogleDrive = async () => {
+    setDriveAuthBusy(true);
+    try {
+      const result = Capacitor.getPlatform() === 'android'
+        ? await connectAndroidGoogleDrive()
+        : await connectWindowsGoogleDrive();
+      const storage = await getReadyPlatformSyncStateStorage();
+      await saveSelectedGoogleDriveFolderAsync(result.folder, storage);
+      setSelectedDriveFolder(result.folder);
+      setDriveAuthStatus('authorized');
+      showToast('Google account authorized and Drive folder selected. You can now use Sync Now; incoming changes remain staged for review.', 'success');
+    } catch (error) {
+      setDriveAuthStatus('error');
+      showToast(error instanceof Error ? error.message : 'Google sign-in failed.', 'error');
+    } finally {
+      setDriveAuthBusy(false);
+    }
+  };
+
+
+  const handleSyncGoogleDriveNow = async () => {
+    if (syncBusy) return;
+    setSyncBusy(true);
+    setSyncMessage('Synchronisation started…');
+    try {
+      const result = await runGoogleDriveSyncCycleAsync({ allowAndroidReauthorization: true });
+      if (!result) throw new Error('Connect Google Drive and select a sync folder before syncing.');
+      refreshSyncCounts();
+      setSyncMessage(
+        `Completed: downloaded ${result.pulled.downloaded}, staged ${result.staged}, uploaded ${result.pushed.uploaded}, conflicts ${result.conflicts}. Pending local: ${result.remainingOutbox}; awaiting review: ${result.remainingInbox}.${result.nextPageToken ? ' More remote pages remain; press Sync Now again to continue.' : ' Remote listing is up to date.'}`
+      );
+      showToast('Google Drive sync cycle completed. Remote changes remain staged for review.', 'success');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Google Drive sync failed.';
+      setSyncMessage(message);
+      showToast(message, 'error');
+    } finally {
+      setSyncBusy(false);
+    }
+  };
+
+  const handleRefreshRegisteredDevices = async () => {
+    if (!selectedDriveFolder?.id || deviceRegistryBusy) return;
+    setDeviceRegistryBusy(true);
+    setDeviceRegistryMessage('Loading registered devices…');
+    try {
+      const credentials = Capacitor.getPlatform() === 'android'
+        ? await getValidAndroidGoogleDriveCredentials()
+        : await getValidWindowsGoogleDriveCredentials();
+      const registry = await listRegisteredGoogleDriveDevices({
+        accessToken: credentials.accessToken,
+        folderId: selectedDriveFolder.id,
+      });
+      setRegisteredDevices(registry.devices);
+      setDeviceRegistryMessage(`${registry.devices.filter(device => device.revokedAt === null).length} active device(s) registered. The Drive-only registry is best-effort and does not provide race-free enforcement during simultaneous registrations.`);
+    } catch (error) {
+      setDeviceRegistryMessage(error instanceof Error ? error.message : 'Unable to load registered devices.');
+    } finally {
+      setDeviceRegistryBusy(false);
+    }
+  };
+
+  const handleRevokeRegisteredDevice = async (device: SyncDeviceRegistration) => {
+    if (device.revokedAt !== null || !selectedDriveFolder?.id || deviceRegistryBusy) return;
+    const currentDeviceId = localStorage.getItem('srk_sync_device_id_v1');
+    if (device.deviceId === currentDeviceId) {
+      showToast('This device cannot revoke itself from this screen. Disconnect Google Drive on this device instead.', 'warning');
+      return;
+    }
+    if (!window.confirm(`Revoke ${device.label} from SRK Case Manager sync? Its cloud records will not be deleted.`)) return;
+    setDeviceRegistryBusy(true);
+    try {
+      const credentials = Capacitor.getPlatform() === 'android'
+        ? await getValidAndroidGoogleDriveCredentials()
+        : await getValidWindowsGoogleDriveCredentials();
+      const registry = await revokeGoogleDriveDevice({
+        accessToken: credentials.accessToken,
+        folderId: selectedDriveFolder.id,
+        deviceId: device.deviceId,
+      });
+      setRegisteredDevices(registry.devices);
+      setDeviceRegistryMessage('Device revoked. Its registration history and all cloud records were preserved.');
+      showToast('Device revoked from SRK sync.', 'success');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to revoke device.';
+      setDeviceRegistryMessage(message);
+      showToast(message, 'error');
+    } finally {
+      setDeviceRegistryBusy(false);
+    }
+  };
+
+  const handleDisconnectGoogleDrive = async () => {
+    if (!window.confirm('Remove the Google sign-in credentials stored by this app? No Google Drive files will be deleted.')) return;
+    setDriveAuthBusy(true);
+    try {
+      if (Capacitor.getPlatform() === 'android') {
+        await disconnectAndroidGoogleDrive();
+      } else {
+        await disconnectWindowsGoogleDrive();
+      }
+      const storage = await getReadyPlatformSyncStateStorage();
+      await clearSelectedGoogleDriveFolderAsync(storage);
+      setDriveAuthStatus('disconnected');
+      setSelectedDriveFolder(null);
+      showToast('Google sign-in credentials and selected folder removed from this device.', 'success');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Unable to disconnect Google.', 'error');
+    } finally {
+      setDriveAuthBusy(false);
+    }
+  };
 
   if (!isOpen || !activeCompany) return null;
 
@@ -222,7 +425,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         name: f.name,
         size: sizeStr,
         type: fType,
-        date: new Date().toISOString().slice(0, 10),
+        date: getLocalDateInputValue(),
         category: selectedVaultCategory,
         aiLearned: true,
         aiTrackedCategory: selectedVaultCategory
@@ -334,7 +537,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         </div>
 
         {/* Unified Tab Navigator */}
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 p-2 bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 shrink-0 text-xs font-bold">
+        <div className="grid grid-cols-3 sm:grid-cols-7 gap-1 p-2 bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 shrink-0 text-xs font-bold">
           <button
             type="button"
             onClick={() => setActiveTab('chambers')}
@@ -403,6 +606,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           >
             <Archive className="w-3.5 h-3.5 text-violet-600" />
             <span className="truncate">Document Vault</span>
+          </button>
+
+          <button type="button" onClick={() => setActiveTab('sync')} className={`py-2 px-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${activeTab === 'sync' ? 'bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 shadow-xs font-extrabold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`} title="Google Drive Synchronisation">
+            <RotateCcw className="w-3.5 h-3.5 text-sky-600" /><span className="truncate">Sync Status</span>
           </button>
 
           <button
@@ -732,30 +939,37 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   <Palette className="w-4 h-4 text-blue-600" />
                   <span>Courtroom Color Theme (কালার থিম নির্বাচন)</span>
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
-                  {THEME_OPTIONS.map(opt => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => setTheme(opt.id)}
-                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                        theme === opt.id
-                          ? 'border-blue-600 bg-blue-50/70 ring-2 ring-blue-600 font-bold shadow-xs'
-                          : 'border-slate-200 bg-white hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span
-                          className="w-5 h-5 rounded-full border shadow-2xs"
-                          style={{ backgroundColor: opt.bgHex }}
-                        />
-                        {theme === opt.id && <Check className="w-3.5 h-3.5 text-blue-600 stroke-[3]" />}
-                      </div>
-                      <div className="text-xs font-bold text-slate-900">{opt.name}</div>
-                      <div className="text-[10px] text-slate-500">{opt.nameBn}</div>
-                    </button>
-                  ))}
-                </div>
+                <ThemeDropdown variant="full" className="w-full" />
+              </div>
+
+              {/* Application UI Design — independent from the colour theme */}
+              <div className="space-y-2.5">
+                <label htmlFor="srk-settings-ui-style" className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-indigo-600" />
+                  <span>Application UI Design (অ্যাপের UI ডিজাইন)</span>
+                </label>
+                <select
+                  id="srk-settings-ui-style"
+                  value={uiStyle}
+                  onChange={(event) => setUIStyle(event.target.value as typeof uiStyle)}
+                  className="w-full rounded-xl border-2 border-blue-500 bg-[#0D3157] px-4 py-3 text-sm font-extrabold text-white outline-none transition focus:ring-2 focus:ring-sky-400"
+                >
+                  <option value="3d">SRK Reference 3D — Navy + Blue + Raised Cards</option>
+                  <option value="modern">Modern Blue Workspace — Clean Panels</option>
+                  <option value="glass">Layered Blue Panels — Depth & Transparency</option>
+                  <option value="classic">Classic Navy Office — Formal Compact Layout</option>
+                  <option value="executive">Executive Legal Suite — Premium Navy & Gold</option>
+                  <option value="royal">Royal Blue Chamber — Bright Blue Accents</option>
+                  <option value="compact">Compact Case Desk — Dense Working Layout</option>
+                  <option value="soft">Soft Blue Workspace — Calm High-Contrast Panels</option>
+                  <option value="midnight">Midnight Docket — Dark Slate & Electric Blue</option>
+                  <option value="ocean">Ocean Command — Deep Teal & Aqua</option>
+                  <option value="emerald">Emerald Chamber — Forest Green & Jade</option>
+                  <option value="copper">Copper Heritage — Charcoal & Warm Copper</option>
+                </select>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Design selection is saved automatically and is independent of the Colour Theme selection.
+                </p>
               </div>
 
               {/* Information Density & View Mode */}
@@ -1179,6 +1393,155 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'sync' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <div><h3 className="text-sm font-extrabold text-slate-900 dark:text-slate-100">Google Drive Sync Status</h3><p className="text-xs text-slate-500 mt-1">Local synchronisation queue and review status</p></div>
+                <button type="button" onClick={refreshSyncCounts} className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-bold flex items-center gap-2"><RotateCcw className="w-3.5 h-3.5" /> Refresh</button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700"><div className="text-xs text-slate-500">Pending local changes</div><div className="text-2xl font-extrabold mt-1">{syncCounts.pending}</div></div>
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700"><div className="text-xs text-slate-500">Remote changes awaiting review</div><div className="text-2xl font-extrabold mt-1">{syncCounts.staged}</div></div>
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700"><div className="text-xs text-slate-500">Conflicts requiring decision</div><div className="text-2xl font-extrabold mt-1">{syncCounts.conflicts}</div></div>
+              </div>
+              {syncCounts.error && <div className="p-3 rounded-lg border border-rose-300 text-xs text-rose-700">Stored sync status could not be read. Existing data has not been changed.</div>}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled={driveAuthStatus !== 'authorized' || !selectedDriveFolder?.id || syncBusy || syncCounts.error}
+                  onClick={handleSyncGoogleDriveNow}
+                  className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold"
+                >
+                  {syncBusy ? 'Synchronising…' : 'Sync Now'}
+                </button>
+                <button
+                  type="button"
+                  disabled={syncCounts.staged === 0 || syncCounts.error}
+                  onClick={async () => {
+                    if (!window.confirm(`Apply all eligible ${syncCounts.staged} staged remote change(s) to this device? This applies eligible changes in one operation; it does not show a per-record preview. Conflicting or unsupported changes may remain for manual review. This action updates local records and cannot be automatically undone. Please ensure you have a current backup.`)) return;
+                    const result = await applyStagedSyncChanges();
+                    if (result) void refreshSyncCounts();
+                  }}
+                  className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold"
+                >
+                  Apply Eligible Staged Changes
+                </button>
+              </div>
+              {syncMessage && <div className="p-3 rounded-lg border border-sky-200 dark:border-sky-900 bg-sky-50 dark:bg-sky-950/30 text-xs text-sky-900 dark:text-sky-200">{syncMessage}</div>}
+              <section className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h4 className="text-sm font-extrabold">Registered Devices</h4>
+                    <p className="text-xs text-slate-500 mt-1">Devices using this Google account and SRK data folder</p>
+                  </div>
+                  <button type="button" disabled={driveAuthStatus !== 'authorized' || !selectedDriveFolder?.id || deviceRegistryBusy} onClick={handleRefreshRegisteredDevices} className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-bold disabled:opacity-40">
+                    {deviceRegistryBusy ? 'Please wait…' : 'Refresh Devices'}
+                  </button>
+                </div>
+                {deviceRegistryMessage && <p className="text-xs text-slate-600 dark:text-slate-300">{deviceRegistryMessage}</p>}
+                {registeredDevices.length > 0 && <div className="space-y-2">
+                  {registeredDevices.map(device => (
+                    <div key={device.deviceId} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 dark:bg-slate-900 p-3">
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold">{device.label} · {device.platform}</div>
+                        <div className="text-[10px] text-slate-500">App {device.appVersion || 'Unknown'} · Last seen {new Date(device.lastSeenAt).toLocaleString()}</div>
+                        <div className="text-[10px] text-slate-500 break-all">{device.deviceId}</div>
+                      </div>
+                      {device.revokedAt === null
+                        ? <button type="button" disabled={deviceRegistryBusy || device.deviceId === localStorage.getItem('srk_sync_device_id_v1')} onClick={() => void handleRevokeRegisteredDevice(device)} className="px-3 py-1.5 rounded-lg border border-rose-300 text-rose-700 text-xs font-bold disabled:opacity-40">Revoke</button>
+                        : <span className="text-[10px] font-bold text-rose-600">Revoked</span>}
+                    </div>
+                  ))}
+                </div>}
+                <p className="text-[10px] text-amber-700 dark:text-amber-300">Drive-only registration is best-effort. Google Drive does not provide atomic registration, so the 10-device limit is not yet race-proof under simultaneous registrations.</p>
+              </section>
+
+              {syncConflicts.length > 0 && (
+                <div className="p-4 rounded-xl border border-amber-300 dark:border-amber-800 space-y-3">
+                  <div>
+                    <div className="font-bold text-sm text-amber-900 dark:text-amber-200">Conflict Review</div>
+                    <p className="text-xs text-slate-500 mt-1">The same record was changed on more than one device. Compare both versions and choose which version should be kept. Your choice is queued as a new sync change.</p>
+                  </div>
+                  {syncConflicts.map((conflict) => (
+                    <div key={`${conflict.recordId}:${conflict.local.changeId}:${conflict.remote.changeId}`} className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 space-y-3">
+                      <div className="text-xs font-bold break-all">Record: {conflict.recordId} · Company: {conflict.local.companyId}</div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="min-w-0 space-y-1">
+                          <div className="text-xs font-bold text-sky-700 dark:text-sky-300">LOCAL VERSION</div>
+                          <div className="text-[10px] text-slate-500 break-all">Device: {conflict.local.deviceId} · {new Date(conflict.local.updatedAt).toLocaleString()}</div>
+                          <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-slate-100 dark:bg-slate-900 p-2 text-[10px]">{JSON.stringify(conflict.local.deleted ? '[Record deleted]' : conflict.local.payload, null, 2)?.slice(0, 1600)}</pre>
+                          <button type="button" onClick={async () => {
+                            if (!window.confirm('Keep the LOCAL version for this record and queue it for synchronisation?')) return;
+                            if (await resolveSyncConflict(conflict, 'local')) void refreshSyncCounts();
+                          }} className="px-3 py-2 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold">Keep Local Version</button>
+                        </div>
+                        <div className="min-w-0 space-y-1">
+                          <div className="text-xs font-bold text-emerald-700 dark:text-emerald-300">REMOTE VERSION</div>
+                          <div className="text-[10px] text-slate-500 break-all">Device: {conflict.remote.deviceId} · {new Date(conflict.remote.updatedAt).toLocaleString()}</div>
+                          <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-slate-100 dark:bg-slate-900 p-2 text-[10px]">{JSON.stringify(conflict.remote.deleted ? '[Record deleted]' : conflict.remote.payload, null, 2)?.slice(0, 1600)}</pre>
+                          <button type="button" onClick={async () => {
+                            if (!window.confirm('Use the REMOTE version on this device and queue it for synchronisation? This will update the local record.')) return;
+                            if (await resolveSyncConflict(conflict, 'remote')) void refreshSyncCounts();
+                          }} className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold">Use Remote Version</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div>
+                    <div className="font-bold text-sm text-slate-900 dark:text-slate-100">Google Drive account authorization</div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {driveAuthStatus === 'checking' ? 'Checking secure sign-in status…' :
+                       driveAuthStatus === 'authorized' ? 'Google account authorization is stored securely on this device.' :
+                       driveAuthStatus === 'unsupported' ? 'Google Drive sign-in is available in the Windows desktop and Android apps, not in this browser.' :
+                       driveAuthStatus === 'error' ? 'Sign-in status could not be verified, or the last sign-in attempt failed.' :
+                       'No Google account is authorized on this device.'}
+                    </p>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${driveAuthStatus === 'authorized' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'}`}>
+                    {driveAuthStatus === 'authorized' ? 'AUTHORIZED' : driveAuthStatus.toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {driveAuthStatus !== 'authorized' && (
+                    <button type="button" disabled={driveAuthBusy || driveAuthStatus === 'unsupported' || driveAuthStatus === 'checking'}
+                      onClick={handleConnectGoogleDrive}
+                      className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-xs font-bold">
+                      {driveAuthBusy ? 'Please wait…' : 'Sign in with Google'}
+                    </button>
+                  )}
+                  {driveAuthStatus === 'authorized' && (
+                    <button type="button" disabled={driveAuthBusy} onClick={handleDisconnectGoogleDrive}
+                      className="px-4 py-2 rounded-lg border border-rose-300 text-rose-700 dark:text-rose-300 text-xs font-bold disabled:opacity-40">
+                      Disconnect this device
+                    </button>
+                  )}
+                </div>
+                <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1">
+  <div className="font-bold text-xs text-slate-800 dark:text-slate-200">Selected Google Drive folder</div>
+  {selectedDriveFolder ? (
+    <div className="text-xs text-slate-700 dark:text-slate-300 break-all">
+      {selectedDriveFolder.name}
+      <span className="block font-mono text-[10px] text-slate-500 mt-1">{selectedDriveFolder.id}</span>
+    </div>
+  ) : (
+    <p className="text-xs text-slate-500">No Drive folder has been selected on this device.</p>
+  )}
+  <p className="text-xs text-slate-500">Use “Connect Google” or reconnect to choose or change the folder.</p>
+</div>
+<div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 space-y-1">
+  <div className="font-bold text-xs text-amber-900 dark:text-amber-300">Folder selection is ready; manual sync is available</div>
+  <p className="text-xs text-amber-900/80 dark:text-amber-200/80">
+    The selected folder is saved on this device. Use Sync Now to transfer queued changes immediately. When the app is open and online, automatic foreground sync is also attempted; Windows makes a best-effort sync every 15 minutes while the app is minimized. Android does not sync after the app is fully closed. Downloaded records remain staged until you explicitly review and apply them. Conflicts can be reviewed below. Real-device Google sign-in and cross-device round-trip testing are still required.
+  </p>
+</div>
+              </div>
             </div>
           )}
 

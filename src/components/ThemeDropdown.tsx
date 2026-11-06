@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { THEME_OPTIONS, ThemeOption } from '../data/themes';
-import { ChevronDown, Check, Palette, Sun } from 'lucide-react';
+import { ChevronDown, Check, Palette, Moon } from 'lucide-react';
 
 interface ThemeDropdownProps {
   variant?: 'compact' | 'full' | 'sidebar';
@@ -15,152 +15,80 @@ export const ThemeDropdown: React.FC<ThemeDropdownProps> = ({
   const { theme, setTheme, language } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const activeTheme = THEME_OPTIONS.find(item => item.id === theme) || THEME_OPTIONS.find(item => item.id === 'navy')!;
 
-  const activeTheme = THEME_OPTIONS.find(t => t.id === theme) || THEME_OPTIONS[0];
-
-  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) setIsOpen(false);
     };
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
-  // Close on Escape key
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsOpen(false);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsOpen(false);
     };
-    if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-    }
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
+    if (isOpen) document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
-  const lightThemes = THEME_OPTIONS;
+  const renderTheme = (item: ThemeOption) => {
+    const selected = theme === item.id;
+    const dark = item.category === 'Dark';
+    return (
+      <button
+        key={item.id}
+        type="button"
+        onClick={() => { setTheme(item.id); setIsOpen(false); }}
+        aria-pressed={selected}
+        className={`w-full min-w-0 overflow-hidden rounded-xl border-2 text-left transition-all hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${selected ? 'border-amber-400 ring-2 ring-amber-300/50 shadow-lg' : 'border-slate-300 hover:border-blue-500'}`}
+        style={{ backgroundColor: item.bgHex, color: dark ? '#FFFFFF' : '#172033' }}
+      >
+        <div className="h-2.5 w-full" style={{ background: `linear-gradient(90deg, ${item.bgHex} 0%, ${item.accentHex} 100%)` }} />
+        <div className="flex items-center gap-2 p-2.5">
+          <span className="h-8 w-8 shrink-0 rounded-lg border-2 border-white/80 shadow-md" style={{ background: item.accentHex }} />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-xs font-extrabold">{language === 'bn' ? item.nameBn : item.name}</span>
+            <span className="mt-0.5 block truncate text-[10px] font-semibold opacity-85">{item.tagline}</span>
+          </span>
+          {selected && <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow"><Check className="h-4 w-4 stroke-[3]" /></span>}
+        </div>
+      </button>
+    );
+  };
 
   return (
     <div ref={dropdownRef} className={`relative inline-block text-left ${className}`}>
-      {/* Dropdown Trigger Button */}
-      {variant === 'sidebar' ? (
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          aria-haspopup="true"
-          aria-expanded={isOpen}
-          className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-800 hover:border-blue-500 transition-all cursor-pointer shadow-2xs"
-          title="Choose Light Theme"
-        >
-          <div className="flex items-center gap-2 min-w-0">
-            <span
-              className="w-3.5 h-3.5 rounded-full shrink-0 border border-slate-300 shadow-2xs"
-              style={{ backgroundColor: activeTheme.bgHex }}
-            />
-            <span className="truncate font-bold">
-              {language === 'bn' ? activeTheme.nameBn : activeTheme.name}
-            </span>
-          </div>
-          <ChevronDown
-            className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ${
-              isOpen ? 'rotate-180 text-blue-600' : ''
-            }`}
-          />
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          aria-haspopup="true"
-          aria-expanded={isOpen}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0 hover:border-blue-400"
-          title={`Active Theme: ${activeTheme.name} (${activeTheme.tagline}).`}
-        >
-          <span
-            className="w-3 h-3 rounded-full shrink-0 border border-slate-400 shadow-2xs"
-            style={{ backgroundColor: activeTheme.bgHex }}
-          />
-          <span className="hidden md:inline truncate max-w-[110px]">
-            {language === 'bn' ? activeTheme.nameBn : activeTheme.name}
-          </span>
-          <span className="md:hidden">Theme</span>
-          <ChevronDown
-            className={`w-3 h-3 text-slate-400 transition-transform duration-200 shrink-0 ${
-              isOpen ? 'rotate-180 text-blue-600' : ''
-            }`}
-          />
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={() => setIsOpen(value => !value)}
+        aria-haspopup="true"
+        aria-expanded={isOpen}
+        className={variant === 'sidebar' || variant === 'full'
+          ? 'flex w-full items-center justify-between gap-2 rounded-xl border border-blue-300 bg-[#0B2B4D] px-3 py-3 text-xs font-bold text-white shadow-[0_5px_0_rgba(3,18,38,.55)] hover:bg-[#174875]'
+          : 'flex items-center gap-2 rounded-xl border border-blue-300 bg-[#0B2B4D] px-3 py-2 text-xs font-bold text-white shadow-md hover:bg-[#174875]'}
+        title={`Active theme: ${activeTheme.name}`}
+      >
+        <span className="h-4 w-4 shrink-0 rounded-full border-2 border-white shadow" style={{ backgroundColor: activeTheme.bgHex }} />
+        <span className="min-w-0 truncate">{language === 'bn' ? activeTheme.nameBn : activeTheme.name}</span>
+        <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
 
-      {/* Dropdown Menu Popover */}
       {isOpen && (
-        <div
-          className={`absolute right-0 z-50 mt-1.5 w-72 sm:w-80 rounded-xl bg-white border border-slate-200 shadow-2xl overflow-hidden focus:outline-none animate-in fade-in zoom-in-95 duration-100 ${
-            variant === 'sidebar' ? 'left-0 right-auto sm:left-0 sm:right-auto bottom-full mb-2' : ''
-          }`}
-        >
-          {/* Header */}
-          <div className="p-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
-              <Palette className="w-3.5 h-3.5 text-blue-600" />
-              <span>{language === 'bn' ? 'থিম নির্বাচন (Light Themes)' : 'Courtroom Light Themes'}</span>
-            </div>
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">
-              {THEME_OPTIONS.length} Themes
-            </span>
+        <div className={`absolute right-0 z-[80] mt-2 w-[min(92vw,420px)] overflow-hidden rounded-2xl border border-blue-400 bg-[#102B4C] shadow-[0_18px_40px_rgba(0,0,0,.48)] ${variant === 'sidebar' ? 'bottom-full left-0 right-auto mb-2' : ''}`}>
+          <div className="flex items-center justify-between gap-2 bg-gradient-to-r from-[#082B52] to-[#0876D5] px-4 py-3 text-white">
+            <div className="flex items-center gap-2 text-sm font-extrabold"><Palette className="h-4 w-4" />{language === 'bn' ? 'রঙিন থিম নির্বাচন' : 'Choose a Colour Theme'}</div>
+            <span className="rounded-full bg-white/20 px-2 py-1 text-[10px] font-bold">{THEME_OPTIONS.length} themes</span>
           </div>
-
-          <div className="max-h-80 overflow-y-auto p-1.5 space-y-1">
-            {lightThemes.map(item => {
-              const isSelected = theme === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    setTheme(item.id);
-                    setIsOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-all cursor-pointer ${
-                    isSelected
-                      ? 'bg-blue-50 text-blue-900 font-bold border border-blue-200 shadow-2xs'
-                      : 'text-slate-700 hover:bg-slate-100 border border-transparent'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span
-                      className="w-4 h-4 rounded-full shrink-0 border border-slate-300 shadow-2xs"
-                      style={{ backgroundColor: item.bgHex }}
-                    />
-                    <div className="min-w-0">
-                      <div className="text-xs truncate flex items-center gap-1">
-                        <span>{language === 'bn' ? item.nameBn : item.name}</span>
-                        {item.id === 'white' && (
-                          <span className="text-[9px] px-1 rounded bg-slate-100 text-slate-600 font-mono">
-                            #FFF
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-[10px] text-slate-500 truncate">
-                        {item.tagline}
-                      </div>
-                    </div>
-                  </div>
-
-                  {isSelected && (
-                    <Check className="w-4 h-4 text-blue-600 shrink-0 stroke-[2.5]" />
-                  )}
-                </button>
-              );
-            })}
+          <div className="max-h-[65vh] space-y-3 overflow-y-auto p-3">
+            <section>
+              <div className="mb-2 flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-blue-100"><Moon className="h-4 w-4 text-sky-300" />{language === 'bn' ? 'গাঢ় রঙের থিম' : 'Deep Colour Themes'}</div>
+              <div className="flex flex-col gap-2">{THEME_OPTIONS.map(renderTheme)}</div>
+            </section>
+          </div>
+          <div className="border-t border-blue-400/40 bg-[#0A2340] px-3 py-2 text-[10px] font-semibold text-blue-100">
+            {language === 'bn' ? 'নির্বাচিত থিম সঙ্গে সঙ্গে পুরো অ্যাপে প্রয়োগ হবে।' : 'Your selection is applied across the app immediately.'}
           </div>
         </div>
       )}

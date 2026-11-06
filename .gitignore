@@ -7,3 +7,10 @@ coverage/
 .env*
 !.env.example
 .aistudio/
+
+# Signing material and local credentials must never be committed
+*.keystore
+*.jks
+*.p12
+*.pfx
+android-keystore/

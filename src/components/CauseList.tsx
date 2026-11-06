@@ -1,3 +1,4 @@
+import { getLocalDateInputValue } from '../utils/localDate';
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { CauseItem } from '../types';
@@ -16,11 +17,12 @@ import {
   Filter
 } from 'lucide-react';
 
+
 export const CauseList: React.FC = () => {
   const { activeCompany, addCauseItem, updateCauseItem, deleteCauseItem, showToast } = useApp();
 
   const [dateFilter, setDateFilter] = useState<string>(
-    new Date().toISOString().slice(0, 10)
+    getLocalDateInputValue()
   );
   const [showAllDates, setShowAllDates] = useState(false);
   const [search, setSearch] = useState('');
@@ -36,7 +38,7 @@ export const CauseList: React.FC = () => {
   const [party, setParty] = useState('');
   const [status, setStatus] = useState<'READY' | 'PENDING' | 'ADJOURNED' | 'DISPOSED'>('READY');
   const [hearingDate, setHearingDate] = useState(
-    new Date().toISOString().slice(0, 10)
+    getLocalDateInputValue()
   );
   const [benchRoom, setBenchRoom] = useState('Courtroom 1');
 
@@ -249,11 +251,11 @@ export const CauseList: React.FC = () => {
           />
           <button
             onClick={() => {
-              setDateFilter(new Date().toISOString().slice(0, 10));
+              setDateFilter(getLocalDateInputValue());
               setShowAllDates(false);
             }}
             className={`px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
-              !showAllDates && dateFilter === new Date().toISOString().slice(0, 10)
+              !showAllDates && dateFilter === getLocalDateInputValue()
                 ? 'bg-blue-700 text-white'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
             }`}

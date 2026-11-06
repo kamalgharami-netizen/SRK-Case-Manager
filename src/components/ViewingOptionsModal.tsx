@@ -30,6 +30,8 @@ export const ViewingOptionsModal: React.FC = () => {
     setViewDensity,
     viewMode,
     setViewMode,
+    uiStyle,
+    setUIStyle,
     fontSize,
     setFontSize,
     highContrast,
@@ -54,21 +56,21 @@ export const ViewingOptionsModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[92vh]">
+      <div className="w-full max-w-2xl bg-[#102B4C] text-slate-50 rounded-2xl shadow-[0_18px_45px_rgba(3,20,45,.55)] border border-blue-400/50 overflow-hidden flex flex-col max-h-[92vh]">
         {/* Modal Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50/70 dark:bg-slate-950/50">
+        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 bg-[#0A2340]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-600/25">
               <SlidersHorizontal className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <h2 className="text-base sm:text-lg font-bold text-slate-50 flex items-center gap-2">
                 <span>{t.displayPreferences}</span>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">
                   SRK View
                 </span>
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-blue-100">
                 {language === 'bn'
                   ? 'কোর্টরুম থিম, ফন্ট সাইজ ও তথ্য ঘনত্ব আপনার পছন্দমতো সাজান'
                   : 'Customize courtroom theme, reading typography, and information density'}
@@ -77,7 +79,7 @@ export const ViewingOptionsModal: React.FC = () => {
           </div>
           <button
             onClick={closeViewModal}
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-blue-700 transition-colors cursor-pointer"
             title="Close"
           >
             <X className="w-5 h-5" />
@@ -86,168 +88,68 @@ export const ViewingOptionsModal: React.FC = () => {
 
         {/* Scrollable Configuration Body */}
         <div className="p-4 sm:p-6 overflow-y-auto space-y-6 text-xs sm:text-sm">
-          {/* SECTION 1: Theme Mode */}
-          <div>
-            <div className="flex items-center justify-between mb-2.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
-                <Sun className="w-4 h-4 text-amber-500" />
-                <span>{t.themeMode}</span>
+          {/* SECTION 1: Colour themes are selected from a dropdown list */}
+          <section className="space-y-3 rounded-2xl border border-blue-400/60 bg-[#173B63] p-3 sm:p-4 shadow-[0_7px_0_rgba(4,23,48,.45)]">
+            <div>
+              <label className="text-sm font-extrabold text-white flex items-center gap-2">
+                <Palette className="w-4 h-4 text-sky-300" />
+                {language === 'bn' ? 'রঙ ও থিম নির্বাচন করুন' : 'Choose your colour theme'}
               </label>
-              <span className="text-[11px] text-slate-400">
-                {theme === 'white'
-                  ? language === 'bn'
-                    ? 'পিওর সাদা (Pure White)'
-                    : 'Pure White (#FFFFFF)'
-                  : theme === 'light'
-                  ? t.lightTheme
-                  : t.darkTheme}
-              </span>
+              <p className="mt-1 text-xs font-medium text-blue-100">
+                {language === 'bn'
+                  ? 'ড্রপডাউন তালিকা খুলে পছন্দের রঙ নির্বাচন করুন। নির্বাচন সঙ্গে সঙ্গে পুরো অ্যাপে প্রয়োগ হবে।'
+                  : 'Open the dropdown list and select a colour theme. Your choice is applied across the app immediately.'}
+              </p>
             </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
-              {/* Pure White */}
-              <button
-                type="button"
-                onClick={() => setTheme('white')}
-                className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
-                  theme === 'white'
-                    ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-500/30 shadow-xs'
-                    : 'border-slate-200 bg-white hover:border-slate-300'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-7 h-7 rounded-lg bg-white border border-slate-300 text-slate-900 flex items-center justify-center font-bold shadow-2xs">
-                    <Sun className="w-4 h-4 text-amber-500" />
-                  </div>
-                  {theme === 'white' && (
-                    <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center">
-                      <Check className="w-2.5 h-2.5 stroke-[3]" />
-                    </span>
-                  )}
-                </div>
-                <div className="font-bold text-slate-900 text-xs">
-                  {language === 'bn' ? 'সাদা' : 'White'}
-                </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">
-                  #FFFFFF paper
-                </div>
-              </button>
-
-              {/* Soft Light */}
-              <button
-                type="button"
-                onClick={() => setTheme('light')}
-                className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
-                  theme === 'light'
-                    ? 'border-blue-600 bg-blue-50/70 ring-2 ring-blue-500/30 shadow-xs'
-                    : 'border-slate-200 bg-white hover:border-slate-300'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-7 h-7 rounded-lg bg-slate-100 text-blue-700 flex items-center justify-center font-bold">
-                    <Sun className="w-4 h-4 text-blue-600" />
-                  </div>
-                  {theme === 'light' && (
-                    <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center">
-                      <Check className="w-2.5 h-2.5 stroke-[3]" />
-                    </span>
-                  )}
-                </div>
-                <div className="font-bold text-slate-900 text-xs">
-                  {language === 'bn' ? 'স্লেট লাইট' : 'Soft Light'}
-                </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">
-                  Daylight slate
-                </div>
-              </button>
-
-              {/* Warm Sepia */}
-              <button
-                type="button"
-                onClick={() => setTheme('sepia')}
-                className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
-                  theme === 'sepia'
-                    ? 'border-amber-600 bg-amber-50/70 ring-2 ring-amber-500/30 shadow-xs'
-                    : 'border-slate-200 bg-[#FBF5E8] hover:border-amber-300'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-7 h-7 rounded-lg bg-[#F4E9D4] text-amber-800 flex items-center justify-center font-bold">
-                    <Sun className="w-4 h-4 text-amber-700" />
-                  </div>
-                  {theme === 'sepia' && (
-                    <span className="w-4 h-4 rounded-full bg-amber-600 text-white flex items-center justify-center">
-                      <Check className="w-2.5 h-2.5 stroke-[3]" />
-                    </span>
-                  )}
-                </div>
-                <div className="font-bold text-slate-900 text-xs">
-                  {language === 'bn' ? 'সেপিয়া' : 'Sepia'}
-                </div>
-                <div className="text-[10px] text-slate-600 mt-0.5">
-                  Warm parchment
-                </div>
-              </button>
-
-              {/* Courtroom Azure */}
-              <button
-                type="button"
-                onClick={() => setTheme('azure')}
-                className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
-                  theme === 'azure'
-                    ? 'border-sky-600 bg-sky-50 ring-2 ring-sky-500/30 shadow-xs'
-                    : 'border-slate-200 bg-[#F0F7FF] hover:border-sky-300'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-7 h-7 rounded-lg bg-sky-100 text-sky-800 flex items-center justify-center font-bold">
-                    <Sun className="w-4 h-4 text-sky-600" />
-                  </div>
-                  {theme === 'azure' && (
-                    <span className="w-4 h-4 rounded-full bg-sky-600 text-white flex items-center justify-center">
-                      <Check className="w-2.5 h-2.5 stroke-[3]" />
-                    </span>
-                  )}
-                </div>
-                <div className="font-bold text-slate-900 text-xs">
-                  {language === 'bn' ? 'এজুর ব্লু' : 'Azure'}
-                </div>
-                <div className="text-[10px] text-slate-600 mt-0.5">
-                  Sky daylight
-                </div>
-              </button>
-
-              {/* Land Revenue Mint */}
-              <button
-                type="button"
-                onClick={() => setTheme('mint')}
-                className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
-                  theme === 'mint'
-                    ? 'border-emerald-600 bg-emerald-50 ring-2 ring-emerald-500/30 shadow-xs'
-                    : 'border-slate-200 bg-[#F0FDF4] hover:border-emerald-300'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
-                    <Sun className="w-4 h-4 text-emerald-600" />
-                  </div>
-                  {theme === 'mint' && (
-                    <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center">
-                      <Check className="w-2.5 h-2.5 stroke-[3]" />
-                    </span>
-                  )}
-                </div>
-                <div className="font-bold text-slate-900 text-xs">
-                  {language === 'bn' ? 'মিন্ট গ্রিন' : 'Mint Paper'}
-                </div>
-                <div className="text-[10px] text-slate-600 mt-0.5">
-                  Land record mint
-                </div>
-              </button>
+            <div className="max-w-md">
+              <ThemeDropdown variant="full" className="w-full" />
             </div>
-          </div>
+          </section>
 
-          {/* SECTION 2: Information Density */}
+          {/* SECTION 2: UI presentation presets — selectable only through a Settings dropdown */}
+          <section className="space-y-3 rounded-2xl border border-blue-400/60 bg-[#173B63] p-3 sm:p-4 shadow-[0_5px_0_rgba(64,117,174,.35)]">
+            <div>
+              <label htmlFor="srk-ui-style-select" className="flex items-center gap-2 text-sm font-extrabold text-[#F1F6FC]">
+                <LayoutGrid className="h-4 w-4 text-blue-700" />
+                {language === 'bn' ? 'অ্যাপের UI ডিজাইন নির্বাচন করুন' : 'Choose application UI design'}
+              </label>
+              <p className="mt-1 text-xs font-medium text-[#C5D8ED]">
+                {language === 'bn'
+                  ? 'ড্রপডাউন তালিকা থেকে ডিজাইন নির্বাচন করুন। নির্বাচনের সঙ্গে সঙ্গে অ্যাপের উপস্থাপনা বদলাবে; আপনার কেসের তথ্য ও মডিউল অপরিবর্তিত থাকবে।'
+                  : 'Choose a design from the dropdown. The presentation changes immediately; case data and modules remain unchanged.'}
+              </p>
+            </div>
+            <select
+              id="srk-ui-style-select"
+              value={uiStyle}
+              onChange={(event) => setUIStyle(event.target.value as typeof uiStyle)}
+              className="w-full rounded-xl border-2 border-blue-500 bg-[#0D3157] px-4 py-3 text-sm font-extrabold text-white shadow-[0_4px_0_#062344] outline-none transition focus:ring-2 focus:ring-sky-400"
+            >
+              <option value="3d">SRK Reference 3D — Navy + Blue + Raised Cards</option>
+              <option value="modern">Modern Blue Workspace — Clean Panels</option>
+              <option value="glass">Layered Blue Panels — Depth & Transparency</option>
+              <option value="classic">Classic Navy Office — Formal Compact Layout</option>
+              <option value="executive">Executive Legal Suite — Premium Navy & Gold</option>
+              <option value="royal">Royal Blue Chamber — Bright Blue Accents</option>
+              <option value="compact">Compact Case Desk — Dense Working Layout</option>
+              <option value="soft">Soft Blue Workspace — Calm High-Contrast Panels</option>
+              <option value="midnight">Midnight Docket — Dark Slate & Electric Blue</option>
+              <option value="ocean">Ocean Command — Deep Teal & Aqua</option>
+              <option value="emerald">Emerald Chamber — Forest Green & Jade</option>
+              <option value="copper">Copper Heritage — Charcoal & Warm Copper</option>
+            </select>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="rounded-lg border border-blue-300 bg-[#0D3157] p-2 text-center text-[10px] font-bold text-white">NAVY</div>
+              <div className="rounded-lg border border-blue-300 bg-[#1689F8] p-2 text-center text-[10px] font-bold text-white">BLUE</div>
+              <div className="rounded-lg border border-blue-300 bg-[#25496D] p-2 text-center text-[10px] font-bold text-white">PANEL</div>
+              <div className="rounded-lg border border-blue-300 bg-[#EAB84A] p-2 text-center text-[10px] font-bold text-[#382600]">ACCENT</div>
+            </div>
+            <p className="text-[10px] font-semibold text-[#C5D8ED]">
+              {language === 'bn' ? 'ডিজাইন পরিবর্তন সঙ্গে সঙ্গে সংরক্ষিত হবে। রঙের থিম আলাদা Colour Theme dropdown থেকে নির্বাচন করুন।' : 'Design selection is saved automatically. Choose colours separately from the Colour Theme dropdown.'}
+            </p>
+          </section>
+
+          {/* SECTION 3: Information Density */}
           <div>
             <div className="flex items-center justify-between mb-2.5">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
@@ -312,7 +214,7 @@ export const ViewingOptionsModal: React.FC = () => {
             </div>
           </div>
 
-          {/* SECTION 3: Case Layout (Grid vs Table) */}
+          {/* SECTION 4: Case Layout (Grid vs Table) */}
           <div>
             <div className="flex items-center justify-between mb-2.5">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
@@ -359,7 +261,7 @@ export const ViewingOptionsModal: React.FC = () => {
             </div>
           </div>
 
-          {/* SECTION 4: Typography & Reading Scale */}
+          {/* SECTION 5: Typography & Reading Scale */}
           <div>
             <div className="flex items-center justify-between mb-2.5">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
@@ -406,7 +308,7 @@ export const ViewingOptionsModal: React.FC = () => {
             </div>
           </div>
 
-          {/* SECTION 5: High-Contrast Toggle */}
+          {/* SECTION 6: High-Contrast Toggle */}
           <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
@@ -430,7 +332,7 @@ export const ViewingOptionsModal: React.FC = () => {
             </button>
           </div>
 
-          {/* SECTION 6: Interactive Live Visual Preview */}
+          {/* SECTION 7: Interactive Live Visual Preview */}
           <div className="pt-2">
             <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
               <Eye className="w-3.5 h-3.5 text-blue-500" />
