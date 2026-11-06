@@ -30,15 +30,15 @@ const TEMPLATE_LAYOUTS = [
 ] as const;
 
 const PALETTES = [
-  { theme: 'navy', name: 'Deep Blue', nameBn: 'গাঢ় নীল', bg: '#28577F', panel: '#3D79A2', accent: '#86CCFF' },
-  { theme: 'white', name: 'Sapphire Blue', nameBn: 'স্যাফায়ার নীল', bg: '#315F89', panel: '#477FA7', accent: '#A3D7FF' },
-  { theme: 'light', name: 'Steel Grey', nameBn: 'স্টিল ধূসর', bg: '#526A83', panel: '#718DA7', accent: '#C0DFFF' },
-  { theme: 'mint', name: 'Jade Green', nameBn: 'জেড সবুজ', bg: '#286B55', panel: '#408E72', accent: '#9BE8C6' },
-  { theme: 'azure', name: 'Ocean Blue', nameBn: 'সমুদ্র নীল', bg: '#28677F', panel: '#408EA7', accent: '#9BE5F4' },
-  { theme: 'charcoal', name: 'Slate Grey', nameBn: 'স্লেট ধূসর', bg: '#596B7D', panel: '#788EA1', accent: '#D0E0EC' },
-  { theme: 'emerald', name: 'Forest Green', nameBn: 'বন সবুজ', bg: '#286B55', panel: '#408E72', accent: '#9BE8C6' },
-  { theme: 'indigo', name: 'Deep Purple', nameBn: 'গাঢ় বেগুনি', bg: '#514B83', panel: '#716AA8', accent: '#D0C7FF' },
-  { theme: 'sepia', name: 'Dark Brown', nameBn: 'গাঢ় বাদামি', bg: '#76563B', panel: '#9A7854', accent: '#F0CD91' }
+  { theme: 'navy', name: 'Bright Blue', nameBn: 'উজ্জ্বল নীল', bg: '#1769E0', panel: '#398BFF', accent: '#A9D5FF' },
+  { theme: 'white', name: 'Bright Red', nameBn: 'উজ্জ্বল লাল', bg: '#D92D45', panel: '#F04B62', accent: '#FFB4BE' },
+  { theme: 'light', name: 'Sunshine Yellow', nameBn: 'উজ্জ্বল হলুদ', bg: '#D99A00', panel: '#F4BC27', accent: '#FFE49A' },
+  { theme: 'mint', name: 'Bright Green', nameBn: 'উজ্জ্বল সবুজ', bg: '#159B55', panel: '#28BD70', accent: '#A7F0C5' },
+  { theme: 'azure', name: 'Sky Blue', nameBn: 'আকাশি নীল', bg: '#079BCB', panel: '#25BCEB', accent: '#A8E9FF' },
+  { theme: 'charcoal', name: 'Bright Pink', nameBn: 'উজ্জ্বল গোলাপি', bg: '#D83291', panel: '#F052AD', accent: '#FFC0E4' },
+  { theme: 'emerald', name: 'Lime Green', nameBn: 'লাইম সবুজ', bg: '#69A900', panel: '#91D52A', accent: '#D9F7A5' },
+  { theme: 'indigo', name: 'Violet Purple', nameBn: 'উজ্জ্বল বেগুনি', bg: '#7046D8', panel: '#936BFA', accent: '#D2C2FF' },
+  { theme: 'sepia', name: 'Saffron Orange', nameBn: 'গেরুয়া', bg: '#D96A13', panel: '#F28B32', accent: '#FFD0A3' }
 ] as const;
 
 // 24 distinct layout templates, each paired with a deep, high-contrast palette.
@@ -90,7 +90,7 @@ export const ThemeDropdown: React.FC<ThemeDropdownProps> = ({ variant = 'compact
             </button>;
           })}
         </div>
-        <p className="mt-3 border-t border-[#294663] pt-3 text-[10px] text-slate-300">{language === 'bn' ? 'প্রতিটি Template-এ UI বিন্যাস ও ডিপ কালার একসঙ্গে প্রয়োগ হয়।' : 'Every template applies its layout and deep colour palette together.'}</p>
+        <p className="mt-3 border-t border-[#294663] pt-3 text-[10px] text-slate-300">{language === 'bn' ? 'প্রতিটি Template-এ UI বিন্যাস ও ডিপ কালার একসঙ্গে প্রয়োগ হয়।' : 'Every template applies its layout and bright colour palette together.'}</p>
       </div>}
     </div>
   );
