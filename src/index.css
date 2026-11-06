@@ -1095,3 +1095,40 @@ html.ui-style-copper #root main table td { border: 1px solid color-mix(in srgb, 
     scroll-behavior: auto !important;
   }
 }
+
+/* FINAL VISIBILITY OVERRIDE — remove pale/white inner glows and icon shadows.
+   Keep only dark, high-contrast depth so icons and labels remain readable. */
+#root, #root * {
+  text-shadow: none !important;
+}
+#root :is(svg, svg *) {
+  filter: none !important;
+  opacity: 1 !important;
+}
+#root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"],
+#root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  box-shadow: 0 6px 0 rgba(4, 24, 48, .30), 0 10px 18px rgba(4, 24, 48, .18) !important;
+}
+#root main .srk-dashboard button:not(:disabled),
+#root main button:not(:disabled) {
+  box-shadow: 0 3px 0 rgba(3, 25, 52, .34), 0 6px 11px rgba(3, 25, 52, .16) !important;
+}
+#root main .srk-dashboard button:not(:disabled):active,
+#root main button:not(:disabled):active {
+  box-shadow: 0 1px 0 rgba(3, 25, 52, .42) !important;
+}
+#root main :is(input,select,textarea) {
+  box-shadow: inset 0 1px 2px rgba(3, 25, 52, .12) !important;
+}
+#root aside, #root header.sticky {
+  box-shadow: 0 6px 18px rgba(0, 12, 30, .28) !important;
+}
+#root aside button svg, #root header.sticky button svg,
+#root main button svg, #root main [role="button"] svg {
+  filter: none !important;
+  opacity: 1 !important;
+  flex-shrink: 0;
+}
+#root main :is(button,[role="button"]) :is(span,p) {
+  text-shadow: none !important;
+}
