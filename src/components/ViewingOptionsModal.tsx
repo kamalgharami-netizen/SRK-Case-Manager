@@ -89,13 +89,13 @@ export const ViewingOptionsModal: React.FC = () => {
               </label>
               <p className="mt-1 text-xs font-medium text-slate-600">
                 {language === 'bn'
-                  ? '২০টির বেশি সম্পূর্ণ ডিজাইন থেকে বেছে নিন। প্রতিটি Template-এর নিজস্ব ডিপ কালার ও UI বিন্যাস রয়েছে।'
-                  : 'Choose from more than 20 complete designs. Every template includes its own bright colours and interface layout.'}
+                  ? 'UI বিন্যাস বেছে নিন। আপনার বর্তমান রং ও Colour Combination অপরিবর্তিত থাকবে।'
+                  : 'Choose a UI layout. Your current colours and colour combination will remain unchanged.'}
               </p>
             </div>
             <ThemeDropdown variant="full" className="w-full" />
             <p className="text-[10px] font-semibold text-slate-500">
-              {language === 'bn' ? 'আলাদা Colour Theme বা Colour Change অপশন নেই; Template নির্বাচন করলেই রং ও ডিজাইন একসঙ্গে বদলাবে।' : 'There is no separate colour or theme switch; selecting a template changes the layout and palette together.'}
+              {language === 'bn' ? 'Template নির্বাচন করলে শুধু UI বিন্যাস বদলাবে; বর্তমান Colour Combination একই থাকবে।' : 'Selecting a template changes the UI layout only; the current colour combination stays the same.'}
             </p>
           </section>
 
