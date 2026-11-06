@@ -1,31 +1,41 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { CompanyLogo } from './CompanyLogo';
 import {
   Scale,
-  Home,
-  Plus,
-  Briefcase,
-  MapPin,
+  LayoutDashboard,
   FileText,
-  BarChart2,
-  Settings,
-  Info,
-  LogOut,
-  ChevronDown,
-  ChevronRight,
   FolderGit2,
   Send,
-  Gavel,
-  FileSearch,
   Building,
   RefreshCw,
-  Scroll,
-  FileSpreadsheet,
   Calendar,
   Calculator,
-  HardDrive,
+  Brain,
+  Users,
+  ShieldAlert,
+  BookOpen,
+  MessageSquare,
+  Archive,
+  BookMarked,
+  Settings,
+  LogOut,
+  Building2,
+  ChevronDown,
+  ChevronRight,
+  Database,
+  Menu,
+  FileSearch,
+  Gavel,
   X,
-  TrendingUp
+  Sun,
+  Moon,
+  SlidersHorizontal,
+  Plus,
+  Scroll,
+  FileSpreadsheet,
+  HardDrive,
+  Wallet
 } from 'lucide-react';
 import { CaseType } from '../types';
 
@@ -52,8 +62,7 @@ export type NavPage =
   | 'wblract'
   | 'vault'
   | 'timeline'
-  | 'messages'
-  | 'about';
+  | 'messages';
 
 interface SidebarProps {
   currentPage: NavPage;
@@ -61,7 +70,6 @@ interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenSettings: (tab?: 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup' | 'sync') => void;
-  onOpenNewCase?: (type: CaseType) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -69,31 +77,52 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNavigate,
   isOpen,
   onClose,
-  onOpenSettings,
-  onOpenNewCase
+  onOpenSettings
 }) => {
   const {
     activeCompany,
+    activeUser,
+    switchCompany,
     logoutUser,
-    appVersion
+    t,
+    theme,
+    setTheme,
+    viewDensity,
+    setViewDensity,
+    fontSize,
+    setFontSize,
+    openViewModal,
+    openChamberSetup,
+    appVersion,
+    forceAppUpdateAndReplace,
+    triggerManualBackupRequest,
+    backupStoragePath
   } = useApp();
-
-  const reportPages: NavPage[] = ['financial-reports', 'causelist', 'accounts', 'client-ledger', 'cash-bank', 'sharecalculator'];
-  const [myCasesExpanded, setMyCasesExpanded] = useState(() => currentPage.startsWith('case-') && currentPage !== 'case-rorpi' && currentPage !== 'case-rti');
-  const [reportsExpanded, setReportsExpanded] = useState(() => reportPages.includes(currentPage));
-
-  // Keep the active section expanded when navigation changes from another page.
-  useEffect(() => {
-    if (currentPage.startsWith('case-') && currentPage !== 'case-rorpi' && currentPage !== 'case-rti') {
-      setMyCasesExpanded(true);
-    }
-    if (reportPages.includes(currentPage)) {
-      setReportsExpanded(true);
-    }
-  }, [currentPage]);
+  const [casesOpen, setCasesOpen] = useState(true);
+  const [toolsOpen, setToolsOpen] = useState(true);
+  const [chamberOpen, setChamberOpen] = useState(true);
+  const [resourcesOpen, setResourcesOpen] = useState(true);
 
   const getCaseCount = (type: CaseType) => {
     return activeCompany?.cases.filter(c => c.type === type).length || 0;
+  };
+
+  const navItemClass = (page: NavPage) => {
+    const isActive = currentPage === page;
+    return `w-full flex items-center justify-between px-3 py-2.5 min-h-[40px] rounded-xl text-xs font-semibold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
+      isActive
+        ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/30 font-bold'
+        : 'text-slate-700 hover:text-blue-700 hover:bg-slate-100/90'
+    }`;
+  };
+
+  const countBadgeClass = (page: NavPage) => {
+    const isActive = currentPage === page;
+    return `text-[10px] font-mono px-1.5 py-0.5 rounded font-bold ${
+      isActive
+        ? 'bg-blue-500 text-white'
+        : 'bg-slate-100 text-slate-700 border border-slate-200/70'
+    }`;
   };
 
   const handleNav = (page: NavPage) => {
@@ -103,16 +132,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  const handleNewCaseClick = () => {
-    if (onOpenNewCase) {
-      onOpenNewCase('mutation');
-    } else {
-      handleNav('case-mutation');
-    }
-    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-      onClose();
-    }
-  };
+  const sidebarSurfaceClass =
+    theme === 'white'
+      ? 'bg-white text-slate-800 border-slate-200'
+      : theme === 'light'
+      ? 'bg-slate-50 text-slate-800 border-slate-200'
+      : theme === 'sepia'
+      ? 'bg-[#FBF5E8] text-[#291A08] border-[#E2D2BA]'
+      : theme === 'azure'
+      ? 'bg-sky-50/70 text-slate-800 border-sky-200'
+      : theme === 'mint'
+      ? 'bg-emerald-50/60 text-slate-800 border-emerald-200'
+      : 'bg-white text-slate-800 border-slate-200';
+
+  const sidebarHeaderFooterClass =
+    theme === 'white'
+      ? 'bg-white border-slate-200'
+      : theme === 'light'
+      ? 'bg-slate-100/80 border-slate-200'
+      : theme === 'sepia'
+      ? 'bg-[#F4ECDC] border-[#E2D2BA]'
+      : theme === 'azure'
+      ? 'bg-sky-100/70 border-sky-200'
+      : theme === 'mint'
+      ? 'bg-emerald-100/70 border-emerald-200'
+      : 'bg-white border-slate-200';
 
   return (
     <>
@@ -120,380 +164,416 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {isOpen && (
         <div
           onClick={onClose}
-          className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-xs transition-opacity cursor-pointer"
+          className="lg:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-xs transition-opacity cursor-pointer"
           title="Click to close sidebar"
         />
       )}
 
-      {/* Deep Navy Blue Sidebar matching Image 1 */}
+      {/* Theme-aware Sidebar drawer - Fixed size for mobile, perfectly docked */}
       <aside
-        className={`fixed lg:static inset-y-0 top-0 bottom-0 left-0 z-50 lg:z-30 w-[270px] max-w-[85vw] h-full max-h-[100dvh] my-0 bg-gradient-to-b from-[#083265] to-[#06264D] text-[#E2EDF8] border-r border-blue-950 shadow-2xl lg:shadow-none transition-[transform,width] duration-300 ease-in-out shrink-0 flex flex-col overflow-hidden ${
+        className={`fixed lg:static inset-y-0 top-0 bottom-0 left-0 z-50 lg:z-30 w-[280px] max-w-[85vw] h-full max-h-[100dvh] my-0 ${sidebarSurfaceClass} border-r lg:border rounded-r-2xl lg:rounded-2xl shadow-2xl lg:shadow-none transition-[transform,width] duration-300 ease-in-out shrink-0 flex flex-col overflow-hidden ${
           isOpen
             ? 'translate-x-0 lg:w-64'
             : '-translate-x-full lg:translate-x-0 lg:w-0 lg:min-w-0 lg:border-0'
         }`}
       >
-        {/* Brand Header matching Image 1: White logo box + bold SRK + Case Manager */}
-        <div className="h-24 px-5 border-b border-white/10 flex items-center justify-between gap-3 shrink-0 bg-black/10">
-          <div className="flex items-center gap-3 min-w-0">
-            {/* White rounded box emblem with blue icon */}
-            <div className="w-12 h-12 rounded-2xl bg-white text-[#1976D2] flex flex-col items-center justify-center shrink-0 shadow-md">
-              <TrendingUp className="w-6 h-6 stroke-[2.5]" />
-            </div>
-            <div className="min-w-0 text-left">
-              <div className="text-xl font-black text-white tracking-tight leading-none">
-                SRK
+        {/* Brand Header */}
+        <div className={`h-16 px-4 border-b flex items-center justify-between gap-2.5 ${sidebarHeaderFooterClass} shrink-0`}>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <CompanyLogo company={activeCompany} size="sm" />
+            <div className="min-w-0">
+              <div className="text-xs font-extrabold text-slate-900 dark:text-white tracking-tight leading-snug truncate">
+                SRK Case Manager
               </div>
-              <div className="text-xs font-bold text-white tracking-wider leading-tight mt-0.5">
-                Case Manager
+              <div className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold truncate">
+                {activeCompany?.name || 'Legal Chamber'}
               </div>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="lg:hidden p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+            className="lg:hidden p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
             title="Close sidebar"
             aria-label="Close sidebar"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Navigation Menus matching exact Case Manager requirements */}
-        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1.5 text-xs">
-          {/* 1. Dashboard */}
-          <button
-            onClick={() => handleNav('dashboard')}
-            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all cursor-pointer ${
-              currentPage === 'dashboard'
-                ? 'bg-[#1976D2] text-white shadow-sm font-bold'
-                : 'text-[#E2EDF8] hover:text-white hover:bg-white/10'
-            }`}
-          >
-            <Home className="w-4 h-4" />
-            <span>Dashboard</span>
-          </button>
-
-          {/* 2. + New Case */}
-          <button
-            onClick={handleNewCaseClick}
-            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold text-[#E2EDF8] hover:text-white hover:bg-white/10 transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4 text-emerald-400" />
-            <span>+ New Case</span>
-          </button>
-
-          {/* 3. My Cases */}
-          <div>
-            <div
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-semibold transition-all cursor-pointer ${
-                currentPage.startsWith('case-') && currentPage !== 'case-rorpi' && currentPage !== 'case-rti'
-                  ? 'bg-[#1976D2] text-white shadow-sm font-bold'
-                  : 'text-[#E2EDF8] hover:text-white hover:bg-white/10'
-              }`}
-            >
-              <button
-                type="button"
-                onClick={() => handleNav('case-mutation')}
-                className="flex items-center gap-3 flex-1 text-left"
-              >
-                <Briefcase className="w-4 h-4" />
-                <span>My Cases</span>
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMyCasesExpanded(!myCasesExpanded);
-                }}
-                className="p-1 hover:bg-white/15 rounded-md transition-colors"
-                title="Expand / collapse case types"
-              >
-                {myCasesExpanded ? (
-                  <ChevronDown className="w-3.5 h-3.5 text-white/80" />
-                ) : (
-                  <ChevronRight className="w-3.5 h-3.5 text-white/80" />
-                )}
-              </button>
+        {/* Scrollable navigation menu */}
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-5 text-xs">
+          {/* MAIN */}
+          <div className="space-y-1">
+            <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              MAIN
             </div>
+            <button
+              onClick={() => handleNav('dashboard')}
+              className={navItemClass('dashboard')}
+            >
+              <div className="flex items-center gap-2.5">
+                <LayoutDashboard className="w-4 h-4" />
+                <span>{t.dashboard}</span>
+              </div>
+            </button>
+          </div>
 
-            {/* Sub-categories */}
-            {myCasesExpanded && (
-              <div className="pl-4 pr-1 pt-1 pb-1 space-y-1">
+          {/* LAND CASE CATEGORIES */}
+          <div className="space-y-1">
+            <button
+              onClick={() => setCasesOpen(!casesOpen)}
+              className="w-full flex items-center justify-between px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer"
+            >
+              <span>{t.landCases}</span>
+              {casesOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+            </button>
+
+            {casesOpen && (
+              <div className="space-y-1">
                 <button
                   onClick={() => handleNav('case-mutation')}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[11px] transition-colors cursor-pointer ${
-                    currentPage === 'case-mutation'
-                      ? 'bg-blue-600/60 text-white font-bold'
-                      : 'text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
+                  className={navItemClass('case-mutation')}
                 >
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-3.5 h-3.5 text-blue-300" />
-                    <span>Mutation (নামজারি)</span>
+                  <div className="flex items-center gap-2.5">
+                    <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <span>{t.mutationCase}</span>
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-white/10">
+                  <span className={countBadgeClass('case-mutation')}>
                     {getCaseCount('mutation')}
                   </span>
                 </button>
 
                 <button
                   onClick={() => handleNav('case-misc')}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[11px] transition-colors cursor-pointer ${
-                    currentPage === 'case-misc'
-                      ? 'bg-blue-600/60 text-white font-bold'
-                      : 'text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
+                  className={navItemClass('case-misc')}
                 >
-                  <div className="flex items-center gap-2">
-                    <FolderGit2 className="w-3.5 h-3.5 text-purple-300" />
-                    <span>Misc Case (বিবিধ কেস)</span>
+                  <div className="flex items-center gap-2.5">
+                    <FolderGit2 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    <span>{t.miscCase}</span>
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-white/10">
+                  <span className={countBadgeClass('case-misc')}>
                     {getCaseCount('misc')}
                   </span>
                 </button>
 
                 <button
                   onClick={() => handleNav('case-lrappeal')}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[11px] transition-colors cursor-pointer ${
-                    currentPage === 'case-lrappeal'
-                      ? 'bg-blue-600/60 text-white font-bold'
-                      : 'text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
+                  className={navItemClass('case-lrappeal')}
                 >
-                  <div className="flex items-center gap-2">
-                    <Send className="w-3.5 h-3.5 text-emerald-300" />
-                    <span>LR Appeal 54</span>
+                  <div className="flex items-center gap-2.5">
+                    <Send className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <span>{t.lrAppeal}</span>
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-white/10">
+                  <span className={countBadgeClass('case-lrappeal')}>
                     {getCaseCount('lrappeal')}
                   </span>
                 </button>
 
                 <button
                   onClick={() => handleNav('case-firstappeal')}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[11px] transition-colors cursor-pointer ${
-                    currentPage === 'case-firstappeal'
-                      ? 'bg-blue-600/60 text-white font-bold'
-                      : 'text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
+                  className={navItemClass('case-firstappeal')}
                 >
-                  <div className="flex items-center gap-2">
-                    <Gavel className="w-3.5 h-3.5 text-indigo-300" />
-                    <span>First Appeal</span>
+                  <div className="flex items-center gap-2.5">
+                    <Gavel className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    <span>{t.firstAppeal}</span>
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-white/10">
+                  <span className={countBadgeClass('case-firstappeal')}>
                     {getCaseCount('firstappeal')}
                   </span>
                 </button>
 
                 <button
-                  onClick={() => handleNav('case-lrtt')}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[11px] transition-colors cursor-pointer ${
-                    currentPage === 'case-lrtt'
-                      ? 'bg-blue-600/60 text-white font-bold'
-                      : 'text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
+                  onClick={() => handleNav('case-rti')}
+                  className={navItemClass('case-rti')}
                 >
-                  <div className="flex items-center gap-2">
-                    <Building className="w-3.5 h-3.5 text-cyan-300" />
-                    <span>WBLRTT Tribunal</span>
+                  <div className="flex items-center gap-2.5">
+                    <FileSearch className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                    <span>{t.rtiMatter}</span>
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-white/10">
+                  <span className={countBadgeClass('case-rti')}>
+                    {getCaseCount('rti')}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => handleNav('case-lrtt')}
+                  className={navItemClass('case-lrtt')}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Building className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                    <span>{t.lrttTribunal}</span>
+                  </div>
+                  <span className={countBadgeClass('case-lrtt')}>
                     {getCaseCount('lrtt')}
                   </span>
                 </button>
 
                 <button
                   onClick={() => handleNav('case-conversion')}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[11px] transition-colors cursor-pointer ${
-                    currentPage === 'case-conversion'
-                      ? 'bg-blue-600/60 text-white font-bold'
-                      : 'text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
+                  className={navItemClass('case-conversion')}
                 >
-                  <div className="flex items-center gap-2">
-                    <RefreshCw className="w-3.5 h-3.5 text-amber-300" />
-                    <span>Conversion (রূপান্তর)</span>
+                  <div className="flex items-center gap-2.5">
+                    <RefreshCw className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <span>{t.conversionCase}</span>
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-white/10">
+                  <span className={countBadgeClass('case-conversion')}>
                     {getCaseCount('conversion')}
                   </span>
                 </button>
 
                 <button
                   onClick={() => handleNav('case-certcopy')}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-[11px] transition-colors cursor-pointer ${
-                    currentPage === 'case-certcopy'
-                      ? 'bg-blue-600/60 text-white font-bold'
-                      : 'text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
+                  className={navItemClass('case-certcopy')}
                 >
-                  <div className="flex items-center gap-2">
-                    <Scroll className="w-3.5 h-3.5 text-rose-300" />
-                    <span>Certified Copy</span>
+                  <div className="flex items-center gap-2.5">
+                    <Scroll className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                    <span>{t.certCopyCase}</span>
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-white/10">
+                  <span className={countBadgeClass('case-certcopy')}>
                     {getCaseCount('certcopy')}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => handleNav('case-rorpi')}
+                  className={navItemClass('case-rorpi')}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <FileSpreadsheet className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                    <span>{t.rorPiCase}</span>
+                  </div>
+                  <span className={countBadgeClass('case-rorpi')}>
+                    {getCaseCount('rorpi')}
                   </span>
                 </button>
               </div>
             )}
           </div>
 
-          {/* 4. Land Schedule */}
-          <button
-            onClick={() => handleNav('case-rorpi')}
-            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all cursor-pointer ${
-              currentPage === 'case-rorpi'
-                ? 'bg-[#1976D2] text-white shadow-sm font-bold'
-                : 'text-[#E2EDF8] hover:text-white hover:bg-white/10'
-            }`}
-          >
-            <MapPin className="w-4 h-4 text-sky-400" />
-            <span>Land Schedule</span>
-          </button>
-
-          {/* 5. RTI & Appeal */}
-          <button
-            onClick={() => handleNav('case-rti')}
-            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold transition-all cursor-pointer ${
-              currentPage === 'case-rti'
-                ? 'bg-[#1976D2] text-white shadow-sm font-bold'
-                : 'text-[#E2EDF8] hover:text-white hover:bg-white/10'
-            }`}
-          >
-            <FileText className="w-4 h-4 text-teal-400" />
-            <span>RTI &amp; Appeal</span>
-          </button>
-
-          {/* 6. Reports */}
-          <div>
-            <div
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-semibold transition-all cursor-pointer ${
-                reportPages.includes(currentPage)
-                  ? 'bg-[#1976D2] text-white shadow-sm font-bold'
-                  : 'text-[#E2EDF8] hover:text-white hover:bg-white/10'
-              }`}
+          {/* CHAMBER TOOLS */}
+          <div className="space-y-1">
+            <button
+              onClick={() => setToolsOpen(!toolsOpen)}
+              className="w-full flex items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer"
             >
-              <button
-                type="button"
-                onClick={() => handleNav('financial-reports')}
-                className="flex items-center gap-3 flex-1 text-left"
-              >
-                <BarChart2 className="w-4 h-4 text-violet-400" />
-                <span>Reports</span>
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setReportsExpanded(!reportsExpanded);
-                }}
-                className="p-1 hover:bg-white/15 rounded-md transition-colors"
-                title="Expand / collapse reports"
-              >
-                {reportsExpanded ? (
-                  <ChevronDown className="w-3.5 h-3.5 text-white/80" />
-                ) : (
-                  <ChevronRight className="w-3.5 h-3.5 text-white/80" />
-                )}
-              </button>
-            </div>
+              <span>{t.toolsLibrary}</span>
+              {toolsOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+            </button>
 
-            {/* Nested Reports */}
-            {reportsExpanded && (
-              <div className="pl-4 pr-1 pt-1 pb-1 space-y-1">
+            {toolsOpen && (
+              <div className="space-y-1">
                 <button
                   onClick={() => handleNav('causelist')}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] transition-colors cursor-pointer ${
-                    currentPage === 'causelist'
-                      ? 'bg-blue-600/60 text-white font-bold'
-                      : 'text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
+                  className={navItemClass('causelist')}
                 >
-                  <Calendar className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Daily Cause List (কার্যতালিকা)</span>
-                </button>
-
-                <button
-                  onClick={() => handleNav('financial-reports')}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] transition-colors cursor-pointer ${
-                    currentPage === 'financial-reports'
-                      ? 'bg-blue-600/60 text-white font-bold'
-                      : 'text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Financial Statement (আর্থিক রিপোর্ট)</span>
-                </button>
-
-                <button
-                  onClick={() => handleNav('accounts')}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] transition-colors cursor-pointer ${
-                    currentPage === 'accounts'
-                      ? 'bg-blue-600/60 text-white font-bold'
-                      : 'text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <HardDrive className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Office Accounts (আয়-ব্যয়)</span>
+                  <div className="flex items-center gap-2.5">
+                    <Calendar className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <span>{t.dailyCauseList}</span>
+                  </div>
+                  <span className={countBadgeClass('causelist')}>
+                    {activeCompany?.causeList?.length || 0}
+                  </span>
                 </button>
 
                 <button
                   onClick={() => handleNav('sharecalculator')}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] transition-colors cursor-pointer ${
-                    currentPage === 'sharecalculator'
-                      ? 'bg-blue-600/60 text-white font-bold'
-                      : 'text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
+                  className={navItemClass('sharecalculator')}
                 >
-                  <Calculator className="w-3.5 h-3.5 text-rose-400" />
-                  <span>Share Calc (হিস্যা বণ্টন)</span>
+                  <div className="flex items-center gap-2.5">
+                    <Calculator className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                    <span>{t.shareCalc}</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => handleNav('aistudio')}
+                  className={navItemClass('aistudio')}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Brain className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                    <span>{t.aiLegalDrafting}</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => handleNav('timeline')}
+                  className={navItemClass('timeline')}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <BookMarked className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                    <span>{t.caseDiary}</span>
+                  </div>
                 </button>
               </div>
             )}
           </div>
 
-          {/* 7. Settings */}
-          <button
-            onClick={() => onOpenSettings('display')}
-            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold text-[#E2EDF8] hover:text-white hover:bg-white/10 transition-all cursor-pointer"
-          >
-            <Settings className="w-4 h-4 text-slate-300" />
-            <span>Settings</span>
-          </button>
+          {/* CHAMBER & STATUTORY LIBRARY */}
+          <div className="space-y-1">
+            <button
+              onClick={() => setChamberOpen(!chamberOpen)}
+              className="w-full flex items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer"
+            >
+              <span>{t.chamberOffice}</span>
+              {chamberOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+            </button>
 
-          {/* 8. About */}
-          <button
-            onClick={() => onOpenSettings('branding')}
-            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-semibold text-[#E2EDF8] hover:text-white hover:bg-white/10 transition-all cursor-pointer"
-          >
-            <Info className="w-4 h-4 text-sky-300" />
-            <span>About</span>
-          </button>
+            {chamberOpen && (
+              <div className="space-y-1">
+                <button
+                  onClick={() => handleNav('parties')}
+                  className={navItemClass('parties')}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <span>{t.clientRegistry}</span>
+                  </div>
+                  <span className={countBadgeClass('parties')}>
+                    {activeCompany?.parties?.length || 0}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => handleNav('accounts')}
+                  className={navItemClass('accounts')}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Wallet className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <span>Office Accounts (আয়-ব্যয়)</span>
+                  </div>
+                  <span className={countBadgeClass('accounts')}>
+                    {activeCompany?.financialEntries?.length || 0}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => handleNav('client-ledger')}
+                  className={navItemClass('client-ledger')}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Users className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <span>Client Ledger (বকেয়া)</span>
+                  </div>
+                  <span className={countBadgeClass('client-ledger')}>
+                    {activeCompany?.partyLedgerEntries?.length || 0}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => handleNav('cash-bank')}
+                  className={navItemClass('cash-bank')}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Wallet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <span>Cash &amp; Bank (নগদ/ব্যাংক)</span>
+                  </div>
+                  <span className={countBadgeClass('cash-bank')}>
+                    {activeCompany?.officeAccounts?.length || 0}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => handleNav('financial-reports')}
+                  className={navItemClass('financial-reports')}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <FileSpreadsheet className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                    <span>Financial Reports (আর্থিক রিপোর্ট)</span>
+                  </div>
+                  <span className={countBadgeClass('financial-reports')}>
+                    {(activeCompany?.financialEntries?.length || 0) + (activeCompany?.partyLedgerEntries?.length || 0)}
+                  </span>
+                </button>
+
+
+              </div>
+            )}
+          </div>
+
+          {/* LEGAL RESOURCES & COMMUNICATION */}
+          <div className="space-y-1">
+            <button
+              onClick={() => setResourcesOpen(!resourcesOpen)}
+              className="w-full flex items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer"
+            >
+              <span>Legal Resources &amp; Communication</span>
+              {resourcesOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+            </button>
+            {resourcesOpen && (
+              <div className="space-y-1">
+                <button onClick={() => handleNav('wblract')} className={navItemClass('wblract')}>
+                  <div className="flex items-center gap-2.5">
+                    <BookOpen className="w-4 h-4 text-teal-300" />
+                    <span>{t.statutoryWblr}</span>
+                  </div>
+                </button>
+                <button onClick={() => handleNav('messages')} className={navItemClass('messages')}>
+                  <div className="flex items-center gap-2.5">
+                    <MessageSquare className="w-4 h-4 text-emerald-300" />
+                    <span>{t.clientMessaging}</span>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
+
         </div>
 
-        {/* Bottom Section: Red Logout Pill Button & Online Telemetry Status matching Image 1 */}
-        <div className="p-4 border-t border-white/10 space-y-3 bg-black/15 shrink-0">
+        {/* Theme-aware Footer with Backup Now, Settings & Logout */}
+        <div className={`p-3 border-t space-y-2.5 ${sidebarHeaderFooterClass}`}>
+          {/* Backup Now Option */}
           <button
             type="button"
-            onClick={logoutUser}
-            className="w-full py-2.5 px-4 rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] active:bg-[#991B1B] text-white font-bold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
-            title="Logout from Chamber Session"
+            onClick={triggerManualBackupRequest}
+            className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-xs shadow-2xs transition-all cursor-pointer flex items-center justify-center gap-2"
+            title={`Immediate manual backup to: ${backupStoragePath || 'Local Storage'}`}
           >
-            <LogOut className="w-4 h-4" />
-            <span>Logout</span>
+            <HardDrive className="w-4 h-4" />
+            <span>Backup Now (এখনই ব্যাকআপ)</span>
           </button>
 
-          <div className="flex items-center justify-between text-[11px] text-[#E2EDF8] px-1">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse" />
-              <span className="font-semibold text-emerald-300">Online</span>
-              <span className="text-[10px] text-slate-400">(Sync Ready)</span>
+          <div className="flex items-center justify-between text-[11px] text-slate-500 px-1">
+            <div className="flex items-center gap-1.5">
+              <Database className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Offline Local Storage</span>
             </div>
-            <span className="font-mono text-[10px] text-slate-400">v{appVersion}</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+            <button
+              onClick={() => onOpenSettings('display')}
+              className="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-bold rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 transition-colors cursor-pointer shadow-2xs"
+              title="Theme & Chamber Settings"
+            >
+              <Settings className="w-3.5 h-3.5 text-blue-600" />
+              <span>Settings</span>
+            </button>
+
+            <button
+              onClick={logoutUser}
+              className="flex items-center justify-center gap-1.5 py-2 px-2 text-xs font-bold rounded-xl bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 border border-rose-200 transition-colors cursor-pointer shadow-2xs"
+              title="Logout from Current Session"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Logout</span>
+            </button>
+          </div>
+
+          {/* Application Version & In-Place Replacement Sync */}
+          <div className="pt-2 mt-1 border-t border-slate-200/70 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 px-1">
+            <span className="font-mono font-bold tracking-tight text-slate-700 dark:text-slate-300">
+              v{appVersion}
+            </span>
+            <button
+              type="button"
+              onClick={forceAppUpdateAndReplace}
+              className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 font-semibold cursor-pointer transition-colors"
+              title="Replace existing app with latest build and refresh"
+            >
+              <RefreshCw className="w-2.5 h-2.5 text-blue-500" />
+              <span>Update / Sync</span>
+            </button>
           </div>
         </div>
       </aside>
