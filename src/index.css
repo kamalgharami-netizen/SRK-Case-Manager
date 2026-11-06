@@ -1665,3 +1665,51 @@ html, html body, html body #root {
   color:var(--srk-ink) !important;
   border-color:var(--srk-border) !important;
 }
+
+
+/* SRK 2026 unified colour engine — saturated coloured surfaces only.
+   Every palette uses a visible hue; no pure black/white backgrounds or shadows. */
+:root {
+  --srk-canvas: #28577F;
+  --srk-surface: #32688F;
+  --srk-raised: #3D79A2;
+  --srk-header: #24527A;
+  --srk-sidebar: #214B72;
+  --srk-ink: #E7F0F8;
+  --srk-muted: #C1D4E5;
+  --srk-accent: #79C5FF;
+  --srk-accent-strong: #2589D8;
+  --srk-border: #5F91B8;
+  --srk-shadow: rgba(20, 58, 96, .28);
+  color-scheme: dark;
+}
+html.theme-navy { --srk-canvas:#28577F; --srk-surface:#32688F; --srk-raised:#3D79A2; --srk-header:#24527A; --srk-sidebar:#214B72; --srk-accent:#86CCFF; --srk-accent-strong:#267FC6; --srk-border:#649AC2; }
+html.theme-white { --srk-canvas:#315F89; --srk-surface:#3B719A; --srk-raised:#477FA7; --srk-header:#2B5C87; --srk-sidebar:#28547D; --srk-accent:#A3D7FF; --srk-accent-strong:#347FB8; --srk-border:#76A6CB; }
+html.theme-light { --srk-canvas:#526A83; --srk-surface:#617C97; --srk-raised:#718DA7; --srk-header:#4B6682; --srk-sidebar:#455F7A; --srk-accent:#C0DFFF; --srk-accent-strong:#5888B8; --srk-border:#91A9C1; }
+html.theme-mint, html.theme-emerald { --srk-canvas:#286B55; --srk-surface:#337D63; --srk-raised:#408E72; --srk-header:#24634F; --srk-sidebar:#205A48; --srk-accent:#9BE8C6; --srk-accent-strong:#27966B; --srk-border:#69B99A; }
+html.theme-azure { --srk-canvas:#28677F; --srk-surface:#337B94; --srk-raised:#408EA7; --srk-header:#245F78; --srk-sidebar:#20566E; --srk-accent:#9BE5F4; --srk-accent-strong:#238EAC; --srk-border:#6CB5C9; }
+html.theme-charcoal { --srk-canvas:#596B7D; --srk-surface:#687D90; --srk-raised:#788EA1; --srk-header:#52677B; --srk-sidebar:#4B6074; --srk-accent:#D0E0EC; --srk-accent-strong:#668AA9; --srk-border:#9BAFC0; }
+html.theme-indigo { --srk-canvas:#514B83; --srk-surface:#625B96; --srk-raised:#716AA8; --srk-header:#494477; --srk-sidebar:#403B6C; --srk-accent:#D0C7FF; --srk-accent-strong:#8170D3; --srk-border:#9990C9; }
+html.theme-sepia { --srk-canvas:#76563B; --srk-surface:#896746; --srk-raised:#9A7854; --srk-header:#704F35; --srk-sidebar:#67482F; --srk-accent:#F0CD91; --srk-accent-strong:#B77A3D; --srk-border:#B28D66; }
+
+html, body, #root { min-height:100%; background:var(--srk-canvas)!important; color:var(--srk-ink)!important; }
+body { color-scheme:dark!important; }
+#root .app-shell-bg, #root main { background:var(--srk-canvas)!important; color:var(--srk-ink)!important; }
+#root header.sticky { background:var(--srk-header)!important; color:var(--srk-ink)!important; border-color:var(--srk-border)!important; box-shadow:0 5px 16px var(--srk-shadow)!important; }
+#root aside { background:var(--srk-sidebar)!important; color:var(--srk-ink)!important; border-color:var(--srk-border)!important; box-shadow:5px 0 18px var(--srk-shadow)!important; }
+#root :is(.bg-white,.bg-slate-50,.bg-slate-100,.bg-gray-50,.bg-gray-100,.bg-black) { background-color:var(--srk-surface)!important; color:var(--srk-ink)!important; }
+#root :is(.dark\\:bg-slate-900,.dark\\:bg-slate-950,.dark\\:bg-slate-800,.dark\\:bg-slate-850) { background-color:var(--srk-raised)!important; }
+#root :is(.text-black,.text-slate-900,.text-slate-800,.text-gray-900,.text-gray-800) { color:var(--srk-ink)!important; }
+#root :is(.text-slate-700,.text-slate-600,.text-slate-500,.text-gray-700,.text-gray-600,.text-gray-500) { color:var(--srk-muted)!important; }
+#root :is(.border-white,.border-black,.border-slate-200,.border-slate-300,.border-gray-200) { border-color:var(--srk-border)!important; }
+#root :is(.shadow-xs,.shadow-2xs,.shadow-sm,.shadow-md,.shadow-lg,.shadow-xl,.shadow-2xl) {
+  box-shadow:0 6px 16px var(--srk-shadow), inset 0 1px 0 rgba(164,207,239,.10)!important;
+}
+#root :is(input,select,textarea) { background:var(--srk-raised)!important; color:var(--srk-ink)!important; border-color:var(--srk-border)!important; }
+#root input::placeholder, #root textarea::placeholder { color:var(--srk-muted)!important; opacity:.82; }
+#root :is(button,a) { -webkit-tap-highlight-color:transparent; }
+#root .bg-black\\/50, #root .bg-black\\/60, #root .bg-black\\/70 { background-color:rgba(28,68,108,.78)!important; }
+#root [class*="shadow-["] { --tw-shadow-color:var(--srk-shadow)!important; }
+#root svg { flex-shrink:0; }
+#root :is(.rounded-xl,.rounded-2xl) { border-color:var(--srk-border); }
+@media (prefers-reduced-motion:reduce) { #root *, #root *::before, #root *::after { animation-duration:.01ms!important; transition-duration:.01ms!important; } }
