@@ -103,8 +103,6 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     deleteUser,
     theme,
     setTheme,
-    uiStyle,
-    setUIStyle,
     viewDensity,
     setViewDensity,
     viewMode,
@@ -920,7 +918,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                     <span>Display &amp; View Settings (ডিসপ্লে ও ভিউ কনফিগারেশন)</span>
                   </div>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    Customize courtroom theme, reading typography scale, case cards density, and high contrast.
+                    Customize UI templates, reading typography scale, case card density, and contrast.
                   </p>
                 </div>
                 <button
@@ -933,43 +931,14 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                 </button>
               </div>
 
-              {/* Theme Modes */}
-              <div className="space-y-2.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                  <Palette className="w-4 h-4 text-blue-600" />
-                  <span>Courtroom Color Theme (কালার থিম নির্বাচন)</span>
+              {/* UI Template Library — one choice controls layout and deep colours */}
+              <div className="space-y-2.5 rounded-xl border border-sky-500/50 bg-[#102943] p-3">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-100 flex items-center gap-1.5">
+                  <LayoutGrid className="w-4 h-4 text-sky-300" />
+                  <span>UI Template Library (২০টির বেশি ডিজাইন)</span>
                 </label>
+                <p className="text-[11px] text-slate-300">Choose one complete template. Its layout and deep colour palette are applied together.</p>
                 <ThemeDropdown variant="full" className="w-full" />
-              </div>
-
-              {/* Application UI Design — independent from the colour theme */}
-              <div className="space-y-2.5">
-                <label htmlFor="srk-settings-ui-style" className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                  <Layers className="w-4 h-4 text-indigo-600" />
-                  <span>Application UI Design (অ্যাপের UI ডিজাইন)</span>
-                </label>
-                <select
-                  id="srk-settings-ui-style"
-                  value={uiStyle}
-                  onChange={(event) => setUIStyle(event.target.value as typeof uiStyle)}
-                  className="w-full rounded-xl border-2 border-blue-500 bg-[#0D3157] px-4 py-3 text-sm font-extrabold text-white outline-none transition focus:ring-2 focus:ring-sky-400"
-                >
-                  <option value="3d">SRK Reference 3D — Navy + Blue + Raised Cards</option>
-                  <option value="modern">Modern Blue Workspace — Clean Panels</option>
-                  <option value="glass">Layered Blue Panels — Depth & Transparency</option>
-                  <option value="classic">Classic Navy Office — Formal Compact Layout</option>
-                  <option value="executive">Executive Legal Suite — Premium Navy & Gold</option>
-                  <option value="royal">Royal Blue Chamber — Bright Blue Accents</option>
-                  <option value="compact">Compact Case Desk — Dense Working Layout</option>
-                  <option value="soft">Soft Blue Workspace — Calm High-Contrast Panels</option>
-                  <option value="midnight">Midnight Docket — Dark Slate & Electric Blue</option>
-                  <option value="ocean">Ocean Command — Deep Teal & Aqua</option>
-                  <option value="emerald">Emerald Chamber — Forest Green & Jade</option>
-                  <option value="copper">Copper Heritage — Charcoal & Warm Copper</option>
-                </select>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Design selection is saved automatically and is independent of the Colour Theme selection.
-                </p>
               </div>
 
               {/* Information Density & View Mode */}
