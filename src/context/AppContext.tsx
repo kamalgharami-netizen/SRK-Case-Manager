@@ -67,7 +67,7 @@ export interface ToastState {
 
 export type ViewDensity = 'comfortable' | 'compact';
 export type ViewMode = 'grid' | 'table';
-export type UIStyle = '3d' | 'modern' | 'glass' | 'classic' | 'executive' | 'royal' | 'compact' | 'soft' | 'midnight' | 'ocean' | 'emerald' | 'copper';
+export type UIStyle = '3d' | 'modern' | 'glass' | 'classic' | 'executive' | 'royal' | 'compact' | 'soft' | 'midnight' | 'ocean' | 'emerald' | 'copper' | 'architect' | 'dashboard' | 'ribbon' | 'split' | 'docket' | 'editorial' | 'command' | 'sidebar' | 'matrix' | 'dossier' | 'ledger' | 'minimal';
 export type FontSize = 'normal' | 'large';
 import { AppTheme, THEME_OPTIONS } from '../data/themes';
 export type { AppTheme };
@@ -369,7 +369,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [uiStyle, setUIStyleState] = useState<UIStyle>(() => {
     try {
       const saved = localStorage.getItem('srk_ui_style');
-      if (saved === '3d' || saved === 'modern' || saved === 'glass' || saved === 'classic' || saved === 'executive' || saved === 'royal' || saved === 'compact' || saved === 'soft' || saved === 'midnight' || saved === 'ocean' || saved === 'emerald' || saved === 'copper') return saved;
+      if (['3d', 'modern', 'glass', 'classic', 'executive', 'royal', 'compact', 'soft', 'midnight', 'ocean', 'emerald', 'copper', 'architect', 'dashboard', 'ribbon', 'split', 'docket', 'editorial', 'command', 'sidebar', 'matrix', 'dossier', 'ledger', 'minimal'].includes(saved)) return saved as UIStyle;
     } catch {}
     return '3d';
   });
@@ -518,7 +518,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       localStorage.setItem('srk_ui_style', uiStyle);
       const root = document.documentElement;
-      ['3d', 'modern', 'glass', 'classic', 'executive', 'royal', 'compact', 'soft', 'midnight', 'ocean', 'emerald', 'copper'].forEach(style => root.classList.remove(`ui-style-${style}`));
+      ['3d', 'modern', 'glass', 'classic', 'executive', 'royal', 'compact', 'soft', 'midnight', 'ocean', 'emerald', 'copper', 'architect', 'dashboard', 'ribbon', 'split', 'docket', 'editorial', 'command', 'sidebar', 'matrix', 'dossier', 'ledger', 'minimal'].forEach(style => root.classList.remove(`ui-style-${style}`));
       root.classList.add(`ui-style-${uiStyle}`);
     } catch {}
   }, [uiStyle]);
