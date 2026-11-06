@@ -29,68 +29,49 @@ const TEMPLATE_LAYOUTS = [
   { style: 'minimal', name: 'Minimal Chamber', nameBn: 'মিনিমাল চেম্বার', detail: 'Quiet flat surfaces and clean spacing' }
 ] as const;
 
-const PALETTES = [
-  { theme: 'navy', name: 'Bright Blue', nameBn: 'উজ্জ্বল নীল', bg: '#1769E0', panel: '#398BFF', accent: '#A9D5FF' },
-  { theme: 'white', name: 'Bright Red', nameBn: 'উজ্জ্বল লাল', bg: '#D92D45', panel: '#F04B62', accent: '#FFB4BE' },
-  { theme: 'light', name: 'Sunshine Yellow', nameBn: 'উজ্জ্বল হলুদ', bg: '#D99A00', panel: '#F4BC27', accent: '#FFE49A' },
-  { theme: 'mint', name: 'Bright Green', nameBn: 'উজ্জ্বল সবুজ', bg: '#159B55', panel: '#28BD70', accent: '#A7F0C5' },
-  { theme: 'azure', name: 'Sky Blue', nameBn: 'আকাশি নীল', bg: '#079BCB', panel: '#25BCEB', accent: '#A8E9FF' },
-  { theme: 'charcoal', name: 'Bright Pink', nameBn: 'উজ্জ্বল গোলাপি', bg: '#D83291', panel: '#F052AD', accent: '#FFC0E4' },
-  { theme: 'emerald', name: 'Lime Green', nameBn: 'লাইম সবুজ', bg: '#69A900', panel: '#91D52A', accent: '#D9F7A5' },
-  { theme: 'indigo', name: 'Violet Purple', nameBn: 'উজ্জ্বল বেগুনি', bg: '#7046D8', panel: '#936BFA', accent: '#D2C2FF' },
-  { theme: 'sepia', name: 'Saffron Orange', nameBn: 'গেরুয়া', bg: '#D96A13', panel: '#F28B32', accent: '#FFD0A3' }
-] as const;
-
-// 24 distinct layout templates, each paired with a deep, high-contrast palette.
-const UI_TEMPLATES = TEMPLATE_LAYOUTS.map((layout, index) => ({
-  ...layout,
-  palette: PALETTES[index % PALETTES.length],
-  id: layout.style
-}));
-
 interface ThemeDropdownProps { variant?: 'compact' | 'full' | 'sidebar'; className?: string; }
 
 export const ThemeDropdown: React.FC<ThemeDropdownProps> = ({ variant = 'compact', className = '' }) => {
-  const { theme, setTheme, uiStyle, setUIStyle, language } = useApp();
+  const { uiStyle, setUIStyle, language } = useApp();
   const [isOpen, setIsOpen] = useState(false);
-  const selected = UI_TEMPLATES.find(item => item.style === uiStyle && item.palette.theme === theme) || UI_TEMPLATES[0];
-  const applyTemplate = (item: typeof UI_TEMPLATES[number]) => {
+  const selected = TEMPLATE_LAYOUTS.find(item => item.style === uiStyle) || TEMPLATE_LAYOUTS[0];
+  const applyTemplate = (item: typeof TEMPLATE_LAYOUTS[number]) => {
+    // Layout selection must never alter the user's currently selected colour theme.
     setUIStyle(item.style as typeof uiStyle);
-    setTheme(item.palette.theme as typeof theme);
     setIsOpen(false);
   };
 
   return (
     <div className={`relative ${variant === 'compact' ? 'inline-block' : 'block w-full'} ${className}`}>
       <button type="button" onClick={() => setIsOpen(v => !v)} aria-haspopup="listbox" aria-expanded={isOpen}
-        className={`flex w-full items-center justify-between gap-2 rounded-xl border border-sky-500/70 bg-[var(--srk-raised)] px-3 py-3 text-left text-xs font-bold text-slate-100 hover:bg-[var(--srk-header)] ${variant === 'compact' ? 'max-w-[260px]' : ''}`}>
-        <span className="flex min-w-0 items-center gap-2"><LayoutTemplate className="h-4 w-4 shrink-0 text-sky-300" /><span className="truncate">{language === 'bn' ? selected.nameBn : selected.name}</span></span>
-        <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        className={`flex w-full items-center justify-between gap-2 rounded-xl border border-[#DCE7F3] bg-white px-3 py-3 text-left text-xs font-bold text-[#0A2540] hover:bg-[#F6FAFD] ${variant === 'compact' ? 'max-w-[260px]' : ''}`}>
+        <span className="flex min-w-0 items-center gap-2"><LayoutTemplate className="h-4 w-4 shrink-0 text-[#1976D2]" /><span className="truncate">{language === 'bn' ? selected.nameBn : selected.name}</span></span>
+        <ChevronDown className={`h-4 w-4 shrink-0 text-[#5A6B82] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
-      {isOpen && <div className="absolute right-0 z-[90] mt-2 max-h-[70vh] w-[min(94vw,720px)] overflow-y-auto rounded-2xl border border-sky-500/60 bg-[var(--srk-surface)] p-3 shadow-[0_18px_40px_rgba(28,68,108,.35)]">
-        <div className="mb-3 flex items-center justify-between gap-2 px-1 text-slate-100">
+      {isOpen && <div className="absolute right-0 z-[90] mt-2 max-h-[70vh] w-[min(94vw,720px)] overflow-y-auto rounded-2xl border border-[#DCE7F3] bg-white p-3 shadow-[0_18px_40px_rgba(8,50,101,.18)]">
+        <div className="mb-3 flex items-center justify-between gap-2 px-1 text-[#0A2540]">
           <span className="text-sm font-extrabold">{language === 'bn' ? 'UI Template নির্বাচন করুন' : 'Choose a UI Template'}</span>
-          <span className="rounded-lg bg-[var(--srk-header)] px-2 py-1 text-[10px] font-bold text-sky-200">{UI_TEMPLATES.length} templates</span>
+          <span className="rounded-lg bg-[#EBF3FB] px-2 py-1 text-[10px] font-bold text-[#1976D2]">{TEMPLATE_LAYOUTS.length} templates</span>
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {UI_TEMPLATES.map((item, index) => {
-            const active = selected.id === item.id && selected.palette.theme === item.palette.theme;
-            return <button key={item.id} type="button" onClick={() => applyTemplate(item)} aria-pressed={active}
-              className={`flex min-w-0 items-center gap-3 rounded-xl border p-3 text-left transition-colors ${active ? 'border-sky-300 bg-[var(--srk-header)]' : 'border-[#294663] bg-[#102943] hover:border-sky-500'}`}>
-              <span className="flex h-12 w-14 shrink-0 flex-col justify-between overflow-hidden rounded-lg border border-slate-500/50 p-1" style={{ backgroundColor: item.palette.bg }}>
-                <span className="h-2 w-full rounded-sm" style={{ backgroundColor: item.palette.accent }} />
-                <span className="grid grid-cols-2 gap-1"><i className="h-3 rounded-sm" style={{ backgroundColor: item.palette.panel }} /><i className="h-3 rounded-sm" style={{ backgroundColor: item.palette.accent, opacity: .75 }} /></span>
+          {TEMPLATE_LAYOUTS.map((item, index) => {
+            const active = selected.style === item.style;
+            return <button key={item.style} type="button" onClick={() => applyTemplate(item)} aria-pressed={active}
+              className={`flex min-w-0 items-center gap-3 rounded-xl border p-3 text-left transition-colors ${active ? 'border-[#1976D2] bg-[#EBF3FB]' : 'border-[#DCE7F3] bg-white hover:border-[#1976D2] hover:bg-[#F6FAFD]'}`}>
+              <span className="flex h-12 w-14 shrink-0 flex-col justify-between overflow-hidden rounded-lg border border-[#DCE7F3] bg-[#EBF3FB] p-1">
+                <span className="h-2 w-full rounded-sm bg-[#083265]" />
+                <span className="grid grid-cols-2 gap-1"><i className={`h-3 rounded-sm ${index % 3 === 0 ? 'bg-[#10B981]' : 'bg-[#1976D2]'}`} /><i className="h-3 rounded-sm bg-[#F97316]" /></span>
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-xs font-extrabold text-slate-100">{language === 'bn' ? item.nameBn : item.name}</span>
-                <span className="mt-1 block truncate text-[10px] text-slate-300">{language === 'bn' ? item.palette.nameBn : item.palette.name}</span>
-                <span className="mt-1 block truncate text-[10px] text-slate-400">{item.detail}</span>
+                <span className="block truncate text-xs font-extrabold text-[#0A2540]">{language === 'bn' ? item.nameBn : item.name}</span>
+                <span className="mt-1 block truncate text-[10px] text-[#5A6B82]">{item.detail}</span>
+                <span className="mt-1 block truncate text-[10px] font-semibold text-[#1976D2]">{language === 'bn' ? 'বর্তমান রং বজায় থাকবে' : 'Keeps current colours'}</span>
               </span>
-              {active && <Check className="h-4 w-4 shrink-0 text-sky-300" />}
+              {active && <Check className="h-4 w-4 shrink-0 text-[#1976D2]" />}
             </button>;
           })}
         </div>
-        <p className="mt-3 border-t border-[#294663] pt-3 text-[10px] text-slate-300">{language === 'bn' ? 'প্রতিটি Template-এ UI বিন্যাস ও ডিপ কালার একসঙ্গে প্রয়োগ হয়।' : 'Every template applies its layout and bright colour palette together.'}</p>
+        <p className="mt-3 border-t border-[#DCE7F3] pt-3 text-[10px] text-[#5A6B82]">{language === 'bn' ? 'Template নির্বাচন করলে শুধু UI বিন্যাস নির্বাচন হবে; বর্তমান Colour Combination পরিবর্তন হবে না।' : 'Selecting a template changes the layout preference only; your current colour combination remains unchanged.'}</p>
       </div>}
     </div>
   );
