@@ -1794,3 +1794,19 @@ html, body, #root { background:var(--srk-canvas)!important; color:var(--srk-ink)
 #root :is(button,a,[role="button"]):focus-visible { outline:3px solid #FFE04B!important; outline-offset:2px!important; }
 #root svg { flex-shrink:0; }
 #root [class*="ring-slate-"], #root [class*="ring-gray-"] { --tw-ring-color:#FFE04B!important; }
+
+/* Final sweep for inline and SVG neutral colours in visible application UI. */
+#root [style*="#ffffff"], #root [style*="#FFFFFF"], #root [style*="#fff"], #root [style*="#FFF"] {
+  background-color:var(--srk-surface)!important;
+  color:var(--srk-ink)!important;
+}
+#root [style*="#000000"], #root [style*="#000"], #root [style*="rgb(0, 0, 0)"] {
+  color:var(--srk-ink)!important;
+  border-color:var(--srk-border)!important;
+}
+#root svg [fill="#ffffff"], #root svg [fill="#fff"], #root svg [stroke="#ffffff"], #root svg [stroke="#fff"] {
+  fill:#FFE49A!important; stroke:#FFE49A!important;
+}
+#root svg [fill="#000000"], #root svg [fill="#000"], #root svg [stroke="#000000"], #root svg [stroke="#000"] {
+  fill:var(--srk-ink)!important; stroke:var(--srk-ink)!important;
+}
