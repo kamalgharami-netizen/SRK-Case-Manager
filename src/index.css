@@ -1383,3 +1383,61 @@ html.ui-style-3d #root main [role="button"]:active {
   outline: 2px solid #398fe8 !important;
   outline-offset: 2px !important;
 }
+
+
+/* Additional 12 distinct UI template layouts (all inherit the selected deep palette). */
+html.ui-style-architect #root aside { width: 224px !important; }
+html.ui-style-architect #root main { padding: 26px !important; }
+html.ui-style-architect #root main .srk-dashboard { gap: 20px !important; }
+html.ui-style-architect #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"] { border-radius: 8px !important; border-left-width: 4px !important; }
+
+html.ui-style-dashboard #root main .srk-dashboard { gap: 12px !important; }
+html.ui-style-dashboard #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"] { border-radius: 18px !important; padding: 20px !important; }
+html.ui-style-dashboard #root main .srk-dashboard button { min-height: 48px !important; }
+
+html.ui-style-ribbon #root header.sticky { border-bottom: 3px solid var(--srk-accent) !important; }
+html.ui-style-ribbon #root aside { width: 250px !important; }
+html.ui-style-ribbon #root main button:not(:disabled) { border-radius: 7px !important; }
+
+html.ui-style-split #root main .srk-dashboard { gap: 10px !important; }
+html.ui-style-split #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"] { border-radius: 10px !important; }
+html.ui-style-split #root aside { width: 270px !important; }
+
+html.ui-style-docket #root main table th { position: sticky; top: 0; z-index: 2; letter-spacing: .04em; text-transform: uppercase; }
+html.ui-style-docket #root main table td, html.ui-style-docket #root main table th { padding: 10px 12px !important; }
+html.ui-style-docket #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"] { border-radius: 6px !important; }
+
+html.ui-style-editorial #root main { max-width: 1440px; margin-left: auto !important; margin-right: auto !important; }
+html.ui-style-editorial #root main h1, html.ui-style-editorial #root main h2 { letter-spacing: -.025em; }
+html.ui-style-editorial #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"] { border-radius: 3px !important; padding: 18px !important; }
+
+html.ui-style-command #root aside { width: 236px !important; }
+html.ui-style-command #root main button:not(:disabled) { border-radius: 8px !important; min-height: 42px !important; }
+html.ui-style-command #root main .srk-dashboard { gap: 9px !important; }
+
+html.ui-style-sidebar #root aside { width: 304px !important; }
+html.ui-style-sidebar #root aside button { min-height: 44px !important; border-radius: 10px !important; }
+html.ui-style-sidebar #root main { padding: 22px !important; }
+
+html.ui-style-matrix #root main .srk-dashboard { gap: 8px !important; }
+html.ui-style-matrix #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"] { border-radius: 2px !important; padding: 12px !important; }
+html.ui-style-matrix #root main table td, html.ui-style-matrix #root main table th { padding: 7px 9px !important; }
+
+html.ui-style-dossier #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"] { border-radius: 12px !important; border-left-width: 5px !important; padding: 16px !important; }
+html.ui-style-dossier #root main button:not(:disabled) { border-radius: 10px !important; }
+
+html.ui-style-ledger #root main table { border-collapse: separate !important; border-spacing: 0 !important; }
+html.ui-style-ledger #root main table td, html.ui-style-ledger #root main table th { padding: 11px 13px !important; font-variant-numeric: tabular-nums; }
+html.ui-style-ledger #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"] { border-radius: 5px !important; }
+
+html.ui-style-minimal #root main .srk-dashboard { gap: 18px !important; }
+html.ui-style-minimal #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"] { border-radius: 14px !important; border-width: 1px !important; }
+html.ui-style-minimal #root main button:not(:disabled) { border-radius: 9px !important; }
+
+@media (max-width: 767px) {
+  html[class*="ui-style-"] #root main { padding: 12px !important; }
+  html.ui-style-sidebar #root aside { width: min(304px, 85vw) !important; }
+  html.ui-style-architect #root aside,
+  html.ui-style-command #root aside,
+  html.ui-style-dashboard #root aside { width: min(236px, 85vw) !important; }
+}
