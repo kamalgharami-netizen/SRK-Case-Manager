@@ -1132,3 +1132,109 @@ html.ui-style-copper #root main table td { border: 1px solid color-mix(in srgb, 
 #root main :is(button,[role="button"]) :is(span,p) {
   text-shadow: none !important;
 }
+
+
+/* DARK-SURFACE ENFORCEMENT — replace washed-out white/pastel work areas.
+   White remains only as readable foreground text/icons where contrast needs it. */
+html.theme-white {
+  --srk-canvas:#0B1D33; --srk-surface:#142B46; --srk-surface-raised:#193653;
+  --srk-ink:#F1F6FC; --srk-muted:#B8CBE0; --srk-accent:#43A5FF;
+  --srk-header:#0A2D50; --srk-sidebar:#071A2E; --srk-border:#315B83;
+}
+html.theme-light {
+  --srk-canvas:#17283D; --srk-surface:#223A55; --srk-surface-raised:#294562;
+  --srk-ink:#F2F6FC; --srk-muted:#C0D0E1; --srk-accent:#82B7FF;
+  --srk-header:#142F4C; --srk-sidebar:#101F32; --srk-border:#496987;
+}
+html.theme-sepia {
+  --srk-canvas:#261D16; --srk-surface:#38291E; --srk-surface-raised:#493526;
+  --srk-ink:#FFF4E2; --srk-muted:#DCC6A5; --srk-accent:#D6A85D;
+  --srk-header:#382719; --srk-sidebar:#211810; --srk-border:#765638;
+}
+html.theme-azure {
+  --srk-canvas:#0A263D; --srk-surface:#123A58; --srk-surface-raised:#194968;
+  --srk-ink:#EFF9FF; --srk-muted:#B8D7E9; --srk-accent:#48B9F0;
+  --srk-header:#0B3454; --srk-sidebar:#071F34; --srk-border:#286487;
+}
+html.theme-mint {
+  --srk-canvas:#0B2B23; --srk-surface:#123D32; --srk-surface-raised:#195141;
+  --srk-ink:#EDFFF6; --srk-muted:#B6DDC9; --srk-accent:#55D69B;
+  --srk-header:#104332; --srk-sidebar:#08271F; --srk-border:#2B7258;
+}
+html.theme-navy {
+  --srk-canvas:#081A2E; --srk-surface:#132B46; --srk-surface-raised:#193653;
+  --srk-ink:#F1F6FC; --srk-muted:#B8CBE0; --srk-accent:#48A4FF;
+  --srk-header:#0A2D50; --srk-sidebar:#06182B; --srk-border:#315B83;
+}
+html.theme-charcoal {
+  --srk-canvas:#171D26; --srk-surface:#252E3A; --srk-surface-raised:#303C4B;
+  --srk-ink:#F3F5F8; --srk-muted:#C0CAD5; --srk-accent:#B8D0F0;
+  --srk-header:#202A36; --srk-sidebar:#141A22; --srk-border:#4A5869;
+}
+html.theme-emerald {
+  --srk-canvas:#0B2B23; --srk-surface:#164333; --srk-surface-raised:#1D5540;
+  --srk-ink:#F0FFF7; --srk-muted:#BCE2CD; --srk-accent:#72E2B4;
+  --srk-header:#124331; --srk-sidebar:#08251D; --srk-border:#34785C;
+}
+html.theme-indigo {
+  --srk-canvas:#19162F; --srk-surface:#2A2450; --srk-surface-raised:#393064;
+  --srk-ink:#F5F3FF; --srk-muted:#D0C9F0; --srk-accent:#C4B5FD;
+  --srk-header:#28204C; --srk-sidebar:#17132F; --srk-border:#5B4F8C;
+}
+html[class*="theme-"] body #root,
+html[class*="theme-"] body #root .app-shell-bg,
+html[class*="theme-"] body #root main {
+  background:var(--srk-canvas) !important;
+  color:var(--srk-ink) !important;
+  color-scheme:dark;
+}
+html[class*="theme-"] body #root main :is(.bg-white,.bg-slate-50,.bg-slate-100,[class*="bg-white/"],[class*="bg-slate-"]) {
+  background-color:var(--srk-surface) !important;
+  background-image:none !important;
+  color:var(--srk-ink) !important;
+}
+html[class*="theme-"] body #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"]:not(.srk-dashboard-hero) {
+  background-color:var(--srk-surface-raised) !important;
+  background-image:none !important;
+  color:var(--srk-ink) !important;
+  border-color:var(--srk-border) !important;
+}
+html[class*="theme-"] body #root main :is(input,select,textarea) {
+  background:var(--srk-surface-raised) !important;
+  color:var(--srk-ink) !important;
+  border-color:var(--srk-border) !important;
+}
+html[class*="theme-"] body #root main :is(input,select,textarea)::placeholder {
+  color:var(--srk-muted) !important;
+  opacity:1 !important;
+}
+html[class*="theme-"] body #root main :is(.text-slate-900,.text-slate-800,.text-slate-700) {
+  color:var(--srk-ink) !important;
+}
+html[class*="theme-"] body #root main :is(.text-slate-600,.text-slate-500,.text-slate-400) {
+  color:var(--srk-muted) !important;
+}
+html[class*="theme-"] body #root main table tbody,
+html[class*="theme-"] body #root main table tbody tr,
+html[class*="theme-"] body #root main table tbody tr:nth-child(even) {
+  background:var(--srk-surface) !important;
+  color:var(--srk-ink) !important;
+}
+html[class*="theme-"] body #root main table tbody tr:hover {
+  background:color-mix(in srgb,var(--srk-accent) 22%,var(--srk-surface)) !important;
+}
+html[class*="theme-"] body #root main :is(.bg-blue-50,.bg-sky-50,.bg-indigo-50,.bg-emerald-50,.bg-amber-50,.bg-rose-50) {
+  background-color:color-mix(in srgb,var(--srk-accent) 18%,var(--srk-surface)) !important;
+}
+html[class*="theme-"] body #root :is(svg,svg *) { filter:none !important; opacity:1 !important; }
+html[class*="theme-"] body #root * { text-shadow:none !important; }
+html[class*="theme-"] body #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  box-shadow:0 6px 0 rgba(0,0,0,.34),0 10px 18px rgba(0,0,0,.22) !important;
+}
+html[class*="theme-"] body #root main :is(input,select,textarea) {
+  box-shadow:inset 0 2px 4px rgba(0,0,0,.24) !important;
+}
+html[class*="theme-"] body #root main :is(.backdrop-blur,.backdrop-blur-sm,.backdrop-blur-md,.backdrop-blur-lg) {
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+}
