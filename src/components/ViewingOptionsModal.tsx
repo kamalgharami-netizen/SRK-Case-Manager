@@ -2,8 +2,6 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 import {
   SlidersHorizontal,
-  Sun,
-  Moon,
   LayoutGrid,
   List,
   Type,
@@ -15,9 +13,7 @@ import {
   Eye,
   Maximize2,
   Minimize2,
-  Palette
 } from 'lucide-react';
-import { THEME_OPTIONS } from '../data/themes';
 import { ThemeDropdown } from './ThemeDropdown';
 
 export const ViewingOptionsModal: React.FC = () => {
@@ -88,64 +84,22 @@ export const ViewingOptionsModal: React.FC = () => {
 
         {/* Scrollable Configuration Body */}
         <div className="p-4 sm:p-6 overflow-y-auto space-y-6 text-xs sm:text-sm">
-          {/* SECTION 1: Colour themes are selected from a dropdown list */}
-          <section className="space-y-3 rounded-2xl border border-blue-400/60 bg-[#173B63] p-3 sm:p-4 shadow-[0_7px_0_rgba(4,23,48,.45)]">
+          {/* UI TEMPLATE LIBRARY — layout and deep palette are selected together */}
+          <section className="space-y-3 rounded-2xl border border-sky-500/60 bg-[#102943] p-3 sm:p-4">
             <div>
-              <label className="text-sm font-extrabold text-white flex items-center gap-2">
-                <Palette className="w-4 h-4 text-sky-300" />
-                {language === 'bn' ? 'রঙ ও থিম নির্বাচন করুন' : 'Choose your colour theme'}
+              <label className="flex items-center gap-2 text-sm font-extrabold text-slate-100">
+                <LayoutGrid className="h-4 w-4 text-sky-300" />
+                {language === 'bn' ? 'UI Template লাইব্রেরি' : 'UI Template Library'}
               </label>
-              <p className="mt-1 text-xs font-medium text-blue-100">
+              <p className="mt-1 text-xs font-medium text-slate-300">
                 {language === 'bn'
-                  ? 'ড্রপডাউন তালিকা খুলে পছন্দের রঙ নির্বাচন করুন। নির্বাচন সঙ্গে সঙ্গে পুরো অ্যাপে প্রয়োগ হবে।'
-                  : 'Open the dropdown list and select a colour theme. Your choice is applied across the app immediately.'}
+                  ? '২০টির বেশি সম্পূর্ণ ডিজাইন থেকে বেছে নিন। প্রতিটি Template-এর নিজস্ব ডিপ কালার ও UI বিন্যাস রয়েছে।'
+                  : 'Choose from more than 20 complete designs. Every template includes its own deep colours and interface layout.'}
               </p>
             </div>
-            <div className="max-w-md">
-              <ThemeDropdown variant="full" className="w-full" />
-            </div>
-          </section>
-
-          {/* SECTION 2: UI presentation presets — selectable only through a Settings dropdown */}
-          <section className="space-y-3 rounded-2xl border border-blue-400/60 bg-[#173B63] p-3 sm:p-4 shadow-[0_5px_0_rgba(64,117,174,.35)]">
-            <div>
-              <label htmlFor="srk-ui-style-select" className="flex items-center gap-2 text-sm font-extrabold text-[#F1F6FC]">
-                <LayoutGrid className="h-4 w-4 text-blue-700" />
-                {language === 'bn' ? 'অ্যাপের UI ডিজাইন নির্বাচন করুন' : 'Choose application UI design'}
-              </label>
-              <p className="mt-1 text-xs font-medium text-[#C5D8ED]">
-                {language === 'bn'
-                  ? 'ড্রপডাউন তালিকা থেকে ডিজাইন নির্বাচন করুন। নির্বাচনের সঙ্গে সঙ্গে অ্যাপের উপস্থাপনা বদলাবে; আপনার কেসের তথ্য ও মডিউল অপরিবর্তিত থাকবে।'
-                  : 'Choose a design from the dropdown. The presentation changes immediately; case data and modules remain unchanged.'}
-              </p>
-            </div>
-            <select
-              id="srk-ui-style-select"
-              value={uiStyle}
-              onChange={(event) => setUIStyle(event.target.value as typeof uiStyle)}
-              className="w-full rounded-xl border-2 border-blue-500 bg-[#0D3157] px-4 py-3 text-sm font-extrabold text-white shadow-[0_4px_0_#062344] outline-none transition focus:ring-2 focus:ring-sky-400"
-            >
-              <option value="3d">SRK Reference 3D — Navy + Blue + Raised Cards</option>
-              <option value="modern">Modern Blue Workspace — Clean Panels</option>
-              <option value="glass">Layered Blue Panels — Depth & Transparency</option>
-              <option value="classic">Classic Navy Office — Formal Compact Layout</option>
-              <option value="executive">Executive Legal Suite — Premium Navy & Gold</option>
-              <option value="royal">Royal Blue Chamber — Bright Blue Accents</option>
-              <option value="compact">Compact Case Desk — Dense Working Layout</option>
-              <option value="soft">Soft Blue Workspace — Calm High-Contrast Panels</option>
-              <option value="midnight">Midnight Docket — Dark Slate & Electric Blue</option>
-              <option value="ocean">Ocean Command — Deep Teal & Aqua</option>
-              <option value="emerald">Emerald Chamber — Forest Green & Jade</option>
-              <option value="copper">Copper Heritage — Charcoal & Warm Copper</option>
-            </select>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <div className="rounded-lg border border-blue-300 bg-[#0D3157] p-2 text-center text-[10px] font-bold text-white">NAVY</div>
-              <div className="rounded-lg border border-blue-300 bg-[#1689F8] p-2 text-center text-[10px] font-bold text-white">BLUE</div>
-              <div className="rounded-lg border border-blue-300 bg-[#25496D] p-2 text-center text-[10px] font-bold text-white">PANEL</div>
-              <div className="rounded-lg border border-blue-300 bg-[#EAB84A] p-2 text-center text-[10px] font-bold text-[#382600]">ACCENT</div>
-            </div>
-            <p className="text-[10px] font-semibold text-[#C5D8ED]">
-              {language === 'bn' ? 'ডিজাইন পরিবর্তন সঙ্গে সঙ্গে সংরক্ষিত হবে। রঙের থিম আলাদা Colour Theme dropdown থেকে নির্বাচন করুন।' : 'Design selection is saved automatically. Choose colours separately from the Colour Theme dropdown.'}
+            <ThemeDropdown variant="full" className="w-full" />
+            <p className="text-[10px] font-semibold text-slate-400">
+              {language === 'bn' ? 'আলাদা Colour Theme বা Colour Change অপশন নেই; Template নির্বাচন করলেই রং ও ডিজাইন একসঙ্গে বদলাবে।' : 'There is no separate colour or theme switch; selecting a template changes the layout and palette together.'}
             </p>
           </section>
 
