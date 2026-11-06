@@ -1347,3 +1347,39 @@ html.ui-style-3d #root :is(svg,svg *) {
   filter: none !important;
   opacity: 1 !important;
 }
+
+/* DEFINITIVE NO-WHITE-SHADOW OVERRIDE — remove every inherited white glow, shadow and drop-shadow.
+   3D depth is reintroduced below using dark navy/black shadows only. */
+#root *,
+#root *::before,
+#root *::after {
+  text-shadow: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  box-shadow: none !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-shadow: 0 0 #0000 !important;
+}
+#root :is(button, [role="button"], input, select, textarea, .rounded-xl, .rounded-2xl) {
+  text-shadow: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+/* Keep a restrained 3D profile, with dark shadows only. */
+html.ui-style-3d #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  box-shadow: 0 5px 0 rgba(2, 12, 28, .72), 0 9px 16px rgba(2, 12, 28, .38) !important;
+}
+html.ui-style-3d #root main button:not(:disabled),
+html.ui-style-3d #root main [role="button"]:not([aria-disabled="true"]) {
+  box-shadow: 0 3px 0 rgba(2, 12, 28, .72), 0 5px 10px rgba(2, 12, 28, .34) !important;
+}
+html.ui-style-3d #root main button:not(:disabled):active,
+html.ui-style-3d #root main [role="button"]:active {
+  box-shadow: 0 1px 0 rgba(2, 12, 28, .78) !important;
+}
+/* No white/pale focus glow; use a visible blue outline instead. */
+#root :is(input,select,textarea,button,[role="button"]):focus-visible {
+  outline: 2px solid #398fe8 !important;
+  outline-offset: 2px !important;
+}
