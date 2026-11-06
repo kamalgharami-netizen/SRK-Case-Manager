@@ -63,20 +63,20 @@ export const ThemeDropdown: React.FC<ThemeDropdownProps> = ({ variant = 'compact
   return (
     <div className={`relative ${variant === 'compact' ? 'inline-block' : 'block w-full'} ${className}`}>
       <button type="button" onClick={() => setIsOpen(v => !v)} aria-haspopup="listbox" aria-expanded={isOpen}
-        className={`flex w-full items-center justify-between gap-2 rounded-xl border border-sky-500/70 bg-[#0A2038] px-3 py-3 text-left text-xs font-bold text-slate-100 hover:bg-[#123454] ${variant === 'compact' ? 'max-w-[260px]' : ''}`}>
+        className={`flex w-full items-center justify-between gap-2 rounded-xl border border-sky-500/70 bg-[var(--srk-raised)] px-3 py-3 text-left text-xs font-bold text-slate-100 hover:bg-[var(--srk-header)] ${variant === 'compact' ? 'max-w-[260px]' : ''}`}>
         <span className="flex min-w-0 items-center gap-2"><LayoutTemplate className="h-4 w-4 shrink-0 text-sky-300" /><span className="truncate">{language === 'bn' ? selected.nameBn : selected.name}</span></span>
         <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
-      {isOpen && <div className="absolute right-0 z-[90] mt-2 max-h-[70vh] w-[min(94vw,720px)] overflow-y-auto rounded-2xl border border-sky-500/60 bg-[#07182B] p-3 shadow-[0_18px_40px_rgba(28,68,108,.35)]">
+      {isOpen && <div className="absolute right-0 z-[90] mt-2 max-h-[70vh] w-[min(94vw,720px)] overflow-y-auto rounded-2xl border border-sky-500/60 bg-[var(--srk-surface)] p-3 shadow-[0_18px_40px_rgba(28,68,108,.35)]">
         <div className="mb-3 flex items-center justify-between gap-2 px-1 text-slate-100">
           <span className="text-sm font-extrabold">{language === 'bn' ? 'UI Template নির্বাচন করুন' : 'Choose a UI Template'}</span>
-          <span className="rounded-lg bg-[#183653] px-2 py-1 text-[10px] font-bold text-sky-200">{UI_TEMPLATES.length} templates</span>
+          <span className="rounded-lg bg-[var(--srk-header)] px-2 py-1 text-[10px] font-bold text-sky-200">{UI_TEMPLATES.length} templates</span>
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {UI_TEMPLATES.map((item, index) => {
             const active = selected.id === item.id && selected.palette.theme === item.palette.theme;
             return <button key={item.id} type="button" onClick={() => applyTemplate(item)} aria-pressed={active}
-              className={`flex min-w-0 items-center gap-3 rounded-xl border p-3 text-left transition-colors ${active ? 'border-sky-300 bg-[#183653]' : 'border-[#294663] bg-[#102943] hover:border-sky-500'}`}>
+              className={`flex min-w-0 items-center gap-3 rounded-xl border p-3 text-left transition-colors ${active ? 'border-sky-300 bg-[var(--srk-header)]' : 'border-[#294663] bg-[#102943] hover:border-sky-500'}`}>
               <span className="flex h-12 w-14 shrink-0 flex-col justify-between overflow-hidden rounded-lg border border-slate-500/50 p-1" style={{ backgroundColor: item.palette.bg }}>
                 <span className="h-2 w-full rounded-sm" style={{ backgroundColor: item.palette.accent }} />
                 <span className="grid grid-cols-2 gap-1"><i className="h-3 rounded-sm" style={{ backgroundColor: item.palette.panel }} /><i className="h-3 rounded-sm" style={{ backgroundColor: item.palette.accent, opacity: .75 }} /></span>
