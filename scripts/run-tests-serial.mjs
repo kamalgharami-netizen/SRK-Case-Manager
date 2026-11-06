@@ -25,6 +25,7 @@ const testFiles = [
   'src/services/androidNativeSyncStateMigration.test.ts',
   'src/services/syncStateStorageAdapter.test.ts',
   'src/services/databaseMigrations.test.ts',
+  'src/utils/companyDataSafety.test.ts',
   'src/utils/localDate.test.ts',
 ];
 
