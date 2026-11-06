@@ -107,13 +107,13 @@ export const ViewingOptionsModal: React.FC = () => {
           </section>
 
           {/* SECTION 2: UI presentation presets — selectable only through a Settings dropdown */}
-          <section className="space-y-3 rounded-2xl border border-blue-300 bg-[#DCEBFA] p-3 sm:p-4 shadow-[0_5px_0_rgba(64,117,174,.35)]">
+          <section className="space-y-3 rounded-2xl border border-blue-400/60 bg-[#173B63] p-3 sm:p-4 shadow-[0_5px_0_rgba(64,117,174,.35)]">
             <div>
-              <label htmlFor="srk-ui-style-select" className="flex items-center gap-2 text-sm font-extrabold text-[#102F52]">
+              <label htmlFor="srk-ui-style-select" className="flex items-center gap-2 text-sm font-extrabold text-[#F1F6FC]">
                 <LayoutGrid className="h-4 w-4 text-blue-700" />
                 {language === 'bn' ? 'অ্যাপের UI ডিজাইন নির্বাচন করুন' : 'Choose application UI design'}
               </label>
-              <p className="mt-1 text-xs font-medium text-[#365879]">
+              <p className="mt-1 text-xs font-medium text-[#C5D8ED]">
                 {language === 'bn'
                   ? 'ড্রপডাউন তালিকা থেকে ডিজাইন নির্বাচন করুন। নির্বাচনের সঙ্গে সঙ্গে অ্যাপের উপস্থাপনা বদলাবে; আপনার কেসের তথ্য ও মডিউল অপরিবর্তিত থাকবে।'
                   : 'Choose a design from the dropdown. The presentation changes immediately; case data and modules remain unchanged.'}
@@ -144,7 +144,7 @@ export const ViewingOptionsModal: React.FC = () => {
               <div className="rounded-lg border border-blue-300 bg-[#DCEBFA] p-2 text-center text-[10px] font-bold text-[#102F52]">PANEL</div>
               <div className="rounded-lg border border-blue-300 bg-[#EAB84A] p-2 text-center text-[10px] font-bold text-[#382600]">ACCENT</div>
             </div>
-            <p className="text-[10px] font-semibold text-[#25496D]">
+            <p className="text-[10px] font-semibold text-[#C5D8ED]">
               {language === 'bn' ? 'ডিজাইন পরিবর্তন সঙ্গে সঙ্গে সংরক্ষিত হবে। রঙের থিম আলাদা Colour Theme dropdown থেকে নির্বাচন করুন।' : 'Design selection is saved automatically. Choose colours separately from the Colour Theme dropdown.'}
             </p>
           </section>
