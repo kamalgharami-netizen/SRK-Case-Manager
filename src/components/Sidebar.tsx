@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   Scale,
@@ -78,8 +78,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
     appVersion
   } = useApp();
 
-  const [myCasesExpanded, setMyCasesExpanded] = useState(false);
-  const [reportsExpanded, setReportsExpanded] = useState(false);
+  const [myCasesExpanded, setMyCasesExpanded] = useState(() => currentPage.startsWith('case-') && currentPage !== 'case-rorpi' && currentPage !== 'case-rti');
+  const [reportsExpanded, setReportsExpanded] = useState(() => ['financial-reports', 'causelist', 'accounts', 'client-ledger', 'cash-bank', 'sharecalculator'].includes(currentPage));
+
+  // Keep the active section expanded when navigation changes from another page.
+  useEffect(() => {
+    if (currentPage.startsWith('case-') && currentPage !== 'case-rorpi' && currentPage !== 'case-rti') {
+      setMyCasesExpanded(true);
+    }
+    if (['financial-reports', 'causelist', 'accounts', 'client-ledger', 'cash-bank', 'sharecalculator'].includes(currentPage)) {
+      setReportsExpanded(true);
+    }
+  }, [currentPage]);
 
   const getCaseCount = (type: CaseType) => {
     return activeCompany?.cases.filter(c => c.type === type).length || 0;
@@ -361,7 +371,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div>
             <div
               className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-semibold transition-all cursor-pointer ${
-                currentPage === 'financial-reports' || currentPage === 'causelist' || currentPage === 'accounts' || currentPage === 'client-ledger'
+                ['financial-reports', 'causelist', 'accounts', 'client-ledger', 'cash-bank', 'sharecalculator'].includes(currentPage)
                   ? 'bg-[#1976D2] text-white shadow-sm font-bold'
                   : 'text-[#E2EDF8] hover:text-white hover:bg-white/10'
               }`}
