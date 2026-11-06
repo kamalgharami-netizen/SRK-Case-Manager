@@ -30,15 +30,15 @@ const TEMPLATE_LAYOUTS = [
 ] as const;
 
 const PALETTES = [
-  { theme: 'navy', name: 'Deep Blue', nameBn: 'গাঢ় নীল', bg: '#081A2E', panel: '#193653', accent: '#48A4FF' },
-  { theme: 'white', name: 'Dark Blue', nameBn: 'গাঢ় নীলচে', bg: '#0B1E35', panel: '#1B3858', accent: '#43A5FF' },
-  { theme: 'light', name: 'Charcoal Grey', nameBn: 'গাঢ় ধূসর', bg: '#17283D', panel: '#294562', accent: '#82B7FF' },
-  { theme: 'mint', name: 'Dark Green', nameBn: 'গাঢ় সবুজ', bg: '#0B2B23', panel: '#195141', accent: '#55D69B' },
-  { theme: 'azure', name: 'Ocean Blue', nameBn: 'সমুদ্র নীল', bg: '#0A263D', panel: '#194968', accent: '#48B9F0' },
-  { theme: 'charcoal', name: 'Slate Grey', nameBn: 'স্লেট ধূসর', bg: '#171D26', panel: '#303C4B', accent: '#B8D0F0' },
-  { theme: 'emerald', name: 'Forest Green', nameBn: 'বন সবুজ', bg: '#0B2B23', panel: '#1D5540', accent: '#72E2B4' },
-  { theme: 'indigo', name: 'Deep Purple', nameBn: 'গাঢ় বেগুনি', bg: '#19162F', panel: '#393064', accent: '#C4B5FD' },
-  { theme: 'sepia', name: 'Dark Brown', nameBn: 'গাঢ় বাদামি', bg: '#261D16', panel: '#493526', accent: '#D6A85D' }
+  { theme: 'navy', name: 'Deep Blue', nameBn: 'গাঢ় নীল', bg: '#28577F', panel: '#3D79A2', accent: '#86CCFF' },
+  { theme: 'white', name: 'Sapphire Blue', nameBn: 'স্যাফায়ার নীল', bg: '#315F89', panel: '#477FA7', accent: '#A3D7FF' },
+  { theme: 'light', name: 'Steel Grey', nameBn: 'স্টিল ধূসর', bg: '#526A83', panel: '#718DA7', accent: '#C0DFFF' },
+  { theme: 'mint', name: 'Jade Green', nameBn: 'জেড সবুজ', bg: '#286B55', panel: '#408E72', accent: '#9BE8C6' },
+  { theme: 'azure', name: 'Ocean Blue', nameBn: 'সমুদ্র নীল', bg: '#28677F', panel: '#408EA7', accent: '#9BE5F4' },
+  { theme: 'charcoal', name: 'Slate Grey', nameBn: 'স্লেট ধূসর', bg: '#596B7D', panel: '#788EA1', accent: '#D0E0EC' },
+  { theme: 'emerald', name: 'Forest Green', nameBn: 'বন সবুজ', bg: '#286B55', panel: '#408E72', accent: '#9BE8C6' },
+  { theme: 'indigo', name: 'Deep Purple', nameBn: 'গাঢ় বেগুনি', bg: '#514B83', panel: '#716AA8', accent: '#D0C7FF' },
+  { theme: 'sepia', name: 'Dark Brown', nameBn: 'গাঢ় বাদামি', bg: '#76563B', panel: '#9A7854', accent: '#F0CD91' }
 ] as const;
 
 // 24 distinct layout templates, each paired with a deep, high-contrast palette.
@@ -67,7 +67,7 @@ export const ThemeDropdown: React.FC<ThemeDropdownProps> = ({ variant = 'compact
         <span className="flex min-w-0 items-center gap-2"><LayoutTemplate className="h-4 w-4 shrink-0 text-sky-300" /><span className="truncate">{language === 'bn' ? selected.nameBn : selected.name}</span></span>
         <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
-      {isOpen && <div className="absolute right-0 z-[90] mt-2 max-h-[70vh] w-[min(94vw,720px)] overflow-y-auto rounded-2xl border border-sky-500/60 bg-[#07182B] p-3 shadow-[0_18px_40px_rgba(0,0,0,.7)]">
+      {isOpen && <div className="absolute right-0 z-[90] mt-2 max-h-[70vh] w-[min(94vw,720px)] overflow-y-auto rounded-2xl border border-sky-500/60 bg-[#07182B] p-3 shadow-[0_18px_40px_rgba(28,68,108,.35)]">
         <div className="mb-3 flex items-center justify-between gap-2 px-1 text-slate-100">
           <span className="text-sm font-extrabold">{language === 'bn' ? 'UI Template নির্বাচন করুন' : 'Choose a UI Template'}</span>
           <span className="rounded-lg bg-[#183653] px-2 py-1 text-[10px] font-bold text-sky-200">{UI_TEMPLATES.length} templates</span>
