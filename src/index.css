@@ -1241,3 +1241,71 @@ html[class*="theme-"] body #root main :is(.backdrop-blur,.backdrop-blur-sm,.back
 
 
 html[class*="theme-"] { color-scheme: dark !important; }
+
+
+/* FINAL NO-WHITE DISPLAY RULE — replace white glare throughout the app.
+   Uses dark navy surfaces and cool blue-grey foregrounds; no pure-white UI. */
+:root {
+  --srk-no-white-bg: #0A1B30;
+  --srk-no-white-panel: #142B45;
+  --srk-no-white-raised: #1B3654;
+  --srk-no-white-text: #D7E6F7;
+  --srk-no-white-muted: #AFC4DC;
+  --srk-no-white-border: #355575;
+}
+html, html body, body #root {
+  background: var(--srk-no-white-bg) !important;
+  color: var(--srk-no-white-text) !important;
+  color-scheme: dark !important;
+}
+#root .app-shell-bg, #root main {
+  background: var(--srk-no-white-bg) !important;
+  color: var(--srk-no-white-text) !important;
+}
+#root :is(.bg-white,.bg-slate-50,.bg-slate-100,.bg-gray-50,.bg-gray-100,
+  [class*="bg-white/"],[class*="bg-slate-50/"],[class*="bg-gray-50/"]) {
+  background-color: var(--srk-no-white-panel) !important;
+  background-image: none !important;
+}
+#root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  background-color: var(--srk-no-white-raised);
+  border-color: var(--srk-no-white-border) !important;
+}
+#root :is(input,select,textarea),
+#root main :is(input,select,textarea) {
+  background-color: var(--srk-no-white-raised) !important;
+  color: var(--srk-no-white-text) !important;
+  border-color: var(--srk-no-white-border) !important;
+  color-scheme: dark !important;
+}
+#root :is(input,select,textarea)::placeholder {
+  color: var(--srk-no-white-muted) !important;
+  opacity: 1 !important;
+}
+/* Replace pure-white foregrounds, borders and inline white styles. */
+#root .text-white,
+#root [style*="color: rgb(255, 255, 255)"],
+#root [style*="color: #fff"],
+#root [style*="color: white"] {
+  color: var(--srk-no-white-text) !important;
+}
+#root .border-white,
+#root [class*="border-white/"],
+#root [style*="border-color: rgb(255, 255, 255)"] {
+  border-color: var(--srk-no-white-border) !important;
+}
+#root [style*="background-color: rgb(255, 255, 255)"],
+#root [style*="background-color: #fff"],
+#root [style*="background: rgb(255, 255, 255)"],
+#root [style*="background: #fff"] {
+  background: var(--srk-no-white-panel) !important;
+  background-color: var(--srk-no-white-panel) !important;
+}
+#root table thead, #root table tbody, #root table tbody tr {
+  background-color: var(--srk-no-white-panel) !important;
+  color: var(--srk-no-white-text) !important;
+}
+#root table th, #root table td {
+  border-color: var(--srk-no-white-border) !important;
+}
+#root * { text-shadow: none !important; }
