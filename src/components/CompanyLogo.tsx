@@ -35,12 +35,12 @@ export const BADGE_OPTIONS: { id: keyof typeof BADGE_ICONS; label: string; benga
 ];
 
 export const COLOR_OPTIONS: { id: string; label: string; bg: string; text: string }[] = [
-  { id: '#2563EB', label: 'Royal Blue', bg: 'from-blue-600 to-indigo-700', text: 'text-white' },
-  { id: '#4F46E5', label: 'Regal Indigo', bg: 'from-indigo-600 to-purple-700', text: 'text-white' },
-  { id: '#D97706', label: 'Golden Amber', bg: 'from-amber-500 to-amber-700', text: 'text-slate-950' },
-  { id: '#059669', label: 'Emerald Green', bg: 'from-emerald-600 to-teal-800', text: 'text-white' },
-  { id: '#DC2626', label: 'Crimson Red', bg: 'from-red-600 to-rose-800', text: 'text-white' },
-  { id: '#0F172A', label: 'Executive Slate', bg: 'from-slate-800 to-slate-950', text: 'text-amber-400' }
+  { id: '#1769E0', label: 'Bright Blue', bg: 'from-blue-600 to-sky-500', text: 'text-yellow-200' },
+  { id: '#7046D8', label: 'Violet Purple', bg: 'from-violet-600 to-purple-500', text: 'text-yellow-200' },
+  { id: '#D96A13', label: 'Saffron Orange', bg: 'from-orange-600 to-amber-500', text: 'text-purple-950' },
+  { id: '#159B55', label: 'Bright Green', bg: 'from-green-600 to-emerald-500', text: 'text-yellow-100' },
+  { id: '#D92D45', label: 'Crimson Red', bg: 'from-red-600 to-rose-500', text: 'text-yellow-100' },
+  { id: '#D83291', label: 'Bright Pink', bg: 'from-pink-600 to-fuchsia-500', text: 'text-yellow-100' }
 ];
 
 export const CompanyLogo: React.FC<CompanyLogoProps> = ({
@@ -86,7 +86,7 @@ export const CompanyLogo: React.FC<CompanyLogoProps> = ({
   return (
     <div
       className={`relative ${sizeMap.box} ${sizeMap.radius} bg-gradient-to-tr ${matchedColor.bg} flex items-center justify-center shrink-0 shadow-md ${
-        showBorder ? 'ring-2 ring-white/20 shadow-blue-600/20' : ''
+        showBorder ? 'ring-2 ring-yellow-300/50 shadow-blue-600/20' : ''
       } ${className}`}
       title={company?.name || 'Chamber Logo'}
     >
