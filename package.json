@@ -14,14 +14,14 @@
     "lint": "tsc --noEmit",
     "dist:win": "npm run build && electron-builder --win nsis --publish never",
     "cap:sync": "cap sync",
-    "cap:android": "cap open android",
-    "test": "node scripts/run-tests-serial.mjs"
+    "cap:android": "cap open android"
   },
   "dependencies": {
     "@capacitor/android": "^7.0.0",
     "@capacitor/core": "^7.0.0",
     "@google/genai": "^2.4.0",
     "@tailwindcss/vite": "^4.3.3",
+    "@types/ws": "^8.18.2",
     "@vitejs/plugin-react": "^6.1.1",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
@@ -31,24 +31,23 @@
     "motion": "^12.23.24",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
+    "rolldown": "~1.2.14",
     "vite": "^8.3.0",
-    "@aparajita/capacitor-secure-storage": "^7.1.6",
-    "@srk/capacitor-google-drive-auth": "file:./capacitor-google-drive-auth",
-    "@srk/capacitor-sync-state": "file:./capacitor-sync-state"
+    "ws": "^8.22.1"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.0.0",
+    "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "@types/express": "^4.17.21",
     "autoprefixer": "^10.4.21",
+    "electron": "^35.7.5",
+    "electron-builder": "^26.15.3",
     "esbuild": "^0.28.0",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.21.0",
-    "typescript": "^7.0.2",
-    "electron": "^35.7.5",
-    "electron-builder": "^26.15.3"
+    "typescript": "^7.0.2"
   },
   "build": {
     "appId": "in.srk.casemanage",
@@ -60,7 +59,6 @@
       "dist/**/*",
       "main.cjs",
       "preload.cjs",
-      "googleOAuthLoopback.cjs",
       "package.json"
     ],
     "extraMetadata": {

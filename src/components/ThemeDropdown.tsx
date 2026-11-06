@@ -1,78 +1,169 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { Check, ChevronDown, LayoutTemplate } from 'lucide-react';
+import { THEME_OPTIONS, ThemeOption } from '../data/themes';
+import { ChevronDown, Check, Palette, Sun } from 'lucide-react';
 
-const TEMPLATE_LAYOUTS = [
-  { style: '3d', name: 'Reference 3D', nameBn: 'রেফারেন্স 3D', detail: 'Raised dashboard cards' },
-  { style: 'modern', name: 'Modern Workspace', nameBn: 'মডার্ন ওয়ার্কস্পেস', detail: 'Clean modular panels' },
-  { style: 'glass', name: 'Layered Command', nameBn: 'লেয়ারড কমান্ড', detail: 'Layered translucent panels' },
-  { style: 'classic', name: 'Classic Chamber', nameBn: 'ক্লাসিক চেম্বার', detail: 'Formal office arrangement' },
-  { style: 'executive', name: 'Executive Suite', nameBn: 'এক্সিকিউটিভ স্যুট', detail: 'Premium executive layout' },
-  { style: 'royal', name: 'Royal Chamber', nameBn: 'রয়্যাল চেম্বার', detail: 'Wide royal navigation' },
-  { style: 'compact', name: 'Compact Case Desk', nameBn: 'কমপ্যাক্ট কেস ডেস্ক', detail: 'Dense work-first layout' },
-  { style: 'soft', name: 'Balanced Workspace', nameBn: 'ব্যালান্সড ওয়ার্কস্পেস', detail: 'Spacious rounded panels' },
-  { style: 'midnight', name: 'Midnight Docket', nameBn: 'মিডনাইট ডকেট', detail: 'Narrow navigation and docket rows' },
-  { style: 'ocean', name: 'Ocean Command', nameBn: 'ওশান কমান্ড', detail: 'Rounded command surfaces' },
-  { style: 'emerald', name: 'Emerald Chamber', nameBn: 'এমেরাল্ড চেম্বার', detail: 'Balanced green workspace' },
-  { style: 'copper', name: 'Copper Heritage', nameBn: 'কপার হেরিটেজ', detail: 'Formal framed panels' },
-  { style: 'architect', name: 'Architect Desk', nameBn: 'আর্কিটেক্ট ডেস্ক', detail: 'Split navigation with wide workspace' },
-  { style: 'dashboard', name: 'Command Dashboard', nameBn: 'কমান্ড ড্যাশবোর্ড', detail: 'Large metric-first dashboard' },
-  { style: 'ribbon', name: 'Ribbon Workspace', nameBn: 'রিবন ওয়ার্কস্পেস', detail: 'Top action ribbon and grouped tools' },
-  { style: 'split', name: 'Split Panel Office', nameBn: 'স্প্লিট প্যানেল অফিস', detail: 'Two-column working canvas' },
-  { style: 'docket', name: 'Court Docket', nameBn: 'কোর্ট ডকেট', detail: 'Hearing-list focused layout' },
-  { style: 'editorial', name: 'Editorial Legal', nameBn: 'এডিটোরিয়াল লিগ্যাল', detail: 'Typography-led reading layout' },
-  { style: 'command', name: 'Command Centre', nameBn: 'কমান্ড সেন্টার', detail: 'Compact command tiles and shortcuts' },
-  { style: 'sidebar', name: 'Wide Sidebar Suite', nameBn: 'ওয়াইড সাইডবার স্যুট', detail: 'Wide persistent navigation rail' },
-  { style: 'matrix', name: 'Matrix Workspace', nameBn: 'ম্যাট্রিক্স ওয়ার্কস্পেস', detail: 'Tight multi-column information grid' },
-  { style: 'dossier', name: 'Case Dossier', nameBn: 'কেস ডসিয়ার', detail: 'Document dossier and record panels' },
-  { style: 'ledger', name: 'Land Ledger', nameBn: 'ল্যান্ড লেজার', detail: 'Ledger-style tables and rows' },
-  { style: 'minimal', name: 'Minimal Chamber', nameBn: 'মিনিমাল চেম্বার', detail: 'Quiet flat surfaces and clean spacing' }
-] as const;
+interface ThemeDropdownProps {
+  variant?: 'compact' | 'full' | 'sidebar';
+  className?: string;
+}
 
-interface ThemeDropdownProps { variant?: 'compact' | 'full' | 'sidebar'; className?: string; }
-
-export const ThemeDropdown: React.FC<ThemeDropdownProps> = ({ variant = 'compact', className = '' }) => {
-  const { uiStyle, setUIStyle, language } = useApp();
+export const ThemeDropdown: React.FC<ThemeDropdownProps> = ({
+  variant = 'compact',
+  className = ''
+}) => {
+  const { theme, setTheme, language } = useApp();
   const [isOpen, setIsOpen] = useState(false);
-  const selected = TEMPLATE_LAYOUTS.find(item => item.style === uiStyle) || TEMPLATE_LAYOUTS[0];
-  const applyTemplate = (item: typeof TEMPLATE_LAYOUTS[number]) => {
-    // Layout selection must never alter the user's currently selected colour theme.
-    setUIStyle(item.style as typeof uiStyle);
-    setIsOpen(false);
-  };
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const activeTheme = THEME_OPTIONS.find(t => t.id === theme) || THEME_OPTIONS[0];
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
+  const lightThemes = THEME_OPTIONS;
 
   return (
-    <div className={`relative ${variant === 'compact' ? 'inline-block' : 'block w-full'} ${className}`}>
-      <button type="button" onClick={() => setIsOpen(v => !v)} aria-haspopup="listbox" aria-expanded={isOpen}
-        className={`flex w-full items-center justify-between gap-2 rounded-xl border border-[#DCE7F3] bg-white px-3 py-3 text-left text-xs font-bold text-[#0A2540] hover:bg-[#F6FAFD] ${variant === 'compact' ? 'max-w-[260px]' : ''}`}>
-        <span className="flex min-w-0 items-center gap-2"><LayoutTemplate className="h-4 w-4 shrink-0 text-[#1976D2]" /><span className="truncate">{language === 'bn' ? selected.nameBn : selected.name}</span></span>
-        <ChevronDown className={`h-4 w-4 shrink-0 text-[#5A6B82] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
-      {isOpen && <div className="absolute right-0 z-[90] mt-2 max-h-[70vh] w-[min(94vw,720px)] overflow-y-auto rounded-2xl border border-[#DCE7F3] bg-white p-3 shadow-[0_18px_40px_rgba(8,50,101,.18)]">
-        <div className="mb-3 flex items-center justify-between gap-2 px-1 text-[#0A2540]">
-          <span className="text-sm font-extrabold">{language === 'bn' ? 'UI Template নির্বাচন করুন' : 'Choose a UI Template'}</span>
-          <span className="rounded-lg bg-[#EBF3FB] px-2 py-1 text-[10px] font-bold text-[#1976D2]">{TEMPLATE_LAYOUTS.length} templates</span>
+    <div ref={dropdownRef} className={`relative inline-block text-left ${className}`}>
+      {/* Dropdown Trigger Button */}
+      {variant === 'sidebar' ? (
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-haspopup="true"
+          aria-expanded={isOpen}
+          className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-800 hover:border-blue-500 transition-all cursor-pointer shadow-2xs"
+          title="Choose Light Theme"
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <span
+              className="w-3.5 h-3.5 rounded-full shrink-0 border border-slate-300 shadow-2xs"
+              style={{ backgroundColor: activeTheme.bgHex }}
+            />
+            <span className="truncate font-bold">
+              {language === 'bn' ? activeTheme.nameBn : activeTheme.name}
+            </span>
+          </div>
+          <ChevronDown
+            className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ${
+              isOpen ? 'rotate-180 text-blue-600' : ''
+            }`}
+          />
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-haspopup="true"
+          aria-expanded={isOpen}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0 hover:border-blue-400"
+          title={`Active Theme: ${activeTheme.name} (${activeTheme.tagline}).`}
+        >
+          <span
+            className="w-3 h-3 rounded-full shrink-0 border border-slate-400 shadow-2xs"
+            style={{ backgroundColor: activeTheme.bgHex }}
+          />
+          <span className="hidden md:inline truncate max-w-[110px]">
+            {language === 'bn' ? activeTheme.nameBn : activeTheme.name}
+          </span>
+          <span className="md:hidden">Theme</span>
+          <ChevronDown
+            className={`w-3 h-3 text-slate-400 transition-transform duration-200 shrink-0 ${
+              isOpen ? 'rotate-180 text-blue-600' : ''
+            }`}
+          />
+        </button>
+      )}
+
+      {/* Dropdown Menu Popover */}
+      {isOpen && (
+        <div
+          className={`absolute right-0 z-50 mt-1.5 w-72 sm:w-80 rounded-xl bg-white border border-slate-200 shadow-2xl overflow-hidden focus:outline-none animate-in fade-in zoom-in-95 duration-100 ${
+            variant === 'sidebar' ? 'left-0 right-auto sm:left-0 sm:right-auto bottom-full mb-2' : ''
+          }`}
+        >
+          {/* Header */}
+          <div className="p-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+              <Palette className="w-3.5 h-3.5 text-blue-600" />
+              <span>{language === 'bn' ? 'থিম নির্বাচন (Light Themes)' : 'Courtroom Light Themes'}</span>
+            </div>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">
+              {THEME_OPTIONS.length} Themes
+            </span>
+          </div>
+
+          <div className="max-h-80 overflow-y-auto p-1.5 space-y-1">
+            {lightThemes.map(item => {
+              const isSelected = theme === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    setTheme(item.id);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-blue-50 text-blue-900 font-bold border border-blue-200 shadow-2xs'
+                      : 'text-slate-700 hover:bg-slate-100 border border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span
+                      className="w-4 h-4 rounded-full shrink-0 border border-slate-300 shadow-2xs"
+                      style={{ backgroundColor: item.bgHex }}
+                    />
+                    <div className="min-w-0">
+                      <div className="text-xs truncate flex items-center gap-1">
+                        <span>{language === 'bn' ? item.nameBn : item.name}</span>
+                        {item.id === 'white' && (
+                          <span className="text-[9px] px-1 rounded bg-slate-100 text-slate-600 font-mono">
+                            #FFF
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-slate-500 truncate">
+                        {item.tagline}
+                      </div>
+                    </div>
+                  </div>
+
+                  {isSelected && (
+                    <Check className="w-4 h-4 text-blue-600 shrink-0 stroke-[2.5]" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {TEMPLATE_LAYOUTS.map((item, index) => {
-            const active = selected.style === item.style;
-            return <button key={item.style} type="button" onClick={() => applyTemplate(item)} aria-pressed={active}
-              className={`flex min-w-0 items-center gap-3 rounded-xl border p-3 text-left transition-colors ${active ? 'border-[#1976D2] bg-[#EBF3FB]' : 'border-[#DCE7F3] bg-white hover:border-[#1976D2] hover:bg-[#F6FAFD]'}`}>
-              <span className="flex h-12 w-14 shrink-0 flex-col justify-between overflow-hidden rounded-lg border border-[#DCE7F3] bg-[#EBF3FB] p-1">
-                <span className="h-2 w-full rounded-sm bg-[#083265]" />
-                <span className="grid grid-cols-2 gap-1"><i className={`h-3 rounded-sm ${index % 3 === 0 ? 'bg-[#10B981]' : 'bg-[#1976D2]'}`} /><i className="h-3 rounded-sm bg-[#F97316]" /></span>
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-xs font-extrabold text-[#0A2540]">{language === 'bn' ? item.nameBn : item.name}</span>
-                <span className="mt-1 block truncate text-[10px] text-[#5A6B82]">{item.detail}</span>
-                <span className="mt-1 block truncate text-[10px] font-semibold text-[#1976D2]">{language === 'bn' ? 'বর্তমান রং বজায় থাকবে' : 'Keeps current colours'}</span>
-              </span>
-              {active && <Check className="h-4 w-4 shrink-0 text-[#1976D2]" />}
-            </button>;
-          })}
-        </div>
-        <p className="mt-3 border-t border-[#DCE7F3] pt-3 text-[10px] text-[#5A6B82]">{language === 'bn' ? 'Template নির্বাচন করলে শুধু UI বিন্যাস নির্বাচন হবে; বর্তমান Colour Combination পরিবর্তন হবে না।' : 'Selecting a template changes the layout preference only; your current colour combination remains unchanged.'}</p>
-      </div>}
+      )}
     </div>
   );
 };

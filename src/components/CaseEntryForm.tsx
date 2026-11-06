@@ -1,4 +1,3 @@
-import { getLocalDateInputValue } from '../utils/localDate';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import {
@@ -326,7 +325,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       : FORUMS_BY_TYPE[type][0] || ''
   );
   const [filingDate, setFilingDate] = useState(
-    editingCase?.filingDate || getLocalDateInputValue()
+    editingCase?.filingDate || new Date().toISOString().slice(0, 10)
   );
   const [nextDate, setNextDate] = useState(editingCase?.nextDate || '');
 
@@ -786,16 +785,15 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   const addLandSchedule = () => {
     setLandSchedules(prev => {
       const parentDistrict = prev[0]?.district || district || '';
-      // Never infer a block or mouza for a new schedule row. The user must select
-      // the district and its block again; this prevents accidental cross-linking.
+      const parentBlock = prev[0]?.block || (parentDistrict && wbDistricts[parentDistrict] ? wbDistricts[parentDistrict][0] : '') || '';
       return [
         ...prev,
         {
           id: 'ls_' + Date.now(),
           district: parentDistrict,
-          block: '',
-          mouza: '',
-          jl: '',
+          block: parentBlock,
+          mouza: prev[0]?.mouza || '',
+          jl: prev[0]?.jl || '',
           khatian: '',
           dag: '',
           area: '',
@@ -819,14 +817,8 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       prev.map((s, i) => {
         if (i !== idx) return s;
         if (field === 'district') {
-          // A district change invalidates all dependent administrative selections.
-          return { ...s, district: val, block: '', mouza: '', jl: '' };
-        }
-        if (field === 'block') {
-          // A block change invalidates the mouza and its JL reference.
-          const allowedBlocks = wbDistricts[s.district] || [];
-          if (val && !allowedBlocks.includes(val)) return s;
-          return { ...s, block: val, mouza: '', jl: '' };
+          const blocks = wbDistricts[val] || [];
+          return { ...s, district: val, block: blocks[0] || '' };
         }
         return { ...s, [field]: finalVal };
       })
@@ -1411,7 +1403,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
   const isEditingExisting = Boolean(activeEditingCase || editingCase);
 
   return (
-    <div className="space-y-6 w-full max-w-6xl mx-auto px-1 sm:px-2 pb-20">
+    <div className="space-y-6 max-w-5xl mx-auto pb-16">
       {/* Chain Deed Modal (Requirement 20) */}
       {activeChainDeedModalCase && (
         <ChainDeedModal
@@ -1485,18 +1477,18 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       )}
 
       {/* Top Header & Actions Bar */}
-      <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 overflow-hidden rounded-2xl border border-blue-200 dark:border-blue-900 bg-gradient-to-r from-white via-blue-50/80 to-indigo-50/70 dark:from-slate-950 dark:via-blue-950/40 dark:to-indigo-950/30 p-3 sm:p-4 shadow-sm">
-        <div className="flex min-w-0 items-start sm:items-center gap-3">
+      <div className="flex flex-wrap items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4 gap-3">
+        <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="min-h-10 min-w-10 p-2 rounded-xl border border-blue-200 dark:border-blue-800 bg-white/80 dark:bg-slate-900/80 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors cursor-pointer"
+            className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             title="Cancel and Go Back"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="min-w-0 break-words text-base sm:text-lg font-black tracking-wide text-slate-900 dark:text-slate-100 uppercase leading-snug">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-black tracking-wide text-slate-900 dark:text-slate-100 uppercase">
                 {(() => {
                   const label =
                     type === 'mutation' ? 'MUTATION CASE ENTRY FORM' :
@@ -1526,14 +1518,14 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
         </div>
 
         {/* Action Buttons: Save, Update, Cancel */}
-        <div className="flex w-full sm:w-auto flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
 
           {/* Requirement 18: Update Button */}
           {isEditingExisting && (
             <button
               type="button"
               onClick={() => handleSaveOrUpdate(true, false)}
-              className="min-h-10 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>Update {isMisc ? 'Misc Case' : isMutation ? 'Mutation' : isCertCopy ? 'Certified Copy' : isRorPi ? 'ROR / PI Entry' : 'Case'}</span>
@@ -1544,7 +1536,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
           <button
             type="button"
             onClick={() => handleSaveOrUpdate(false, false)}
-            className="min-h-10 px-4 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold shadow-md flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            className="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <Save className="w-4 h-4" />
             <span>Save {isMisc ? 'Misc Case' : isMutation ? 'Case File' : isCertCopy ? 'Certified Copy' : isRorPi ? 'ROR / PI Entry' : 'Case'}</span>
@@ -1554,7 +1546,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
           <button
             type="button"
             onClick={onBack}
-            className="min-h-10 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold cursor-pointer"
+            className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold cursor-pointer"
           >
             Cancel
           </button>
@@ -1562,7 +1554,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       </div>
 
       {/* Search Box for updating existing data through deed no, app no / docket no, applicant name, case no */}
-      <div className="p-3 sm:p-4 rounded-xl border border-blue-200 dark:border-blue-800/80 bg-blue-50/50 dark:bg-blue-950/30 space-y-2 relative">
+      <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-800/80 bg-blue-50/50 dark:bg-blue-950/30 space-y-2 relative">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <label className="text-xs font-bold text-blue-900 dark:text-blue-200 uppercase tracking-wide flex items-center gap-1.5">
             <Search className="w-4 h-4 text-blue-600" />
@@ -1742,7 +1734,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       )}
 
       {/* 1. Core Case Details */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 sm:p-5 shadow-sm space-y-4">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
         <div className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 border-b border-slate-100 dark:border-slate-800 pb-2 flex items-center justify-between">
           <span>1. Primary Case Registry Details</span>
           <span className="text-[11px] font-normal text-slate-400">Fields marked * are mandatory</span>
@@ -2623,7 +2615,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
 
       {/* Requirement 12: 2. Land Schedule(s) with + option to add more schedule (Optional for RTI, Active for ROR/PI, Removed for Certified Copy) */}
       {!isCertCopy && (
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 sm:p-5 shadow-sm space-y-4">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 flex-wrap gap-2">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
@@ -2739,7 +2731,6 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                         placeholder="36"
                         className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono font-bold uppercase"
                       />
-                      <p className="mt-1 text-[10px] text-slate-500">Enter the official J.L. number, not the Mouza list serial. Keep leading zeros.</p>
                     </div>
                   </div>
 
@@ -2884,7 +2875,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5">
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
                         J.L. No (জে.এল)
@@ -2896,7 +2887,6 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
                         placeholder="36"
                         className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono uppercase"
                       />
-                      <p className="mt-1 text-[10px] text-slate-500">Enter the official J.L. number, not the Mouza list serial. Keep leading zeros.</p>
                     </div>
 
                     <div>
@@ -3020,7 +3010,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
 
       {/* 4. Complete Chronological Chain of Title Builder (Removed for RTI and First Appeal entry forms) */}
       {!isChainDeedHidden && (
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 sm:p-5 shadow-sm space-y-4">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 gap-2">
           <div>
             <div className="flex items-center gap-2">

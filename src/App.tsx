@@ -21,7 +21,6 @@ import { CashBankRegister } from './components/CashBankRegister';
 import { FinancialReports } from './components/FinancialReports';
 import { CaseDetailModal } from './components/CaseDetailModal';
 import { BackupModal } from './components/BackupModal';
-import { runGoogleDriveSyncCycleAsync } from './services/googleDriveSyncRunner';
 import { ViewingOptionsModal } from './components/ViewingOptionsModal';
 import { ChainDeedModal } from './components/ChainDeedModal';
 import { BackupPathModal } from './components/BackupPathModal';
@@ -80,65 +79,8 @@ const MainAppContent: React.FC = () => {
     return true;
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup' | 'sync'>('chambers');
+  const [settingsTab, setSettingsTab] = useState<'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup'>('chambers');
   const [searchQuery, setSearchQuery] = useState('');
-
-  // Automatically sync when the app starts or returns to the foreground.
-  // Incoming changes remain staged for review; this never overwrites live records.
-  useEffect(() => {
-    if (!activeUser || !activeCompany) return;
-    let disposed = false;
-    let lastAttemptAt = 0;
-
-    const runForegroundSync = async () => {
-      if (disposed || document.visibilityState === 'hidden' || navigator.onLine === false) return;
-      if (Date.now() - lastAttemptAt < 60_000) return;
-      lastAttemptAt = Date.now();
-      try {
-        await runGoogleDriveSyncCycleAsync({ allowAndroidReauthorization: false });
-      } catch (error) {
-        // Keep the app usable offline; the Sync Status screen and manual Sync Now
-        // provide the detailed error and retry path.
-        console.warn('Automatic Google Drive foreground sync did not complete:', error);
-      }
-    };
-
-    void runForegroundSync();
-    const handleVisible = () => {
-      if (document.visibilityState === 'visible') void runForegroundSync();
-    };
-
-    // Best-effort Windows desktop sync while the app is minimized.
-    // Electron keeps this renderer alive while its window is minimized; this
-    // timer does not run after the application is fully exited.
-    const isWindowsDesktop = typeof window !== 'undefined' &&
-      Boolean((window as Window & { electronAPI?: { googleOAuth?: unknown } }).electronAPI?.googleOAuth);
-    const runMinimizedWindowsSync = async () => {
-      if (disposed || !isWindowsDesktop || navigator.onLine === false) return;
-      try {
-        await runGoogleDriveSyncCycleAsync({ allowAndroidReauthorization: false });
-      } catch (error) {
-        console.warn('Scheduled minimized Windows Google Drive sync did not complete:', error);
-      }
-    };
-    const backgroundSyncTimer = isWindowsDesktop
-      ? window.setInterval(() => { void runMinimizedWindowsSync(); }, 15 * 60 * 1000)
-      : undefined;
-
-    window.addEventListener('focus', runForegroundSync);
-    window.addEventListener('online', runForegroundSync);
-    document.addEventListener('visibilitychange', handleVisible);
-    window.addEventListener('pageshow', runForegroundSync);
-
-    return () => {
-      disposed = true;
-      if (backgroundSyncTimer !== undefined) window.clearInterval(backgroundSyncTimer);
-      window.removeEventListener('focus', runForegroundSync);
-      window.removeEventListener('online', runForegroundSync);
-      document.removeEventListener('visibilitychange', handleVisible);
-      window.removeEventListener('pageshow', runForegroundSync);
-    };
-  }, [activeUser?.id, activeCompany?.id]);
 
   // Mobile Bottom Sheet for Case Categories
   const [mobileCasesSheetOpen, setMobileCasesSheetOpen] = useState(false);
@@ -409,7 +351,7 @@ const MainAppContent: React.FC = () => {
       currentPage !== 'dashboard'
   );
 
-  const handleOpenSettings = (tab: 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup' | 'sync' = 'chambers') => {
+  const handleOpenSettings = (tab: 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup' = 'chambers') => {
     setSettingsTab(tab);
     setSettingsOpen(true);
     pushHistoryState({ modal: 'settings', tab });
@@ -515,8 +457,8 @@ const MainAppContent: React.FC = () => {
   };
 
   return (
-    <div className="h-[100dvh] w-full flex items-center justify-center bg-[#EBF3FB] overflow-hidden font-sans app-shell-bg p-0">
-      <div className="relative flex h-screen w-full my-auto mx-auto bg-[#EBF3FB] text-slate-900 overflow-hidden rounded-none border-0 shadow-none app-shell-bg">
+    <div className="h-[100dvh] w-full flex items-center justify-center bg-slate-900/90 dark:bg-black overflow-hidden font-sans app-shell-bg p-0">
+      <div className="relative flex h-[90dvh] w-[95vw] sm:h-screen sm:w-full my-auto mx-auto bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-hidden rounded-2xl sm:rounded-none border border-slate-300/80 dark:border-slate-800 sm:border-0 shadow-2xl sm:shadow-none app-shell-bg">
         {/* Toast Notification Container */}
         <Toast />
 
@@ -569,7 +511,7 @@ const MainAppContent: React.FC = () => {
         isMobileTrigger={isMobileExitConfirmOpen}
       />
 
-      {/* Collapsible Sidebar for Desktop & Tablets matching Image 1 & 2 */}
+      {/* Collapsible Sidebar for Desktop & Tablets */}
       <Sidebar
         currentPage={currentPage}
         onNavigate={handleNavigatePage}
@@ -579,8 +521,8 @@ const MainAppContent: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-[#EBF3FB]">
-        {/* Sticky Top Bar matching Image 2 */}
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        {/* Sticky Top Bar with Mobile Back button & Responsive layout */}
         <Header
           onToggleSidebar={() => setSidebarOpen(prev => !prev)}
           isSidebarOpen={sidebarOpen}
@@ -986,63 +928,58 @@ const MainAppContent: React.FC = () => {
         </div>
       )}
 
-      {/* Mobile Bottom Navigation Bar matching Image 2 (Home, Cases, Sync, Settings) */}
-      <nav className="lg:hidden absolute bottom-0 left-0 right-0 z-30 h-16 bg-white border-t border-slate-200 px-3 flex items-center justify-around shadow-lg">
+      {/* Dedicated Thumb-Friendly Bottom Navigation Bar for Mobile */}
+      <nav className="lg:hidden absolute bottom-0 left-0 right-0 z-30 h-16 bg-white/95 backdrop-blur-md border-t border-slate-200 px-2 flex items-center justify-around shadow-2xl">
         <button
           type="button"
           onClick={() => handleNavigatePage('dashboard')}
-          className={`flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl transition-all cursor-pointer ${
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
             currentPage === 'dashboard' && !entryMode
-              ? 'text-[#1976D2] font-bold'
-              : 'text-slate-500 hover:text-slate-900'
+              ? 'text-[#0284C7] font-extrabold'
+              : 'text-slate-500 hover:text-slate-800'
           }`}
         >
           <LayoutDashboard className="w-5 h-5" />
-          <span className="text-[11px] font-semibold">Home</span>
+          <span className="text-[10px]">Home</span>
         </button>
 
         <button
           type="button"
           onClick={() => setMobileCasesSheetOpen(prev => !prev)}
-          className={`flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl transition-all cursor-pointer ${
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
             mobileCasesSheetOpen || currentPage.startsWith('case-')
-              ? 'text-[#1976D2] font-bold'
-              : 'text-slate-500 hover:text-slate-900'
+              ? 'text-[#0284C7] font-extrabold'
+              : 'text-slate-500 hover:text-slate-800'
           }`}
         >
           <FolderGit2 className="w-5 h-5" />
-          <span className="text-[11px] font-semibold">Cases</span>
+          <span className="text-[10px]">Cases</span>
         </button>
 
         <button
           type="button"
-          onClick={async () => {
-            showToast('Syncing chamber data...', 'info');
-            try {
-              await runGoogleDriveSyncCycleAsync({ allowAndroidReauthorization: true });
-              showToast('Chamber data synced successfully!', 'success');
-            } catch (e) {
-              performBackup({ type: 'manual' });
-              showToast('Local backup saved successfully!', 'success');
-            }
-          }}
-          className="flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl text-slate-500 hover:text-slate-900 transition-all cursor-pointer"
+          onClick={() => handleNavigatePage('sharecalculator')}
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
+            currentPage === 'sharecalculator'
+              ? 'text-[#0284C7] font-extrabold'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
         >
           <RefreshCw className="w-5 h-5" />
-          <span className="text-[11px] font-semibold">Sync</span>
+          <span className="text-[10px]">Sync</span>
         </button>
 
         <button
           type="button"
-          onClick={() => handleOpenSettings('display')}
-          className={`flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl transition-all cursor-pointer ${
+          onClick={() => handleOpenSettings('branding')}
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
             settingsOpen
-              ? 'text-[#1976D2] font-bold'
-              : 'text-slate-500 hover:text-slate-900'
+              ? 'text-[#0284C7] font-extrabold'
+              : 'text-slate-500 hover:text-slate-800'
           }`}
         >
           <Settings className="w-5 h-5" />
-          <span className="text-[11px] font-semibold">Settings</span>
+          <span className="text-[10px]">Settings</span>
         </button>
       </nav>
 

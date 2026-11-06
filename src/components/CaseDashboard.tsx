@@ -1,4 +1,3 @@
-import { getLocalDateInputValue } from '../utils/localDate';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { CaseType, CaseItem } from '../types';
@@ -1249,7 +1248,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    const dateStr = getLocalDateInputValue();
+    const dateStr = new Date().toISOString().slice(0, 10);
     const filterTag =
       selectedCaseIds.length > 0
         ? `selected_${selectedCaseIds.length}`
@@ -1454,11 +1453,11 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
   return (
     <div className="space-y-4">
       {/* Sub-Dashboard Header & Statutory Overview Card — Matching Image 3 with 3D Visuals */}
-      <div className="w-full rounded-xl p-4 sm:p-5 bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 shadow-[0_10px_25px_rgba(15,23,42,0.08)] dark:shadow-[0_10px_25px_rgba(0,0,0,0.5)] space-y-4">
+      <div className="w-full rounded-xl p-4 sm:p-5 bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 shadow-[0_10px_25px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_10px_25px_rgba(0,0,0,0.5)] space-y-4">
         {/* Top Row: 3D Icon Badge + Title + Bengali Pill + Law Ref + 3D Action Buttons */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5 min-w-0">
-            <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center bg-blue-50 dark:bg-slate-800 ${meta.color} border border-blue-200/60 dark:border-slate-700 shrink-0 shadow-[0_4px_10px_rgba(15,23,42,0.1),inset_0_-2px_3px_rgba(0,0,0,0.1)]`}>
+            <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center bg-blue-50 dark:bg-slate-800 ${meta.color} border border-blue-200/60 dark:border-slate-700 shrink-0 shadow-[0_4px_10px_rgba(15,23,42,0.1),inset_0_2px_2px_rgba(255,255,255,0.8),inset_0_-2px_3px_rgba(0,0,0,0.1)]`}>
               <Icon className="w-6 h-6 drop-shadow-2xs stroke-[2.2]" />
             </div>
             <div className="min-w-0 flex-1">
@@ -1523,7 +1522,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                     setTodayHearingsFilter(false);
                     setAttachmentFilter(false);
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-blue-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-blue-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
                     isActive ? 'ring-2 ring-blue-500/40 bg-blue-50/40 dark:bg-blue-950/30' : ''
                   }`}
                   title="Click to view all registered applications in this module"
@@ -1562,7 +1561,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       setAttachmentFilter(false);
                     }
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-amber-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-amber-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
                     isActive ? 'ring-2 ring-amber-500/50 bg-amber-50/50 dark:bg-amber-950/40' : ''
                   }`}
                   title="Filter by records with expected delivery scheduled today"
@@ -1607,7 +1606,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       setAttachmentFilter(false);
                     }
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-purple-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-purple-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
                     isActive ? 'ring-2 ring-purple-500/50 bg-purple-50/50 dark:bg-purple-950/40' : ''
                   }`}
                   title="Filter by active in-progress applications"
@@ -1647,7 +1646,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       setTodayHearingsFilter(false);
                     }
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-emerald-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-emerald-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
                     isActive ? 'ring-2 ring-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/40' : ''
                   }`}
                   title="Filter by delivered entries"
@@ -1691,7 +1690,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                     setUnderInquiryFilter(false);
                     setTodayHearingsFilter(false);
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-blue-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-blue-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
                     isActive ? 'ring-2 ring-blue-500/40 bg-blue-50/40 dark:bg-blue-950/30' : ''
                   }`}
                   title="Click to view all RTI applications"
@@ -1730,7 +1729,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       setTodayHearingsFilter(false);
                     }
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-emerald-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-emerald-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
                     isActive ? 'ring-2 ring-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/40' : ''
                   }`}
                   title="Filter by replied and disposed RTI matters"
@@ -1767,7 +1766,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       setTodayHearingsFilter(false);
                     }
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-rose-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-rose-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
                     isActive ? 'ring-2 ring-rose-500/50 bg-rose-50/50 dark:bg-rose-950/40' : ''
                   }`}
                   title="Filter by RTI matters exceeding statutory 30-day response limit"
@@ -1807,7 +1806,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       setTodayHearingsFilter(false);
                     }
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-purple-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-purple-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
                     isActive ? 'ring-2 ring-purple-500/50 bg-purple-50/50 dark:bg-purple-950/40' : ''
                   }`}
                   title="Filter by active pending RTI applications"
@@ -1852,7 +1851,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                     setTodayHearingsFilter(false);
                     setAttachmentFilter(false);
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-blue-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-blue-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
                     isActive ? 'ring-2 ring-blue-500/40 bg-blue-50/40 dark:bg-blue-950/30' : ''
                   }`}
                   title="Click to view all registered cases in this module"
@@ -1893,7 +1892,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       setAttachmentFilter(false);
                     }
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-purple-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-purple-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
                     isActive ? 'ring-2 ring-purple-500/50 bg-purple-50/50 dark:bg-purple-950/40' : ''
                   }`}
                   title="Filter by active pending cases"
@@ -1932,7 +1931,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       setAttachmentFilter(false);
                     }
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-amber-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-amber-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
                     isActive ? 'ring-2 ring-amber-500/50 bg-amber-50/50 dark:bg-amber-950/40' : ''
                   }`}
                   title="Filter by cases with hearings scheduled today"
@@ -1971,7 +1970,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       setAttachmentFilter(false);
                     }
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-indigo-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-indigo-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
                     isActive ? 'ring-2 ring-indigo-500/50 bg-indigo-50/50 dark:bg-indigo-950/40' : ''
                   }`}
                   title="Filter by cases currently under inquiry, verification, or hearing report"
@@ -2012,7 +2011,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       setAttachmentFilter(false);
                     }
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-emerald-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
+                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-emerald-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
                     isActive ? 'ring-2 ring-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/40' : ''
                   }`}
                   title="Filter by disposed &amp; allowed cases"
@@ -2039,7 +2038,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
       </div>
 
       {/* Filter and Case List / Table Container — Matching Image 3 with 3D Visuals */}
-      <div className="w-full rounded-xl bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 shadow-[0_10px_25px_rgba(15,23,42,0.08)] dark:shadow-[0_10px_25px_rgba(0,0,0,0.5)] overflow-hidden">
+      <div className="w-full rounded-xl bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 shadow-[0_10px_25px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_10px_25px_rgba(0,0,0,0.5)] overflow-hidden">
         {/* Controls Header */}
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 space-y-3">
           {/* Row 1 (Visual from Image 3): Status Filter Pills on Left + Sub-Type Dropdown & Search Input on Right */}
@@ -3075,7 +3074,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
           )
         ) : (
           <div className="p-12 text-center space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 mx-auto flex items-center justify-center shadow-[0_4px_10px_rgba(15,23,42,0.08)] border border-slate-200/80 dark:border-slate-700">
+            <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 mx-auto flex items-center justify-center shadow-[0_4px_10px_rgba(15,23,42,0.08),inset_0_2px_2px_rgba(255,255,255,0.8)] border border-slate-200/80 dark:border-slate-700">
               <Icon className="w-6 h-6" />
             </div>
             <div className="text-sm font-bold text-slate-800 dark:text-slate-200">

@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Capacitor } from '@capacitor/core';
-import { SyncStateStore } from '@srk/capacitor-sync-state';
 import { useApp } from '../context/AppContext';
 import {
   HardDrive,
@@ -77,37 +75,6 @@ export const BackupPathModal: React.FC = () => {
    * 3. Handles iframe security limitations without crashing
    */
   const handleBrowseFolder = async () => {
-    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
-      try {
-        const selected = await SyncStateStore.selectBackupFolder();
-        const selectedFolderLabel = selected.displayName
-          ? `Android SAF: ${selected.displayName}`
-          : 'Android SAF folder (persistent access granted)';
-        setCustomPath(selectedFolderLabel);
-        showToast('Android backup folder selected. Access will remain available for future backups.', 'success');
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unable to select Android backup folder.';
-        if (!/cancel/i.test(message)) showToast(message, 'error');
-      }
-      return;
-    }
-
-    const nativeBackupStorage = typeof window !== 'undefined'
-      ? (window as Window & { electronAPI?: { backupStorage?: { selectFolder: () => Promise<string | null> } } })
-          .electronAPI?.backupStorage
-      : undefined;
-    if (nativeBackupStorage?.selectFolder) {
-      try {
-        const selectedDirectory = await nativeBackupStorage.selectFolder();
-        if (!selectedDirectory) return;
-        setCustomPath(selectedDirectory);
-        showToast(`Backup folder selected: ${selectedDirectory}`, 'success');
-      } catch (error) {
-        showToast(error instanceof Error ? error.message : 'Unable to select a backup folder.', 'error');
-      }
-      return;
-    }
-
     let succeededWithNative = false;
 
     // Method 1: File System Access API (Desktop Chrome / Edge / Opera)
@@ -207,9 +174,9 @@ export const BackupPathModal: React.FC = () => {
 
     if (isManualBackupConfirmOpen) {
       setIsProcessing(true);
-      const backupResult = await performBackup({ type: 'manual', customPath: finalPath, downloadFile: true });
+      await performBackup({ type: 'manual', customPath: finalPath, downloadFile: true });
       setIsProcessing(false);
-      if (backupResult) handleClose();
+      handleClose();
     } else {
       setIsSelectBackupPathModalOpen(false);
       showToast(`Data storage path configured: ${finalPath}`);
@@ -218,9 +185,9 @@ export const BackupPathModal: React.FC = () => {
 
   const handleConfirmManualBackupCurrent = async () => {
     setIsProcessing(true);
-    const backupResult = await performBackup({ type: 'manual', downloadFile: true });
+    await performBackup({ type: 'manual', downloadFile: true });
     setIsProcessing(false);
-    if (backupResult) handleClose();
+    handleClose();
   };
 
   // Preset quick storage locations

@@ -1,11 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { getLocalDateInputValue } from '../utils/localDate';
 import { useApp } from '../context/AppContext';
 import { AccountTransaction, OfficeAccount } from '../types';
 import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Plus, Wallet, Building2, Trash2 } from 'lucide-react';
 
 const money = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(value);
-const today = () => getLocalDateInputValue();
+const today = () => new Date().toISOString().slice(0, 10);
 
 export const CashBankRegister: React.FC = () => {
   const { activeCompany, addOfficeAccount, addAccountTransaction, transferBetweenAccounts, deleteAccountTransaction, showToast, language } = useApp();
@@ -49,34 +48,19 @@ export const CashBankRegister: React.FC = () => {
 
   const submitAccount = (event: React.FormEvent) => {
     event.preventDefault();
-    const parsedOpeningBalance = Number(openingBalance);
-    if (!accountName.trim() || !Number.isFinite(parsedOpeningBalance) || parsedOpeningBalance < 0) {
-      showToast(language === 'bn' ? 'অ্যাকাউন্টের নাম ও সঠিক Opening Balance দিন' : 'Enter an account name and valid opening balance', 'error');
-      return;
-    }
-    addOfficeAccount({ name: accountName, type: accountType, openingBalance: parsedOpeningBalance, bankName: bankName || undefined, accountNumber: accountNumber || undefined });
+    addOfficeAccount({ name: accountName, type: accountType, openingBalance: Number(openingBalance), bankName: bankName || undefined, accountNumber: accountNumber || undefined });
     setAccountName(''); setOpeningBalance('0'); setBankName(''); setAccountNumber(''); setShowAccountForm(false);
   };
 
   const submitEntry = (event: React.FormEvent) => {
     event.preventDefault();
-    const parsedAmount = Number(entryAmount);
-    if (!accounts.some(account => account.id === entryAccount) || !entryDate || !Number.isFinite(parsedAmount) || parsedAmount <= 0 || !entryDescription.trim()) {
-      showToast(language === 'bn' ? 'অ্যাকাউন্ট, তারিখ, বিবরণ ও সঠিক পরিমাণ দিন' : 'Select an account and enter date, description and valid amount', 'error');
-      return;
-    }
-    addAccountTransaction({ accountId: entryAccount, date: entryDate, kind: entryKind, amount: parsedAmount, description: entryDescription, reference: entryReference || undefined });
+    addAccountTransaction({ accountId: entryAccount, date: entryDate, kind: entryKind, amount: Number(entryAmount), description: entryDescription, reference: entryReference || undefined });
     setEntryAmount(''); setEntryDescription(''); setEntryReference(''); setShowEntryForm(false);
   };
 
   const submitTransfer = (event: React.FormEvent) => {
     event.preventDefault();
-    const parsedAmount = Number(transferAmount);
-    if (fromAccount === toAccount || !accounts.some(account => account.id === fromAccount) || !accounts.some(account => account.id === toAccount) || !transferDate || !Number.isFinite(parsedAmount) || parsedAmount <= 0 || !transferDescription.trim()) {
-      showToast(language === 'bn' ? 'দুটি আলাদা অ্যাকাউন্ট, তারিখ, বিবরণ ও সঠিক পরিমাণ দিন' : 'Select two different accounts and enter valid transfer details', 'error');
-      return;
-    }
-    transferBetweenAccounts(fromAccount, toAccount, transferDate, parsedAmount, transferDescription, transferReference || undefined);
+    transferBetweenAccounts(fromAccount, toAccount, transferDate, Number(transferAmount), transferDescription, transferReference || undefined);
     setTransferAmount(''); setTransferDescription(''); setTransferReference(''); setShowTransferForm(false);
   };
 

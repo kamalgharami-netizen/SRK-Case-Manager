@@ -47,7 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
   }[activeUser?.role || 'Admin'];
 
   return (
-    <header className="sticky top-0 z-30 min-h-16 h-auto bg-white/95 backdrop-blur-md border-b border-slate-200 px-2 py-2 sm:py-0 sm:px-4 lg:px-6 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 sm:gap-4 shadow-2xs">
+    <header className="sticky top-0 z-30 h-16 bg-white/95 backdrop-blur-md border-b border-slate-200 px-2 sm:px-4 lg:px-6 flex items-center justify-between gap-2 sm:gap-4 shadow-2xs">
       {/* Zone 1: Back Button (Mobile/Subpage) + Toggle + Brand Logo Type + Chamber Switcher */}
       <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 min-w-0">
         {canGoBack && onGoBack && (
@@ -105,7 +105,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Zone 2: Real-time search filter */}
-      <div className="order-3 basis-full max-w-none sm:order-none sm:basis-auto sm:flex-1 sm:max-w-md min-w-0">
+      <div className="flex-1 max-w-md hidden sm:block">
         <div className="relative">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -113,7 +113,7 @@ export const Header: React.FC<HeaderProps> = ({
             value={searchQuery}
             onChange={e => onSearchChange(e.target.value)}
             placeholder={t.searchPlaceholder}
-            className="w-full pl-9 pr-3 py-2 sm:py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 dark:text-slate-100 transition-colors"
+            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 dark:text-slate-100 transition-colors"
           />
         </div>
       </div>
@@ -122,12 +122,12 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
         <button
           onClick={toggleLanguage}
-          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-lg border border-blue-300 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 shadow-xs transition-all cursor-pointer"
+          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-lg border border-[#BAE6FD] bg-[#E0F2FE]/80 text-[#0284C7] hover:bg-[#BAE6FD] shadow-2xs transition-all cursor-pointer"
           title={language === 'en' ? 'বাংলা ভাষায় পরিবর্তন করুন (Switch to Bengali)' : 'Switch to English'}
           aria-label="Switch language English / Bengali"
         >
-          <Languages className="w-3.5 h-3.5 text-blue-600" />
-          <span className="font-semibold">{language === 'en' ? 'EN' : 'বাংলা'}</span>
+          <Languages className="w-3.5 h-3.5 text-[#0284C7]" />
+          <span className="font-bold">{language === 'en' ? 'EN' : 'বাংলা'}</span>
           <span className="text-[10px] opacity-60">|</span>
           <span className="text-[11px] font-normal text-slate-500">
             {language === 'en' ? 'বাংলা' : 'EN'}
@@ -162,7 +162,7 @@ export const Header: React.FC<HeaderProps> = ({
           className="flex items-center gap-2 pl-2 border-l border-slate-200 cursor-pointer group"
           title="User Account & Chamber Settings"
         >
-          <div className="w-8 h-8 rounded-full bg-blue-700 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-sm">
+          <div className="w-8 h-8 rounded-full bg-[#0B3A75] text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-sm ring-2 ring-[#0284C7]/30">
             {activeUser?.name
               ? activeUser.name
                   .split(' ')

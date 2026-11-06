@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+/* Enforce class-driven dark mode so mobile OS dark mode never turns anything black */
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
@@ -7,158 +8,114 @@
     color-scheme: light !important;
   }
   body {
-    font-family: 'Plus Jakarta Sans', 'Noto Sans Bengali', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     -webkit-tap-highlight-color: transparent;
-    background-color: #EBF3FB;
-    color: #0F172A;
+    background-color: #f0f4f8;
+    color: #0f172a;
   }
 }
 
-/* ==========================================================================
-   SRK BUSINESS MANAGER COLOR COMBINATION SYSTEM
-   Exact palette matched from "SRK Business Manager" application image:
-   - Canvas: Soft sky-blue tinted surface (#EBF3FB)
-   - Sidebar: Deep corporate Navy (#083265 to #06264D) with vivid blue pill (#1976D2)
-   - Header: Pure Crisp White (#FFFFFF) with blue emblem and border (#DCE7F3)
-   - Top 4 Metric Cards:
-       1. Soft Blue (#EAF3FE / #D0E3FA) + Solid Blue icon square (#1976D2)
-       2. Soft Green (#EAF7EE / #CEEEDB) + Solid Emerald icon square (#10B981)
-       3. Soft Orange (#FEF4E8 / #FDE2C4) + Solid Orange icon square (#F97316)
-       4. Soft Purple (#F3EEFE / #DDD0FC) + Solid Violet icon square (#8B5CF6)
-   - Quick Action Tiles: 8 colorful solid buttons (Blue, Green, Orange, Purple, Teal, Indigo, Emerald, Rose)
-   - Windows & Panels: Clean white (#FFFFFF) with royal blue title bar (#1976D2)
-   - Tables: Light blue-grey header (#F1F6FB), clean zebra white rows, crisp borders (#DCE7F3)
-   ========================================================================== */
-
-:root {
-  --srk-canvas: #EBF3FB;
-  --srk-surface: #FFFFFF;
-  --srk-surface-subtle: #F6FAFD;
-  --srk-header: #FFFFFF;
-  --srk-sidebar: #083265;
-  --srk-sidebar-dark: #06264D;
-  --srk-sidebar-text: #E2EDF8;
-  --srk-sidebar-active: #1976D2;
-  --srk-ink: #0F172A;
-  --srk-muted: #5A6B82;
-  --srk-border: #DCE7F3;
-  --srk-accent: #1976D2;
-  --srk-accent-hover: #1565C0;
-  --srk-success: #10B981;
-  --srk-warning: #F97316;
-  --srk-danger: #EF4444;
-  --srk-purple: #8B5CF6;
-  --srk-teal: #06B6D4;
-}
-
-html, body, #root {
-  background-color: var(--srk-canvas) !important;
-  color: var(--srk-ink) !important;
+/* Courtroom Daylight Azure & Royal Navy Theme (Default) */
+html.theme-azure,
+html.theme-azure body {
+  background-color: #f0f4f8 !important;
+  color: #0f172a !important;
   color-scheme: light !important;
 }
 
-.app-shell-bg, main {
-  background-color: var(--srk-canvas) !important;
+html.theme-azure main,
+html.theme-azure .app-shell-bg {
+  background-color: #f0f4f8 !important;
 }
 
-/* Header: Pure White with crisp subtle border matching SRK Business Manager */
-#root header, #root header.sticky {
-  background-color: #FFFFFF !important;
-  color: #0F172A !important;
-  border-bottom: 1px solid #DCE7F3 !important;
-  box-shadow: 0 1px 3px rgba(10, 37, 64, 0.05) !important;
+html.theme-white main,
+html.theme-white .app-shell-bg {
+  background-color: #ffffff !important;
 }
 
-/* Sidebar: Deep Navy Blue gradient matching SRK Business Manager image */
-#root aside {
-  background: linear-gradient(180deg, #083265 0%, #06264D 100%) !important;
-  color: #E2EDF8 !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 4px 0 24px rgba(8, 50, 101, 0.18) !important;
+/* Soft Light Theme Option (#F8FAFC) */
+html.theme-light,
+html.theme-light body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  color-scheme: light !important;
 }
 
-#root aside a, #root aside button {
-  color: #E2EDF8;
+html.theme-light main,
+html.theme-light .app-shell-bg {
+  background-color: #f8fafc !important;
 }
 
-#root aside button:hover:not(.bg-blue-600):not(.bg-red-600) {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-  color: #FFFFFF !important;
+/* Warm Legal Parchment / Sepia Theme */
+html.theme-sepia,
+html.theme-sepia body {
+  background-color: #fbf5e8 !important;
+  color: #291a08 !important;
+  color-scheme: light !important;
+}
+html.theme-sepia main,
+html.theme-sepia .app-shell-bg {
+  background-color: #fbf5e8 !important;
+}
+html.theme-sepia .bg-white {
+  background-color: #fffefb !important;
+}
+html.theme-sepia .bg-slate-50,
+html.theme-sepia .bg-slate-100 {
+  background-color: #f4ecdc !important;
+}
+html.theme-sepia .border-slate-200,
+html.theme-sepia .border-slate-300 {
+  border-color: #e2d2ba !important;
 }
 
-/* Content cards and modals: Clean white with subtle border and elevation */
-.srk-card,
-main :is(.rounded-xl, .rounded-2xl)[class*="border"],
-[role="dialog"] {
-  border-color: #DCE7F3;
+/* Courtroom Daylight Azure Theme */
+html.theme-azure,
+html.theme-azure body {
+  background-color: #f0f7ff !important;
+  color: #0c4a6e !important;
+  color-scheme: light !important;
+}
+html.theme-azure main,
+html.theme-azure .app-shell-bg {
+  background-color: #f0f7ff !important;
+}
+html.theme-azure .bg-white {
+  background-color: #ffffff !important;
+}
+html.theme-azure .bg-slate-50,
+html.theme-azure .bg-slate-100 {
+  background-color: #e0f2fe !important;
+}
+html.theme-azure .border-slate-200,
+html.theme-azure .border-slate-300 {
+  border-color: #bae6fd !important;
 }
 
-/* Form Inputs & Controls */
-main :is(input, select, textarea) {
-  background-color: #FFFFFF !important;
-  border: 1px solid #CBD5E1 !important;
-  color: #0F172A !important;
-  border-radius: 0.5rem;
+/* Land Revenue Mint Theme */
+html.theme-mint,
+html.theme-mint body {
+  background-color: #f0fdf4 !important;
+  color: #064e3b !important;
+  color-scheme: light !important;
+}
+html.theme-mint main,
+html.theme-mint .app-shell-bg {
+  background-color: #f0fdf4 !important;
+}
+html.theme-mint .bg-white {
+  background-color: #ffffff !important;
+}
+html.theme-mint .bg-slate-50,
+html.theme-mint .bg-slate-100 {
+  background-color: #dcfce7 !important;
+}
+html.theme-mint .border-slate-200,
+html.theme-mint .border-slate-300 {
+  border-color: #bbf7d0 !important;
 }
 
-main :is(input, select, textarea):focus {
-  outline: 2px solid #1976D2 !important;
-  outline-offset: 1px;
-  border-color: #1976D2 !important;
-}
-
-main :is(input, select, textarea)::placeholder {
-  color: #94A3B8 !important;
-  opacity: 1;
-}
-
-/* Tables */
-table {
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
-main table thead th {
-  background-color: #F1F6FB;
-  color: #475569;
-  font-weight: 700;
-  font-size: 0.75rem;
-  letter-spacing: 0.025em;
-  border-bottom: 1px solid #DCE7F3;
-}
-
-main table tbody tr {
-  background-color: #FFFFFF;
-  transition: background-color 0.15s ease;
-}
-
-main table tbody tr:hover {
-  background-color: #F8FAFD;
-}
-
-main table td {
-  border-bottom: 1px solid #EEF3F8;
-  color: #1E293B;
-  font-size: 0.8125rem;
-}
-
-/* Custom crisp scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.4);
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.65);
-}
-
-/* Text scale and viewing accessibility modes */
+/* Viewing & Display Options Modes */
 html.text-scale-large {
   font-size: 108%;
 }
@@ -189,13 +146,55 @@ html.high-contrast-mode {
   filter: contrast(1.1);
 }
 
-/* Printing styles */
+/* Global 3D View Styling Across All Views, Panels, Cards & Buttons */
+main .rounded-2xl,
+main .rounded-xl {
+  box-shadow:
+    0 8px 20px -4px rgba(15, 23, 42, 0.08),
+    0 3px 0 0 rgba(148, 163, 184, 0.32),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.85);
+}
+
+main button.rounded-xl,
+main button.rounded-lg,
+aside button.rounded-xl,
+aside button.rounded-lg,
+header button.rounded-xl,
+header button.rounded-lg {
+  box-shadow:
+    0 3px 6px rgba(15, 23, 42, 0.08),
+    0 2px 0 0 rgba(148, 163, 184, 0.28),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+main button.rounded-xl:active,
+main button.rounded-lg:active,
+aside button.rounded-xl:active,
+aside button.rounded-lg:active,
+header button.rounded-xl:active,
+header button.rounded-lg:active {
+  transform: translateY(1px);
+}
+
+/* Custom crisp scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+
 @media print {
-  aside, header, nav, .no-print, button:not(.printable) {
+  aside, header, .no-print, button {
     display: none !important;
-  }
-  body, html, #root, main {
-    background: #FFFFFF !important;
-    color: #000000 !important;
   }
 }

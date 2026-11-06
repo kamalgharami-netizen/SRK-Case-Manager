@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getLocalDateInputValue } from '../utils/localDate';
 import { useApp } from '../context/AppContext';
 import {
   Printer,
@@ -188,7 +187,7 @@ export const PrintModal: React.FC = () => {
           name: fileName,
           size: `${Math.max(1, Math.round(blob.size / 1024))} KB`,
           type: 'pdf',
-          date: getLocalDateInputValue(),
+          date: new Date().toISOString().split('T')[0],
           category: 'Certified Copy / Land Record Prints'
         });
       } catch (vaultErr) {
