@@ -369,7 +369,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [uiStyle, setUIStyleState] = useState<UIStyle>(() => {
     try {
       const saved = localStorage.getItem('srk_ui_style');
-      if (['3d', 'modern', 'glass', 'classic', 'executive', 'royal', 'compact', 'soft', 'midnight', 'ocean', 'emerald', 'copper', 'architect', 'dashboard', 'ribbon', 'split', 'docket', 'editorial', 'command', 'sidebar', 'matrix', 'dossier', 'ledger', 'minimal'].includes(saved)) return saved as UIStyle;
+      if (saved !== null && ['3d', 'modern', 'glass', 'classic', 'executive', 'royal', 'compact', 'soft', 'midnight', 'ocean', 'emerald', 'copper', 'architect', 'dashboard', 'ribbon', 'split', 'docket', 'editorial', 'command', 'sidebar', 'matrix', 'dossier', 'ledger', 'minimal'].includes(saved)) return saved as UIStyle;
     } catch {}
     return '3d';
   });
