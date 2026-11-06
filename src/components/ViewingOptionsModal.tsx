@@ -20,14 +20,10 @@ export const ViewingOptionsModal: React.FC = () => {
   const {
     isViewModalOpen,
     closeViewModal,
-    theme,
-    setTheme,
     viewDensity,
     setViewDensity,
     viewMode,
     setViewMode,
-    uiStyle,
-    setUIStyle,
     fontSize,
     setFontSize,
     highContrast,
@@ -68,8 +64,8 @@ export const ViewingOptionsModal: React.FC = () => {
               </h2>
               <p className="text-xs text-blue-100">
                 {language === 'bn'
-                  ? 'কোর্টরুম থিম, ফন্ট সাইজ ও তথ্য ঘনত্ব আপনার পছন্দমতো সাজান'
-                  : 'Customize courtroom theme, reading typography, and information density'}
+                  ? 'UI Template, ফন্ট সাইজ ও তথ্য ঘনত্ব নিজের মতো সাজান'
+                  : 'Customize UI templates, reading typography, and information density'}
               </p>
             </div>
           </div>
@@ -293,27 +289,17 @@ export const ViewingOptionsModal: React.FC = () => {
               <span>{language === 'bn' ? 'লাইভ প্রিভিউ (Live Preview)' : 'Interactive Live Preview'}</span>
             </div>
 
-            <div className={`p-4 rounded-xl border transition-all ${
-              theme === 'sepia'
-                ? 'bg-[#FBF5E8] text-[#291A08] border-[#E2D2BA]'
-                : theme === 'azure'
-                ? 'bg-[#F0F7FF] text-[#0C4A6E] border-[#BAE6FD]'
-                : theme === 'mint'
-                ? 'bg-[#F0FDF4] text-[#064E3B] border-[#BBF7D0]'
-                : theme === 'light'
-                ? 'bg-slate-50 text-slate-900 border-slate-200'
-                : 'bg-white text-slate-900 border-slate-200 shadow-xs'
-            } ${highContrast ? 'border-2 border-slate-900' : ''}`}>
+            <div className={`p-4 rounded-xl border transition-all ${highContrast ? 'border-2' : ''}`} style={{ backgroundColor: 'var(--srk-surface)', color: 'var(--srk-ink)', borderColor: 'var(--srk-border)' }}>
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs" style={{ backgroundColor: "var(--srk-accent)", color: "#07182B" }}>
                     <Scale className="w-3.5 h-3.5" />
                   </div>
                   <div className={`font-extrabold ${fontSize === 'large' ? 'text-base' : 'text-xs sm:text-sm'}`}>
                     FA/104/2024 · Subrata Roy vs State of WB
                   </div>
                 </div>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-700 border border-amber-500/30">
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold border" style={{ backgroundColor: "var(--srk-surface-raised)", color: "var(--srk-ink)", borderColor: "var(--srk-border)" }}>
                   Argument Board
                 </span>
               </div>
