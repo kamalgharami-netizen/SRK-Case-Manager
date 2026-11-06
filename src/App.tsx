@@ -929,14 +929,14 @@ const MainAppContent: React.FC = () => {
       )}
 
       {/* Dedicated Thumb-Friendly Bottom Navigation Bar for Mobile */}
-      <nav className="lg:hidden absolute bottom-0 left-0 right-0 z-30 h-16 bg-white/95 backdrop-blur-md border-t border-slate-200 px-2 flex items-center justify-around shadow-2xl">
+      <nav className="lg:hidden absolute bottom-0 left-0 right-0 z-30 h-16 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-2 flex items-center justify-around shadow-2xl">
         <button
           type="button"
           onClick={() => handleNavigatePage('dashboard')}
           className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
             currentPage === 'dashboard' && !entryMode
-              ? 'text-[#0284C7] font-extrabold'
-              : 'text-slate-500 hover:text-slate-800'
+              ? 'text-[#0284C7] dark:text-sky-400 font-extrabold'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           <LayoutDashboard className="w-5 h-5" />
@@ -948,8 +948,8 @@ const MainAppContent: React.FC = () => {
           onClick={() => setMobileCasesSheetOpen(prev => !prev)}
           className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
             mobileCasesSheetOpen || currentPage.startsWith('case-')
-              ? 'text-[#0284C7] font-extrabold'
-              : 'text-slate-500 hover:text-slate-800'
+              ? 'text-[#0284C7] dark:text-sky-400 font-extrabold'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           <FolderGit2 className="w-5 h-5" />
@@ -961,21 +961,34 @@ const MainAppContent: React.FC = () => {
           onClick={() => handleNavigatePage('sharecalculator')}
           className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
             currentPage === 'sharecalculator'
-              ? 'text-[#0284C7] font-extrabold'
-              : 'text-slate-500 hover:text-slate-800'
+              ? 'text-emerald-600 dark:text-emerald-400 font-extrabold'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
-          <RefreshCw className="w-5 h-5" />
-          <span className="text-[10px]">Sync</span>
+          <Calculator className="w-5 h-5 text-emerald-600" />
+          <span className="text-[10px]">Share Calc</span>
         </button>
 
         <button
           type="button"
-          onClick={() => handleOpenSettings('branding')}
+          onClick={() => handleNavigatePage('causelist')}
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
+            currentPage === 'causelist'
+              ? 'text-amber-600 dark:text-amber-400 font-extrabold'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+          }`}
+        >
+          <Calendar className="w-5 h-5" />
+          <span className="text-[10px]">Cause List</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleOpenSettings('vault')}
           className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
             settingsOpen
-              ? 'text-[#0284C7] font-extrabold'
-              : 'text-slate-500 hover:text-slate-800'
+              ? 'text-[#0284C7] dark:text-sky-400 font-extrabold'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           <Settings className="w-5 h-5" />

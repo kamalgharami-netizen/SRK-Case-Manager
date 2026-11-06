@@ -1,13 +1,13 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Menu, Search, Building2, Languages, Scale, ArrowLeft, LogOut, Settings, Calculator } from 'lucide-react';
+import { Menu, Search, Languages, ArrowLeft, Calculator } from 'lucide-react';
 import { CompanyLogo } from './CompanyLogo';
 import { getBackupStatus } from '../types';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
   isSidebarOpen?: boolean;
-  onOpenSettings: (tab?: 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup') => void;
+  onOpenSettings?: (tab?: 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup') => void;
   onOpenShareCalculator?: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
@@ -33,8 +33,7 @@ export const Header: React.FC<HeaderProps> = ({
     switchCompany,
     language,
     toggleLanguage,
-    t,
-    logoutUser
+    t
   } = useApp();
 
   const backupStatus = getBackupStatus(activeCompany);
@@ -48,7 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-30 h-16 bg-white/95 backdrop-blur-md border-b border-slate-200 px-2 sm:px-4 lg:px-6 flex items-center justify-between gap-2 sm:gap-4 shadow-2xs">
-      {/* Zone 1: Back Button (Mobile/Subpage) + Toggle + Brand Logo Type + Chamber Switcher */}
+      {/* Zone 1: Back Button (Mobile/Subpage) + Toggle + Brand Logo Type */}
       <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 min-w-0">
         {canGoBack && onGoBack && (
           <button
@@ -86,22 +85,6 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
         </div>
-
-        <button
-          onClick={() => onOpenSettings('chambers')}
-          className="hidden md:flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-blue-500 bg-slate-50 text-left transition-colors max-w-[160px] sm:max-w-[220px] cursor-pointer"
-          title="Chamber Settings & Switch Workspace"
-        >
-          <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 shrink-0" />
-          <div className="min-w-0">
-            <div className="text-[11px] sm:text-xs font-bold text-slate-900 truncate">
-              {activeCompany?.city || 'Office'}
-            </div>
-            <div className="text-[9px] sm:text-[10px] text-slate-500 truncate">
-              Switch &amp; Settings
-            </div>
-          </div>
-        </button>
       </div>
 
       {/* Zone 2: Real-time search filter */}
@@ -145,20 +128,9 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="hidden md:inline">{language === 'bn' ? 'হিস্যা ক্যালকুলেটর' : 'Share Calculator'}</span>
         </button>
 
-        {/* Settings Shortcut Button */}
-        <button
-          type="button"
-          onClick={() => onOpenSettings('display')}
-          className="p-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs shrink-0"
-          title={language === 'bn' ? 'থিম ও ডিসপ্লে সেটিংস (Theme & Display Settings)' : 'Theme & Display Settings'}
-          aria-label="Theme and Display Settings"
-        >
-          <Settings className="w-3.5 h-3.5 text-slate-600" />
-          <span className="hidden lg:inline text-[11px]">Settings</span>
-        </button>
-
+        {/* User Account / Profile */}
         <div
-          onClick={() => onOpenSettings('branding')}
+          onClick={() => onOpenSettings?.('branding')}
           className="flex items-center gap-2 pl-2 border-l border-slate-200 cursor-pointer group"
           title="User Account & Chamber Settings"
         >
@@ -183,16 +155,6 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={logoutUser}
-          className="px-2.5 py-1.5 rounded-lg border border-b-2 border-rose-200 dark:border-rose-800 border-b-rose-400 dark:border-b-rose-950 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer shrink-0"
-          title={language === 'bn' ? 'লগ আউট করুন' : 'Logout'}
-        >
-          <LogOut className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
-          <span className="hidden sm:inline">{language === 'bn' ? 'লগআউট' : 'Logout'}</span>
-        </button>
       </div>
     </header>
   );

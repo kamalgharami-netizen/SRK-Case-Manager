@@ -84,6 +84,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     activeUser,
     switchCompany,
     logoutUser,
+    language,
     t,
     theme,
     setTheme,
@@ -529,53 +530,76 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </div>
 
-        </div>
-
-        {/* Theme-aware Footer with Backup Now, Settings & Logout */}
-        <div className={`p-3 border-t space-y-2.5 ${sidebarHeaderFooterClass}`}>
-          <div className="grid grid-cols-2 gap-1.5">
+          {/* SETTINGS & BACKUP (Scrollable inside menu, NEVER sticks) */}
+          <div className="space-y-1 pt-3 border-t border-white/15 dark:border-slate-800">
             <button
               type="button"
-              onClick={triggerManualBackupRequest}
-              className="flex items-center justify-center gap-1.5 py-1.5 px-2 text-[11px] font-bold rounded-lg bg-white/10 hover:bg-white/20 text-blue-100 transition-colors cursor-pointer"
-              title="Immediate manual backup"
+              onClick={() => {
+                onOpenSettings('display');
+                if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+                  onClose();
+                }
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                isRoyal
+                  ? 'text-blue-100/90 hover:text-white hover:bg-white/10'
+                  : 'text-slate-700 hover:text-blue-700 hover:bg-slate-100/90'
+              }`}
+              title="Settings"
             >
-              <HardDrive className="w-3.5 h-3.5 text-sky-300" />
-              <span>Backup</span>
+              <div className="flex items-center gap-2.5">
+                <Settings className="w-4 h-4 text-sky-300" />
+                <span>{language === 'bn' ? 'সেটিংস' : 'Settings'}</span>
+              </div>
             </button>
 
             <button
-              onClick={() => onOpenSettings('display')}
-              className="flex items-center justify-center gap-1.5 py-1.5 px-2 text-[11px] font-bold rounded-lg bg-white/10 hover:bg-white/20 text-blue-100 transition-colors cursor-pointer"
-              title="Theme & Chamber Settings"
+              type="button"
+              onClick={() => {
+                triggerManualBackupRequest();
+                if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+                  onClose();
+                }
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                isRoyal
+                  ? 'text-blue-100/90 hover:text-white hover:bg-white/10'
+                  : 'text-slate-700 hover:text-blue-700 hover:bg-slate-100/90'
+              }`}
+              title="Manual Data Backup"
             >
-              <Settings className="w-3.5 h-3.5 text-sky-300" />
-              <span>Settings</span>
+              <div className="flex items-center gap-2.5">
+                <HardDrive className="w-4 h-4 text-sky-300" />
+                <span>{language === 'bn' ? 'ডাটা ব্যাকআপ' : 'Backup'}</span>
+              </div>
             </button>
           </div>
 
-          {/* Full-width Red Logout Button matching Image 1 */}
-          <button
-            onClick={logoutUser}
-            className="w-full flex items-center justify-center gap-2 py-2.5 px-3 text-xs font-extrabold rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] text-white shadow-md shadow-red-950/30 transition-all cursor-pointer"
-            title="Logout from Current Session"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Logout</span>
-          </button>
+          {/* Full-width Red Logout Button matching Image 1 (Scrolls naturally, does NOT stick) */}
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={logoutUser}
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-3 text-xs font-extrabold rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] text-white shadow-md shadow-red-950/30 transition-all cursor-pointer"
+              title="Logout from Current Session"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>{language === 'bn' ? 'লগআউট' : 'Logout'}</span>
+            </button>
+          </div>
 
-          {/* Application Version & In-Place Replacement Sync */}
-          <div className="pt-2 mt-1 border-t border-slate-200/70 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 px-1">
-            <span className="font-mono font-bold tracking-tight text-slate-700 dark:text-slate-300">
+          {/* Application Version & In-Place Replacement Sync (Scrolls naturally, does NOT stick) */}
+          <div className="pt-2 pb-2 border-t border-white/10 dark:border-slate-800 flex items-center justify-between text-[10px] text-sky-200/70 dark:text-slate-400 px-1">
+            <span className="font-mono font-bold tracking-tight">
               v{appVersion}
             </span>
             <button
               type="button"
               onClick={forceAppUpdateAndReplace}
-              className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 font-semibold cursor-pointer transition-colors"
+              className="flex items-center gap-1 hover:text-white dark:hover:text-blue-400 font-semibold cursor-pointer transition-colors"
               title="Replace existing app with latest build and refresh"
             >
-              <RefreshCw className="w-2.5 h-2.5 text-blue-500" />
+              <RefreshCw className="w-2.5 h-2.5 text-sky-300" />
               <span>Update / Sync</span>
             </button>
           </div>

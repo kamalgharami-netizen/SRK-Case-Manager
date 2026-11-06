@@ -193,31 +193,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
     })
     .slice(0, 4);
 
-  const recentDisplayCases: {
-    id: string;
-    caseNo: string;
-    party: string;
-    type: string;
-    subType?: string;
-    status: string;
-    nextDate: string;
-  }[] = (activeCompany?.cases && activeCompany.cases.length > 0)
-    ? activeCompany.cases.slice(0, 4).map(c => ({
-        id: c.id,
-        caseNo: c.caseNo || c.appNo || c.docketNo || 'C-2026-024',
-        party: c.party || 'Rita Mondal',
-        type: c.type || 'mutation',
-        subType: c.subType,
-        status: c.status || 'Active',
-        nextDate: c.nextDate || '15-11-2026'
-      }))
-    : [
-        { id: 'sample_1', caseNo: 'C-2026-024', party: 'Rita Mondal', type: 'mutation', status: 'Active', nextDate: '15-11-2026' },
-        { id: 'sample_2', caseNo: 'C-2026-023', party: 'Surojit Hazra', type: 'rti', subType: 'RTI Appeal', status: 'Pending', nextDate: '20-11-2026' },
-        { id: 'sample_3', caseNo: 'C-2026-022', party: 'Pritha Mondal', type: 'misc', subType: 'Land Case', status: 'Active', nextDate: '25-11-2026' },
-        { id: 'sample_4', caseNo: 'C-2026-021', party: 'Anisur Rahman', type: 'mutation', status: 'Closed', nextDate: '—' }
-      ];
-
   const printHtmlContent = (htmlContent: string, title?: string) => {
     safePrintHtml(htmlContent, title || 'Active Cases Registry Report');
   };
@@ -757,382 +732,106 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
       )}
 
-      {/* Top Welcome Header Bar matching Image 1 */}
-      <div className="bg-white/90 dark:bg-slate-900/90 rounded-2xl p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-            Welcome, {activeUser?.name || 'Kamal Gharami'}
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-            Legal Case Management System
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Formatted Date Pill */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100/90 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 font-semibold shadow-2xs">
-            <Calendar className="w-4 h-4 text-[#0284C7] shrink-0" />
-            <span>
-              {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}{' '}
-              <span className="text-slate-400 font-normal">|</span>{' '}
-              {new Date().toLocaleDateString('en-GB', { weekday: 'short' })}
-            </span>
-          </div>
-
-          {/* Bengali / English Language Switcher matching Image 1 */}
-          <div className="inline-flex rounded-xl p-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-2xs">
-            <button
-              type="button"
-              onClick={() => language !== 'bn' && toggleLanguage()}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                language === 'bn'
-                  ? 'bg-[#0284C7] text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-              }`}
-            >
-              বাংলা
-            </button>
-            <button
-              type="button"
-              onClick={() => language !== 'en' && toggleLanguage()}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                language === 'en'
-                  ? 'bg-[#0284C7] text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-              }`}
-            >
-              English
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* 4 Signature Hero Stat Cards matching Image 1 */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      {/* Top Row: 5 Compact KPI Summary Stat Cards styled in the Image's signature color combination */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
         {/* 1. Total Cases (Blue) */}
         <div
           onClick={() => setActiveKpiModal('total')}
-          className="bg-[#EBF5FF] border border-[#BFDBFE] hover:border-blue-400 rounded-2xl p-4 sm:p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group flex items-center gap-3.5 sm:gap-4"
-          title="Click to view all registered cases"
+          className="bg-[#EBF5FF] dark:bg-blue-950/40 px-3 py-2 rounded-xl border border-[#BFDBFE] dark:border-blue-900 border-l-4 border-l-[#0077E6] shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group"
+          title="Click to view all registered cases across all categories"
         >
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-[#0077E6] text-white flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform">
-            <Scale className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
+          <div className="flex items-center justify-between text-[#0077E6] dark:text-blue-300 text-[10px] font-bold uppercase tracking-wider leading-tight">
+            <span className="truncate">{t.totalCases}</span>
+            <div className="w-6 h-6 rounded-lg bg-[#0077E6] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform shrink-0">
+              <Scale className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="min-w-0">
-            <div className="text-xs sm:text-sm font-bold text-[#0077E6] truncate">
-              {language === 'bn' ? 'মোট মামলা' : 'Total Cases'}
-            </div>
-            <div className="text-2xl sm:text-3xl font-black font-mono text-slate-900 leading-tight">
-              {totalCases}
-            </div>
+          <div className="text-base sm:text-lg font-extrabold font-mono text-[#0077E6] dark:text-blue-200 leading-tight mt-1">
+            {totalCases}
+          </div>
+          <div className="text-[9px] text-blue-700/80 dark:text-blue-300/80 truncate leading-tight mt-0.5 font-medium">
+            Mutation ({getCaseCount('mutation')}) • Misc ({getCaseCount('misc')})
           </div>
         </div>
 
-        {/* 2. Active Cases (Green) */}
+        {/* 2. Pending Cases (Warm Amber) */}
         <div
           onClick={() => setActiveKpiModal('pending')}
-          className="bg-[#ECFDF5] border border-[#A7F3D0] hover:border-emerald-400 rounded-2xl p-4 sm:p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group flex items-center gap-3.5 sm:gap-4"
-          title="Click to view all active pending cases"
+          className="bg-[#FFFBEB] dark:bg-amber-950/40 px-3 py-2 rounded-xl border border-[#FDE68A] dark:border-amber-900 border-l-4 border-l-[#F59E0B] shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group"
+          title="Click to view all Active Pending cases across all categories"
         >
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-[#10B981] text-white flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform">
-            <CheckCircle2 className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
+          <div className="flex items-center justify-between text-[#D97706] dark:text-amber-300 text-[10px] font-bold uppercase tracking-wider leading-tight">
+            <span className="truncate">{t.pendingCases}</span>
+            <div className="w-6 h-6 rounded-lg bg-[#F59E0B] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform shrink-0">
+              <Clock className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="min-w-0">
-            <div className="text-xs sm:text-sm font-bold text-[#059669] truncate">
-              {language === 'bn' ? 'সক্রিয় মামলা' : 'Active Cases'}
-            </div>
-            <div className="text-2xl sm:text-3xl font-black font-mono text-slate-900 leading-tight">
-              {pendingCases}
-            </div>
+          <div className="text-base sm:text-lg font-extrabold font-mono text-[#D97706] dark:text-amber-200 leading-tight mt-1">
+            {pendingCases}
+          </div>
+          <div className="text-[9px] text-amber-700/80 dark:text-amber-300/80 truncate leading-tight mt-0.5 font-medium">
+            Requires follow-up &amp; dates
           </div>
         </div>
 
-        {/* 3. Pending Hearing (Amber) */}
+        {/* 3. Today's Hearings (Purple) */}
         <div
           onClick={() => onNavigate('causelist')}
-          className="bg-[#FFFBEB] border border-[#FDE68A] hover:border-amber-400 rounded-2xl p-4 sm:p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group flex items-center gap-3.5 sm:gap-4"
-          title="Click to view hearings"
+          className="bg-[#F5F3FF] dark:bg-purple-950/40 px-3 py-2 rounded-xl border border-[#DDD6FE] dark:border-purple-900 border-l-4 border-l-[#8B5CF6] shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group"
+          title="Click to view Today's Cause List"
         >
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-[#F59E0B] text-white flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform">
-            <Clock className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
+          <div className="flex items-center justify-between text-[#7C3AED] dark:text-purple-300 text-[10px] font-bold uppercase tracking-wider leading-tight">
+            <span className="truncate">{t.todaysHearings}</span>
+            <div className="w-6 h-6 rounded-lg bg-[#8B5CF6] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform shrink-0">
+              <Calendar className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="min-w-0">
-            <div className="text-xs sm:text-sm font-bold text-[#D97706] truncate">
-              {language === 'bn' ? 'শুনানি অপেক্ষমাণ' : 'Pending Hearing'}
-            </div>
-            <div className="text-2xl sm:text-3xl font-black font-mono text-slate-900 leading-tight">
-              {todayHearings || pendingCases || 6}
-            </div>
+          <div className="text-base sm:text-lg font-extrabold font-mono text-[#7C3AED] dark:text-purple-200 leading-tight mt-1">
+            {todayHearings}
+          </div>
+          <div className="text-[9px] text-purple-700/80 dark:text-purple-300/80 truncate leading-tight mt-0.5 font-medium">
+            {(activeCompany?.causeList?.filter(i => i.status === 'READY').length || 0)} Ready • {Math.max(0, todayHearings - (activeCompany?.causeList?.filter(i => i.status === 'READY').length || 0))} Hearing
           </div>
         </div>
 
-        {/* 4. Total Reports (Purple) */}
+        {/* 4. Under Inquiry (Sky Blue) */}
         <div
-          onClick={() => onNavigate('financial-reports')}
-          className="bg-[#F5F3FF] border border-[#DDD6FE] hover:border-purple-400 rounded-2xl p-4 sm:p-5 shadow-xs hover:shadow-md transition-all cursor-pointer group flex items-center gap-3.5 sm:gap-4"
-          title="Click to open reports and documents"
+          onClick={() => setActiveKpiModal('inquiry')}
+          className="bg-[#E0F2FE] dark:bg-sky-950/40 px-3 py-2 rounded-xl border border-[#BAE6FD] dark:border-sky-900 border-l-4 border-l-[#0284C7] shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group"
+          title="Click to view cases under inquiry &amp; field verification"
         >
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-[#8B5CF6] text-white flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform">
-            <FileText className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-xs sm:text-sm font-bold text-[#7C3AED] truncate">
-              {language === 'bn' ? 'মোট রিপোর্ট' : 'Total Reports'}
-            </div>
-            <div className="text-2xl sm:text-3xl font-black font-mono text-slate-900 leading-tight">
-              {(activeCompany?.causeList?.length || 0) + (activeCompany?.vaultFiles?.length || 0) || 12}
+          <div className="flex items-center justify-between text-[#0284C7] dark:text-sky-300 text-[10px] font-bold uppercase tracking-wider leading-tight">
+            <span className="truncate">{language === 'bn' ? 'তদন্তাধীন মামলা' : 'Under Inquiry'}</span>
+            <div className="w-6 h-6 rounded-lg bg-[#0284C7] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform shrink-0">
+              <FileSearch className="w-3.5 h-3.5" />
             </div>
           </div>
+          <div className="text-base sm:text-lg font-extrabold font-mono text-[#0284C7] dark:text-sky-200 leading-tight mt-1">
+            {underInquiryCases}
+          </div>
+          <div className="text-[9px] text-sky-700/80 dark:text-sky-300/80 truncate leading-tight mt-0.5 font-medium">
+            Investigation &amp; verification
+          </div>
         </div>
-      </div>
 
-      {/* Middle Row: Recent Cases (Left 7-8 cols) & Quick Actions (Right 4-5 cols) matching Image 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
-        {/* Left: Recent Cases Table */}
-        <div className="lg:col-span-8 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col justify-between">
-          <div>
-            <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
-                {language === 'bn' ? 'সাম্প্রতিক মামলাসমূহ' : 'Recent Cases'}
-              </h2>
-              <button
-                type="button"
-                onClick={() => onNavigate('case-mutation')}
-                className="text-xs font-bold text-[#0284C7] hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <span>{language === 'bn' ? 'সব দেখুন' : 'View All'}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-[#F8FAFC] dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200/70 dark:border-slate-800">
-                  <tr>
-                    <th className="py-3 px-4">Case No.</th>
-                    <th className="py-3 px-4">Party Name</th>
-                    <th className="py-3 px-4">Case Type</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4">Next Date</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
-                  {recentDisplayCases.map(c => {
-                    const isClosed = isDisposedStatus(c.status);
-                    const isPending = !isClosed && (c.status.toLowerCase().includes('pending') || c.status.toLowerCase().includes('hearing') || c.status.toLowerCase().includes('inquiry'));
-                    return (
-                      <tr
-                        key={c.id}
-                        onClick={() => onViewCaseDetail(c.id)}
-                        className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
-                      >
-                        <td className="py-3.5 px-4 font-mono font-bold text-[#0284C7]">
-                          {c.caseNo}
-                        </td>
-                        <td className="py-3.5 px-4 font-semibold text-slate-900 dark:text-slate-100">
-                          {c.party}
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 capitalize">
-                          {c.type === 'mutation' ? 'Mutation' : c.type === 'misc' ? 'Misc Case' : c.type === 'rti' ? 'RTI Appeal' : c.subType || c.type}
-                        </td>
-                        <td className="py-3.5 px-4">
-                          {isClosed ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0]">
-                              <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                              Closed
-                            </span>
-                          ) : isPending ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                              Pending
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0]">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                              Active
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-3.5 px-4 font-mono text-slate-600 dark:text-slate-300">
-                          {c.nextDate || '—'}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+        {/* 5. Disposed (Emerald Green) */}
+        <div
+          onClick={() => setActiveKpiModal('disposed')}
+          className="bg-[#ECFDF5] dark:bg-emerald-950/40 px-3 py-2 rounded-xl border border-[#A7F3D0] dark:border-emerald-900 border-l-4 border-l-[#10B981] shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group"
+          title="Click to view all Disposed &amp; Completed cases"
+        >
+          <div className="flex items-center justify-between text-[#059669] dark:text-emerald-300 text-[10px] font-bold uppercase tracking-wider leading-tight">
+            <span className="truncate">{language === 'bn' ? 'নিষ্পত্তিকৃত মামলা' : 'Disposed'}</span>
+            <div className="w-6 h-6 rounded-lg bg-[#10B981] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform shrink-0">
+              <CheckCircle2 className="w-3.5 h-3.5" />
             </div>
           </div>
-        </div>
-
-        {/* Right: Quick Actions */}
-        <div className="lg:col-span-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-sm p-4 sm:p-5 flex flex-col justify-between">
-          <div>
-            <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100 tracking-tight mb-4">
-              {language === 'bn' ? 'দ্রুত অ্যাকশন' : 'Quick Actions'}
-            </h2>
-
-            <div className="space-y-3">
-              <button
-                type="button"
-                onClick={() => onOpenNewCase('mutation')}
-                className="w-full p-3.5 rounded-xl bg-[#E0F2FE]/80 hover:bg-[#BAE6FD] text-[#0284C7] border border-[#BAE6FD] font-bold text-xs sm:text-sm flex items-center gap-3 transition-colors cursor-pointer shadow-2xs"
-              >
-                <div className="w-8 h-8 rounded-lg bg-[#0284C7] text-white flex items-center justify-center shrink-0 shadow-2xs">
-                  <Plus className="w-4 h-4 stroke-[3]" />
-                </div>
-                <span>{language === 'bn' ? '+ নতুন কেস যুক্ত করুন' : '+ New Case'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onOpenNewCase('rti')}
-                className="w-full p-3.5 rounded-xl bg-[#E0F2FE]/80 hover:bg-[#BAE6FD] text-[#0284C7] border border-[#BAE6FD] font-bold text-xs sm:text-sm flex items-center gap-3 transition-colors cursor-pointer shadow-2xs"
-              >
-                <div className="w-8 h-8 rounded-lg bg-[#0284C7] text-white flex items-center justify-center shrink-0 shadow-2xs">
-                  <FileSearch className="w-4 h-4" />
-                </div>
-                <span>{language === 'bn' ? 'তথ্য জানার আবেদন (RTI)' : 'RTI Application'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onNavigate('financial-reports')}
-                className="w-full p-3.5 rounded-xl bg-[#E0F2FE]/80 hover:bg-[#BAE6FD] text-[#0284C7] border border-[#BAE6FD] font-bold text-xs sm:text-sm flex items-center gap-3 transition-colors cursor-pointer shadow-2xs"
-              >
-                <div className="w-8 h-8 rounded-lg bg-[#0284C7] text-white flex items-center justify-center shrink-0 shadow-2xs">
-                  <FileSpreadsheet className="w-4 h-4" />
-                </div>
-                <span>{language === 'bn' ? 'রিপোর্ট ও পরিসংখ্যান' : 'View Reports'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  showToast(language === 'bn' ? 'উভয়মুখী সিঙ্ক সক্রিয় রয়েছে' : 'Both Way Sync Completed', 'success');
-                }}
-                className="w-full p-3.5 rounded-xl bg-[#E0F2FE]/80 hover:bg-[#BAE6FD] text-[#0284C7] border border-[#BAE6FD] font-bold text-xs sm:text-sm flex items-center gap-3 transition-colors cursor-pointer shadow-2xs"
-              >
-                <div className="w-8 h-8 rounded-lg bg-[#0284C7] text-white flex items-center justify-center shrink-0 shadow-2xs">
-                  <RefreshCw className="w-4 h-4" />
-                </div>
-                <span>{language === 'bn' ? 'উভমুখী সিঙ্ক (Sync Data)' : 'Sync Data'}</span>
-              </button>
-            </div>
+          <div className="text-base sm:text-lg font-extrabold font-mono text-[#059669] dark:text-emerald-200 leading-tight mt-1">
+            {disposedCases}
           </div>
-        </div>
-      </div>
-
-      {/* Bottom Sync & Status Banner matching Image 1 */}
-      <div className="bg-[#ECFDF5] border border-[#A7F3D0] rounded-2xl p-3.5 px-5 flex items-center justify-between gap-3 shadow-2xs">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-6 h-6 rounded-full bg-[#10B981] text-white flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-4 h-4" />
+          <div className="text-[9px] text-emerald-700/80 dark:text-emerald-300/80 truncate leading-tight mt-0.5 font-medium">
+            Allowed &amp; completed
           </div>
-          <span className="text-xs sm:text-sm font-semibold text-[#166534] truncate">
-            Last Sync: {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}, 09:40 AM (Both Way Sync Enabled)
-          </span>
-        </div>
-
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#DCFCE7] text-[#166534] border border-[#86EFAC] shrink-0">
-          <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
-          <span>Online</span>
-        </div>
-      </div>
-
-      {/* Land Schedule Card with Deep Royal Blue Header matching Image 1 */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-sm p-4 sm:p-5">
-        <div className="flex items-center justify-between pb-3 mb-3">
-          <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
-            {language === 'bn' ? 'জমির তফসিল ও খতিয়ান' : 'Land Schedule'}
-          </h2>
-          <button
-            type="button"
-            onClick={() => onNavigate('sharecalculator')}
-            className="text-xs font-bold text-[#0284C7] hover:underline flex items-center gap-1 cursor-pointer"
-          >
-            <span>{language === 'bn' ? 'বিস্তারিত দেখুন' : 'View Details'}</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* Filters */}
-        <div className="flex items-center gap-4 mb-4 text-xs font-semibold text-slate-600 dark:text-slate-300 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span>JL No:</span>
-            <select className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs">
-              <option>All</option>
-              <option>JL-66</option>
-              <option>JL-29</option>
-              <option>JL-118</option>
-              <option>JL-32</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span>Khtaian No:</span>
-            <select className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs">
-              <option>All</option>
-              <option>1257</option>
-              <option>1</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Table with Deep Royal Blue Header matching Image 1 */}
-        <div className="overflow-x-auto rounded-xl border border-slate-200/80 dark:border-slate-800">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-[#0B3A75] text-white font-bold uppercase tracking-wider text-[11px]">
-              <tr>
-                <th className="py-3 px-4">JL No.</th>
-                <th className="py-3 px-4">Khtaian No.</th>
-                <th className="py-3 px-4">Dag No.</th>
-                <th className="py-3 px-4">Total Area</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">JL-66</td>
-                <td className="py-3 px-4 font-mono">1257</td>
-                <td className="py-3 px-4 font-mono">1272</td>
-                <td className="py-3 px-4 font-semibold text-slate-800 dark:text-slate-200">55 Satak</td>
-              </tr>
-              <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">JL-29</td>
-                <td className="py-3 px-4 font-mono">1</td>
-                <td className="py-3 px-4 font-mono">3388</td>
-                <td className="py-3 px-4 font-semibold text-slate-800 dark:text-slate-200">18 Decimal</td>
-              </tr>
-              <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">JL-118</td>
-                <td className="py-3 px-4 font-mono">1</td>
-                <td className="py-3 px-4 font-mono">1522</td>
-                <td className="py-3 px-4 font-semibold text-slate-800 dark:text-slate-200">36 Satak</td>
-              </tr>
-              <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">JL-32</td>
-                <td className="py-3 px-4 font-mono">1</td>
-                <td className="py-3 px-4 font-mono">93</td>
-                <td className="py-3 px-4 font-semibold text-slate-800 dark:text-slate-200">182 Satak</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination matching Image 1 */}
-        <div className="flex items-center justify-center gap-1.5 mt-4">
-          <button className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:bg-slate-100 text-xs">
-            &lt;
-          </button>
-          <button className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center text-xs font-bold">
-            1
-          </button>
-          <button className="w-7 h-7 rounded-lg bg-[#0284C7] text-white flex items-center justify-center text-xs font-bold shadow-xs">
-            2
-          </button>
-          <button className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:bg-slate-100 text-xs">
-            &gt;
-          </button>
         </div>
       </div>
 

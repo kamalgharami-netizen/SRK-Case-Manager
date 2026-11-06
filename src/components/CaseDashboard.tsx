@@ -1499,11 +1499,10 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
           </div>
         </div>
 
-        {/* Top KPI Stat Cards */}
+        {/* Top KPI Stat Cards styled in the Image's signature color combination */}
         {isCertOrRorPi ? (
-          /* Keep ror/pi & certified copy of deed dashboard unchanged as requested */
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-            {/* 1. Total Applications */}
+            {/* 1. Total Applications (Blue) */}
             {(() => {
               const isActive =
                 categoryFilter === 'All' &&
@@ -1522,30 +1521,30 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                     setTodayHearingsFilter(false);
                     setAttachmentFilter(false);
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-blue-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
-                    isActive ? 'ring-2 ring-blue-500/40 bg-blue-50/40 dark:bg-blue-950/30' : ''
+                  className={`bg-[#EBF5FF] dark:bg-blue-950/40 px-3 py-2 rounded-xl border border-[#BFDBFE] dark:border-blue-900 border-l-4 border-l-[#0077E6] shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-[#0077E6] shadow-sm' : ''
                   }`}
                   title="Click to view all registered applications in this module"
                 >
-                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                  <div className="flex items-center justify-between text-[#0077E6] dark:text-blue-300 text-[10px] font-bold uppercase tracking-wider leading-tight">
                     <span className="truncate">
                       {language === 'bn' ? 'মোট আবেদন' : 'Total Applications'}
                     </span>
-                    <div className="w-5 h-5 rounded-md bg-blue-50 dark:bg-blue-950/80 border border-blue-200/70 dark:border-blue-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-                      <Icon className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                    <div className="w-6 h-6 rounded-lg bg-[#0077E6] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform shrink-0">
+                      <Icon className="w-3.5 h-3.5" />
                     </div>
                   </div>
-                  <div className="text-sm sm:text-base font-extrabold font-mono text-slate-900 dark:text-slate-100 leading-tight">
+                  <div className="text-base sm:text-lg font-extrabold font-mono text-[#0077E6] dark:text-blue-200 leading-tight mt-1">
                     {allCases.length}
                   </div>
-                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                  <div className="text-[9px] text-blue-700/80 dark:text-blue-300/80 truncate leading-tight mt-0.5 font-medium">
                     {pendingCount} Processing • {disposedCount} Delivered
                   </div>
                 </div>
               );
             })()}
 
-            {/* 2. Expected Delivery Today */}
+            {/* 2. Expected Delivery Today (Amber) */}
             {(() => {
               const isActive = todayHearingsFilter;
               return (
@@ -1561,30 +1560,30 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       setAttachmentFilter(false);
                     }
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-amber-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
-                    isActive ? 'ring-2 ring-amber-500/50 bg-amber-50/50 dark:bg-amber-950/40' : ''
+                  className={`bg-[#FFFBEB] dark:bg-amber-950/40 px-3 py-2 rounded-xl border border-[#FDE68A] dark:border-amber-900 border-l-4 border-l-[#F59E0B] shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-[#F59E0B] shadow-sm' : ''
                   }`}
                   title="Filter by records with expected delivery scheduled today"
                 >
-                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                  <div className="flex items-center justify-between text-[#D97706] dark:text-amber-300 text-[10px] font-bold uppercase tracking-wider leading-tight">
                     <span className="truncate">
                       {language === 'bn' ? 'আজকের সম্ভাব্য ডেলিভারি' : 'Delivery Due Today'}
                     </span>
-                    <div className="w-5 h-5 rounded-md bg-amber-50 dark:bg-amber-950/80 border border-amber-200/70 dark:border-amber-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-                      <Calendar className="w-3 h-3 text-amber-500" />
+                    <div className="w-6 h-6 rounded-lg bg-[#F59E0B] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform shrink-0">
+                      <Calendar className="w-3.5 h-3.5" />
                     </div>
                   </div>
-                  <div className="text-sm sm:text-base font-extrabold font-mono text-amber-600 dark:text-amber-400 leading-tight">
+                  <div className="text-base sm:text-lg font-extrabold font-mono text-[#D97706] dark:text-amber-200 leading-tight mt-1">
                     {todayHearingCount}
                   </div>
-                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                  <div className="text-[9px] text-amber-700/80 dark:text-amber-300/80 truncate leading-tight mt-0.5 font-medium">
                     Due for delivery today
                   </div>
                 </div>
               );
             })()}
 
-            {/* 3. In Progress */}
+            {/* 3. In Progress (Purple) */}
             {(() => {
               const isActive =
                 (categoryFilter === 'Pending' || underInquiryFilter) &&
@@ -1606,30 +1605,30 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       setAttachmentFilter(false);
                     }
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-purple-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
-                    isActive ? 'ring-2 ring-purple-500/50 bg-purple-50/50 dark:bg-purple-950/40' : ''
+                  className={`bg-[#F5F3FF] dark:bg-purple-950/40 px-3 py-2 rounded-xl border border-[#DDD6FE] dark:border-purple-900 border-l-4 border-l-[#8B5CF6] shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-[#8B5CF6] shadow-sm' : ''
                   }`}
                   title="Filter by active in-progress applications"
                 >
-                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                  <div className="flex items-center justify-between text-[#7C3AED] dark:text-purple-300 text-[10px] font-bold uppercase tracking-wider leading-tight">
                     <span className="truncate">
                       {language === 'bn' ? 'চলমান আবেদন' : 'In Progress'}
                     </span>
-                    <div className="w-5 h-5 rounded-md bg-purple-50 dark:bg-purple-950/80 border border-purple-200/70 dark:border-purple-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-                      <Clock className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                    <div className="w-6 h-6 rounded-lg bg-[#8B5CF6] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform shrink-0">
+                      <Clock className="w-3.5 h-3.5" />
                     </div>
                   </div>
-                  <div className="text-sm sm:text-base font-extrabold font-mono text-purple-600 dark:text-purple-400 leading-tight">
+                  <div className="text-base sm:text-lg font-extrabold font-mono text-[#7C3AED] dark:text-purple-200 leading-tight mt-1">
                     {activePendingCount}
                   </div>
-                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                  <div className="text-[9px] text-purple-700/80 dark:text-purple-300/80 truncate leading-tight mt-0.5 font-medium">
                     Under verification &amp; processing
                   </div>
                 </div>
               );
             })()}
 
-            {/* 4. Delivered */}
+            {/* 4. Delivered (Emerald) */}
             {(() => {
               const deliveredCount = allCases.filter(c => c.status.toLowerCase().includes('delivered')).length;
               const isActive = statusFilter.toLowerCase().includes('delivered');
@@ -1646,23 +1645,23 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       setTodayHearingsFilter(false);
                     }
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-emerald-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
-                    isActive ? 'ring-2 ring-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/40' : ''
+                  className={`bg-[#ECFDF5] dark:bg-emerald-950/40 px-3 py-2 rounded-xl border border-[#A7F3D0] dark:border-emerald-900 border-l-4 border-l-[#10B981] shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-[#10B981] shadow-sm' : ''
                   }`}
                   title="Filter by delivered entries"
                 >
-                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                  <div className="flex items-center justify-between text-[#059669] dark:text-emerald-300 text-[10px] font-bold uppercase tracking-wider leading-tight">
                     <span className="truncate">
                       {language === 'bn' ? 'সরবরাহ সম্পন্ন' : 'Delivered'}
                     </span>
-                    <div className="w-5 h-5 rounded-md bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200/70 dark:border-emerald-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                    <div className="w-6 h-6 rounded-lg bg-[#10B981] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform shrink-0">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
                     </div>
                   </div>
-                  <div className="text-sm sm:text-base font-extrabold font-mono text-emerald-600 dark:text-emerald-400 leading-tight">
+                  <div className="text-base sm:text-lg font-extrabold font-mono text-[#059669] dark:text-emerald-200 leading-tight mt-1">
                     {deliveredCount}
                   </div>
-                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                  <div className="text-[9px] text-emerald-700/80 dark:text-emerald-300/80 truncate leading-tight mt-0.5 font-medium">
                     Completed &amp; handed to party
                   </div>
                 </div>
@@ -1670,9 +1669,9 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
             })()}
           </div>
         ) : type === 'rti' ? (
-          /* RTI Dashboard: TOTAL CASES, DISPOSED, OVERDUE CASES, ACTIVE PENDING CASES (Vault Files omitted) */
+          /* RTI Dashboard: TOTAL CASES, DISPOSED, OVERDUE CASES, ACTIVE PENDING CASES */
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-            {/* 1. Total Cases */}
+            {/* 1. Total Cases (Blue) */}
             {(() => {
               const isActive =
                 categoryFilter === 'All' &&
@@ -1690,30 +1689,30 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                     setUnderInquiryFilter(false);
                     setTodayHearingsFilter(false);
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-blue-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
-                    isActive ? 'ring-2 ring-blue-500/40 bg-blue-50/40 dark:bg-blue-950/30' : ''
+                  className={`bg-[#EBF5FF] dark:bg-blue-950/40 px-3 py-2 rounded-xl border border-[#BFDBFE] dark:border-blue-900 border-l-4 border-l-[#0077E6] shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-[#0077E6] shadow-sm' : ''
                   }`}
                   title="Click to view all RTI applications"
                 >
-                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                  <div className="flex items-center justify-between text-[#0077E6] dark:text-blue-300 text-[10px] font-bold uppercase tracking-wider leading-tight">
                     <span className="truncate">
                       {language === 'bn' ? 'মোট আরটিআই' : 'TOTAL CASES'}
                     </span>
-                    <div className="w-5 h-5 rounded-md bg-blue-50 dark:bg-blue-950/80 border border-blue-200/70 dark:border-blue-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-                      <FileSearch className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                    <div className="w-6 h-6 rounded-lg bg-[#0077E6] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform shrink-0">
+                      <FileSearch className="w-3.5 h-3.5" />
                     </div>
                   </div>
-                  <div className="text-sm sm:text-base font-extrabold font-mono text-slate-900 dark:text-slate-100 leading-tight">
+                  <div className="text-base sm:text-lg font-extrabold font-mono text-[#0077E6] dark:text-blue-200 leading-tight mt-1">
                     {allCases.length}
                   </div>
-                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                  <div className="text-[9px] text-blue-700/80 dark:text-blue-300/80 truncate leading-tight mt-0.5 font-medium">
                     {pendingCount} Active • {disposedCount} Replied
                   </div>
                 </div>
               );
             })()}
 
-            {/* 2. Disposed */}
+            {/* 2. Disposed (Emerald) */}
             {(() => {
               const isActive = categoryFilter === 'Disposed';
               return (
@@ -1729,30 +1728,30 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       setTodayHearingsFilter(false);
                     }
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-emerald-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
-                    isActive ? 'ring-2 ring-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/40' : ''
+                  className={`bg-[#ECFDF5] dark:bg-emerald-950/40 px-3 py-2 rounded-xl border border-[#A7F3D0] dark:border-emerald-900 border-l-4 border-l-[#10B981] shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-[#10B981] shadow-sm' : ''
                   }`}
                   title="Filter by replied and disposed RTI matters"
                 >
-                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                  <div className="flex items-center justify-between text-[#059669] dark:text-emerald-300 text-[10px] font-bold uppercase tracking-wider leading-tight">
                     <span className="truncate">
                       {language === 'bn' ? 'নিষ্পত্তিকৃত (তথ্য প্রাপ্ত)' : 'DISPOSED'}
                     </span>
-                    <div className="w-5 h-5 rounded-md bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200/70 dark:border-emerald-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                    <div className="w-6 h-6 rounded-lg bg-[#10B981] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform shrink-0">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
                     </div>
                   </div>
-                  <div className="text-sm sm:text-base font-extrabold font-mono text-emerald-600 dark:text-emerald-400 leading-tight">
+                  <div className="text-base sm:text-lg font-extrabold font-mono text-[#059669] dark:text-emerald-200 leading-tight mt-1">
                     {disposedCount}
                   </div>
-                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                  <div className="text-[9px] text-emerald-700/80 dark:text-emerald-300/80 truncate leading-tight mt-0.5 font-medium">
                     Information provided &amp; closed
                   </div>
                 </div>
               );
             })()}
 
-            {/* 3. Overdue Cases */}
+            {/* 3. Overdue Cases (Crimson / Rose) */}
             {(() => {
               const isActive = rtiOverdueFilter;
               return (
@@ -1766,30 +1765,30 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       setTodayHearingsFilter(false);
                     }
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-rose-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
-                    isActive ? 'ring-2 ring-rose-500/50 bg-rose-50/50 dark:bg-rose-950/40' : ''
+                  className={`bg-[#FFF1F2] dark:bg-rose-950/40 px-3 py-2 rounded-xl border border-[#FECDD3] dark:border-rose-900 border-l-4 border-l-[#E11D48] shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-[#E11D48] shadow-sm' : ''
                   }`}
                   title="Filter by RTI matters exceeding statutory 30-day response limit"
                 >
-                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                  <div className="flex items-center justify-between text-[#E11D48] dark:text-rose-300 text-[10px] font-bold uppercase tracking-wider leading-tight">
                     <span className="truncate">
                       {language === 'bn' ? 'মেয়াদোত্তীর্ণ (৩০ দিন+)' : 'OVERDUE CASES'}
                     </span>
-                    <div className="w-5 h-5 rounded-md bg-rose-50 dark:bg-rose-950/80 border border-rose-200/70 dark:border-rose-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-                      <AlertTriangle className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+                    <div className="w-6 h-6 rounded-lg bg-[#E11D48] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform shrink-0">
+                      <AlertTriangle className="w-3.5 h-3.5" />
                     </div>
                   </div>
-                  <div className="text-sm sm:text-base font-extrabold font-mono text-rose-600 dark:text-rose-400 leading-tight">
+                  <div className="text-base sm:text-lg font-extrabold font-mono text-[#E11D48] dark:text-rose-200 leading-tight mt-1">
                     {rtiOverdueCount}
                   </div>
-                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                  <div className="text-[9px] text-rose-700/80 dark:text-rose-300/80 truncate leading-tight mt-0.5 font-medium">
                     &gt; 30-day statutory reply window
                   </div>
                 </div>
               );
             })()}
 
-            {/* 4. Active Pending Cases */}
+            {/* 4. Active Pending Cases (Purple) */}
             {(() => {
               const rtiPendingCount = allCases.filter(c => getStatusTrackingInfo(c.status).category === 'Pending' || getStatusTrackingInfo(c.status).category === 'In Progress').length;
               const isActive = (categoryFilter === 'Pending' || categoryFilter === 'In Progress') && !rtiOverdueFilter;
@@ -1806,23 +1805,23 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       setTodayHearingsFilter(false);
                     }
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-purple-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
-                    isActive ? 'ring-2 ring-purple-500/50 bg-purple-50/50 dark:bg-purple-950/40' : ''
+                  className={`bg-[#F5F3FF] dark:bg-purple-950/40 px-3 py-2 rounded-xl border border-[#DDD6FE] dark:border-purple-900 border-l-4 border-l-[#8B5CF6] shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-[#8B5CF6] shadow-sm' : ''
                   }`}
                   title="Filter by active pending RTI applications"
                 >
-                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                  <div className="flex items-center justify-between text-[#7C3AED] dark:text-purple-300 text-[10px] font-bold uppercase tracking-wider leading-tight">
                     <span className="truncate">
                       {language === 'bn' ? 'সক্রিয় বিচারাধীন' : 'ACTIVE PENDING CASES'}
                     </span>
-                    <div className="w-5 h-5 rounded-md bg-purple-50 dark:bg-purple-950/80 border border-purple-200/70 dark:border-purple-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-                      <Clock className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                    <div className="w-6 h-6 rounded-lg bg-[#8B5CF6] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform shrink-0">
+                      <Clock className="w-3.5 h-3.5" />
                     </div>
                   </div>
-                  <div className="text-sm sm:text-base font-extrabold font-mono text-purple-600 dark:text-purple-400 leading-tight">
+                  <div className="text-base sm:text-lg font-extrabold font-mono text-[#7C3AED] dark:text-purple-200 leading-tight mt-1">
                     {rtiPendingCount}
                   </div>
-                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                  <div className="text-[9px] text-purple-700/80 dark:text-purple-300/80 truncate leading-tight mt-0.5 font-medium">
                     Awaiting PIO / Appellate reply
                   </div>
                 </div>
@@ -1830,9 +1829,9 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
             })()}
           </div>
         ) : (
-          /* All other sub dashboards (mutation, misc, lrappeal, firstappeal, lrtt, conversion): 5 cards (Vault Files omitted) */
+          /* All other sub dashboards (mutation, misc, lrappeal, firstappeal, lrtt, conversion): 5 cards */
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
-            {/* 1. Total Cases */}
+            {/* 1. Total Cases (Blue) */}
             {(() => {
               const isActive =
                 categoryFilter === 'All' &&
@@ -1851,30 +1850,30 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                     setTodayHearingsFilter(false);
                     setAttachmentFilter(false);
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-blue-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
-                    isActive ? 'ring-2 ring-blue-500/40 bg-blue-50/40 dark:bg-blue-950/30' : ''
+                  className={`bg-[#EBF5FF] dark:bg-blue-950/40 px-3 py-2 rounded-xl border border-[#BFDBFE] dark:border-blue-900 border-l-4 border-l-[#0077E6] shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-[#0077E6] shadow-sm' : ''
                   }`}
                   title="Click to view all registered cases in this module"
                 >
-                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                  <div className="flex items-center justify-between text-[#0077E6] dark:text-blue-300 text-[10px] font-bold uppercase tracking-wider leading-tight">
                     <span className="truncate">
                       {language === 'bn' ? 'মোট কেস (Total Cases)' : 'TOTAL CASES'}
                     </span>
-                    <div className="w-5 h-5 rounded-md bg-blue-50 dark:bg-blue-950/80 border border-blue-200/70 dark:border-blue-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-                      <Icon className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                    <div className="w-6 h-6 rounded-lg bg-[#0077E6] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform shrink-0">
+                      <Icon className="w-3.5 h-3.5" />
                     </div>
                   </div>
-                  <div className="text-sm sm:text-base font-extrabold font-mono text-slate-900 dark:text-slate-100 leading-tight">
+                  <div className="text-base sm:text-lg font-extrabold font-mono text-[#0077E6] dark:text-blue-200 leading-tight mt-1">
                     {allCases.length}
                   </div>
-                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                  <div className="text-[9px] text-blue-700/80 dark:text-blue-300/80 truncate leading-tight mt-0.5 font-medium">
                     {pendingCount} Pending • {disposedCount} Disposed
                   </div>
                 </div>
               );
             })()}
 
-            {/* 2. Pending Cases */}
+            {/* 2. Pending Cases (Amber) */}
             {(() => {
               const isActive = categoryFilter === 'Pending' && !underInquiryFilter && !todayHearingsFilter;
               return (
@@ -1892,30 +1891,30 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       setAttachmentFilter(false);
                     }
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-purple-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
-                    isActive ? 'ring-2 ring-purple-500/50 bg-purple-50/50 dark:bg-purple-950/40' : ''
+                  className={`bg-[#FFFBEB] dark:bg-amber-950/40 px-3 py-2 rounded-xl border border-[#FDE68A] dark:border-amber-900 border-l-4 border-l-[#F59E0B] shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-[#F59E0B] shadow-sm' : ''
                   }`}
                   title="Filter by active pending cases"
                 >
-                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                  <div className="flex items-center justify-between text-[#D97706] dark:text-amber-300 text-[10px] font-bold uppercase tracking-wider leading-tight">
                     <span className="truncate">
                       {language === 'bn' ? 'চলমান বিচারাধীন' : 'PENDING CASES'}
                     </span>
-                    <div className="w-5 h-5 rounded-md bg-purple-50 dark:bg-purple-950/80 border border-purple-200/70 dark:border-purple-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-                      <Clock className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                    <div className="w-6 h-6 rounded-lg bg-[#F59E0B] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform shrink-0">
+                      <Clock className="w-3.5 h-3.5" />
                     </div>
                   </div>
-                  <div className="text-sm sm:text-base font-extrabold font-mono text-purple-600 dark:text-purple-400 leading-tight">
+                  <div className="text-base sm:text-lg font-extrabold font-mono text-[#D97706] dark:text-amber-200 leading-tight mt-1">
                     {pendingCount}
                   </div>
-                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                  <div className="text-[9px] text-amber-700/80 dark:text-amber-300/80 truncate leading-tight mt-0.5 font-medium">
                     Requires follow-up &amp; dates
                   </div>
                 </div>
               );
             })()}
 
-            {/* 3. Today's Hearings */}
+            {/* 3. Today's Hearings (Purple) */}
             {(() => {
               const isActive = todayHearingsFilter;
               return (
@@ -1931,30 +1930,30 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       setAttachmentFilter(false);
                     }
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-amber-500 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
-                    isActive ? 'ring-2 ring-amber-500/50 bg-amber-50/50 dark:bg-amber-950/40' : ''
+                  className={`bg-[#F5F3FF] dark:bg-purple-950/40 px-3 py-2 rounded-xl border border-[#DDD6FE] dark:border-purple-900 border-l-4 border-l-[#8B5CF6] shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-[#8B5CF6] shadow-sm' : ''
                   }`}
                   title="Filter by cases with hearings scheduled today"
                 >
-                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                  <div className="flex items-center justify-between text-[#7C3AED] dark:text-purple-300 text-[10px] font-bold uppercase tracking-wider leading-tight">
                     <span className="truncate">
                       {language === 'bn' ? 'আজকের শুনানি' : "TODAYS HEARING"}
                     </span>
-                    <div className="w-5 h-5 rounded-md bg-amber-50 dark:bg-amber-950/80 border border-amber-200/70 dark:border-amber-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-                      <Calendar className="w-3 h-3 text-amber-500" />
+                    <div className="w-6 h-6 rounded-lg bg-[#8B5CF6] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform shrink-0">
+                      <Calendar className="w-3.5 h-3.5" />
                     </div>
                   </div>
-                  <div className="text-sm sm:text-base font-extrabold font-mono text-amber-600 dark:text-amber-400 leading-tight">
+                  <div className="text-base sm:text-lg font-extrabold font-mono text-[#7C3AED] dark:text-purple-200 leading-tight mt-1">
                     {todayHearingCount}
                   </div>
-                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                  <div className="text-[9px] text-purple-700/80 dark:text-purple-300/80 truncate leading-tight mt-0.5 font-medium">
                     Scheduled hearings today
                   </div>
                 </div>
               );
             })()}
 
-            {/* 4. Under Inquiry */}
+            {/* 4. Under Inquiry (Sky Blue) */}
             {(() => {
               const isActive = underInquiryFilter;
               return (
@@ -1970,30 +1969,30 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       setAttachmentFilter(false);
                     }
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-indigo-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
-                    isActive ? 'ring-2 ring-indigo-500/50 bg-indigo-50/50 dark:bg-indigo-950/40' : ''
+                  className={`bg-[#E0F2FE] dark:bg-sky-950/40 px-3 py-2 rounded-xl border border-[#BAE6FD] dark:border-sky-900 border-l-4 border-l-[#0284C7] shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-[#0284C7] shadow-sm' : ''
                   }`}
                   title="Filter by cases currently under inquiry, verification, or hearing report"
                 >
-                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                  <div className="flex items-center justify-between text-[#0284C7] dark:text-sky-300 text-[10px] font-bold uppercase tracking-wider leading-tight">
                     <span className="truncate">
                       {language === 'bn' ? 'তদন্তাধীন মামলা' : 'UNDER INQUIRY'}
                     </span>
-                    <div className="w-5 h-5 rounded-md bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200/70 dark:border-indigo-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-                      <FileSearch className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+                    <div className="w-6 h-6 rounded-lg bg-[#0284C7] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform shrink-0">
+                      <FileSearch className="w-3.5 h-3.5" />
                     </div>
                   </div>
-                  <div className="text-sm sm:text-base font-extrabold font-mono text-indigo-600 dark:text-indigo-400 leading-tight">
+                  <div className="text-base sm:text-lg font-extrabold font-mono text-[#0284C7] dark:text-sky-200 leading-tight mt-1">
                     {underInquiryCount}
                   </div>
-                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                  <div className="text-[9px] text-sky-700/80 dark:text-sky-300/80 truncate leading-tight mt-0.5 font-medium">
                     Field inquiry &amp; verification
                   </div>
                 </div>
               );
             })()}
 
-            {/* 5. Disposed */}
+            {/* 5. Disposed (Emerald) */}
             {(() => {
               const isActive = categoryFilter === 'Disposed';
               return (
@@ -2011,23 +2010,23 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
                       setAttachmentFilter(false);
                     }
                   }}
-                  className={`bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-200/90 dark:border-slate-800 border-l-3 border-l-emerald-600 border-b-3 border-b-slate-300 dark:border-b-slate-950 shadow-[0_4px_10px_rgba(15,23,42,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all cursor-pointer group ${
-                    isActive ? 'ring-2 ring-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/40' : ''
+                  className={`bg-[#ECFDF5] dark:bg-emerald-950/40 px-3 py-2 rounded-xl border border-[#A7F3D0] dark:border-emerald-900 border-l-4 border-l-[#10B981] shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group ${
+                    isActive ? 'ring-2 ring-[#10B981] shadow-sm' : ''
                   }`}
                   title="Filter by disposed &amp; allowed cases"
                 >
-                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-wider leading-tight">
+                  <div className="flex items-center justify-between text-[#059669] dark:text-emerald-300 text-[10px] font-bold uppercase tracking-wider leading-tight">
                     <span className="truncate">
                       {language === 'bn' ? 'নিষ্পত্তিকৃত মামলা' : 'DISPOSED'}
                     </span>
-                    <div className="w-5 h-5 rounded-md bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200/70 dark:border-emerald-800/70 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                    <div className="w-6 h-6 rounded-lg bg-[#10B981] text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform shrink-0">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
                     </div>
                   </div>
-                  <div className="text-sm sm:text-base font-extrabold font-mono text-emerald-600 dark:text-emerald-400 leading-tight">
+                  <div className="text-base sm:text-lg font-extrabold font-mono text-[#059669] dark:text-emerald-200 leading-tight mt-1">
                     {disposedCount}
                   </div>
-                  <div className="text-[9px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5">
+                  <div className="text-[9px] text-emerald-700/80 dark:text-emerald-300/80 truncate leading-tight mt-0.5 font-medium">
                     Order passed &amp; finalized
                   </div>
                 </div>
