@@ -6,6 +6,7 @@ import { AppLanguage, translations, Translations } from '../data/translations';
 import { INITIAL_SAMPLE_DRAFTS } from '../data/sampleDraftTemplates';
 import { APP_VERSION, APP_BUILD_DATE, APP_RELEASE_NAME } from '../config/version';
 import { autoMergeAllPreviousData, mergeCompanyLists, extractCompaniesFromPayload } from '../utils/dataMergeMigration';
+import { companyHasUserCreatedData } from '../utils/companyDataSafety';
 import { getOrCreateSyncDeviceIdAsync } from '../services/driveSyncProtocol';
 import { getReadyPlatformSyncStateStorage } from '../services/readySyncStateStorage';
 import { collectCompanyChanges, createSyncEnvelopes, type TrackedCompany } from '../services/companyChangeTracker';
@@ -255,11 +256,7 @@ export const isDemoOrLegacyCompany = (c: any): boolean => {
   if (!c || typeof c !== 'object') return true;
 
   // Never discard a chamber that contains ANY user-created information.
-  const hasUserData = [
-    c.cases, c.parties, c.users, c.causeList, c.vaultFiles, c.activityLog, c.sampleDrafts
-  ].some(value => Array.isArray(value) && value.length > 0) ||
-    (c.diaryData && typeof c.diaryData === 'object' && Object.keys(c.diaryData).length > 0) ||
-    Boolean(c.logoUrl || c.gst || c.address || c.phone || c.email || c.barCouncil);
+  const hasUserData = companyHasUserCreatedData(c);
 
   if (hasUserData) return false;
 
