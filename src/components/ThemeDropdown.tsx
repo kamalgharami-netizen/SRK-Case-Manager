@@ -30,15 +30,15 @@ const TEMPLATE_LAYOUTS = [
 ] as const;
 
 const PALETTES = [
-  { theme: 'navy', name: 'Midnight Navy', nameBn: 'মিডনাইট নেভি', bg: '#081A2E', panel: '#193653', accent: '#48A4FF' },
-  { theme: 'white', name: 'Deep Sapphire', nameBn: 'ডিপ স্যাফায়ার', bg: '#0B1E35', panel: '#1B3858', accent: '#43A5FF' },
-  { theme: 'light', name: 'Steel Graphite', nameBn: 'স্টিল গ্রাফাইট', bg: '#17283D', panel: '#294562', accent: '#82B7FF' },
-  { theme: 'mint', name: 'Deep Land Green', nameBn: 'ডিপ ল্যান্ড গ্রিন', bg: '#0B2B23', panel: '#195141', accent: '#55D69B' },
-  { theme: 'azure', name: 'Courtroom Blue', nameBn: 'কোর্টরুম ব্লু', bg: '#0A263D', panel: '#194968', accent: '#48B9F0' },
-  { theme: 'charcoal', name: 'Graphite', nameBn: 'গ্রাফাইট', bg: '#171D26', panel: '#303C4B', accent: '#B8D0F0' },
-  { theme: 'emerald', name: 'Forest Emerald', nameBn: 'ফরেস্ট এমেরাল্ড', bg: '#0B2B23', panel: '#1D5540', accent: '#72E2B4' },
-  { theme: 'indigo', name: 'Royal Indigo', nameBn: 'রয়্যাল ইন্ডিগো', bg: '#19162F', panel: '#393064', accent: '#C4B5FD' },
-  { theme: 'sepia', name: 'Bronze Chamber', nameBn: 'ব্রোঞ্জ চেম্বার', bg: '#261D16', panel: '#493526', accent: '#D6A85D' }
+  { theme: 'navy', name: 'Deep Blue', nameBn: 'গাঢ় নীল', bg: '#081A2E', panel: '#193653', accent: '#48A4FF' },
+  { theme: 'white', name: 'Dark Blue', nameBn: 'গাঢ় নীলচে', bg: '#0B1E35', panel: '#1B3858', accent: '#43A5FF' },
+  { theme: 'light', name: 'Charcoal Grey', nameBn: 'গাঢ় ধূসর', bg: '#17283D', panel: '#294562', accent: '#82B7FF' },
+  { theme: 'mint', name: 'Dark Green', nameBn: 'গাঢ় সবুজ', bg: '#0B2B23', panel: '#195141', accent: '#55D69B' },
+  { theme: 'azure', name: 'Ocean Blue', nameBn: 'সমুদ্র নীল', bg: '#0A263D', panel: '#194968', accent: '#48B9F0' },
+  { theme: 'charcoal', name: 'Slate Grey', nameBn: 'স্লেট ধূসর', bg: '#171D26', panel: '#303C4B', accent: '#B8D0F0' },
+  { theme: 'emerald', name: 'Forest Green', nameBn: 'বন সবুজ', bg: '#0B2B23', panel: '#1D5540', accent: '#72E2B4' },
+  { theme: 'indigo', name: 'Deep Purple', nameBn: 'গাঢ় বেগুনি', bg: '#19162F', panel: '#393064', accent: '#C4B5FD' },
+  { theme: 'sepia', name: 'Dark Brown', nameBn: 'গাঢ় বাদামি', bg: '#261D16', panel: '#493526', accent: '#D6A85D' }
 ] as const;
 
 // 24 distinct layout templates, each paired with a deep, high-contrast palette.
