@@ -80,7 +80,7 @@ export const ViewingOptionsModal: React.FC = () => {
 
         {/* Scrollable Configuration Body */}
         <div className="p-4 sm:p-6 overflow-y-auto space-y-6 text-xs sm:text-sm">
-          {/* UI TEMPLATE LIBRARY — layout and deep palette are selected together */}
+          {/* UI TEMPLATE LIBRARY — layout and bright palette are selected together */}
           <section className="space-y-3 rounded-2xl border border-sky-500/60 bg-[#102943] p-3 sm:p-4">
             <div>
               <label className="flex items-center gap-2 text-sm font-extrabold text-slate-100">
@@ -90,7 +90,7 @@ export const ViewingOptionsModal: React.FC = () => {
               <p className="mt-1 text-xs font-medium text-slate-300">
                 {language === 'bn'
                   ? '২০টির বেশি সম্পূর্ণ ডিজাইন থেকে বেছে নিন। প্রতিটি Template-এর নিজস্ব ডিপ কালার ও UI বিন্যাস রয়েছে।'
-                  : 'Choose from more than 20 complete designs. Every template includes its own deep colours and interface layout.'}
+                  : 'Choose from more than 20 complete designs. Every template includes its own bright colours and interface layout.'}
               </p>
             </div>
             <ThemeDropdown variant="full" className="w-full" />
@@ -292,7 +292,7 @@ export const ViewingOptionsModal: React.FC = () => {
             <div className={`p-4 rounded-xl border transition-all ${highContrast ? 'border-2' : ''}`} style={{ backgroundColor: 'var(--srk-surface)', color: 'var(--srk-ink)', borderColor: 'var(--srk-border)' }}>
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs" style={{ backgroundColor: "var(--srk-accent)", color: "#07182B" }}>
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs" style={{ backgroundColor: "var(--srk-accent)", color: "#713006" }}>
                     <Scale className="w-3.5 h-3.5" />
                   </div>
                   <div className={`font-extrabold ${fontSize === 'large' ? 'text-base' : 'text-xs sm:text-sm'}`}>
