@@ -1733,3 +1733,64 @@ body { color-scheme:dark!important; }
 #root [class*="shadow-["] {
   box-shadow:0 7px 18px var(--srk-shadow), inset 0 1px 0 rgba(164,207,239,.10)!important;
 }
+
+
+/* SRK BRIGHT-COLOUR MANDATE — global final override for every application screen.
+   Neutral black, white and grey utility colours are remapped to vivid hues.
+   This is intentionally global: dashboard, navigation, dialogs, settings, forms,
+   tables, menus, overlays, notifications and mobile navigation all inherit it. */
+:root {
+  --srk-canvas:#1769E0;
+  --srk-surface:#398BFF;
+  --srk-raised:#55A2FF;
+  --srk-header:#D92D45;
+  --srk-sidebar:#7046D8;
+  --srk-ink:#183F78;
+  --srk-muted:#285A91;
+  --srk-accent:#FFE04B;
+  --srk-accent-strong:#E56A16;
+  --srk-border:#F052AD;
+  --srk-shadow:rgba(93,35,174,.34);
+  color-scheme:light;
+}
+html.theme-navy { --srk-canvas:#1769E0; --srk-surface:#398BFF; --srk-raised:#55A2FF; --srk-header:#1257C5; --srk-sidebar:#104AAE; --srk-ink:#153C78; --srk-muted:#245A9D; --srk-accent:#FFE04B; --srk-border:#82C2FF; }
+html.theme-white { --srk-canvas:#D92D45; --srk-surface:#F04B62; --srk-raised:#FF7183; --srk-header:#C51F3A; --srk-sidebar:#AE1B36; --srk-ink:#76172C; --srk-muted:#9B263D; --srk-accent:#FFE04B; --srk-border:#FF9BA8; }
+html.theme-light { --srk-canvas:#D99A00; --srk-surface:#F4BC27; --srk-raised:#FFD45C; --srk-header:#B97F00; --srk-sidebar:#A66F00; --srk-ink:#704600; --srk-muted:#8B5A00; --srk-accent:#F052AD; --srk-border:#FFE49A; }
+html.theme-mint, html.theme-emerald { --srk-canvas:#159B55; --srk-surface:#28BD70; --srk-raised:#55D990; --srk-header:#0E8748; --srk-sidebar:#08773E; --srk-ink:#07572F; --srk-muted:#0C7040; --srk-accent:#FFE04B; --srk-border:#91EAB8; }
+html.theme-azure { --srk-canvas:#079BCB; --srk-surface:#25BCEB; --srk-raised:#55D2F5; --srk-header:#087FAE; --srk-sidebar:#076D98; --srk-ink:#07516D; --srk-muted:#096B8B; --srk-accent:#FFE04B; --srk-border:#8CE5FA; }
+html.theme-charcoal { --srk-canvas:#D83291; --srk-surface:#F052AD; --srk-raised:#FF79C4; --srk-header:#BD237C; --srk-sidebar:#A51C6B; --srk-ink:#75124A; --srk-muted:#92205F; --srk-accent:#FFE04B; --srk-border:#FFB1DE; }
+html.theme-indigo { --srk-canvas:#7046D8; --srk-surface:#936BFA; --srk-raised:#AD91FF; --srk-header:#5932BE; --srk-sidebar:#4826A7; --srk-ink:#321A78; --srk-muted:#492A91; --srk-accent:#FFE04B; --srk-border:#C4B1FF; }
+html.theme-sepia { --srk-canvas:#D96A13; --srk-surface:#F28B32; --srk-raised:#FFAA5F; --srk-header:#BB5108; --srk-sidebar:#A34406; --srk-ink:#713006; --srk-muted:#91400A; --srk-accent:#FFE04B; --srk-border:#FFC18E; }
+
+/* Every page surface and structural region */
+html, body, #root { background:var(--srk-canvas)!important; color:var(--srk-ink)!important; }
+#root .app-shell-bg, #root main { background:var(--srk-canvas)!important; color:var(--srk-ink)!important; }
+#root header, #root header.sticky { background:var(--srk-header)!important; color:#FFE49A!important; border-color:var(--srk-border)!important; }
+#root aside { background:var(--srk-sidebar)!important; color:#FFD0A3!important; border-color:var(--srk-border)!important; }
+#root :is([role="dialog"],[role="menu"],[role="listbox"],[role="alertdialog"],[data-radix-popper-content-wrapper]) {
+  color:var(--srk-ink);
+}
+#root :is(.bg-white,.bg-slate-50,.bg-slate-100,.bg-slate-200,.bg-gray-50,.bg-gray-100,.bg-gray-200,.bg-zinc-50,.bg-zinc-100,.bg-neutral-50,.bg-neutral-100,.bg-black) {
+  background-color:var(--srk-surface)!important; color:var(--srk-ink)!important;
+}
+#root [class*="bg-white"], #root [class*="bg-black"], #root [class*="bg-slate-"], #root [class*="bg-gray-"], #root [class*="bg-zinc-"], #root [class*="bg-neutral-"] {
+  background-color:var(--srk-surface)!important; color:var(--srk-ink)!important;
+}
+#root [class*="dark:bg-slate-"], #root [class*="dark:bg-gray-"], #root [class*="dark:bg-zinc-"], #root [class*="dark:bg-neutral-"] {
+  background-color:var(--srk-raised)!important;
+}
+#root :is(.text-white,.text-slate-50,.text-gray-50,.text-zinc-50,.text-neutral-50) { color:#FFE49A!important; }
+#root [class*="text-white"], #root [class*="text-slate-50"], #root [class*="text-gray-50"] { color:#FFE49A!important; }
+#root :is(.text-black,.text-slate-950,.text-slate-900,.text-slate-800,.text-slate-700,.text-gray-950,.text-gray-900,.text-gray-800,.text-zinc-950,.text-neutral-950) { color:var(--srk-ink)!important; }
+#root [class*="text-slate-"], #root [class*="text-gray-"], #root [class*="text-zinc-"], #root [class*="text-neutral-"] { color:var(--srk-muted)!important; }
+#root :is(.border-white,.border-black,.border-slate-100,.border-slate-200,.border-slate-300,.border-gray-100,.border-gray-200,.border-zinc-200,.border-neutral-200) { border-color:var(--srk-border)!important; }
+#root [class*="border-slate-"], #root [class*="border-gray-"], #root [class*="border-zinc-"], #root [class*="border-neutral-"], #root [class*="border-white"], #root [class*="border-black"] { border-color:var(--srk-border)!important; }
+#root :is(input,select,textarea) { background:var(--srk-raised)!important; color:var(--srk-ink)!important; border-color:var(--srk-border)!important; }
+#root :is(input,textarea)::placeholder { color:var(--srk-muted)!important; opacity:1; }
+#root [class*="bg-black/"], #root [class*="bg-white/"] { background-color:rgba(112,70,216,.88)!important; }
+#root :is(.shadow-xs,.shadow-2xs,.shadow-sm,.shadow-md,.shadow-lg,.shadow-xl,.shadow-2xl), #root [class*="shadow-["] {
+  box-shadow:0 7px 18px var(--srk-shadow), 0 2px 0 rgba(255,208,163,.25)!important;
+}
+#root :is(button,a,[role="button"]):focus-visible { outline:3px solid #FFE04B!important; outline-offset:2px!important; }
+#root svg { flex-shrink:0; }
+#root [class*="ring-slate-"], #root [class*="ring-gray-"] { --tw-ring-color:#FFE04B!important; }
