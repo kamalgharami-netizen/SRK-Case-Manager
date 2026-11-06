@@ -525,7 +525,7 @@ html.theme-navy body #root header.sticky {
   background: linear-gradient(100deg, #03152e 0%, #082b56 55%, #061d3b 100%) !important;
   color: #f4f8ff !important;
   border-bottom: 1px solid #1766ad !important;
-  box-shadow: 0 5px 22px rgba(0,0,0,.34) !important;
+  box-shadow: 0 5px 22px rgba(7, 25, 43,.34) !important;
 }
 html.theme-navy body #root header.sticky :is(div,span,button,svg) { color: inherit; }
 html.theme-navy body #root header.sticky input {
@@ -537,7 +537,7 @@ html.theme-navy body #root aside {
   background: linear-gradient(180deg, #082b55 0%, #041a35 100%) !important;
   color: #edf5ff !important;
   border-color: #14518b !important;
-  box-shadow: 5px 0 22px rgba(0,0,0,.28) !important;
+  box-shadow: 5px 0 22px rgba(7, 25, 43,.28) !important;
 }
 html.theme-navy body #root aside :is(div,span,button,svg) { color: inherit; }
 html.theme-navy body #root aside button {
@@ -551,7 +551,7 @@ html.theme-navy body #root aside button:hover {
 html.theme-navy body #root aside button[class*="bg-blue-600"] {
   background: linear-gradient(100deg,#1684f5 0%,#0756bd 100%) !important;
   color: #fff !important;
-  box-shadow: 0 5px 15px rgba(0,0,0,.28) !important;
+  box-shadow: 0 5px 15px rgba(7, 25, 43,.28) !important;
 }
 html.theme-navy body #root aside [class*="border-t"],
 html.theme-navy body #root aside [class*="border-b"] { border-color: #1b4d7b !important; }
@@ -585,7 +585,7 @@ html.theme-navy body #root main table thead th { background: #103963 !important;
 html.theme-navy body #root main table tbody tr:hover { background: #10345a !important; }
 html.theme-navy body #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
   border-color: #1e6099 !important;
-  box-shadow: 0 8px 20px rgba(0,0,0,.24) !important;
+  box-shadow: 0 8px 20px rgba(7, 25, 43,.24) !important;
 }
 html.theme-navy body #root main button[class*="bg-blue-"],
 html.theme-navy body #root main button[class*="bg-emerald-"],
@@ -596,7 +596,7 @@ html.theme-navy .srk-dashboard { color: #eaf3ff !important; }
 html.theme-navy .srk-dashboard .srk-dashboard-hero {
   background: linear-gradient(110deg,#062957 0%,#0756a8 58%,#0874c9 100%) !important;
   border: 1px solid #3d91db !important;
-  box-shadow: 0 12px 28px rgba(0,0,0,.34) !important;
+  box-shadow: 0 12px 28px rgba(7, 25, 43,.34) !important;
 }
 html.theme-navy .srk-dashboard h2,
 html.theme-navy .srk-dashboard h3 { color: #f0f6ff !important; }
@@ -606,7 +606,7 @@ html.theme-navy .srk-dashboard [class*="min-h-[136px]"] {
   color: #f1f7ff !important;
   border: 1px solid #286da8 !important;
   border-bottom: 4px solid #164c7b !important;
-  box-shadow: 0 9px 0 rgba(0,0,0,.12), 0 13px 22px rgba(0,0,0,.25) !important;
+  box-shadow: 0 9px 0 rgba(7, 25, 43,.12), 0 13px 22px rgba(7, 25, 43,.25) !important;
 }
 html.theme-navy .srk-dashboard [class*="min-h-[104px]"] :is(.text-slate-900,.text-slate-800,.text-slate-700),
 html.theme-navy .srk-dashboard [class*="min-h-[136px]"] :is(.text-slate-900,.text-slate-800,.text-slate-700) {
@@ -909,7 +909,7 @@ body{background:#d9eaff!important;color:var(--srk-ink)}
 #root aside button:hover{color:#fff!important;background:linear-gradient(90deg,rgba(36,137,239,.35),rgba(18,90,158,.25))!important;border-color:rgba(126,190,255,.35)!important}
 #root aside button[class*="bg-blue-600"],#root aside button[aria-current="page"]{background:linear-gradient(180deg,#2695ff 0%,#0864c7 100%)!important;color:#fff!important;border-color:#72bdff!important;box-shadow:0 4px 0 #06417e,0 8px 14px rgba(0,14,39,.28)!important}
 #root aside button[class*="bg-white"],#root aside button[class*="bg-slate-"],#root aside button[class*="bg-rose-"]{background:rgba(221,239,255,.12)!important;border-color:rgba(173,211,249,.2)!important;color:#f3f8ff!important}
-#root aside button svg{color:inherit!important;filter:drop-shadow(0 2px 1px rgba(0,0,0,.24))}
+#root aside button svg{color:inherit!important;filter:drop-shadow(0 2px 1px rgba(7, 25, 43,.24))}
 #root aside :is(.text-slate-400,.text-slate-500,.text-slate-600){color:#b9d8f6!important}
 #root aside :is(.bg-slate-100,.bg-slate-200){background:rgba(217,237,255,.18)!important}
 #root aside :is(.border-slate-200,.border-slate-300){border-color:rgba(173,211,249,.24)!important}
@@ -1044,7 +1044,7 @@ html.ui-style-midnight #root aside { width: 248px !important; }
 html.ui-style-midnight #root aside button { min-height: 38px !important; border-radius: 8px !important; }
 html.ui-style-midnight #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
   border-radius: 10px !important;
-  box-shadow: 0 4px 0 rgba(0, 0, 0, .22), 0 8px 18px rgba(0, 0, 0, .12) !important;
+  box-shadow: 0 4px 0 rgba(7, 25, 43, .22), 0 8px 18px rgba(7, 25, 43, .12) !important;
 }
 html.ui-style-midnight #root main table th,
 html.ui-style-midnight #root main table td { padding: 9px 10px !important; }
@@ -1229,10 +1229,10 @@ html[class*="theme-"] body #root main :is(.bg-blue-50,.bg-sky-50,.bg-indigo-50,.
 html[class*="theme-"] body #root :is(svg,svg *) { filter:none !important; opacity:1 !important; }
 html[class*="theme-"] body #root * { text-shadow:none !important; }
 html[class*="theme-"] body #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
-  box-shadow:0 6px 0 rgba(0,0,0,.34),0 10px 18px rgba(0,0,0,.22) !important;
+  box-shadow:0 6px 0 rgba(7, 25, 43,.34),0 10px 18px rgba(7, 25, 43,.22) !important;
 }
 html[class*="theme-"] body #root main :is(input,select,textarea) {
-  box-shadow:inset 0 2px 4px rgba(0,0,0,.24) !important;
+  box-shadow:inset 0 2px 4px rgba(7, 25, 43,.24) !important;
 }
 html[class*="theme-"] body #root main :is(.backdrop-blur,.backdrop-blur-sm,.backdrop-blur-md,.backdrop-blur-lg) {
   -webkit-backdrop-filter:none !important;
@@ -1334,7 +1334,7 @@ html.ui-style-3d #root main :is(input,select,textarea) {
   background: #10243D !important;
   color: #D7E6F7 !important;
   border-color: #355575 !important;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,.32) !important;
+  box-shadow: inset 0 2px 4px rgba(7, 25, 43,.32) !important;
 }
 html.ui-style-3d #root main :is(.bg-white,.bg-slate-50,.bg-slate-100,.bg-gray-50,.bg-gray-100) {
   background: #142B45 !important;
@@ -1349,7 +1349,7 @@ html.ui-style-3d #root :is(svg,svg *) {
 }
 
 /* DEFINITIVE NO-WHITE-SHADOW OVERRIDE — remove every inherited white glow, shadow and drop-shadow.
-   3D depth is reintroduced below using dark navy/black shadows only. */
+   3D depth uses deep-blue shadows only; pure black is not used. */
 #root *,
 #root *::before,
 #root *::after {
