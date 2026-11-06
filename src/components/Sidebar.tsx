@@ -101,6 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [casesOpen, setCasesOpen] = useState(true);
   const [toolsOpen, setToolsOpen] = useState(true);
   const [chamberOpen, setChamberOpen] = useState(true);
+  const [resourcesOpen, setResourcesOpen] = useState(true);
 
   const getCaseCount = (type: CaseType) => {
     return activeCompany?.cases.filter(c => c.type === type).length || 0;
@@ -482,22 +483,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </span>
                 </button>
 
-                <button
-                  onClick={() => handleNav('wblract')}
-                  className={navItemClass('wblract')}
-                >
+
+              </div>
+            )}
+          </div>
+
+          {/* LEGAL RESOURCES & COMMUNICATION */}
+          <div className="space-y-1">
+            <button
+              onClick={() => setResourcesOpen(!resourcesOpen)}
+              className="w-full flex items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer"
+            >
+              <span>Legal Resources &amp; Communication</span>
+              {resourcesOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+            </button>
+            {resourcesOpen && (
+              <div className="space-y-1">
+                <button onClick={() => handleNav('wblract')} className={navItemClass('wblract')}>
                   <div className="flex items-center gap-2.5">
-                    <BookOpen className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                    <BookOpen className="w-4 h-4 text-teal-300" />
                     <span>{t.statutoryWblr}</span>
                   </div>
                 </button>
-
-                <button
-                  onClick={() => handleNav('messages')}
-                  className={navItemClass('messages')}
-                >
+                <button onClick={() => handleNav('messages')} className={navItemClass('messages')}>
                   <div className="flex items-center gap-2.5">
-                    <MessageSquare className="w-4 h-4 text-green-600" />
+                    <MessageSquare className="w-4 h-4 text-emerald-300" />
                     <span>{t.clientMessaging}</span>
                   </div>
                 </button>
