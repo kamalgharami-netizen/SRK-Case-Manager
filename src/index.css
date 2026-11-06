@@ -1441,3 +1441,137 @@ html.ui-style-minimal #root main button:not(:disabled) { border-radius: 9px !imp
   html.ui-style-command #root aside,
   html.ui-style-dashboard #root aside { width: min(236px, 85vw) !important; }
 }
+
+
+/* SRK TEMPLATE LIBRARY COMPLETION — 24 selectable layouts, deep palettes only. */
+/* The five legacy palette IDs are retained for saved-preference compatibility,
+   but are now deep colour schemes only. No light/pastel template is available. */
+html.theme-white {
+  --srk-canvas:#071B32; --srk-surface:#102B49; --srk-surface-raised:#173858;
+  --srk-ink:#F0F6FF; --srk-muted:#B8CBE0; --srk-accent:#55A9FF;
+  --srk-header:#06172B; --srk-sidebar:#0A2340; --srk-border:#315B82;
+}
+html.theme-light {
+  --srk-canvas:#172538; --srk-surface:#243A53; --srk-surface-raised:#304A65;
+  --srk-ink:#F2F6FC; --srk-muted:#C2D0E0; --srk-accent:#9CC7FF;
+  --srk-header:#101D2E; --srk-sidebar:#192D44; --srk-border:#49637E;
+}
+html.theme-sepia {
+  --srk-canvas:#24190F; --srk-surface:#382719; --srk-surface-raised:#493421;
+  --srk-ink:#FFF3DF; --srk-muted:#E0C49B; --srk-accent:#E2B46B;
+  --srk-header:#1B120B; --srk-sidebar:#2C1E12; --srk-border:#755333;
+}
+html.theme-azure {
+  --srk-canvas:#082238; --srk-surface:#10344F; --srk-surface-raised:#174765;
+  --srk-ink:#EAF7FF; --srk-muted:#B4D5E8; --srk-accent:#53C7F2;
+  --srk-header:#061A2D; --srk-sidebar:#0A2B43; --srk-border:#28617F;
+}
+html.theme-mint {
+  --srk-canvas:#09271F; --srk-surface:#123B30; --srk-surface-raised:#1B4D3E;
+  --srk-ink:#E9FFF4; --srk-muted:#B9E0CD; --srk-accent:#61DDA5;
+  --srk-header:#061D17; --srk-sidebar:#0B3026; --srk-border:#2E7359;
+}
+/* Apply deep variables consistently to the whole app, including legacy utility classes. */
+html[class*="theme-"] body #root,
+html[class*="theme-"] body #root .app-shell-bg,
+html[class*="theme-"] body #root main {
+  background:var(--srk-canvas) !important;
+  color:var(--srk-ink) !important;
+}
+html[class*="theme-"] body #root main :is(.bg-white,.bg-slate-50,.bg-slate-100,.bg-slate-200) {
+  background:var(--srk-surface) !important;
+  color:var(--srk-ink) !important;
+}
+html[class*="theme-"] body #root main :is(input,select,textarea) {
+  background:var(--srk-surface-raised) !important;
+  color:var(--srk-ink) !important;
+  border-color:var(--srk-border) !important;
+}
+html[class*="theme-"] body #root main :is(.text-slate-900,.text-slate-800,.text-slate-700,.text-slate-600) {
+  color:var(--srk-ink) !important;
+}
+html[class*="theme-"] body #root main :is(.text-slate-500,.text-slate-400) {
+  color:var(--srk-muted) !important;
+}
+html[class*="theme-"] body #root main [class*="border-slate-"] {
+  border-color:var(--srk-border) !important;
+}
+
+/* 13. Architect Desk — fixed navigation rail and wide, aligned work canvas. */
+html.ui-style-architect #root aside { width:270px !important; }
+html.ui-style-architect #root main { max-width:1600px; margin-inline:auto; padding:20px !important; }
+html.ui-style-architect #root main .srk-dashboard { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:14px !important; }
+html.ui-style-architect #root main .srk-dashboard > * { min-width:0; }
+
+/* 14. Command Dashboard — metric-led cards with a broad dashboard grid. */
+html.ui-style-dashboard #root main .srk-dashboard { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px !important; }
+html.ui-style-dashboard #root main .srk-dashboard [class*="min-h-[104px]"],
+html.ui-style-dashboard #root main .srk-dashboard [class*="min-h-[136px]"] { min-height:150px !important; border-radius:12px !important; }
+html.ui-style-dashboard #root main .srk-dashboard h2 { letter-spacing:.02em; }
+
+/* 15. Ribbon Workspace — compact top actions and grouped command controls. */
+html.ui-style-ribbon #root header.sticky { min-height:76px !important; border-bottom-width:3px !important; }
+html.ui-style-ribbon #root header.sticky button { border-radius:7px !important; min-height:36px !important; }
+html.ui-style-ribbon #root main { padding:18px !important; }
+html.ui-style-ribbon #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] { border-radius:9px !important; }
+
+/* 16. Split Panel Office — two-column dashboard work surface. */
+html.ui-style-split #root main .srk-dashboard { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; gap:16px !important; }
+html.ui-style-split #root main .srk-dashboard > * { min-width:0; }
+html.ui-style-split #root aside { width:250px !important; }
+
+/* 17. Court Docket — hearing-first rows and restrained rectangular panels. */
+html.ui-style-docket #root main table { border-collapse:separate; border-spacing:0 5px; }
+html.ui-style-docket #root main table thead th { position:sticky; top:0; z-index:2; }
+html.ui-style-docket #root main table tbody tr { outline:1px solid var(--srk-border); }
+html.ui-style-docket #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] { border-radius:8px !important; }
+
+/* 18. Editorial Legal — centred reading column and clear heading hierarchy. */
+html.ui-style-editorial #root main { max-width:1240px; margin-inline:auto; padding:26px !important; line-height:1.55; }
+html.ui-style-editorial #root main h1 { letter-spacing:-.025em; }
+html.ui-style-editorial #root main h2 { padding-bottom:8px; border-bottom:1px solid var(--srk-border); }
+html.ui-style-editorial #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] { border-radius:6px !important; }
+
+/* 19. Command Centre — compact shortcut rail and dense command tiles. */
+html.ui-style-command #root aside { width:224px !important; }
+html.ui-style-command #root aside button { min-height:36px !important; padding-block:7px !important; border-radius:7px !important; }
+html.ui-style-command #root main .srk-dashboard { gap:10px !important; }
+html.ui-style-command #root main .srk-dashboard :is(.rounded-xl,.rounded-2xl)[class*="border"] { border-radius:8px !important; }
+
+/* 20. Wide Sidebar Suite — expanded navigation and spacious content alignment. */
+html.ui-style-sidebar #root aside { width:312px !important; }
+html.ui-style-sidebar #root aside button { min-height:46px !important; padding-inline:14px !important; }
+html.ui-style-sidebar #root main { padding:22px !important; }
+
+/* 21. Matrix Workspace — four-column information matrix and tight spacing. */
+html.ui-style-matrix #root main .srk-dashboard { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px !important; }
+html.ui-style-matrix #root main .srk-dashboard > * { min-width:0; }
+html.ui-style-matrix #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] { border-radius:7px !important; padding:12px !important; }
+
+/* 22. Case Dossier — document-like panels with strong left-edge markers. */
+html.ui-style-dossier #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] { border-left:4px solid var(--srk-accent) !important; border-radius:8px !important; }
+html.ui-style-dossier #root main table th { letter-spacing:.035em; text-transform:uppercase; font-size:.72rem; }
+html.ui-style-dossier #root main { gap:18px !important; }
+
+/* 23. Land Ledger — dense ledger tables with aligned numeric records. */
+html.ui-style-ledger #root main table { border-collapse:collapse; font-variant-numeric:tabular-nums; }
+html.ui-style-ledger #root main table th,
+html.ui-style-ledger #root main table td { padding:8px 10px !important; border:1px solid var(--srk-border) !important; }
+html.ui-style-ledger #root main table thead th { background:var(--srk-surface-raised) !important; }
+html.ui-style-ledger #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] { border-radius:5px !important; }
+
+/* 24. Minimal Chamber — flat, low-noise panels without any pale glow. */
+html.ui-style-minimal #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] { border-radius:8px !important; box-shadow:none !important; border-width:1px !important; }
+html.ui-style-minimal #root main button:not(:disabled) { border-radius:7px !important; box-shadow:none !important; }
+html.ui-style-minimal #root main { gap:12px !important; padding:14px !important; }
+
+/* Responsive layout safety for the additional templates. */
+@media (max-width: 767px) {
+  html.ui-style-dashboard #root main .srk-dashboard,
+  html.ui-style-split #root main .srk-dashboard,
+  html.ui-style-matrix #root main .srk-dashboard,
+  html.ui-style-architect #root main .srk-dashboard {
+    grid-template-columns:repeat(1,minmax(0,1fr)) !important;
+  }
+  html.ui-style-sidebar #root aside { width:min(312px,85vw) !important; }
+}
