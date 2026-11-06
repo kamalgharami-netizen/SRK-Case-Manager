@@ -974,3 +974,90 @@ html.ui-style-copper #root main{background:#f5f0e9!important;color:#292524!impor
 html.ui-style-copper #root main :is(.rounded-xl,.rounded-2xl)[class*="border"]{background:#fffaf3!important;border-color:#d6a77a!important;box-shadow:0 4px 0 rgba(120,72,35,.25),0 8px 16px rgba(41,37,36,.1)!important}
 html.ui-style-copper #root main button:not(:disabled){box-shadow:0 3px 0 rgba(146,86,45,.4)!important}
 @media(max-width:767px){html[class*="ui-style-"] #root main{min-width:0!important}html[class*="ui-style-"] #root main :is(.rounded-xl,.rounded-2xl){max-width:100%}html[class*="ui-style-"] #root aside{max-width:85vw}}
+
+/* SRK UI presentation refinements — structural only.
+   Colour remains controlled independently by the Colour Theme selector. */
+html.ui-style-modern #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-radius: 14px !important;
+  box-shadow: none !important;
+  border-width: 1px !important;
+}
+html.ui-style-modern #root main button:not(:disabled),
+html.ui-style-modern #root header.sticky button,
+html.ui-style-modern #root aside button {
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+html.ui-style-modern #root main button:not(:disabled):hover,
+html.ui-style-modern #root aside button:hover {
+  transform: none !important;
+}
+html.ui-style-modern #root main {
+  gap: 1rem !important;
+}
+
+html.ui-style-glass #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-radius: 18px !important;
+  background-color: color-mix(in srgb, Canvas 86%, transparent) !important;
+  border-color: color-mix(in srgb, currentColor 18%, transparent) !important;
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 22px rgba(0, 18, 42, .14) !important;
+}
+html.ui-style-glass #root main button:not(:disabled) {
+  border-radius: 12px !important;
+  box-shadow: 0 3px 8px rgba(0, 18, 42, .14) !important;
+}
+html.ui-style-glass #root main button:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+html.ui-style-glass #root main :is(input,select,textarea) {
+  border-radius: 11px !important;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+html.ui-style-classic #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+  border-radius: 6px !important;
+  border-width: 1px !important;
+  box-shadow: none !important;
+}
+html.ui-style-classic #root main button:not(:disabled),
+html.ui-style-classic #root header.sticky button,
+html.ui-style-classic #root aside button {
+  border-radius: 5px !important;
+  box-shadow: none !important;
+}
+html.ui-style-classic #root main button:not(:disabled):hover,
+html.ui-style-classic #root aside button:hover {
+  transform: none !important;
+}
+html.ui-style-classic #root main table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+html.ui-style-classic #root main table th,
+html.ui-style-classic #root main table td {
+  border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+}
+
+@media (max-width: 767px) {
+  html.ui-style-modern #root main,
+  html.ui-style-glass #root main,
+  html.ui-style-classic #root main {
+    padding: 12px !important;
+    min-width: 0 !important;
+  }
+  html.ui-style-glass #root main :is(.rounded-xl,.rounded-2xl)[class*="border"] {
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html.ui-style-modern #root *,
+  html.ui-style-glass #root *,
+  html.ui-style-classic #root * {
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+  }
+}
