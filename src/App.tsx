@@ -576,7 +576,6 @@ const MainAppContent: React.FC = () => {
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         onOpenSettings={handleOpenSettings}
-        onOpenNewCase={handleOpenNewCase}
       />
 
       {/* Main Content Area */}
