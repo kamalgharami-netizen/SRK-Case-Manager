@@ -129,7 +129,27 @@ jobs:
           done
 
           echo "Android SDK tool paths verified."
-          echo no | "$AVDMANAGER" create avd --force -n srk-sync-ci --package "system-images;android-35;default;x86_64" --device pixel_2
+          # Keep AVD creation and emulator lookup on the same explicit directory.
+          # The previous CI failure created no discoverable srk-sync-ci.ini file.
+          export ANDROID_USER_HOME="${HOME}/.android"
+          export ANDROID_AVD_HOME="${ANDROID_USER_HOME}/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          AVD_INI="$ANDROID_AVD_HOME/srk-sync-ci.ini"
+          AVD_DIR="$ANDROID_AVD_HOME/srk-sync-ci.avd"
+          rm -rf "$AVD_INI" "$AVD_DIR"
+          printf 'no\n' | "$AVDMANAGER" create avd --force \
+            -n srk-sync-ci \
+            -k "system-images;android-35;default;x86_64" \
+            -d pixel_2 \
+            -p "$AVD_DIR"
+          if [ ! -s "$AVD_INI" ] || [ ! -s "$AVD_DIR/config.ini" ]; then
+            echo "::error::Android Virtual Device creation did not produce the expected configuration files."
+            "$AVDMANAGER" list avd || true
+            find "$ANDROID_USER_HOME" -maxdepth 4 -type f -name '*.ini' -o -name config.ini || true
+            exit 1
+          fi
+          echo "Created AVD configuration:"
+          cat "$AVD_INI"
           "$ADB" start-server
           "$EMULATOR" -avd srk-sync-ci -port 5554 -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -no-snapshot-load -wipe-data -memory 3072 -cores 2 -no-metrics > "$EMULATOR_LOG" 2>&1 &
           EMULATOR_PID=$!
