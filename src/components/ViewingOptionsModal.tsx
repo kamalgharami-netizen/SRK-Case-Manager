@@ -47,22 +47,22 @@ export const ViewingOptionsModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl bg-[#102B4C] text-slate-50 rounded-2xl shadow-[0_18px_45px_rgba(3,20,45,.55)] border border-blue-400/50 overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+      <div className="w-full max-w-2xl bg-white text-slate-900 rounded-2xl shadow-2xl border border-[#DCE7F3] overflow-hidden flex flex-col max-h-[92vh]">
         {/* Modal Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 bg-[#0A2340]">
+        <div className="p-4 sm:p-5 border-b border-[#DCE7F3] flex items-center justify-between gap-3 bg-[#EBF3FB]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-600/25">
+            <div className="w-10 h-10 rounded-xl bg-[#1976D2] text-white flex items-center justify-center shadow-xs">
               <SlidersHorizontal className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-50 flex items-center gap-2">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
                 <span>{t.displayPreferences}</span>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-[#1976D2]">
                   SRK View
                 </span>
               </h2>
-              <p className="text-xs text-blue-100">
+              <p className="text-xs text-slate-500">
                 {language === 'bn'
                   ? 'UI Template, ফন্ট সাইজ ও তথ্য ঘনত্ব নিজের মতো সাজান'
                   : 'Customize UI templates, reading typography, and information density'}
@@ -71,7 +71,7 @@ export const ViewingOptionsModal: React.FC = () => {
           </div>
           <button
             onClick={closeViewModal}
-            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-blue-700 transition-colors cursor-pointer"
+            className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
             title="Close"
           >
             <X className="w-5 h-5" />
@@ -79,22 +79,22 @@ export const ViewingOptionsModal: React.FC = () => {
         </div>
 
         {/* Scrollable Configuration Body */}
-        <div className="p-4 sm:p-6 overflow-y-auto space-y-6 text-xs sm:text-sm">
-          {/* UI TEMPLATE LIBRARY — layout and bright palette are selected together */}
-          <section className="space-y-3 rounded-2xl border border-sky-500/60 bg-[#102943] p-3 sm:p-4">
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-6 text-xs sm:text-sm bg-white">
+          {/* UI TEMPLATE LIBRARY */}
+          <section className="space-y-3 rounded-2xl border border-blue-200 bg-blue-50/50 p-3 sm:p-4">
             <div>
-              <label className="flex items-center gap-2 text-sm font-extrabold text-slate-100">
-                <LayoutGrid className="h-4 w-4 text-sky-300" />
+              <label className="flex items-center gap-2 text-sm font-extrabold text-slate-900">
+                <LayoutGrid className="h-4 w-4 text-[#1976D2]" />
                 {language === 'bn' ? 'UI Template লাইব্রেরি' : 'UI Template Library'}
               </label>
-              <p className="mt-1 text-xs font-medium text-slate-300">
+              <p className="mt-1 text-xs font-medium text-slate-600">
                 {language === 'bn'
                   ? '২০টির বেশি সম্পূর্ণ ডিজাইন থেকে বেছে নিন। প্রতিটি Template-এর নিজস্ব ডিপ কালার ও UI বিন্যাস রয়েছে।'
                   : 'Choose from more than 20 complete designs. Every template includes its own bright colours and interface layout.'}
               </p>
             </div>
             <ThemeDropdown variant="full" className="w-full" />
-            <p className="text-[10px] font-semibold text-slate-400">
+            <p className="text-[10px] font-semibold text-slate-500">
               {language === 'bn' ? 'আলাদা Colour Theme বা Colour Change অপশন নেই; Template নির্বাচন করলেই রং ও ডিজাইন একসঙ্গে বদলাবে।' : 'There is no separate colour or theme switch; selecting a template changes the layout and palette together.'}
             </p>
           </section>
@@ -313,11 +313,11 @@ export const ViewingOptionsModal: React.FC = () => {
         </div>
 
         {/* Modal Action Footer */}
-        <div className="p-4 sm:p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/50 flex items-center justify-between gap-3">
+        <div className="p-4 sm:p-5 border-t border-[#DCE7F3] bg-[#EBF3FB] flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={resetViewPreferences}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl text-slate-600 hover:bg-slate-200/60 transition-colors cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>{t.resetDefaults}</span>
@@ -327,14 +327,14 @@ export const ViewingOptionsModal: React.FC = () => {
             <button
               type="button"
               onClick={closeViewModal}
-              className="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
             >
               {t.cancel}
             </button>
             <button
               type="button"
               onClick={handleApply}
-              className="px-5 py-2 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/25 transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-5 py-2 text-xs font-bold rounded-xl bg-[#1976D2] hover:bg-[#1565C0] text-white shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <Check className="w-3.5 h-3.5 stroke-[2.5]" />
               <span>{t.applyPreferences}</span>

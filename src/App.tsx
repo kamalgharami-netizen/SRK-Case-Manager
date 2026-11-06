@@ -515,8 +515,8 @@ const MainAppContent: React.FC = () => {
   };
 
   return (
-    <div className="h-[100dvh] w-full flex items-center justify-center bg-slate-900/90 dark:bg-black overflow-hidden font-sans app-shell-bg p-0">
-      <div className="relative flex h-screen w-full my-auto mx-auto bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-hidden rounded-none border-0 shadow-none app-shell-bg">
+    <div className="h-[100dvh] w-full flex items-center justify-center bg-[#EBF3FB] overflow-hidden font-sans app-shell-bg p-0">
+      <div className="relative flex h-[90dvh] w-[95%] lg:h-screen lg:w-full my-auto mx-auto bg-[#EBF3FB] text-slate-900 overflow-hidden rounded-2xl lg:rounded-none border border-slate-200/90 lg:border-0 shadow-2xl lg:shadow-none app-shell-bg">
         {/* Toast Notification Container */}
         <Toast />
 
@@ -569,18 +569,19 @@ const MainAppContent: React.FC = () => {
         isMobileTrigger={isMobileExitConfirmOpen}
       />
 
-      {/* Collapsible Sidebar for Desktop & Tablets */}
+      {/* Collapsible Sidebar for Desktop & Tablets matching Image 1 & 2 */}
       <Sidebar
         currentPage={currentPage}
         onNavigate={handleNavigatePage}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         onOpenSettings={handleOpenSettings}
+        onOpenNewCase={handleOpenNewCase}
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        {/* Sticky Top Bar with Mobile Back button & Responsive layout */}
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-[#EBF3FB]">
+        {/* Sticky Top Bar matching Image 2 */}
         <Header
           onToggleSidebar={() => setSidebarOpen(prev => !prev)}
           isSidebarOpen={sidebarOpen}
@@ -986,71 +987,63 @@ const MainAppContent: React.FC = () => {
         </div>
       )}
 
-      {/* Dedicated Thumb-Friendly Bottom Navigation Bar for Mobile inside 90% screen container */}
-      <nav className="lg:hidden absolute bottom-0 left-0 right-0 z-30 h-16 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-2 flex items-center justify-around shadow-2xl">
+      {/* Mobile Bottom Navigation Bar matching Image 2 (Home, Cases, Sync, Settings) */}
+      <nav className="lg:hidden absolute bottom-0 left-0 right-0 z-30 h-16 bg-white border-t border-slate-200 px-3 flex items-center justify-around shadow-lg">
         <button
           type="button"
           onClick={() => handleNavigatePage('dashboard')}
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
+          className={`flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl transition-all cursor-pointer ${
             currentPage === 'dashboard' && !entryMode
-              ? 'text-blue-600 dark:text-blue-400 font-bold'
-              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              ? 'text-[#1976D2] font-bold'
+              : 'text-slate-500 hover:text-slate-900'
           }`}
         >
           <LayoutDashboard className="w-5 h-5" />
-          <span className="text-[10px]">Home</span>
+          <span className="text-[11px] font-semibold">Home</span>
         </button>
 
         <button
           type="button"
           onClick={() => setMobileCasesSheetOpen(prev => !prev)}
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
+          className={`flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl transition-all cursor-pointer ${
             mobileCasesSheetOpen || currentPage.startsWith('case-')
-              ? 'text-blue-600 dark:text-blue-400 font-bold'
-              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              ? 'text-[#1976D2] font-bold'
+              : 'text-slate-500 hover:text-slate-900'
           }`}
         >
           <FolderGit2 className="w-5 h-5" />
-          <span className="text-[10px]">Cases</span>
+          <span className="text-[11px] font-semibold">Cases</span>
         </button>
 
         <button
           type="button"
-          onClick={() => handleNavigatePage('sharecalculator')}
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
-            currentPage === 'sharecalculator'
-              ? 'text-emerald-600 dark:text-emerald-400 font-bold'
-              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-          }`}
+          onClick={async () => {
+            showToast('Syncing chamber data...', 'info');
+            try {
+              await runGoogleDriveSyncCycleAsync({ allowAndroidReauthorization: true });
+              showToast('Chamber data synced successfully!', 'success');
+            } catch (e) {
+              performBackup({ type: 'manual' });
+              showToast('Local backup saved successfully!', 'success');
+            }
+          }}
+          className="flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl text-slate-500 hover:text-slate-900 transition-all cursor-pointer"
         >
-          <Calculator className="w-5 h-5 text-emerald-600" />
-          <span className="text-[10px]">Share Calc</span>
+          <RefreshCw className="w-5 h-5" />
+          <span className="text-[11px] font-semibold">Sync</span>
         </button>
 
         <button
           type="button"
-          onClick={() => handleNavigatePage('causelist')}
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
-            currentPage === 'causelist'
-              ? 'text-amber-600 dark:text-amber-400 font-bold'
-              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-          }`}
-        >
-          <Calendar className="w-5 h-5" />
-          <span className="text-[10px]">Cause List</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleOpenSettings('vault')}
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-lg transition-colors cursor-pointer ${
+          onClick={() => handleOpenSettings('display')}
+          className={`flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl transition-all cursor-pointer ${
             settingsOpen
-              ? 'text-indigo-600 dark:text-indigo-400 font-bold'
-              : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              ? 'text-[#1976D2] font-bold'
+              : 'text-slate-500 hover:text-slate-900'
           }`}
         >
           <Settings className="w-5 h-5" />
-          <span className="text-[10px]">Settings</span>
+          <span className="text-[11px] font-semibold">Settings</span>
         </button>
       </nav>
 
