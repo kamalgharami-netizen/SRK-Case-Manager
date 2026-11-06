@@ -2,7 +2,7 @@ name: SRK Case Manager - Android APK + Windows EXE
 
 on:
   push:
-    branches: [main, feature/google-drive-two-way-sync]
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
