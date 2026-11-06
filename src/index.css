@@ -1238,3 +1238,6 @@ html[class*="theme-"] body #root main :is(.backdrop-blur,.backdrop-blur-sm,.back
   -webkit-backdrop-filter:none !important;
   backdrop-filter:none !important;
 }
+
+
+html[class*="theme-"] { color-scheme: dark !important; }
