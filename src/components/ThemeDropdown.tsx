@@ -14,7 +14,19 @@ const TEMPLATE_LAYOUTS = [
   { style: 'midnight', name: 'Midnight Docket', nameBn: 'মিডনাইট ডকেট', detail: 'Narrow navigation and docket rows' },
   { style: 'ocean', name: 'Ocean Command', nameBn: 'ওশান কমান্ড', detail: 'Rounded command surfaces' },
   { style: 'emerald', name: 'Emerald Chamber', nameBn: 'এমেরাল্ড চেম্বার', detail: 'Balanced green workspace' },
-  { style: 'copper', name: 'Copper Heritage', nameBn: 'কপার হেরিটেজ', detail: 'Formal framed panels' }
+  { style: 'copper', name: 'Copper Heritage', nameBn: 'কপার হেরিটেজ', detail: 'Formal framed panels' },
+  { style: 'architect', name: 'Architect Desk', nameBn: 'আর্কিটেক্ট ডেস্ক', detail: 'Split navigation with wide workspace' },
+  { style: 'dashboard', name: 'Command Dashboard', nameBn: 'কমান্ড ড্যাশবোর্ড', detail: 'Large metric-first dashboard' },
+  { style: 'ribbon', name: 'Ribbon Workspace', nameBn: 'রিবন ওয়ার্কস্পেস', detail: 'Top action ribbon and grouped tools' },
+  { style: 'split', name: 'Split Panel Office', nameBn: 'স্প্লিট প্যানেল অফিস', detail: 'Two-column working canvas' },
+  { style: 'docket', name: 'Court Docket', nameBn: 'কোর্ট ডকেট', detail: 'Hearing-list focused layout' },
+  { style: 'editorial', name: 'Editorial Legal', nameBn: 'এডিটোরিয়াল লিগ্যাল', detail: 'Typography-led reading layout' },
+  { style: 'command', name: 'Command Centre', nameBn: 'কমান্ড সেন্টার', detail: 'Compact command tiles and shortcuts' },
+  { style: 'sidebar', name: 'Wide Sidebar Suite', nameBn: 'ওয়াইড সাইডবার স্যুট', detail: 'Wide persistent navigation rail' },
+  { style: 'matrix', name: 'Matrix Workspace', nameBn: 'ম্যাট্রিক্স ওয়ার্কস্পেস', detail: 'Tight multi-column information grid' },
+  { style: 'dossier', name: 'Case Dossier', nameBn: 'কেস ডসিয়ার', detail: 'Document dossier and record panels' },
+  { style: 'ledger', name: 'Land Ledger', nameBn: 'ল্যান্ড লেজার', detail: 'Ledger-style tables and rows' },
+  { style: 'minimal', name: 'Minimal Chamber', nameBn: 'মিনিমাল চেম্বার', detail: 'Quiet flat surfaces and clean spacing' }
 ] as const;
 
 const PALETTES = [
@@ -26,11 +38,12 @@ const PALETTES = [
   { theme: 'sepia', name: 'Bronze Chamber', nameBn: 'ব্রোঞ্জ চেম্বার', bg: '#261D16', panel: '#493526', accent: '#D6A85D' }
 ] as const;
 
-// 24 complete presets: each option couples a layout with its deep colour palette.
-const UI_TEMPLATES = [
-  ...TEMPLATE_LAYOUTS.map((layout, index) => ({ ...layout, palette: PALETTES[index % PALETTES.length], id: layout.style })),
-  ...TEMPLATE_LAYOUTS.map((layout, index) => ({ ...layout, style: layout.style, palette: PALETTES[(index + 3) % PALETTES.length], id: layout.style + '-deep', name: layout.name + ' Deep', nameBn: layout.nameBn + ' ডিপ' }))
-];
+// 24 distinct layout templates, each paired with a deep, high-contrast palette.
+const UI_TEMPLATES = TEMPLATE_LAYOUTS.map((layout, index) => ({
+  ...layout,
+  palette: PALETTES[index % PALETTES.length],
+  id: layout.style
+}));
 
 interface ThemeDropdownProps { variant?: 'compact' | 'full' | 'sidebar'; className?: string; }
 
