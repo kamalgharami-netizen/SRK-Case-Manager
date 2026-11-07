@@ -15,7 +15,6 @@ import {
   Users,
   ShieldAlert,
   BookOpen,
-  MessageSquare,
   Archive,
   BookMarked,
   Settings,
@@ -61,8 +60,7 @@ export type NavPage =
   | 'users'
   | 'wblract'
   | 'vault'
-  | 'timeline'
-  | 'messages';
+  | 'timeline';
 
 interface SidebarProps {
   currentPage: NavPage;
@@ -514,16 +512,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <div className="flex items-center gap-2.5">
                     <BookOpen className="w-4 h-4 text-teal-600 dark:text-teal-400" />
                     <span>{t.statutoryWblr}</span>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => handleNav('messages')}
-                  className={navItemClass('messages')}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <MessageSquare className="w-4 h-4 text-green-600" />
-                    <span>{t.clientMessaging}</span>
                   </div>
                 </button>
               </div>

@@ -3884,7 +3884,7 @@ export const AiStudio: React.FC<AiStudioProps> = ({
                 </div>
 
                 <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
-                  <div className="text-[10px] font-bold uppercase text-slate-400">Prayer Formula</div>
+                  <div className="text-[10px] font-bold uppercase text-slate-400">Prayer Drafting Pattern</div>
                   <div className="font-semibold text-slate-800 dark:text-slate-200 mt-1">
                     {learnedPatterns.prayerStyle}
                   </div>

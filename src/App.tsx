@@ -14,7 +14,6 @@ import { TeamRoles } from './components/TeamRoles';
 import { DocumentVault } from './components/DocumentVault';
 import { CaseDiary } from './components/CaseDiary';
 import { StatutoryLibrary } from './components/StatutoryLibrary';
-import { CommunicationCenter } from './components/CommunicationCenter';
 import { OfficeAccounts } from './components/OfficeAccounts';
 import { ClientLedger } from './components/ClientLedger';
 import { CashBankRegister } from './components/CashBankRegister';
@@ -728,8 +727,6 @@ const MainAppContent: React.FC = () => {
               )}
 
               {currentPage === 'timeline' && <CaseDiary />}
-
-              {currentPage === 'messages' && <CommunicationCenter />}
               {currentPage === 'accounts' && <OfficeAccounts />}
               {currentPage === 'client-ledger' && <ClientLedger />}
               {currentPage === 'cash-bank' && <CashBankRegister />}

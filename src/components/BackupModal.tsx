@@ -31,7 +31,8 @@ import {
   List,
   ArrowRight,
   Image as ImageIcon,
-  Search
+  Search,
+  ChevronDown
 } from 'lucide-react';
 import { CompanyLogo, BADGE_OPTIONS, COLOR_OPTIONS } from './CompanyLogo';
 import { THEME_OPTIONS } from '../data/themes';
@@ -311,18 +312,6 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                logoutUser();
-              }}
-              className="px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-600 hover:text-white text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
-              title="Logout from Chamber Session"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Logout</span>
-            </button>
             <CompanyLogo company={activeCompany} size="sm" />
             <button
               onClick={onClose}
@@ -726,155 +715,139 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                 </button>
               </div>
 
-              {/* Theme Modes */}
-              <div className="space-y-2.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                  <Palette className="w-4 h-4 text-blue-600" />
-                  <span>Courtroom Color Theme (কালার থিম নির্বাচন)</span>
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
-                  {THEME_OPTIONS.map(opt => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => setTheme(opt.id)}
-                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                        theme === opt.id
-                          ? 'border-blue-600 bg-blue-50/70 ring-2 ring-blue-600 font-bold shadow-xs'
-                          : 'border-slate-200 bg-white hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span
-                          className="w-5 h-5 rounded-full border shadow-2xs"
-                          style={{ backgroundColor: opt.bgHex }}
-                        />
-                        {theme === opt.id && <Check className="w-3.5 h-3.5 text-blue-600 stroke-[3]" />}
-                      </div>
-                      <div className="text-xs font-bold text-slate-900">{opt.name}</div>
-                      <div className="text-[10px] text-slate-500">{opt.nameBn}</div>
-                    </button>
-                  ))}
+              {/* 1. Courtroom Color Theme Dropdown List */}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/40 space-y-2.5">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <label htmlFor="courtroom-theme-select" className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Palette className="w-4 h-4 text-blue-600" />
+                    <span>Courtroom Color Theme (কালার থিম নির্বাচন)</span>
+                  </label>
+                  <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xs">
+                    <span
+                      className="w-3.5 h-3.5 rounded-full border shadow-2xs shrink-0"
+                      style={{ backgroundColor: THEME_OPTIONS.find(opt => opt.id === theme)?.bgHex || '#F0F4F8' }}
+                    />
+                    <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200">
+                      {THEME_OPTIONS.find(opt => opt.id === theme)?.name || 'Theme'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <select
+                    id="courtroom-theme-select"
+                    value={theme}
+                    onChange={e => setTheme(e.target.value as any)}
+                    className="w-full px-3.5 py-2.5 pr-10 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer appearance-none shadow-xs"
+                  >
+                    {THEME_OPTIONS.map(opt => (
+                      <option key={opt.id} value={opt.id}>
+                        {opt.name} — {opt.nameBn} ({opt.tagline})
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-500 pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2" />
+                </div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 pl-0.5">
+                  {THEME_OPTIONS.find(opt => opt.id === theme)?.description}
                 </div>
               </div>
 
-              {/* Information Density & View Mode */}
+              {/* 2. Grid of Dropdowns: View Density & Case Layout Mode */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                {/* View Density Dropdown */}
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/40 space-y-2">
+                  <label htmlFor="view-density-select" className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                     <Layers className="w-4 h-4 text-blue-600" />
                     <span>View Density (তথ্য ঘনত্ব)</span>
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setViewDensity('comfortable')}
-                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                        viewDensity === 'comfortable'
-                          ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 ring-2 ring-blue-600/30'
-                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600'
-                      }`}
+                  <div className="relative">
+                    <select
+                      id="view-density-select"
+                      value={viewDensity}
+                      onChange={e => setViewDensity(e.target.value as 'comfortable' | 'compact')}
+                      className="w-full px-3.5 py-2.5 pr-10 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer appearance-none shadow-xs"
                     >
-                      Comfortable (স্বাচ্ছন্দ্যময়)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setViewDensity('compact')}
-                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                        viewDensity === 'compact'
-                          ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 ring-2 ring-blue-600/30'
-                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600'
-                      }`}
-                    >
-                      Compact (সংক্ষিপ্ত)
-                    </button>
+                      <option value="comfortable">Comfortable (স্বাচ্ছন্দ্যময়) — Standard courtroom spacing</option>
+                      <option value="compact">Compact (সংক্ষিপ্ত) — Dense data-rich view</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-500 pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2" />
                   </div>
+                  <p className="text-[10.5px] text-slate-500 dark:text-slate-400">
+                    Adjusts vertical row height, table cell margins, and card padding.
+                  </p>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                {/* Case Layout Mode Dropdown */}
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/40 space-y-2">
+                  <label htmlFor="case-layout-select" className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                     <LayoutGrid className="w-4 h-4 text-emerald-600" />
                     <span>Case Layout Mode (কেস ভিউ মোড)</span>
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setViewMode('grid')}
-                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                        viewMode === 'grid'
-                          ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 ring-2 ring-blue-600/30'
-                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600'
-                      }`}
+                  <div className="relative">
+                    <select
+                      id="case-layout-select"
+                      value={viewMode}
+                      onChange={e => setViewMode(e.target.value as 'grid' | 'table')}
+                      className="w-full px-3.5 py-2.5 pr-10 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer appearance-none shadow-xs"
                     >
-                      <LayoutGrid className="w-3.5 h-3.5" />
-                      <span>Grid Cards</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setViewMode('table')}
-                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                        viewMode === 'table'
-                          ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 ring-2 ring-blue-600/30'
-                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600'
-                      }`}
-                    >
-                      <List className="w-3.5 h-3.5" />
-                      <span>Table Rows</span>
-                    </button>
+                      <option value="table">Table Rows (টেবিল তালিকা) — Professional registry rows</option>
+                      <option value="grid">Grid Cards (কার্ড ভিউ) — Visual case tiles</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-500 pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2" />
                   </div>
+                  <p className="text-[10.5px] text-slate-500 dark:text-slate-400">
+                    Controls whether cases display as detailed spreadsheet rows or card tiles.
+                  </p>
                 </div>
               </div>
 
-              {/* Font Scale & High Contrast */}
+              {/* 3. Grid of Dropdowns: Font Size & High Contrast Mode */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                {/* Font Size Dropdown */}
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/40 space-y-2">
+                  <label htmlFor="font-size-select" className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                     <Type className="w-4 h-4 text-purple-600" />
                     <span>Font Size (ফন্ট সাইজ)</span>
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setFontSize('normal')}
-                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                        fontSize === 'normal'
-                          ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 ring-2 ring-blue-600/30'
-                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600'
-                      }`}
+                  <div className="relative">
+                    <select
+                      id="font-size-select"
+                      value={fontSize}
+                      onChange={e => setFontSize(e.target.value as 'normal' | 'large')}
+                      className="w-full px-3.5 py-2.5 pr-10 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer appearance-none shadow-xs"
                     >
-                      Standard (100%)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFontSize('large')}
-                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                        fontSize === 'large'
-                          ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 ring-2 ring-blue-600/30'
-                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600'
-                      }`}
-                    >
-                      Large (110%)
-                    </button>
+                      <option value="normal">Standard (সাধারণ - 100%) — Balanced legal typography</option>
+                      <option value="large">Large (বড় টেক্সট - 110%) — High readability scale</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-500 pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2" />
                   </div>
+                  <p className="text-[10.5px] text-slate-500 dark:text-slate-400">
+                    Scales base font hierarchy across dashboard cards, tables, and modal forms.
+                  </p>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                {/* High Contrast Accessibility Dropdown */}
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/40 space-y-2">
+                  <label htmlFor="high-contrast-select" className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                     <Eye className="w-4 h-4 text-amber-500" />
-                    <span>High Contrast Accessibility</span>
+                    <span>High Contrast Accessibility (উচ্চ বৈসাদৃশ্য)</span>
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => setHighContrast(!highContrast)}
-                    className={`w-full p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${
-                      highContrast
-                        ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 ring-2 ring-emerald-600/30'
-                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600'
-                    }`}
-                  >
-                    <span>High Contrast Mode</span>
-                    <span>{highContrast ? 'Enabled (সক্রিয়)' : 'Disabled'}</span>
-                  </button>
+                  <div className="relative">
+                    <select
+                      id="high-contrast-select"
+                      value={highContrast ? 'enabled' : 'disabled'}
+                      onChange={e => setHighContrast(e.target.value === 'enabled')}
+                      className="w-full px-3.5 py-2.5 pr-10 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer appearance-none shadow-xs"
+                    >
+                      <option value="disabled">Standard Contrast (স্বাভাবিক) — Subtle borders & natural shadows</option>
+                      <option value="enabled">High Contrast (সক্রিয়) — Sharp borders & reinforced depth</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-500 pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2" />
+                  </div>
+                  <p className="text-[10.5px] text-slate-500 dark:text-slate-400">
+                    Amplifies line borders and removes faint gray shades for high visibility.
+                  </p>
                 </div>
               </div>
             </div>
@@ -939,58 +912,70 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                 />
               </div>
 
-              {/* Dynamic Legal Insignia Selector */}
-              <div className="space-y-2">
-                <div className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  Or Select Pre-Designed Professional Legal Insignia
+              {/* Dynamic Legal Insignia Dropdown & Selector */}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/40 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="legal-insignia-select" className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Pre-Designed Legal Insignia (আইনি প্রতীক)</span>
+                  </label>
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                    {BADGE_OPTIONS.find(b => b.id === (activeCompany.logoBadge || 'scales'))?.label}
+                  </span>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                  {BADGE_OPTIONS.map(b => (
-                    <button
-                      key={b.id}
-                      type="button"
-                      onClick={() => handleSelectBadge(b.id)}
-                      className={`p-2.5 rounded-xl text-left border text-xs transition-all cursor-pointer ${
-                        activeCompany.logoBadge === b.id && !activeCompany.logoUrl
-                          ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/50 ring-2 ring-blue-600 font-bold shadow-xs'
-                          : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
-                      }`}
-                    >
-                      <div className="text-slate-900 dark:text-slate-100 font-semibold">{b.label}</div>
-                      <div className="text-[10px] text-slate-500">{b.bengali}</div>
-                    </button>
-                  ))}
+                <div className="relative">
+                  <select
+                    id="legal-insignia-select"
+                    value={activeCompany.logoBadge || 'scales'}
+                    onChange={e => handleSelectBadge(e.target.value as any)}
+                    className="w-full px-3.5 py-2.5 pr-10 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer appearance-none shadow-xs"
+                  >
+                    {BADGE_OPTIONS.map(b => (
+                      <option key={b.id} value={b.id}>
+                        {b.label} — {b.bengali}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-500 pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2" />
                 </div>
               </div>
 
-              {/* Brand Color Theme Palette */}
-              <div className="space-y-2">
-                <div className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <Palette className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Chamber Brand Accent Theme</span>
+              {/* Chamber Brand Accent Theme Dropdown List */}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/40 space-y-2.5">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <label htmlFor="chamber-brand-accent-select" className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <Palette className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Chamber Brand Accent Theme (ব্র্যান্ড কালার থিম)</span>
+                  </label>
+                  <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xs">
+                    <span
+                      className="w-3.5 h-3.5 rounded-full border shadow-2xs shrink-0"
+                      style={{ backgroundColor: activeCompany.logoColor || '#2563EB' }}
+                    />
+                    <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200">
+                      {COLOR_OPTIONS.find(c => c.id === (activeCompany.logoColor || '#2563EB'))?.label || 'Custom Color'}
+                    </span>
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {COLOR_OPTIONS.map(c => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => handleSelectColor(c.id)}
-                      className={`p-2 rounded-lg text-left border text-xs flex items-center gap-2 transition-all cursor-pointer ${
-                        activeCompany.logoColor === c.id
-                          ? 'border-blue-600 ring-2 ring-blue-600 font-bold'
-                          : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
-                      }`}
-                    >
-                      <span
-                        className="w-4 h-4 rounded-full shrink-0 shadow-xs"
-                        style={{ backgroundColor: c.id }}
-                      />
-                      <span className="text-[11px] truncate text-slate-800 dark:text-slate-200">
-                        {c.label}
-                      </span>
-                    </button>
-                  ))}
+
+                <div className="relative">
+                  <select
+                    id="chamber-brand-accent-select"
+                    value={activeCompany.logoColor || '#2563EB'}
+                    onChange={e => handleSelectColor(e.target.value)}
+                    className="w-full px-3.5 py-2.5 pr-10 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer appearance-none shadow-xs"
+                  >
+                    {COLOR_OPTIONS.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.label} ({c.id})
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-500 pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2" />
                 </div>
+                <p className="text-[10.5px] text-slate-500 dark:text-slate-400">
+                  Select the primary accent tint used for official chamber firm branding and printable dossier headers.
+                </p>
               </div>
 
               {/* Delete Chamber Workspace Option */}

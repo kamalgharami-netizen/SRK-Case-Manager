@@ -17,7 +17,6 @@ import {
   Users,
   Archive,
   BookOpen,
-  MessageSquare,
   BookMarked,
   UserCheck,
   MapPin,
@@ -95,10 +94,27 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [backupStatus.isOverdue, showDailyBackupReminder, dailyBackupReminderKey, todayDateStr]);
 
-  const totalCases = activeCompany?.cases?.length || 0;
-  const todayHearings = activeCompany?.causeList?.length || 0;
+  // User Rule: Total cases & active pending cases count mutation, misc case, lr appeal, lrtt cases, rti cases, first appeal cases (and conversion).
+  // But NOT certified copy of the deed (certcopy) and ror/pi (rorpi).
+  const isJudicialCaseMatter = (type: CaseType) => {
+    return type !== 'certcopy' && type !== 'rorpi';
+  };
 
   const isDisposedStatus = (status?: string) => {
+    if (!status) return false;
+    const norm = status.toLowerCase().trim();
+    if (
+      norm.includes('disposed') ||
+      norm.includes('closed') ||
+      norm.includes('allowed') ||
+      norm.includes('dismissed') ||
+      norm.includes('rejected') ||
+      norm.includes('order passed') ||
+      norm.includes('complete') ||
+      norm.includes('delivered')
+    ) {
+      return true;
+    }
     return getStatusTrackingInfo(status).category === 'Disposed';
   };
 
@@ -106,37 +122,52 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return !isDisposedStatus(status);
   };
 
+  // User Rule: Under inquiry cases are what those cases are under inquiry of all above cases EXCEPT RTI cases.
   const isUnderInquiryStatus = (status?: string) => {
+    if (!status) return false;
     if (isDisposedStatus(status)) return false;
-    const norm = (status || '').toLowerCase().trim();
+    const norm = status.toLowerCase().trim();
+    if (norm.includes('inquiry complete')) return false;
     return (
       norm.includes('inquiry') ||
-      norm.includes('hearing') ||
-      norm.includes('notice') ||
-      norm.includes('verified') ||
-      norm.includes('report') ||
-      norm.includes('admitted') ||
-      norm.includes('stay') ||
-      norm.includes('progress') ||
+      norm.includes('enquiry') ||
+      norm.includes('investigation') ||
+      norm.includes('site verified') ||
       norm.includes('verification')
     );
   };
 
+  // 1. Total Cases: Mutation, Misc Case, LR Appeal, LRTT, RTI, First Appeal (excl. certcopy & rorpi)
+  const totalCasesList = React.useMemo(() => {
+    return (activeCompany?.cases || []).filter(c => isJudicialCaseMatter(c.type));
+  }, [activeCompany?.cases]);
+
+  // 2. Active Pending Cases: Not disposed / completed of the above cases (including RTI)
   const pendingCasesList = React.useMemo(() => {
-    return (activeCompany?.cases || []).filter(c => isPendingStatus(c.status));
+    return (activeCompany?.cases || []).filter(
+      c => isJudicialCaseMatter(c.type) && isPendingStatus(c.status)
+    );
   }, [activeCompany?.cases]);
 
+  // 3. Under Inquiry: Cases under inquiry of the above cases EXCEPT RTI cases
   const underInquiryCasesList = React.useMemo(() => {
-    return (activeCompany?.cases || []).filter(c => isUnderInquiryStatus(c.status));
+    return (activeCompany?.cases || []).filter(
+      c => isJudicialCaseMatter(c.type) && c.type !== 'rti' && isUnderInquiryStatus(c.status)
+    );
   }, [activeCompany?.cases]);
 
+  // 4. Disposed Cases: All above cases that are closed or disposed
   const disposedCasesList = React.useMemo(() => {
-    return (activeCompany?.cases || []).filter(c => isDisposedStatus(c.status));
+    return (activeCompany?.cases || []).filter(
+      c => isJudicialCaseMatter(c.type) && isDisposedStatus(c.status)
+    );
   }, [activeCompany?.cases]);
 
+  const totalCases = totalCasesList.length;
   const pendingCases = pendingCasesList.length;
   const underInquiryCases = underInquiryCasesList.length;
   const disposedCases = disposedCasesList.length;
+  const todayHearings = activeCompany?.causeList?.length || 0;
   const vaultFiles = activeCompany?.vaultFiles?.length || 0;
 
   // KPI Case Modal State ('total' | 'pending' | 'inquiry' | 'disposed' | null)
@@ -155,12 +186,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const activeModalCasesList = React.useMemo(() => {
-    if (activeKpiModal === 'total') return activeCompany?.cases || [];
+    if (activeKpiModal === 'total') return totalCasesList;
     if (activeKpiModal === 'pending') return pendingCasesList;
     if (activeKpiModal === 'inquiry') return underInquiryCasesList;
     if (activeKpiModal === 'disposed') return disposedCasesList;
     return pendingCasesList;
-  }, [activeKpiModal, activeCompany?.cases, pendingCasesList, underInquiryCasesList, disposedCasesList]);
+  }, [activeKpiModal, totalCasesList, pendingCasesList, underInquiryCasesList, disposedCasesList]);
 
   const filteredPendingCases = React.useMemo(() => {
     return activeModalCasesList.filter(c => {
@@ -181,8 +212,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
     });
   }, [activeModalCasesList, pendingTypeFilter, pendingSearch]);
 
-  // Active cases for tracking: prioritize cases with nextDate, then recent cases
-  const trackedCases = [...(activeCompany?.cases || [])]
+  // Active cases for tracking: prioritize cases with nextDate, then recent cases from totalCasesList
+  const trackedCases = [...totalCasesList]
     .sort((a, b) => {
       if (a.nextDate && b.nextDate) {
         return new Date(a.nextDate).getTime() - new Date(b.nextDate).getTime();
@@ -198,7 +229,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const exportTrackedCasesCSV = () => {
-    const listToExport = activeCompany?.cases || [];
+    const listToExport = totalCasesList;
     if (listToExport.length === 0) {
       showToast('No cases recorded in chamber yet.', 'info');
       return;
@@ -260,7 +291,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const exportTrackedCasesPDF = () => {
-    const listToExport = activeCompany?.cases || [];
+    const listToExport = totalCasesList;
     if (listToExport.length === 0) {
       showToast('No cases recorded in chamber yet.', 'info');
       return;
@@ -649,14 +680,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
       bg: 'bg-indigo-50 dark:bg-indigo-950/60'
     },
     {
-      page: 'messages',
-      title: t.clientMessaging,
-      desc: t.messageDesc,
-      icon: MessageSquare,
-      color: 'text-green-600 dark:text-green-400',
-      bg: 'bg-green-50 dark:bg-green-950/60'
-    },
-    {
       page: 'users',
       title: t.advocateTeam,
       desc: t.teamDesc,
@@ -738,7 +761,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div
           onClick={() => setActiveKpiModal('total')}
           className="bg-[#EBF5FF] dark:bg-blue-950/40 px-3 py-2 rounded-xl border border-[#BFDBFE] dark:border-blue-900 border-l-4 border-l-[#0077E6] shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group"
-          title="Click to view all registered cases across all categories"
+          title="Total Registered Cases"
         >
           <div className="flex items-center justify-between text-[#0077E6] dark:text-blue-300 text-[10px] font-bold uppercase tracking-wider leading-tight">
             <span className="truncate">{t.totalCases}</span>
@@ -750,7 +773,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             {totalCases}
           </div>
           <div className="text-[9px] text-blue-700/80 dark:text-blue-300/80 truncate leading-tight mt-0.5 font-medium">
-            Mutation ({getCaseCount('mutation')}) • Misc ({getCaseCount('misc')})
+            {language === 'bn' ? 'নথিভুক্ত মামলা তালিকা' : 'Registered Chamber Cases'}
           </div>
         </div>
 
@@ -758,7 +781,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div
           onClick={() => setActiveKpiModal('pending')}
           className="bg-[#FFFBEB] dark:bg-amber-950/40 px-3 py-2 rounded-xl border border-[#FDE68A] dark:border-amber-900 border-l-4 border-l-[#F59E0B] shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group"
-          title="Click to view all Active Pending cases across all categories"
+          title="Active Pending Cases"
         >
           <div className="flex items-center justify-between text-[#D97706] dark:text-amber-300 text-[10px] font-bold uppercase tracking-wider leading-tight">
             <span className="truncate">{t.pendingCases}</span>
@@ -770,7 +793,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             {pendingCases}
           </div>
           <div className="text-[9px] text-amber-700/80 dark:text-amber-300/80 truncate leading-tight mt-0.5 font-medium">
-            Requires follow-up &amp; dates
+            {language === 'bn' ? 'চলমান বিচারাধীন মামলা' : 'Active Ongoing Matters'}
           </div>
         </div>
 
@@ -778,7 +801,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div
           onClick={() => onNavigate('causelist')}
           className="bg-[#F5F3FF] dark:bg-purple-950/40 px-3 py-2 rounded-xl border border-[#DDD6FE] dark:border-purple-900 border-l-4 border-l-[#8B5CF6] shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group"
-          title="Click to view Today's Cause List"
+          title="Today's Cause List"
         >
           <div className="flex items-center justify-between text-[#7C3AED] dark:text-purple-300 text-[10px] font-bold uppercase tracking-wider leading-tight">
             <span className="truncate">{t.todaysHearings}</span>
@@ -790,7 +813,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             {todayHearings}
           </div>
           <div className="text-[9px] text-purple-700/80 dark:text-purple-300/80 truncate leading-tight mt-0.5 font-medium">
-            {(activeCompany?.causeList?.filter(i => i.status === 'READY').length || 0)} Ready • {Math.max(0, todayHearings - (activeCompany?.causeList?.filter(i => i.status === 'READY').length || 0))} Hearing
+            {language === 'bn' ? 'আজকের দৈনিক কার্যতালিকা' : 'Daily Courtroom Hearings'}
           </div>
         </div>
 
@@ -798,7 +821,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div
           onClick={() => setActiveKpiModal('inquiry')}
           className="bg-[#E0F2FE] dark:bg-sky-950/40 px-3 py-2 rounded-xl border border-[#BAE6FD] dark:border-sky-900 border-l-4 border-l-[#0284C7] shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group"
-          title="Click to view cases under inquiry &amp; field verification"
+          title="Under Inquiry Cases"
         >
           <div className="flex items-center justify-between text-[#0284C7] dark:text-sky-300 text-[10px] font-bold uppercase tracking-wider leading-tight">
             <span className="truncate">{language === 'bn' ? 'তদন্তাধীন মামলা' : 'Under Inquiry'}</span>
@@ -810,7 +833,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             {underInquiryCases}
           </div>
           <div className="text-[9px] text-sky-700/80 dark:text-sky-300/80 truncate leading-tight mt-0.5 font-medium">
-            Investigation &amp; verification
+            {language === 'bn' ? 'তদন্ত ও ক্ষেত্র যাচাই' : 'Field Inquiry & Review'}
           </div>
         </div>
 
@@ -818,7 +841,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div
           onClick={() => setActiveKpiModal('disposed')}
           className="bg-[#ECFDF5] dark:bg-emerald-950/40 px-3 py-2 rounded-xl border border-[#A7F3D0] dark:border-emerald-900 border-l-4 border-l-[#10B981] shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer group"
-          title="Click to view all Disposed &amp; Completed cases"
+          title="Disposed Cases"
         >
           <div className="flex items-center justify-between text-[#059669] dark:text-emerald-300 text-[10px] font-bold uppercase tracking-wider leading-tight">
             <span className="truncate">{language === 'bn' ? 'নিষ্পত্তিকৃত মামলা' : 'Disposed'}</span>
@@ -830,7 +853,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             {disposedCases}
           </div>
           <div className="text-[9px] text-emerald-700/80 dark:text-emerald-300/80 truncate leading-tight mt-0.5 font-medium">
-            Allowed &amp; completed
+            {language === 'bn' ? 'নিষ্পন্ন ও সমাপ্ত রেকর্ড' : 'Finalized Proceedings'}
           </div>
         </div>
       </div>
@@ -1132,8 +1155,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
           switch (activeKpiModal) {
             case 'total':
               return {
-                title: language === 'bn' ? 'সমস্ত নথিভুক্ত মামলা (Total Registered Cases)' : 'Total Registered Cases',
-                subtitle: language === 'bn' ? 'সকল বিভাগ মিলিয়ে সমস্ত মামলা ও আবেদনের সম্পূর্ণ তালিকা' : 'Comprehensive register of all matters across all chamber departments.',
+                title: language === 'bn' ? 'সমস্ত নথিভুক্ত মামলা (Total Cases)' : 'Total Registered Cases',
+                subtitle: language === 'bn'
+                  ? 'চেম্বারের সমস্ত নথিভুক্ত মামলার সম্পূর্ণ বিবরণী তালিকা।'
+                  : 'Complete chamber registry of all active proceedings and official matters.',
                 color: 'text-blue-600 dark:text-blue-400',
                 bg: 'bg-blue-100 dark:bg-blue-950/70',
                 badgeBg: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border-blue-200 dark:border-blue-800',
@@ -1143,8 +1168,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
               };
             case 'inquiry':
               return {
-                title: language === 'bn' ? 'তদন্তাধীন ও শুনানি মামলা (Under Inquiry Cases)' : 'Under Inquiry & Investigation Cases',
-                subtitle: language === 'bn' ? 'বিভাগীয় তদন্ত, ক্ষেত্র যাচাই ও প্রতিবেদন অপেক্ষমাণ সকল মামলা' : 'Matters currently undergoing departmental inquiry, field verification, or RI investigation report.',
+                title: language === 'bn' ? 'তদন্তাধীন মামলা (Under Inquiry)' : 'Under Inquiry & Investigation Cases',
+                subtitle: language === 'bn'
+                  ? 'বিভাগীয় তদন্ত ও ক্ষেত্র যাচাই প্রক্রিয়ার অধীনে থাকা মামলাসমূহ।'
+                  : 'Matters currently undergoing administrative inquiry and field investigation.',
                 color: 'text-indigo-600 dark:text-indigo-400',
                 bg: 'bg-indigo-100 dark:bg-indigo-950/70',
                 badgeBg: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
@@ -1155,7 +1182,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
             case 'disposed':
               return {
                 title: language === 'bn' ? 'নিষ্পত্তিকৃত মামলা (Disposed Cases)' : 'Disposed & Completed Cases',
-                subtitle: language === 'bn' ? 'চূড়ান্ত আদেশ প্রদান ও নিষ্পত্তি হওয়া সমস্ত মামলা ও নথি' : 'All finalized, allowed, disposed, order passed, or delivered records.',
+                subtitle: language === 'bn'
+                  ? 'চূড়ান্ত আদেশ প্রদান ও নিষ্পত্তি হওয়া সমস্ত মামলা।'
+                  : 'All finalized and completed proceedings with passed orders.',
                 color: 'text-emerald-600 dark:text-emerald-400',
                 bg: 'bg-emerald-100 dark:bg-emerald-950/70',
                 badgeBg: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
@@ -1166,8 +1195,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
             case 'pending':
             default:
               return {
-                title: language === 'bn' ? 'সক্রিয় বিচারাধীন মামলা (Active Pending Cases)' : 'Active Pending Cases',
-                subtitle: language === 'bn' ? 'শুনানি, নোটিশ ও আদেশের জন্য অপেক্ষমাণ সকল সক্রিয় মামলা' : 'All matters currently pending hearing dates, inquiry, or disposal across all chamber departments.',
+                title: language === 'bn' ? 'চলমান বিচারাধীন মামলা (Active Pending)' : 'Active Pending Cases',
+                subtitle: language === 'bn'
+                  ? 'শুনানি, নোটিশ ও আদেশের জন্য অপেক্ষমাণ সকল সক্রিয় মামলা।'
+                  : 'All ongoing proceedings currently awaiting scheduled hearings and orders.',
                 color: 'text-purple-600 dark:text-purple-400',
                 bg: 'bg-purple-100 dark:bg-purple-950/70',
                 badgeBg: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border-purple-200 dark:border-purple-800',

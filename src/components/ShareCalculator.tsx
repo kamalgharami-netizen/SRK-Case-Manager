@@ -397,7 +397,7 @@ export const ShareCalculator: React.FC = () => {
               <tr class="highlight">
                 <td><strong>১০,০০০ স্কেল হিস্যা (10,000 Share)</strong></td>
                 <td class="mono" style="font-size: 14px; color: #1E3A8A;"><strong>${calculatedShare10000.toFixed(2)}</strong></td>
-                <td>Statutory Land Share = (10,000 / Total Area) × Owned Area</td>
+                <td>সংবিধিবদ্ধ খতিয়ান হিস্যা ও ভূমি রেকর্ড বণ্টন</td>
               </tr>
               <tr>
                 <td><strong>LR Parcha খতিয়ান অংশ</strong></td>
