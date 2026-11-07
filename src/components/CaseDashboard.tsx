@@ -1453,11 +1453,11 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
   return (
     <div className="space-y-4">
       {/* Sub-Dashboard Header & Statutory Overview Card — Matching Image 3 with 3D Visuals */}
-      <div className="w-full rounded-xl p-4 sm:p-5 bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 shadow-[0_10px_25px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_10px_25px_rgba(0,0,0,0.5)] space-y-4">
+      <div className="w-full rounded-xl p-4 sm:p-5 bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 shadow-[0_10px_25px_rgba(15,23,42,0.12),0_2px_4px_rgba(15,23,42,0.05)] dark:shadow-[0_10px_25px_rgba(0,0,0,0.5)] space-y-4">
         {/* Top Row: 3D Icon Badge + Title + Bengali Pill + Law Ref + 3D Action Buttons */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5 min-w-0">
-            <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center bg-blue-50 dark:bg-slate-800 ${meta.color} border border-blue-200/60 dark:border-slate-700 shrink-0 shadow-[0_4px_10px_rgba(15,23,42,0.1),inset_0_2px_2px_rgba(255,255,255,0.8),inset_0_-2px_3px_rgba(0,0,0,0.1)]`}>
+            <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center bg-blue-50 dark:bg-slate-800 ${meta.color} border border-blue-200/60 dark:border-slate-700 shrink-0 shadow-[0_4px_10px_rgba(15,23,42,0.18),0_-2px_3px_rgba(15,23,42,0.08)]`}>
               <Icon className="w-6 h-6 drop-shadow-2xs stroke-[2.2]" />
             </div>
             <div className="min-w-0 flex-1">
@@ -2037,7 +2037,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
       </div>
 
       {/* Filter and Case List / Table Container — Matching Image 3 with 3D Visuals */}
-      <div className="w-full rounded-xl bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 shadow-[0_10px_25px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_10px_25px_rgba(0,0,0,0.5)] overflow-hidden">
+      <div className="w-full rounded-xl bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 shadow-[0_10px_25px_rgba(15,23,42,0.12),0_2px_4px_rgba(15,23,42,0.05)] dark:shadow-[0_10px_25px_rgba(0,0,0,0.5)] overflow-hidden">
         {/* Controls Header */}
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 space-y-3">
           {/* Row 1 (Visual from Image 3): Status Filter Pills on Left + Sub-Type Dropdown & Search Input on Right */}
@@ -3073,7 +3073,7 @@ export const CaseDashboard: React.FC<CaseDashboardProps> = ({
           )
         ) : (
           <div className="p-12 text-center space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 mx-auto flex items-center justify-center shadow-[0_4px_10px_rgba(15,23,42,0.08),inset_0_2px_2px_rgba(255,255,255,0.8)] border border-slate-200/80 dark:border-slate-700">
+            <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 mx-auto flex items-center justify-center shadow-[0_4px_10px_rgba(15,23,42,0.16),0_-2px_3px_rgba(15,23,42,0.06)] border border-slate-200/80 dark:border-slate-700">
               <Icon className="w-6 h-6" />
             </div>
             <div className="text-sm font-bold text-slate-800 dark:text-slate-200">
