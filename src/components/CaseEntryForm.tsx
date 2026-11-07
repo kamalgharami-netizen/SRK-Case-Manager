@@ -1734,7 +1734,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
       )}
 
       {/* 1. Core Case Details */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 p-5 shadow-[0_8px_20px_rgba(15,23,42,0.12),0_2px_4px_rgba(15,23,42,0.06)] dark:shadow-[0_10px_24px_rgba(0,0,0,0.45)] space-y-4">
         <div className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 border-b border-slate-100 dark:border-slate-800 pb-2 flex items-center justify-between">
           <span>1. Primary Case Registry Details</span>
           <span className="text-[11px] font-normal text-slate-400">Fields marked * are mandatory</span>
@@ -2615,7 +2615,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
 
       {/* Requirement 12: 2. Land Schedule(s) with + option to add more schedule (Optional for RTI, Active for ROR/PI, Removed for Certified Copy) */}
       {!isCertCopy && (
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 p-5 shadow-[0_8px_20px_rgba(15,23,42,0.12),0_2px_4px_rgba(15,23,42,0.06)] dark:shadow-[0_10px_24px_rgba(0,0,0,0.45)] space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 flex-wrap gap-2">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
@@ -3010,7 +3010,7 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
 
       {/* 4. Complete Chronological Chain of Title Builder (Removed for RTI and First Appeal entry forms) */}
       {!isChainDeedHidden && (
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 p-5 shadow-[0_8px_20px_rgba(15,23,42,0.12),0_2px_4px_rgba(15,23,42,0.06)] dark:shadow-[0_10px_24px_rgba(0,0,0,0.45)] space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 gap-2">
           <div>
             <div className="flex items-center gap-2">
