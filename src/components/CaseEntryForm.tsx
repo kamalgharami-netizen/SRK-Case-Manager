@@ -15,6 +15,7 @@ import {
 import { wbDistricts } from '../data/wbDistricts';
 import { ChainDeedModal } from './ChainDeedModal';
 import { safePrintHtml, safeOpenWhatsApp } from '../utils/printDoc';
+import { buildHearingNoticeText, buildDeliveryNoticeText, dispatchWhatsApp } from '../utils/whatsappHelper';
 import {
   ArrowLeft,
   Save,
@@ -1239,12 +1240,10 @@ export const CaseEntryForm: React.FC<CaseEntryFormProps> = ({
 
     if (andSendWhatsApp) {
       const applicantPhone = applicants[0]?.phone || '';
-      const typeDisplay = isRorPi ? 'ROR / PI Application' : isCertCopy ? 'Certified Copy' : isMisc ? 'Misc Case' : isMutation ? 'Mutation Case' : `${type.toUpperCase()} Case`;
-      const refNo = isRorPi ? (appNo || finalCaseNo) : isCertCopy ? (appNo || finalCaseNo) : finalCaseNo;
-      safeOpenWhatsApp(
-        applicantPhone,
-        `Dear ${trimmedParty},\nYour ${typeDisplay} has been recorded in our chamber database.\nReference No: ${refNo}${grnNo ? `\nGRN: ${grnNo}` : ''}\nStatus: ${status}\nAdvocate Chamber.`
-      );
+      const text = isCertOrRorPi
+        ? buildDeliveryNoticeText(resultCase, activeCompany)
+        : buildHearingNoticeText(resultCase, activeCompany);
+      dispatchWhatsApp(applicantPhone, text);
     }
 
     // Requirement 16 & 20: Forward to concern page / Show make chain deed option

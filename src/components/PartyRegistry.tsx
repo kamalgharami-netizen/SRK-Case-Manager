@@ -117,10 +117,17 @@ export const PartyRegistry: React.FC = () => {
       showToast('No phone number recorded for party', 'error');
       return;
     }
-    safeOpenWhatsApp(
-      p.phone,
-      `Hello ${p.name}, greeting from ${activeCompany?.name || 'Legal Chamber'}. Please contact our chamber regarding your pending land matter.`
-    );
+    const signature = activeCompany?.whatsappSettings?.chamberSignature || activeCompany?.name || 'Legal Chamber';
+    const regLine = activeCompany?.whatsappSettings?.includeBarCouncil && activeCompany?.barCouncil ? `\n(Bar Council Reg: ${activeCompany.barCouncil})` : '';
+    const lang = activeCompany?.whatsappSettings?.defaultLanguage || 'bilingual';
+
+    let greetingMsg = `Hello ${p.name},\nGreetings from ${signature}.${regLine}\nPlease contact our chamber regarding your land legal matter.`;
+    if (lang === 'bn') {
+      greetingMsg = `নমস্কার ${p.name} মহাশয়,\n${signature} চেম্বার থেকে যোগাযোগ করা হচ্ছে।${regLine}\nআপনার ভূমি সংক্রান্ত মামলার বিষদ তথ্যের জন্য আমাদের চেম্বারে যোগাযোগ করার অনুরোধ করা হচ্ছে।`;
+    } else if (lang === 'bilingual') {
+      greetingMsg = `নমস্কার / Greetings ${p.name},\nThis is from ${signature}.${regLine}\nPlease contact our chamber regarding your land legal matter.\nআপনার ভূমি রাজস্ব মামলার বিষয়ে চেম্বারে যোগাযোগ করুন।`;
+    }
+    safeOpenWhatsApp(p.phone, greetingMsg);
   };
 
   return (

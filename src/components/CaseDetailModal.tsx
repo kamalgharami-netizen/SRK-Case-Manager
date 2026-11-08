@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { CaseType, CaseItem } from '../types';
 import { CompanyLogo } from './CompanyLogo';
 import { safePrintHtml } from '../utils/printDoc';
+import { buildHearingNoticeText, buildDeliveryNoticeText, dispatchWhatsApp } from '../utils/whatsappHelper';
 import {
   FileText,
   Printer,
@@ -17,7 +18,8 @@ import {
   Sparkles,
   User,
   Phone,
-  Tag
+  Tag,
+  MessageCircle
 } from 'lucide-react';
 
 interface CaseDetailModalProps {
@@ -40,6 +42,15 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
 
   const diaryEntries = activeCompany?.diaryData?.[caseItem.id] || [];
   const isCertOrRorPi = caseItem.type === 'certcopy' || caseItem.type === 'rorpi';
+
+  const handleSendWhatsAppNotice = (targetPhone?: string) => {
+    const phoneToUse = targetPhone || caseItem.applicants?.[0]?.phone || '';
+    const isDelivery = caseItem.type === 'certcopy' || caseItem.type === 'rorpi';
+    const text = isDelivery
+      ? buildDeliveryNoticeText(caseItem, activeCompany)
+      : buildHearingNoticeText(caseItem, activeCompany);
+    dispatchWhatsApp(phoneToUse, text);
+  };
 
   const printCaseSummary = () => {
     safePrintHtml(`
@@ -274,6 +285,14 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
 
           <div className="flex items-center gap-2">
             <button
+              onClick={() => handleSendWhatsAppNotice()}
+              className="px-3 py-1.5 rounded-lg border border-emerald-500/40 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+              title="Send WhatsApp notice / hearing update to client"
+            >
+              <MessageCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>WhatsApp Alert</span>
+            </button>
+            <button
               onClick={printCaseSummary}
               className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold flex items-center gap-1 cursor-pointer"
               title={isCertOrRorPi ? 'Print Application / Delivery Slip' : 'Print Case File'}
@@ -348,7 +367,19 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-400 block uppercase font-bold">Contact Phone / WhatsApp</span>
-                  <span className="font-mono text-slate-700 dark:text-slate-300 font-semibold">{caseItem.applicants?.[0]?.phone || '—'}</span>
+                  <div className="flex items-center gap-2 pt-0.5">
+                    <span className="font-mono text-slate-700 dark:text-slate-300 font-semibold">{caseItem.applicants?.[0]?.phone || '—'}</span>
+                    {caseItem.applicants?.[0]?.phone && (
+                      <button
+                        onClick={() => handleSendWhatsAppNotice(caseItem.applicants[0].phone)}
+                        className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-400 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
+                        title="Send WhatsApp Delivery / Filing Alert"
+                      >
+                        <MessageCircle className="w-3 h-3 text-emerald-600" />
+                        <span>Send WhatsApp</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -463,9 +494,19 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                   </div>
                 )}
                 {caseItem.applicants?.[0]?.phone && (
-                  <div className="font-mono text-slate-600 dark:text-slate-400 text-xs flex items-center gap-1">
-                    <Phone className="w-3 h-3 text-slate-400" />
-                    <span>{caseItem.applicants[0].phone}</span>
+                  <div className="font-mono text-slate-600 dark:text-slate-400 text-xs flex items-center justify-between">
+                    <div className="flex items-center gap-1">
+                      <Phone className="w-3 h-3 text-slate-400" />
+                      <span>{caseItem.applicants[0].phone}</span>
+                    </div>
+                    <button
+                      onClick={() => handleSendWhatsAppNotice(caseItem.applicants[0].phone)}
+                      className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-400 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
+                      title="Send WhatsApp Delivery Update"
+                    >
+                      <MessageCircle className="w-3 h-3 text-emerald-600" />
+                      <span>Send WhatsApp</span>
+                    </button>
                   </div>
                 )}
                 {caseItem.applicants?.[0]?.address && (
@@ -518,7 +559,17 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({
                   <div className="text-slate-500 text-[11px]">{caseItem.applicants[0].address}</div>
                 )}
                 {caseItem.applicants[0]?.phone && (
-                  <div className="font-mono text-slate-500">{caseItem.applicants[0].phone}</div>
+                  <div className="font-mono text-slate-500 flex items-center justify-between pt-1">
+                    <span>{caseItem.applicants[0].phone}</span>
+                    <button
+                      onClick={() => handleSendWhatsAppNotice(caseItem.applicants[0].phone)}
+                      className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-400 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
+                      title="Send WhatsApp Hearing Notice"
+                    >
+                      <MessageCircle className="w-3 h-3 text-emerald-600" />
+                      <span>Send WhatsApp</span>
+                    </button>
+                  </div>
                 )}
               </div>
 

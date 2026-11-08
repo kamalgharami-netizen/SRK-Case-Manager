@@ -1,13 +1,13 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Menu, Search, Languages, ArrowLeft, Calculator } from 'lucide-react';
+import { Menu, Search, Languages, ArrowLeft, Calculator, MessageCircle } from 'lucide-react';
 import { CompanyLogo } from './CompanyLogo';
 import { getBackupStatus } from '../types';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
   isSidebarOpen?: boolean;
-  onOpenSettings?: (tab?: 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup') => void;
+  onOpenSettings?: (tab?: 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup' | 'whatsapp') => void;
   onOpenShareCalculator?: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
@@ -126,6 +126,17 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Calculator className="w-3.5 h-3.5 text-emerald-600" />
           <span className="hidden md:inline">{language === 'bn' ? 'হিস্যা ক্যালকুলেটর' : 'Share Calculator'}</span>
+        </button>
+
+        {/* WhatsApp Notice & Settings Quick Button */}
+        <button
+          type="button"
+          onClick={() => onOpenSettings?.('whatsapp')}
+          className="px-2.5 py-1.5 rounded-lg border border-emerald-300/80 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs shrink-0"
+          title="Chamber WhatsApp Settings & Notice Templates"
+        >
+          <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+          <span className="hidden sm:inline">WhatsApp</span>
         </button>
 
         {/* User Account / Profile */}

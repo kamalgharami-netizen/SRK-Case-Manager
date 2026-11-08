@@ -29,6 +29,7 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/@') || url.pathname.includes('vite')) return;
 
   event.respondWith(
     fetch(event.request)
@@ -41,6 +42,14 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       })
-      .catch(() => caches.match(event.request))
+      .catch(async () => {
+        const cached = await caches.match(event.request);
+        if (cached) return cached;
+        if (event.request.headers.get('accept')?.includes('text/html')) {
+          const cachedIndex = await caches.match('/');
+          if (cachedIndex) return cachedIndex;
+        }
+        return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+      })
   );
 });

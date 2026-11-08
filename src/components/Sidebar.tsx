@@ -34,7 +34,8 @@ import {
   Scroll,
   FileSpreadsheet,
   HardDrive,
-  Wallet
+  Wallet,
+  MessageCircle
 } from 'lucide-react';
 import { CaseType } from '../types';
 
@@ -67,7 +68,7 @@ interface SidebarProps {
   onNavigate: (page: NavPage) => void;
   isOpen: boolean;
   onClose: () => void;
-  onOpenSettings: (tab?: 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup') => void;
+  onOpenSettings: (tab?: 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup' | 'whatsapp') => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -538,6 +539,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="flex items-center gap-2.5">
                 <Settings className="w-4 h-4 text-sky-300" />
                 <span>{language === 'bn' ? 'সেটিংস' : 'Settings'}</span>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                onOpenSettings('whatsapp');
+                if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+                  onClose();
+                }
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                isRoyal
+                  ? 'text-emerald-200 hover:text-white hover:bg-white/10'
+                  : 'text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50'
+              }`}
+              title="Chamber WhatsApp Settings & Notice Templates"
+            >
+              <div className="flex items-center gap-2.5">
+                <MessageCircle className="w-4 h-4 text-emerald-400" />
+                <span>{language === 'bn' ? 'হোয়াটসঅ্যাপ সেটিংস' : 'WhatsApp Setup'}</span>
               </div>
             </button>
 

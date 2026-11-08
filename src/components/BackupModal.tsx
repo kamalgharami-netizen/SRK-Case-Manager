@@ -32,11 +32,16 @@ import {
   ArrowRight,
   Image as ImageIcon,
   Search,
-  ChevronDown
+  ChevronDown,
+  MessageCircle,
+  Smartphone,
+  Send
 } from 'lucide-react';
 import { CompanyLogo, BADGE_OPTIONS, COLOR_OPTIONS } from './CompanyLogo';
 import { THEME_OPTIONS } from '../data/themes';
 import { VaultFile, Role } from '../types';
+import { safeOpenWhatsApp } from '../utils/printDoc';
+import { buildHearingNoticeText, buildDeliveryNoticeText } from '../utils/whatsappHelper';
 
 export const VAULT_CATEGORIES = [
   'Mutation Petitions & Orders',
@@ -52,7 +57,7 @@ export const VAULT_CATEGORIES = [
   'General Legal Formats & Affidavits'
 ];
 
-export type SettingsTab = 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup';
+export type SettingsTab = 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup' | 'whatsapp';
 
 interface BackupModalProps {
   isOpen: boolean;
@@ -129,11 +134,33 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   const [newMemberRole, setNewMemberRole] = useState<Role>('Junior Advocate');
   const [newMemberPasscode, setNewMemberPasscode] = useState('');
 
+  // WhatsApp Settings state
+  const [waEnabled, setWaEnabled] = useState<boolean>(activeCompany?.whatsappSettings?.enabled ?? true);
+  const [waSenderPhone, setWaSenderPhone] = useState<string>(activeCompany?.whatsappSettings?.senderPhone || activeCompany?.phone || '');
+  const [waLanguage, setWaLanguage] = useState<'bilingual' | 'bn' | 'en'>(activeCompany?.whatsappSettings?.defaultLanguage || 'bilingual');
+  const [waSignature, setWaSignature] = useState<string>(activeCompany?.whatsappSettings?.chamberSignature || activeCompany?.name || '');
+  const [waIncludeBar, setWaIncludeBar] = useState<boolean>(activeCompany?.whatsappSettings?.includeBarCouncil ?? true);
+
+  // Test WhatsApp dispatcher state
+  const [testRecipientPhone, setTestRecipientPhone] = useState<string>(activeCompany?.phone || '');
+  const [testTemplateType, setTestTemplateType] = useState<'hearing' | 'delivery'>('hearing');
+
   useEffect(() => {
     if (initialTab) {
       setActiveTab(initialTab);
     }
   }, [initialTab, isOpen]);
+
+  useEffect(() => {
+    if (activeCompany && isOpen) {
+      setWaEnabled(activeCompany.whatsappSettings?.enabled ?? true);
+      setWaSenderPhone(activeCompany.whatsappSettings?.senderPhone || activeCompany.phone || '');
+      setWaLanguage(activeCompany.whatsappSettings?.defaultLanguage || 'bilingual');
+      setWaSignature(activeCompany.whatsappSettings?.chamberSignature || activeCompany.name || '');
+      setWaIncludeBar(activeCompany.whatsappSettings?.includeBarCouncil ?? true);
+      setTestRecipientPhone(activeCompany.phone || '');
+    }
+  }, [isOpen, activeCompany]);
 
   if (!isOpen || !activeCompany) return null;
 
@@ -323,7 +350,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
         </div>
 
         {/* Unified Tab Navigator */}
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 p-2 bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 shrink-0 text-xs font-bold">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1 p-2 bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 shrink-0 text-xs font-bold">
           <button
             type="button"
             onClick={() => setActiveTab('chambers')}
@@ -406,6 +433,20 @@ export const BackupModal: React.FC<BackupModalProps> = ({
           >
             <Download className="w-3.5 h-3.5 text-emerald-600" />
             <span className="truncate">Data Backup</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('whatsapp')}
+            className={`py-2 px-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${
+              activeTab === 'whatsapp'
+                ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs font-extrabold ring-1 ring-emerald-300'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+            }`}
+            title="WhatsApp Notice & Dispatch Setup"
+          >
+            <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="truncate">WhatsApp</span>
           </button>
         </div>
 
@@ -1368,6 +1409,260 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                     No backups logged yet. Manual and auto backups will record here with date and time.
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 7: WhatsApp Chamber Notice Setup */}
+          {activeTab === 'whatsapp' && (
+            <div className="space-y-5 text-xs sm:text-sm">
+              {/* Header Banner */}
+              <div className="p-4 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="p-2.5 rounded-xl bg-emerald-600 text-white shrink-0 shadow-xs">
+                    <MessageCircle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider">
+                      Chamber WhatsApp Notice Setup (হোয়াটসঅ্যাপ বার্তা কনফিগারেশন)
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Configure automated litigant notice templates, language, and chamber WhatsApp dispatch preferences.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${waEnabled ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300' : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-400'}`}>
+                    {waEnabled ? 'Enabled' : 'Disabled'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Status and Master Toggle */}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/40 space-y-2">
+                <label htmlFor="wa-status-select" className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Smartphone className="w-4 h-4 text-emerald-600" />
+                  <span>WhatsApp Alert Service Status (সার্ভিস স্ট্যাটাস)</span>
+                </label>
+                <div className="relative">
+                  <select
+                    id="wa-status-select"
+                    value={waEnabled ? 'enabled' : 'disabled'}
+                    onChange={e => setWaEnabled(e.target.value === 'enabled')}
+                    className="w-full px-3.5 py-2.5 pr-10 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 cursor-pointer appearance-none shadow-xs"
+                  >
+                    <option value="enabled">Active (সক্রিয়) — WhatsApp dispatch links active across cause list & cases</option>
+                    <option value="disabled">Paused (নিষ্ক্রিয়) — Pause WhatsApp dispatch links</option>
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-500 pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2" />
+                </div>
+              </div>
+
+              {/* Sender & Language Configuration */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Chamber WhatsApp Number */}
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/40 space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 block">
+                    Chamber Sender Mobile Number (চেম্বার মোবাইল নম্বর)
+                  </label>
+                  <input
+                    type="tel"
+                    value={waSenderPhone}
+                    onChange={e => setWaSenderPhone(e.target.value)}
+                    placeholder="9830012345"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono font-bold shadow-xs"
+                  />
+                  <p className="text-[10.5px] text-slate-500 dark:text-slate-400">
+                    Indian numbers automatically format with +91 country code when opening WhatsApp.
+                  </p>
+                </div>
+
+                {/* Default Notice Language Dropdown */}
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/40 space-y-2">
+                  <label htmlFor="wa-language-select" className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 block">
+                    Default Message Language (নোটিশের ভাষা)
+                  </label>
+                  <div className="relative">
+                    <select
+                      id="wa-language-select"
+                      value={waLanguage}
+                      onChange={e => setWaLanguage(e.target.value as 'bilingual' | 'bn' | 'en')}
+                      className="w-full px-3.5 py-2.5 pr-10 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 cursor-pointer appearance-none shadow-xs"
+                    >
+                      <option value="bilingual">Bilingual (বাংলা ও English - Recommended)</option>
+                      <option value="bn">Bengali Only (শুধুমাত্র বাংলা)</option>
+                      <option value="en">English Only (শুধুমাত্র ইংরেজি)</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-500 pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2" />
+                  </div>
+                  <p className="text-[10.5px] text-slate-500 dark:text-slate-400">
+                    Determines the language format used when pre-filling client notices.
+                  </p>
+                </div>
+              </div>
+
+              {/* Chamber Signature & Bar Council Inclusion */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Custom Chamber Signature */}
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/40 space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 block">
+                    Chamber Sign-Off / Signature (স্বাক্ষর ও পদবি)
+                  </label>
+                  <input
+                    type="text"
+                    value={waSignature}
+                    onChange={e => setWaSignature(e.target.value)}
+                    placeholder="Adv. Kamal Gharami · High Court / District Bar"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-semibold shadow-xs"
+                  />
+                  <p className="text-[10.5px] text-slate-500 dark:text-slate-400">
+                    Appended at the end of each outgoing WhatsApp notice.
+                  </p>
+                </div>
+
+                {/* Include Bar Council Reg */}
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/40 space-y-2">
+                  <label htmlFor="wa-bar-select" className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 block">
+                    Include Bar Council Registration No. (বার রেজিস্ট্রেশন)
+                  </label>
+                  <div className="relative">
+                    <select
+                      id="wa-bar-select"
+                      value={waIncludeBar ? 'yes' : 'no'}
+                      onChange={e => setWaIncludeBar(e.target.value === 'yes')}
+                      className="w-full px-3.5 py-2.5 pr-10 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-600 cursor-pointer appearance-none shadow-xs"
+                    >
+                      <option value="yes">Yes — Include Bar Reg ({activeCompany.barCouncil || 'WB/Chamber'})</option>
+                      <option value="no">No — Omit Bar Reg number</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-500 pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2" />
+                  </div>
+                  <p className="text-[10.5px] text-slate-500 dark:text-slate-400">
+                    Prints official registration particulars on legal communications.
+                  </p>
+                </div>
+              </div>
+
+              {/* Template Live Preview */}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Eye className="w-4 h-4 text-blue-600" />
+                    <span>Live Notice Template Preview (লাইভ নোটিশ নমুনা)</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 font-mono">
+                    {waLanguage.toUpperCase()}
+                  </span>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-mono text-xs text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed shadow-inner">
+                  {buildHearingNoticeText(
+                    {
+                      ...activeCompany,
+                      whatsappSettings: {
+                        enabled: waEnabled,
+                        senderPhone: waSenderPhone,
+                        defaultLanguage: waLanguage,
+                        chamberSignature: waSignature,
+                        includeBarCouncil: waIncludeBar
+                      }
+                    },
+                    {
+                      clientName: 'সুনীল মণ্ডল (Sunil Mondal)',
+                      clientPhone: '9830012345',
+                      caseNo: 'MN/2026/142',
+                      subType: 'Section 50 Mutation',
+                      forum: 'BL&LRO Office, Rajarhat',
+                      nextDate: '24/11/2026 at 11:30 AM',
+                      mouza: 'Rajarhat (JL 14)',
+                      dag: '1240',
+                      khatian: '892'
+                    }
+                  )}
+                </div>
+              </div>
+
+              {/* Interactive Notice Tester */}
+              <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50/40 dark:bg-emerald-950/20 space-y-3">
+                <div className="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Send className="w-4 h-4 text-emerald-600" />
+                  <span>Test Notice Dispatch (হোয়াটসঅ্যাপ টেস্ট মেসেজ পাঠান)</span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Enter your mobile number to test how the notice opens in WhatsApp Web or Mobile.
+                </p>
+
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <input
+                    type="tel"
+                    value={testRecipientPhone}
+                    onChange={e => setTestRecipientPhone(e.target.value)}
+                    placeholder="Enter 10-digit mobile number"
+                    className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono font-bold shadow-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!testRecipientPhone) {
+                        showToast('Please enter a test mobile number', 'error');
+                        return;
+                      }
+                      const testMsg = buildHearingNoticeText(
+                        {
+                          ...activeCompany,
+                          whatsappSettings: {
+                            enabled: waEnabled,
+                            senderPhone: waSenderPhone,
+                            defaultLanguage: waLanguage,
+                            chamberSignature: waSignature,
+                            includeBarCouncil: waIncludeBar
+                          }
+                        },
+                        {
+                          clientName: 'Sample Litigant',
+                          clientPhone: testRecipientPhone,
+                          caseNo: 'TEST/2026/01',
+                          subType: 'Chamber Test Notice',
+                          forum: 'Legal Chamber Test',
+                          nextDate: new Date().toLocaleDateString('en-IN')
+                        }
+                      );
+                      safeOpenWhatsApp(testRecipientPhone, testMsg);
+                      showToast('Opening WhatsApp dispatch window...', 'info');
+                    }}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer transition-colors shrink-0"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span>Send Test WhatsApp Notice</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Action Save Button */}
+              <div className="flex items-center justify-between pt-2">
+                <span className="text-[11px] text-slate-500">
+                  Settings are stored locally in your chamber profile.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateCompanyDetails({
+                      whatsappSettings: {
+                        enabled: waEnabled,
+                        senderPhone: waSenderPhone,
+                        defaultLanguage: waLanguage,
+                        chamberSignature: waSignature,
+                        includeBarCouncil: waIncludeBar
+                      }
+                    });
+                    showToast('WhatsApp notice preferences saved successfully!', 'success');
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-2 shadow-xs cursor-pointer transition-colors"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Save WhatsApp Settings</span>
+                </button>
               </div>
             </div>
           )}

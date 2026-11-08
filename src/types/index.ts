@@ -334,6 +334,13 @@ export interface Company {
   sampleDrafts?: SampleDraftItem[];
   lastBackupDate?: number;
   backupStoragePath?: string;
+  whatsappSettings?: {
+    enabled?: boolean;
+    senderPhone?: string;
+    defaultLanguage?: 'bilingual' | 'bn' | 'en';
+    chamberSignature?: string;
+    includeBarCouncil?: boolean;
+  };
 }
 
 export interface BackupLogEntry {

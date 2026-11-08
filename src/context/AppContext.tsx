@@ -4,6 +4,7 @@ import { AppLanguage, translations, Translations } from '../data/translations';
 import { INITIAL_SAMPLE_DRAFTS } from '../data/sampleDraftTemplates';
 import { APP_VERSION, APP_BUILD_DATE, APP_RELEASE_NAME } from '../config/version';
 import { autoMergeAllPreviousData, mergeCompanyLists, extractCompaniesFromPayload } from '../utils/dataMergeMigration';
+import { INITIAL_DEFAULT_COMPANY } from '../data/initialCompany';
 
 const STORAGE_KEY = 'srk_case_manager_v5';
 
@@ -267,11 +268,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // Merge recoverable records from older app versions and backups.
       const mergeResult = autoMergeAllPreviousData(loaded);
-      if (mergeResult.mergedCompanies.length > 0) STORAGE_LOAD_FAILED = false;
-      return mergeResult.mergedCompanies.filter((c: Company) => !isDemoOrLegacyCompany(c));
+      if (mergeResult.mergedCompanies.length > 0) {
+        STORAGE_LOAD_FAILED = false;
+        const valid = mergeResult.mergedCompanies.filter((c: Company) => !isDemoOrLegacyCompany(c));
+        if (valid.length > 0) return valid;
+      }
+      return [INITIAL_DEFAULT_COMPANY];
     } catch (e) {
       console.error('Failed to load & merge companies from localStorage', e);
-      return [];
+      return [INITIAL_DEFAULT_COMPANY];
     }
   });
 
@@ -280,14 +285,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const parsed = getInitialStorageState();
       if (parsed) {
         const validCompanies = (parsed.companies || []).filter((c: Company) => !isDemoOrLegacyCompany(c));
-        if (validCompanies.length === 0) return null;
-        if (parsed.activeCompanyId && validCompanies.some((c: Company) => c.id === parsed.activeCompanyId)) {
-          return parsed.activeCompanyId;
+        if (validCompanies.length > 0) {
+          if (parsed.activeCompanyId && validCompanies.some((c: Company) => c.id === parsed.activeCompanyId)) {
+            return parsed.activeCompanyId;
+          }
+          return validCompanies[0].id;
         }
-        return validCompanies[0].id;
       }
     } catch {}
-    return null;
+    return INITIAL_DEFAULT_COMPANY.id;
   });
 
   const [activeUserId, setActiveUserId] = useState<string | null>(() => {
@@ -295,17 +301,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const parsed = getInitialStorageState();
       if (parsed) {
         const validCompanies = (parsed.companies || []).filter((c: Company) => !isDemoOrLegacyCompany(c));
-        if (validCompanies.length === 0) return null;
-        const targetComp = validCompanies.find((c: Company) => c.id === parsed.activeCompanyId) || validCompanies[0];
-        if (targetComp && targetComp.users && targetComp.users.length > 0) {
-          if (parsed.activeUserId && targetComp.users.some((u: User) => u.id === parsed.activeUserId)) {
-            return parsed.activeUserId;
+        if (validCompanies.length > 0) {
+          const targetComp = validCompanies.find((c: Company) => c.id === parsed.activeCompanyId) || validCompanies[0];
+          if (targetComp && targetComp.users && targetComp.users.length > 0) {
+            if (parsed.activeUserId && targetComp.users.some((u: User) => u.id === parsed.activeUserId)) {
+              return parsed.activeUserId;
+            }
+            return targetComp.users[0].id;
           }
-          return targetComp.users[0].id;
         }
       }
     } catch {}
-    return null;
+    return INITIAL_DEFAULT_COMPANY.users[0].id;
   });
 
   const [theme, setThemeState] = useState<AppTheme>(() => {

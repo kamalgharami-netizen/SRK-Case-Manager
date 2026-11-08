@@ -94,7 +94,10 @@ export function directIframePrint(fullHtmlDocument: string, title: string = 'Doc
  * Universal safe WhatsApp link opener without popup blocker issues
  */
 export function safeOpenWhatsApp(phone: string, message: string): void {
-  const cleanPhone = phone.replace(/[^0-9]/g, '');
+  let cleanPhone = phone.replace(/[^0-9]/g, '');
+  if (cleanPhone.length === 10) {
+    cleanPhone = `91${cleanPhone}`;
+  }
   const encoded = encodeURIComponent(message);
   const waUrl = cleanPhone
     ? `https://wa.me/${cleanPhone}?text=${encoded}`

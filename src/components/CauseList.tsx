@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { CauseItem } from '../types';
 import { CompanyLogo } from './CompanyLogo';
 import { safePrintHtml, safeOpenWhatsApp } from '../utils/printDoc';
+import { buildHearingNoticeText } from '../utils/whatsappHelper';
 import {
   Calendar,
   Plus,
@@ -13,7 +14,8 @@ import {
   CheckCircle2,
   Clock,
   Search,
-  Filter
+  Filter,
+  MessageCircle
 } from 'lucide-react';
 
 export const CauseList: React.FC = () => {
@@ -190,12 +192,31 @@ export const CauseList: React.FC = () => {
   };
 
   const sendWhatsAppHearingAlert = (item: CauseItem) => {
-    safeOpenWhatsApp(
-      '',
-      `Hearing Alert: Your matter ${item.caseNo} (${item.party}) is listed today at ${item.time} before ${item.forum} ${
-        item.benchRoom ? `(${item.benchRoom})` : ''
-      }. Status: ${item.status}. - ${activeCompany?.name}`
+    // Look up associated case or party for client phone & land particulars
+    const matchedCase = activeCompany?.cases?.find(
+      c => c.caseNo?.toLowerCase().trim() === item.caseNo?.toLowerCase().trim()
     );
+    const matchedParty = activeCompany?.parties?.find(
+      p => p.name?.toLowerCase().trim() === item.party?.toLowerCase().trim()
+    );
+    const clientPhone = matchedCase?.applicants?.[0]?.phone || matchedParty?.phone || '';
+    const s0 = matchedCase?.landSchedules?.[0];
+
+    const message = buildHearingNoticeText(activeCompany, {
+      clientName: item.party,
+      clientPhone,
+      caseNo: item.caseNo,
+      caseType: matchedCase?.type,
+      subType: matchedCase?.subType,
+      forum: item.forum + (item.benchRoom ? ` (${item.benchRoom})` : ''),
+      nextDate: item.date + (item.time ? ` at ${item.time}` : ''),
+      mouza: s0?.mouza ? `${s0.mouza}${s0.jl ? ` (JL ${s0.jl})` : ''}` : undefined,
+      dag: s0?.dag,
+      khatian: s0?.khatian
+    });
+
+    safeOpenWhatsApp(clientPhone, message);
+    showToast(`Opening WhatsApp hearing alert for ${item.party}...`, 'info');
   };
 
   return (

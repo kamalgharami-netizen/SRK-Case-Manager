@@ -78,7 +78,7 @@ const MainAppContent: React.FC = () => {
     return true;
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup'>('chambers');
+  const [settingsTab, setSettingsTab] = useState<'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup' | 'whatsapp'>('chambers');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Mobile Bottom Sheet for Case Categories
@@ -152,16 +152,16 @@ const MainAppContent: React.FC = () => {
       // Execute auto-backup on closing
       performBackup({ type: 'auto-close' });
 
-      // In Electron Windows desktop environment, never block with preventDefault / returnValue
-      // as that prevents the Windows app window from closing!
+      // In Electron or inside an iframe (like AI Studio preview), never block with preventDefault / returnValue
       const isElectron =
         typeof window !== 'undefined' &&
         (!!(window as any).electronAPI ||
           !!(window as any).electron ||
           !!(window as any).ipcRenderer ||
           navigator.userAgent.toLowerCase().includes('electron'));
+      const isIframe = typeof window !== 'undefined' && window.self !== window.top;
 
-      if (!isElectron) {
+      if (!isElectron && !isIframe) {
         e.preventDefault();
         e.returnValue = 'Are you sure you want to close the app? All data will be automatically backed up.';
         return e.returnValue;
@@ -350,7 +350,7 @@ const MainAppContent: React.FC = () => {
       currentPage !== 'dashboard'
   );
 
-  const handleOpenSettings = (tab: 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup' = 'chambers') => {
+  const handleOpenSettings = (tab: 'chambers' | 'team' | 'display' | 'branding' | 'vault' | 'backup' | 'whatsapp' = 'chambers') => {
     setSettingsTab(tab);
     setSettingsOpen(true);
     pushHistoryState({ modal: 'settings', tab });
