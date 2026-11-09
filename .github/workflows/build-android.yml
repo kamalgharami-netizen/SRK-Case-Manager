@@ -109,6 +109,35 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
 
+      - name: Verify release APK signature and report certificate fingerprints
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' && env.ANDROID_KEYSTORE_PASSWORD != '' && env.ANDROID_KEY_ALIAS != '' && env.ANDROID_KEY_PASSWORD != '' }}
+        working-directory: android
+        run: |
+          APK="app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner -perm -u+x | sort -V | tail -n 1)"
+          if [ -z "$APKSIGNER" ]; then
+            echo "::error::Android SDK Build Tools apksigner was not found."
+            find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name apksigner -print || true
+            exit 1
+          fi
+          "$APKSIGNER" verify --verbose "$APK"
+          echo "## Android release signing certificate" >> "$GITHUB_STEP_SUMMARY"
+          "$APKSIGNER" verify --print-certs "$APK" | tee "$RUNNER_TEMP/srk-apk-certificate.txt"
+          SHA1="$(sed -n 's/^V[0-9][0-9]* Signer: certificate SHA-1 digest: //p' "$RUNNER_TEMP/srk-apk-certificate.txt" | head -n 1)"
+          SHA256="$(sed -n 's/^V[0-9][0-9]* Signer: certificate SHA-256 digest: //p' "$RUNNER_TEMP/srk-apk-certificate.txt" | head -n 1)"
+          test -n "$SHA1"
+          test -n "$SHA256"
+          {
+            echo ""
+            echo "| Fingerprint | Value |"
+            echo "|---|---|"
+            echo "| SHA-1 | ${SHA1} |"
+            echo "| SHA-256 | ${SHA256} |"
+            echo ""
+            echo "These are public certificate fingerprints, not private signing-key material."
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Build debug APK (temporary fallback until signing secrets are configured)
         if: ${{ env.ANDROID_KEYSTORE_BASE64 == '' || env.ANDROID_KEYSTORE_PASSWORD == '' || env.ANDROID_KEY_ALIAS == '' || env.ANDROID_KEY_PASSWORD == '' }}
         working-directory: android
