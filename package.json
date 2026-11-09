@@ -34,7 +34,10 @@
     "react-dom": "^19.0.1",
     "rolldown": "~1.2.14",
     "vite": "^8.3.0",
-    "ws": "^8.22.1"
+    "ws": "^8.22.1",
+    "@aparajita/capacitor-secure-storage": "^7.1.6",
+    "@srk/capacitor-google-drive-auth": "file:./capacitor-google-drive-auth",
+    "@srk/capacitor-sync-state": "file:./capacitor-sync-state"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.0.0",
