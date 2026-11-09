@@ -13,5 +13,5 @@ android {
 dependencies {
     implementation project(':capacitor-android')
     // 22.0.0 includes the current AuthorizationRequest Picker resource parameters.
-    implementation 'com.google.android.gms:play-services-auth:22.0.0'
+    implementation 'com.google.android.gms:play-services-auth:21.6.0'
 }
