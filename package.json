@@ -12,6 +12,7 @@
     "start": "tsx server.ts",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
+    "test": "node scripts/run-tests-serial.mjs",
     "dist:win": "npm run build && electron-builder --win nsis --publish never",
     "cap:sync": "cap sync",
     "cap:android": "cap open android"
@@ -33,7 +34,10 @@
     "react-dom": "^19.0.1",
     "rolldown": "~1.2.14",
     "vite": "^8.3.0",
-    "ws": "^8.22.1"
+    "ws": "^8.22.1",
+    "@aparajita/capacitor-secure-storage": "^7.1.6",
+    "@srk/capacitor-google-drive-auth": "file:./capacitor-google-drive-auth",
+    "@srk/capacitor-sync-state": "file:./capacitor-sync-state"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.0.0",
