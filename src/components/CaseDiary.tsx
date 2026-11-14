@@ -77,7 +77,7 @@ export const CaseDiary: React.FC = () => {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Header */}
-      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-[0_8px_20px_rgba(15,23,42,0.12),0_2px_4px_rgba(15,23,42,0.06)] dark:shadow-[0_10px_24px_rgba(0,0,0,0.45)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
             <BookMarked className="w-5 h-5 text-sky-600" />
@@ -99,7 +99,7 @@ export const CaseDiary: React.FC = () => {
       </div>
 
       {/* Case Selector */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-[0_6px_16px_rgba(15,23,42,0.10),0_2px_4px_rgba(15,23,42,0.05)] dark:shadow-[0_8px_20px_rgba(0,0,0,0.40)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3 flex-1">
           <label className="text-xs font-bold uppercase text-slate-600 dark:text-slate-400 shrink-0">
             Select Case File:
@@ -135,12 +135,12 @@ export const CaseDiary: React.FC = () => {
             {diaryEntries.map(entry => (
               <div key={entry.id} className="relative group">
                 {/* Timeline node icon */}
-                <div className="absolute -left-[31px] sm:-left-[39px] top-1 w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold shadow-sm">
+                <div className="absolute -left-[31px] sm:-left-[39px] top-1 w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold shadow-[0_3px_8px_rgba(15,23,42,0.22)]">
                   {entry.type[0]}
                 </div>
 
                 {/* Entry card */}
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-2 group-hover:border-blue-400 transition-colors">
+                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-[0_6px_16px_rgba(15,23,42,0.10),0_2px_4px_rgba(15,23,42,0.05)] dark:shadow-[0_8px_20px_rgba(0,0,0,0.40)] space-y-2 group-hover:border-blue-400 transition-colors">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2">
