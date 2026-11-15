@@ -35,13 +35,23 @@ import {
   ChevronDown,
   MessageCircle,
   Smartphone,
-  Send
+  Send,
+  Cloud,
+  RefreshCw,
+  Laptop,
+  ArrowLeftRight,
+  CloudUpload,
+  CloudDownload,
+  Loader2,
+  ShieldCheck
 } from 'lucide-react';
 import { CompanyLogo, BADGE_OPTIONS, COLOR_OPTIONS } from './CompanyLogo';
 import { THEME_OPTIONS } from '../data/themes';
 import { VaultFile, Role } from '../types';
 import { safeOpenWhatsApp } from '../utils/printDoc';
 import { buildHearingNoticeText, buildDeliveryNoticeText } from '../utils/whatsappHelper';
+import { GoogleSignInButton } from './GoogleSignInButton';
+import { DRIVE_SYNC_FILE_NAME, getDeviceLabel } from '../utils/googleDriveSync';
 
 export const VAULT_CATEGORIES = [
   'Mutation Petitions & Orders',
@@ -91,30 +101,36 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     highContrast,
     setHighContrast,
     resetViewPreferences,
-    exportCompanyJson,
-    restoreCompany,
     showToast,
     addVaultFile,
     deleteVaultFile,
     logoutUser,
-    backupStoragePath,
-    backupHistory,
-    deleteBackupLogEntry,
-    clearAllBackupLog,
-    triggerManualBackupRequest,
-    setIsSelectBackupPathModalOpen,
     language,
     t,
-    mergeExternalData,
-    triggerAutoDataMerge
+    driveUser,
+    driveSyncStatus,
+    connectGoogleDrive,
+    disconnectGoogleDrive,
+    enableDriveAutoSync,
+    disableDriveAutoSync,
+    syncWithGoogleDrive,
+    deleteGoogleDriveSyncFile
   } = useApp();
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const mergeFileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const vaultUploadInputRef = useRef<HTMLInputElement>(null);
 
   const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
+
+  // Google Drive confirmation dialog state for any mutating / destructive Drive API operation
+  const [driveConfirmAction, setDriveConfirmAction] = useState<{
+    type: 'enable-autosync' | 'sync-now' | 'overwrite-drive' | 'delete-drive-file';
+    title: string;
+    message: string;
+    confirmLabel: string;
+    danger?: boolean;
+  } | null>(null);
+  const [isConnectingDrive, setIsConnectingDrive] = useState(false);
 
   // Vault Tab state - category dropdown selection strictly without 'All'
   const [selectedVaultCategory, setSelectedVaultCategory] = useState<string>(VAULT_CATEGORIES[0]);
@@ -164,37 +180,26 @@ export const BackupModal: React.FC<BackupModalProps> = ({
 
   if (!isOpen || !activeCompany) return null;
 
-  const handleRestoreFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = evt => {
-      try {
-        const parsed = JSON.parse(evt.target?.result as string);
-        const ok = restoreCompany(parsed);
-        if (ok) onClose();
-      } catch {
-        showToast('Invalid backup file JSON', 'error');
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
+  const handleConnectDriveClick = async () => {
+    setIsConnectingDrive(true);
+    await connectGoogleDrive();
+    setIsConnectingDrive(false);
   };
 
-  const handleMergeFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = evt => {
-      try {
-        const parsed = JSON.parse(evt.target?.result as string);
-        mergeExternalData(parsed);
-      } catch {
-        showToast('Invalid backup file JSON', 'error');
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
+  const executeConfirmedDriveAction = async () => {
+    if (!driveConfirmAction) return;
+    const actionType = driveConfirmAction.type;
+    setDriveConfirmAction(null);
+
+    if (actionType === 'enable-autosync') {
+      await enableDriveAutoSync();
+    } else if (actionType === 'sync-now') {
+      await syncWithGoogleDrive({ mode: 'two-way', silent: false });
+    } else if (actionType === 'overwrite-drive') {
+      await syncWithGoogleDrive({ mode: 'push-overwrite', silent: false });
+    } else if (actionType === 'delete-drive-file') {
+      await deleteGoogleDriveSyncFile();
+    }
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -426,13 +431,13 @@ export const BackupModal: React.FC<BackupModalProps> = ({
             onClick={() => setActiveTab('backup')}
             className={`py-2 px-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${
               activeTab === 'backup'
-                ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs font-extrabold'
+                ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs font-extrabold ring-1 ring-blue-200'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
-            title="Data Backup & Storage"
+            title="Google Drive Automatic Sync (Mobile ↔ Computer)"
           >
-            <Download className="w-3.5 h-3.5 text-emerald-600" />
-            <span className="truncate">Data Backup</span>
+            <Cloud className="w-3.5 h-3.5 text-blue-600" />
+            <span className="truncate">Google Drive Sync</span>
           </button>
 
           <button
@@ -1208,208 +1213,309 @@ export const BackupModal: React.FC<BackupModalProps> = ({
             </div>
           )}
 
-          {/* TAB 6: Data Backup & Restore */}
+          {/* TAB 6: Google Drive Two-Way Auto Sync (Mobile <-> Computer) */}
           {activeTab === 'backup' && (
-            <div className="space-y-4">
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Chamber Database Preservation &amp; Portability
-              </div>
-
-              {/* Designated Storage Path Box */}
-              <div className="p-4 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900 space-y-3">
-                <div className="flex items-center justify-between text-xs font-bold text-indigo-900 dark:text-indigo-200">
-                  <span className="flex items-center gap-1.5">
-                    <FolderOpen className="w-4 h-4 text-indigo-600" />
-                    <span>Designated Data Storage Path (নির্দিষ্ট ব্যাকআপ সংরক্ষণ পাথ):</span>
-                  </span>
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                    Configured
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-800/60 font-mono text-xs font-bold text-slate-800 dark:text-slate-200 break-all shadow-inner">
-                    {backupStoragePath || 'C:/Case_Backups'}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsSelectBackupPathModalOpen(true)}
-                    className="px-3.5 py-2.5 rounded-lg border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer shrink-0 transition-colors"
-                    title="Browse or change storage location"
-                  >
-                    <FolderOpen className="w-4 h-4" />
-                    <span>Browse &amp; Change</span>
-                  </button>
-                </div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-indigo-100/60 dark:border-indigo-900/60">
-                  <span>Automatic backup executes to this selected path on every app closing.</span>
-                  <button
-                    type="button"
-                    onClick={triggerManualBackupRequest}
-                    className="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shadow-xs flex items-center gap-1.5 transition-colors"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Manual Backup Now</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <button
-                  onClick={exportCompanyJson}
-                  className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-blue-600 hover:bg-blue-50/50 dark:hover:bg-blue-950/40 text-left transition-all group cursor-pointer space-y-2"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Download className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                      Export Timestamped Backup (.json)
+            <div className="space-y-5">
+              {/* Hero Card */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-blue-50/90 via-indigo-50/60 to-sky-50/80 dark:from-blue-950/40 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800/70 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                      <Cloud className="w-6 h-6" />
                     </div>
-                    <div className="text-xs text-slate-500 mt-1">
-                      Save complete database with date and time mentioned into your selected storage path.
+                    <div>
+                      <h3 className="text-sm font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2 flex-wrap">
+                        <span>Google Drive Automatic Sync</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200 inline-flex items-center gap-1">
+                          <Smartphone className="w-3 h-3" />
+                          <ArrowLeftRight className="w-2.5 h-2.5" />
+                          <Laptop className="w-3 h-3" />
+                          <span>Mobile ↔ Computer</span>
+                        </span>
+                      </h3>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                        Automatically keeps your cases, cause list, parties, and diaries updated between your Mobile and Computer via your Google Drive.
+                      </p>
                     </div>
                   </div>
-                </button>
-
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-emerald-600 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/40 text-left transition-all group cursor-pointer space-y-2"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-300 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Upload className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                      Restore Chamber from Backup
-                    </div>
-                    <div className="text-xs text-slate-500 mt-1">
-                      Import a previously exported .json archive file to restore all chamber records instantly.
-                    </div>
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".json"
-                    className="hidden"
-                    onChange={handleRestoreFile}
-                  />
-                </button>
-
-                {/* Merge Older APK / Version Data */}
-                <button
-                  type="button"
-                  onClick={triggerAutoDataMerge}
-                  className="p-5 rounded-2xl border border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/30 dark:bg-indigo-950/20 hover:border-indigo-600 hover:bg-indigo-50/60 text-left transition-all group cursor-pointer space-y-2"
-                  title="Scan and merge all cases from older version storage"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Layers className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                      <span>Merge Older APK Data</span>
-                      <span className="text-[10px] font-mono bg-indigo-600 text-white px-1.5 py-0.5 rounded font-bold">Auto</span>
-                    </div>
-                    <div className="text-xs text-slate-500 mt-1">
-                      Scan all previous versions and merge existing cases, clients, and deeds into current app without losing any data.
-                    </div>
-                  </div>
-                </button>
-
-                {/* Merge from Backup JSON File */}
-                <button
-                  type="button"
-                  onClick={() => mergeFileInputRef.current?.click()}
-                  className="p-5 rounded-2xl border border-purple-200 dark:border-purple-800/60 bg-purple-50/30 dark:bg-purple-950/20 hover:border-purple-600 hover:bg-purple-50/60 text-left transition-all group cursor-pointer space-y-2"
-                  title="Merge external JSON file without overwriting"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-purple-600 dark:text-purple-300 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <RotateCcw className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                      Merge Backup JSON File
-                    </div>
-                    <div className="text-xs text-slate-500 mt-1">
-                      Select an exported backup file to safely merge all its cases into your active chamber records.
-                    </div>
-                  </div>
-                  <input
-                    ref={mergeFileInputRef}
-                    type="file"
-                    accept=".json"
-                    className="hidden"
-                    onChange={handleMergeFile}
-                  />
-                </button>
-              </div>
-
-              {/* Stored Backups History with Date, Time and Deletion Option */}
-              <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2">
-                <div className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between">
-                  <span>Stored Backups Log (তারিখ ও সময়সহ সংরক্ষিত ব্যাকআপ)</span>
-                  {backupHistory.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (confirm('Are you sure you want to delete all stored backup history records? (আপনার সংরক্ষিত সব ব্যাকআপ লগ মুছে ফেলতে চান?)')) {
-                          clearAllBackupLog();
-                        }
-                      }}
-                      className="text-[11px] text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      <span>Clear All Backups</span>
-                    </button>
-                  )}
                 </div>
 
-                {backupHistory.length > 0 ? (
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                    {backupHistory.map(b => (
-                      <div
-                        key={b.id}
-                        className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-xs flex items-center justify-between gap-3 group"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="font-mono font-bold text-slate-800 dark:text-slate-200 truncate">
-                            {b.fileName}
-                          </div>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5 flex-wrap">
-                            <span>Date &amp; Time: <strong className="text-slate-700 dark:text-slate-300">{b.formattedDate}</strong></span>
-                            <span>·</span>
-                            <span>Path: <span className="font-mono">{b.storagePath}</span></span>
-                            <span>·</span>
-                            <span className="capitalize text-blue-600 dark:text-blue-400 font-semibold">{b.type}</span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
-                            {b.sizeKb} KB
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (confirm(`Delete backup record "${b.fileName}"?`)) {
-                                deleteBackupLogEntry(b.id);
-                              }
-                            }}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-                            title="Delete this backup entry"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                {/* Auth State / Account Card */}
+                {driveSyncStatus.needsAuth ? (
+                  <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="space-y-1 text-center sm:text-left">
+                      <div className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                        {driveUser
+                          ? `Re-authorize Google Drive (${driveUser.email})`
+                          : 'Connect Your Google Account'}
                       </div>
-                    ))}
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        {driveUser
+                          ? 'Session authorization refreshed on reload. Sign in to resume automatic two-way sync.'
+                          : 'Sign in with the same Google account on both your Mobile and Computer to sync chamber data automatically.'}
+                      </p>
+                    </div>
+                    <GoogleSignInButton
+                      onClick={handleConnectDriveClick}
+                      isLoading={isConnectingDrive || driveSyncStatus.isSyncing}
+                      label={driveUser ? 'Reconnect Google Drive' : 'Sign in with Google'}
+                    />
                   </div>
                 ) : (
-                  <div className="p-4 text-center text-xs text-slate-500 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
-                    No backups logged yet. Manual and auto backups will record here with date and time.
+                  <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {driveUser?.photoURL ? (
+                        <img
+                          src={driveUser.photoURL}
+                          alt={driveUser.displayName || 'Google User'}
+                          className="w-9 h-9 rounded-full border border-slate-200 shrink-0"
+                        />
+                      ) : (
+                        <div className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 font-bold text-xs flex items-center justify-center shrink-0">
+                          {(driveUser?.displayName || driveUser?.email || 'G')[0].toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                          <span className="truncate">{driveUser?.displayName || 'Google Account'}</span>
+                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-700">
+                            Connected
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-500 truncate">{driveUser?.email}</div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={disconnectGoogleDrive}
+                      className="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-100 text-xs font-semibold text-slate-700 cursor-pointer shrink-0 transition-colors"
+                    >
+                      Disconnect Account
+                    </button>
                   </div>
                 )}
               </div>
+
+              {/* Automatic Sync Controls (Available when Connected) */}
+              {!driveSyncStatus.needsAuth && (
+                <>
+                  {/* Auto-Sync Toggle Card */}
+                  <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="space-y-0.5">
+                        <div className="text-xs font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                          <RefreshCw className={`w-4 h-4 text-blue-600 ${driveSyncStatus.isSyncing ? 'animate-spin' : ''}`} />
+                          <span>Automatic Two-Way Data Updating (Mobile ↔ Computer)</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500">
+                          When ON, edits made on your mobile phone or computer automatically upload to and download from Google Drive.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (driveSyncStatus.autoSyncEnabled) {
+                            disableDriveAutoSync();
+                          } else {
+                            setDriveConfirmAction({
+                              type: 'enable-autosync',
+                              title: 'Enable Automatic Two-Way Google Drive Sync?',
+                              message: `This will automatically sync and update '${DRIVE_SYNC_FILE_NAME}' in your Google Drive whenever changes are made on this device (${getDeviceLabel()}) or your other signed-in devices.`,
+                              confirmLabel: 'Confirm & Enable Auto-Sync'
+                            });
+                          }
+                        }}
+                        className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer shrink-0 ${
+                          driveSyncStatus.autoSyncEnabled
+                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                            : 'bg-slate-200 hover:bg-slate-300 text-slate-800'
+                        }`}
+                      >
+                        {driveSyncStatus.autoSyncEnabled ? 'Auto-Sync ON' : 'Enable Auto-Sync'}
+                      </button>
+                    </div>
+
+                    {/* Status Details Strip */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-3 border-t border-slate-100 text-[11px]">
+                      <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/80">
+                        <div className="text-slate-400 font-semibold uppercase text-[10px]">This Device</div>
+                        <div className="font-bold text-slate-800 mt-0.5">{getDeviceLabel()}</div>
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/80">
+                        <div className="text-slate-400 font-semibold uppercase text-[10px]">Last Synced Update</div>
+                        <div className="font-bold text-slate-800 mt-0.5">
+                          {driveSyncStatus.lastSyncedAt
+                            ? new Date(driveSyncStatus.lastSyncedAt).toLocaleString('en-IN', {
+                                day: '2-digit',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })
+                            : 'Not synced yet'}
+                        </div>
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/80">
+                        <div className="text-slate-400 font-semibold uppercase text-[10px]">Updated From</div>
+                        <div className="font-bold text-blue-700 mt-0.5">
+                          {driveSyncStatus.lastSyncedByDevice || 'Waiting for first sync'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {driveSyncStatus.error && (
+                      <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 shrink-0" />
+                        <span>{driveSyncStatus.error}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Manual Sync Actions */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      disabled={driveSyncStatus.isSyncing}
+                      onClick={() =>
+                        setDriveConfirmAction({
+                          type: 'sync-now',
+                          title: 'Sync Chamber Data with Google Drive?',
+                          message: `Check '${DRIVE_SYNC_FILE_NAME}' for updates from your other devices and update Google Drive with any new records from this device (${getDeviceLabel()}).`,
+                          confirmLabel: 'Confirm & Sync Now'
+                        })
+                      }
+                      className="p-4 rounded-xl border border-blue-200 bg-blue-50/50 hover:bg-blue-50 hover:border-blue-500 text-left transition-all cursor-pointer flex items-start gap-3 disabled:opacity-60"
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0">
+                        {driveSyncStatus.isSyncing ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <ArrowLeftRight className="w-4 h-4" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-slate-900">Sync Now (Two-Way)</div>
+                        <div className="text-[11px] text-slate-500 mt-0.5">
+                          Smart merge &amp; update between this device and Google Drive.
+                        </div>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={driveSyncStatus.isSyncing}
+                      onClick={() => syncWithGoogleDrive({ mode: 'pull-only', silent: false })}
+                      className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 hover:border-emerald-500 text-left transition-all cursor-pointer flex items-start gap-3 disabled:opacity-60"
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                        <CloudDownload className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-slate-900">Fetch Updates from Drive</div>
+                        <div className="text-[11px] text-slate-500 mt-0.5">
+                          Download latest chamber updates saved from your other device.
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+
+                  {/* Advanced / Overwrite & Delete File Controls */}
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
+                      <span>
+                        Cloud File: <span className="font-mono font-semibold text-slate-700">{DRIVE_SYNC_FILE_NAME}</span>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={driveSyncStatus.isSyncing}
+                        onClick={() =>
+                          setDriveConfirmAction({
+                            type: 'overwrite-drive',
+                            title: 'Overwrite Google Drive with Current Device Data?',
+                            message: `This will replace the contents of '${DRIVE_SYNC_FILE_NAME}' in your Google Drive with the current chamber data on this device (${activeCompany.cases.length} cases).`,
+                            confirmLabel: 'Confirm Overwrite'
+                          })
+                        }
+                        className="px-2.5 py-1 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <CloudUpload className="w-3.5 h-3.5" />
+                        <span>Push Local Copy</span>
+                      </button>
+
+                      {driveSyncStatus.driveFileId && (
+                        <button
+                          type="button"
+                          disabled={driveSyncStatus.isSyncing}
+                          onClick={() =>
+                            setDriveConfirmAction({
+                              type: 'delete-drive-file',
+                              title: 'Delete Sync File from Google Drive?',
+                              message: `Are you sure you want to permanently delete '${DRIVE_SYNC_FILE_NAME}' from your Google Drive? Local data on this device will remain, but cloud sync will pause.`,
+                              confirmLabel: 'Delete Drive File',
+                              danger: true
+                            })
+                          }
+                          className="px-2.5 py-1 rounded-lg border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Remove Cloud File</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Explicit Confirmation Dialog for Mutating / Destructive Google Drive API Calls */}
+              {driveConfirmAction && (
+                <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+                  <div className="w-full max-w-md bg-white rounded-2xl p-5 border border-slate-200 shadow-2xl space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                          driveConfirmAction.danger
+                            ? 'bg-rose-100 text-rose-600'
+                            : 'bg-blue-100 text-blue-600'
+                        }`}
+                      >
+                        <AlertTriangle className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-extrabold text-slate-900">
+                          {driveConfirmAction.title}
+                        </h4>
+                        <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                          {driveConfirmAction.message}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => setDriveConfirmAction(null)}
+                        className="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-xs font-bold text-slate-700 cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={executeConfirmedDriveAction}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold text-white shadow-sm cursor-pointer ${
+                          driveConfirmAction.danger
+                            ? 'bg-rose-600 hover:bg-rose-700'
+                            : 'bg-blue-600 hover:bg-blue-700'
+                        }`}
+                      >
+                        {driveConfirmAction.confirmLabel}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

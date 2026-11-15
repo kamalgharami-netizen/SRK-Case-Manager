@@ -2,7 +2,6 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 import { Menu, Search, Languages, ArrowLeft, Calculator, MessageCircle } from 'lucide-react';
 import { CompanyLogo } from './CompanyLogo';
-import { getBackupStatus } from '../types';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -35,8 +34,6 @@ export const Header: React.FC<HeaderProps> = ({
     toggleLanguage,
     t
   } = useApp();
-
-  const backupStatus = getBackupStatus(activeCompany);
 
   const roleBadgeColor = {
     Admin: 'bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300',

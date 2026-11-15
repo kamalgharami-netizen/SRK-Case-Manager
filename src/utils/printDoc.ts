@@ -60,11 +60,14 @@ export function directIframePrint(fullHtmlDocument: string, title: string = 'Doc
       iframe = document.createElement('iframe');
       iframe.id = 'srk-print-target-iframe';
       iframe.style.position = 'fixed';
-      iframe.style.top = '-9999px';
-      iframe.style.left = '-9999px';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '100vw';
+      iframe.style.height = '100vh';
       iframe.style.border = 'none';
+      iframe.style.opacity = '0';
+      iframe.style.pointerEvents = 'none';
+      iframe.style.zIndex = '-9999';
       document.body.appendChild(iframe);
     }
 
@@ -82,7 +85,7 @@ export function directIframePrint(fullHtmlDocument: string, title: string = 'Doc
           console.warn('Iframe print error:', err);
           window.print();
         }
-      }, 300);
+      }, 350);
     }
   } catch (err) {
     console.error('Direct iframe print failed:', err);

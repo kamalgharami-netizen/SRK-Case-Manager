@@ -250,8 +250,7 @@ export function mergeCompanyLists(
         causeList: Array.from(causeMap.values()),
         vaultFiles: Array.from(vaultMap.values()),
         users: Array.from(userMap.values()),
-        diaryData: mergedDiary,
-        backupStoragePath: cur.backupStoragePath || inc.backupStoragePath || 'C:/Case_Backups'
+        diaryData: mergedDiary
       };
     } else {
       // Incoming company does not exist in current list; add it directly

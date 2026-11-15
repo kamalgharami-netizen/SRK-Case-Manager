@@ -243,11 +243,14 @@ export const PrintModal: React.FC = () => {
         iframe = document.createElement('iframe');
         iframe.id = 'srk-print-target-iframe';
         iframe.style.position = 'fixed';
-        iframe.style.top = '-9999px';
-        iframe.style.left = '-9999px';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '100vw';
+        iframe.style.height = '100vh';
         iframe.style.border = 'none';
+        iframe.style.opacity = '0';
+        iframe.style.pointerEvents = 'none';
+        iframe.style.zIndex = '-9999';
         document.body.appendChild(iframe);
       }
 
@@ -303,7 +306,7 @@ export const PrintModal: React.FC = () => {
         } catch {
           window.print();
         }
-      }, 300);
+      }, 350);
     } catch {
       handleSavePdfToDevice();
     }
@@ -346,6 +349,15 @@ export const PrintModal: React.FC = () => {
     });
   };
 
+  const previewHtml = React.useMemo(() => {
+    if (!printModalData?.html) return '';
+    let raw = printModalData.html;
+    // Scope body styles in <style> tags to .srk-print-preview-container so preview renders cleanly
+    return raw.replace(/(<style[^>]*>[\s\S]*?)(body\s*\{)([\s\S]*?<\/style>)/gi, (match, p1, p2, p3) => {
+      return p1 + '.srk-print-preview-container {' + p3;
+    });
+  }, [printModalData?.html]);
+
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-1 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
       <div className="w-full max-w-4xl h-[94vh] sm:h-[90vh] bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden my-auto">
@@ -381,28 +393,24 @@ export const PrintModal: React.FC = () => {
 
         {/* Paper & Controls Bar */}
         <div className="p-2 sm:p-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs shrink-0">
-          {/* Quick Primary Actions for Mobile */}
+          {/* Quick Primary Actions */}
           <div className="flex items-center gap-1.5 flex-wrap">
             <button
               type="button"
               disabled={isProcessing}
-              onClick={handleShareToPrintOrApps}
-              className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer disabled:opacity-50"
-              title="Share to Wireless Printer Apps, Drive, WhatsApp, or Save to Files"
+              onClick={handlePrintToDevice}
+              className="px-3.5 py-1.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50 active:scale-95"
+              title={isBn ? 'সরাসরি প্রিন্টারে পাঠান (System Print)' : 'Send directly to connected printer / System print dialog'}
             >
-              {isProcessing && processingAction === 'share' ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Share2 className="w-3.5 h-3.5" />
-              )}
-              <span>{isBn ? 'প্রিন্টার/শেয়ার (Share)' : 'Share / Print Apps'}</span>
+              <Printer className="w-3.5 h-3.5" />
+              <span>{isBn ? 'সরাসরি প্রিন্ট (Print)' : 'Print Document'}</span>
             </button>
 
             <button
               type="button"
               disabled={isProcessing}
               onClick={handleSavePdfToDevice}
-              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50"
               title="Save PDF directly to device storage & chamber vault"
             >
               {isProcessing && processingAction === 'save' ? (
@@ -410,7 +418,22 @@ export const PrintModal: React.FC = () => {
               ) : (
                 <FileDown className="w-3.5 h-3.5" />
               )}
-              <span>{isBn ? 'সেভ PDF (Save File)' : 'Save PDF to Device'}</span>
+              <span>{isBn ? 'সেভ PDF' : 'Save PDF'}</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={isProcessing}
+              onClick={handleShareToPrintOrApps}
+              className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50"
+              title="Share to Wireless Printer Apps, Drive, WhatsApp, or Save to Files"
+            >
+              {isProcessing && processingAction === 'share' ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Share2 className="w-3.5 h-3.5" />
+              )}
+              <span>{isBn ? 'শেয়ার (Share)' : 'Share / Apps'}</span>
             </button>
           </div>
 
@@ -508,8 +531,8 @@ export const PrintModal: React.FC = () => {
                 margin: '0 auto',
                 boxSizing: 'border-box'
               }}
-              className="text-slate-900 font-serif leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: printModalData.html }}
+              className="text-slate-900 font-serif leading-relaxed srk-print-preview-container"
+              dangerouslySetInnerHTML={{ __html: previewHtml }}
             />
           </div>
         </div>
@@ -545,12 +568,28 @@ export const PrintModal: React.FC = () => {
               {isBn ? 'বাতিল' : 'Close'}
             </button>
 
+            {/* Share to Wireless Printer / Print Apps / Android Share Sheet */}
+            <button
+              type="button"
+              disabled={isProcessing}
+              onClick={handleShareToPrintOrApps}
+              className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              title={isBn ? 'ওয়্যারলেস প্রিন্টার বা অ্যাপসে পাঠান' : 'Share to WhatsApp, Drive, or Print Apps'}
+            >
+              {isProcessing && processingAction === 'share' ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Share2 className="w-3.5 h-3.5" />
+              )}
+              <span>{isBn ? 'শেয়ার (Share)' : 'Share'}</span>
+            </button>
+
             {/* Save PDF directly to device & Chamber Vault */}
             <button
               type="button"
               disabled={isProcessing}
               onClick={handleSavePdfToDevice}
-              className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
               title={isBn ? 'সরাসরি ডিভাইসে পিডিএফ সেভ করুন' : 'Save PDF to device storage'}
             >
               {isProcessing && processingAction === 'save' ? (
@@ -558,23 +597,19 @@ export const PrintModal: React.FC = () => {
               ) : (
                 <FileDown className="w-3.5 h-3.5" />
               )}
-              <span>{isBn ? 'Save to Device (সেভ করুন)' : 'Save to Device (PDF)'}</span>
+              <span>{isBn ? 'সেভ PDF' : 'Save PDF'}</span>
             </button>
 
-            {/* Share to Wireless Printer / Print Apps / Android Share Sheet */}
+            {/* Primary Action: Direct Print to Connected System / Hardware Printer */}
             <button
               type="button"
               disabled={isProcessing}
-              onClick={handleShareToPrintOrApps}
+              onClick={handlePrintToDevice}
               className="px-4 py-1.5 rounded-xl bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
-              title={isBn ? 'ওয়্যারলেস প্রিন্টার বা অ্যাপসে পাঠান' : 'Print via Wireless Printer or Share to Apps'}
+              title={isBn ? 'সরাসরি প্রিন্টারে পাঠান (System Print)' : 'Send directly to connected printer / System print dialog'}
             >
-              {isProcessing && processingAction === 'share' ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Printer className="w-3.5 h-3.5" />
-              )}
-              <span>{isBn ? 'প্রিন্ট / শেয়ার (Print)' : 'Print / Share to Apps'}</span>
+              <Printer className="w-3.5 h-3.5" />
+              <span>{isBn ? 'প্রিন্ট করুন (Print)' : 'Print Document'}</span>
             </button>
           </div>
         </div>

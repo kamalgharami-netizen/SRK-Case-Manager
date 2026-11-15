@@ -23,9 +23,6 @@ import {
   ChevronRight,
   Download,
   Printer,
-  HardDrive,
-  AlertTriangle,
-  ShieldAlert,
   X,
   Scroll,
   FileSpreadsheet,
@@ -33,9 +30,10 @@ import {
   CheckCircle2,
   Scale,
   Plus,
-  Check
+  Check,
+  MessageCircle
 } from 'lucide-react';
-import { CaseType, CaseItem, getStatusTrackingInfo, getBackupStatus } from '../types';
+import { CaseType, CaseItem, getStatusTrackingInfo } from '../types';
 import { safePrintHtml } from '../utils/printDoc';
 
 interface DashboardProps {
@@ -53,46 +51,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onOpenSettings
 }) => {
   const { activeCompany, activeUser, language, toggleLanguage, t, showToast } = useApp();
-  const backupStatus = getBackupStatus(activeCompany);
-
-  const nowDate = new Date();
-  const todayDateStr = `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, '0')}-${String(nowDate.getDate()).padStart(2, '0')}`;
-  const dailyBackupReminderKey = 'srk_daily_dashboard_backup_reminder_date';
-
-  // Show Data Backup Reminder strictly ONE TIME ONLY per calendar day in Dashboard
-  const [showDailyBackupReminder, setShowDailyBackupReminder] = React.useState<boolean>(() => {
-    try {
-      const alreadyShownDate = localStorage.getItem(dailyBackupReminderKey);
-      return alreadyShownDate !== todayDateStr;
-    } catch {
-      return false;
-    }
-  });
-
-  const dismissDailyBackupReminder = React.useCallback(() => {
-    try {
-      localStorage.setItem(dailyBackupReminderKey, todayDateStr);
-    } catch {
-      // ignore storage errors
-    }
-    setShowDailyBackupReminder(false);
-  }, [dailyBackupReminderKey, todayDateStr]);
-
-  React.useEffect(() => {
-    if (backupStatus.isOverdue && showDailyBackupReminder) {
-      try {
-        // Immediately mark today's reminder as shown so navigating back or reloading today never shows it a second time
-        localStorage.setItem(dailyBackupReminderKey, todayDateStr);
-      } catch {
-        // ignore storage errors
-      }
-      // Automatically hide after 10 seconds if not manually dismissed so it doesn't stay on Dashboard all day
-      const timer = window.setTimeout(() => {
-        setShowDailyBackupReminder(false);
-      }, 10000);
-      return () => window.clearTimeout(timer);
-    }
-  }, [backupStatus.isOverdue, showDailyBackupReminder, dailyBackupReminderKey, todayDateStr]);
 
   // User Rule: Total cases & active pending cases count mutation, misc case, lr appeal, lrtt cases, rti cases, first appeal cases (and conversion).
   // But NOT certified copy of the deed (certcopy) and ror/pi (rorpi).
@@ -618,6 +576,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const toolCards: {
+    id: string;
     page: NavPage;
     title: string;
     desc: string;
@@ -628,6 +587,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     onClick?: () => void;
   }[] = [
     {
+      id: 'causelist',
       page: 'causelist',
       title: t.dailyCauseList,
       desc: t.causeListDesc,
@@ -637,6 +597,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       badge: todayHearings
     },
     {
+      id: 'sharecalculator',
       page: 'sharecalculator',
       title: t.shareCalc,
       desc: t.shareCalcDesc,
@@ -646,6 +607,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       badge: 'Share'
     },
     {
+      id: 'aistudio',
       page: 'aistudio',
       title: t.aiLegalDrafting,
       desc: t.aiDraftingDesc,
@@ -655,6 +617,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       badge: 'AI'
     },
     {
+      id: 'timeline',
       page: 'timeline',
       title: t.caseDiary,
       desc: t.diaryDesc,
@@ -663,6 +626,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       bg: 'bg-sky-50 dark:bg-sky-950/60'
     },
     {
+      id: 'parties',
       page: 'parties',
       title: t.clientRegistry,
       desc: t.clientDesc,
@@ -672,6 +636,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       badge: activeCompany?.parties?.length || 0
     },
     {
+      id: 'wblract',
       page: 'wblract',
       title: t.statutoryWblr,
       desc: t.statutoryDesc,
@@ -680,6 +645,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       bg: 'bg-indigo-50 dark:bg-indigo-950/60'
     },
     {
+      id: 'users',
       page: 'users',
       title: t.advocateTeam,
       desc: t.teamDesc,
@@ -689,6 +655,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       badge: activeCompany?.users?.length || 1
     },
     {
+      id: 'vault',
       page: 'vault',
       title: t.documentVault,
       desc: t.vaultDesc,
@@ -697,64 +664,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
       bg: 'bg-slate-100 dark:bg-slate-800',
       badge: vaultFiles,
       onClick: () => (onOpenSettings ? onOpenSettings('vault') : onNavigate('vault'))
+    },
+    {
+      id: 'whatsapp',
+      page: 'parties' as NavPage,
+      title: language === 'bn' ? 'হোয়াটসঅ্যাপ অ্যালার্ট' : 'WhatsApp Alerts',
+      desc: language === 'bn' ? 'মক্কেল নোটিশ ও বার্তা কনফিগারেশন' : 'Litigant notices & template setup',
+      icon: MessageCircle,
+      color: 'text-emerald-600 dark:text-emerald-400',
+      bg: 'bg-emerald-50 dark:bg-emerald-950/60',
+      badge: activeCompany?.whatsappSettings?.enabled ? 'Active' : 'Off',
+      onClick: () => (onOpenSettings ? onOpenSettings('whatsapp') : undefined)
     }
   ];
 
   return (
     <div className="space-y-6">
-      {/* Visual Data Backup Reminder Banner: displayed strictly ONE TIME ONLY in a day on Dashboard */}
-      {backupStatus.isOverdue && showDailyBackupReminder && (
-        <div className="flex items-center justify-between gap-3 p-3 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 shadow-xs animate-in fade-in duration-200">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
-              <ShieldAlert className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-xs font-bold flex items-center gap-2 flex-wrap">
-                <span>
-                  {language === 'bn'
-                    ? `দৈনিক ব্যাকআপ রিমাইন্ডার: ${backupStatus.daysSinceBackup} দিন ধরে কোনো ম্যানুয়াল ব্যাকআপ নেওয়া হয়নি`
-                    : `Data Backup Reminder: No manual backup performed in ${backupStatus.daysSinceBackup} days`}
-                </span>
-                <span className="text-[10px] uppercase font-mono px-1.5 py-0.2 bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-200 rounded font-bold">
-                  {language === 'bn' ? 'দিনে ১ বার' : 'Once a Day'}
-                </span>
-              </div>
-              <div className="text-[11px] text-amber-700 dark:text-amber-400 truncate mt-0.5">
-                {language === 'bn'
-                  ? 'আপনার কেস, শুনানি এবং মক্কেল তথ্য নিরাপদ রাখতে একটি সম্পূর্ণ JSON ব্যাকআপ সংরক্ষণ করুন।'
-                  : 'Protect your case files, hearings, and client records by downloading a manual JSON backup.'}
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => {
-                dismissDailyBackupReminder();
-                if (onOpenSettings) {
-                  onOpenSettings('backup');
-                } else {
-                  onNavigate('vault');
-                }
-              }}
-              className="px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-600 hover:bg-amber-700 text-white shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
-            >
-              <HardDrive className="w-3.5 h-3.5" />
-              <span>{language === 'bn' ? 'ব্যাকআপ খুলুন' : 'Open Backup Modal'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={dismissDailyBackupReminder}
-              className="p-1 rounded-lg text-amber-700 dark:text-amber-400 hover:bg-amber-200/60 dark:hover:bg-amber-900/50 transition-colors cursor-pointer"
-              title="Dismiss daily backup reminder"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Top Row: 5 Compact KPI Summary Stat Cards styled in the Image's signature color combination */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
         {/* 1. Total Cases (Blue) */}
@@ -933,7 +858,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             const Icon = tool.icon;
             return (
               <div
-                key={tool.page}
+                key={tool.id}
                 onClick={() => (tool.onClick ? tool.onClick() : onNavigate(tool.page))}
                 className="p-3.5 rounded-xl bg-gradient-to-b from-white to-slate-50/90 dark:from-slate-900 dark:to-slate-950 border border-slate-200/90 dark:border-slate-800 border-b-4 border-b-slate-300 dark:border-b-slate-950 hover:border-blue-500 shadow-[0_9px_20px_rgba(15,23,42,0.18),0_3px_0_rgba(30,64,175,0.18)] dark:shadow-[0_8px_18px_rgba(0,0,0,0.45)] hover:-translate-y-1 hover:shadow-[0_14px_24px_rgba(37,99,235,0.15)] active:translate-y-0.5 transition-all cursor-pointer group flex flex-col justify-between gap-2.5"
               >

@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import {
-  AlertTriangle,
-  HardDrive,
   CheckCircle2,
   X,
   Power,
   ShieldCheck,
-  Calendar,
-  Clock
+  Cloud
 } from 'lucide-react';
 
 interface ExitConfirmationModalProps {
@@ -24,7 +21,7 @@ export const ExitConfirmationModal: React.FC<ExitConfirmationModalProps> = ({
   onConfirm,
   isMobileTrigger = false
 }) => {
-  const { activeCompany, backupStoragePath, language } = useApp();
+  const { driveSyncStatus, language } = useApp();
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasExited, setHasExited] = useState(false);
 
@@ -181,20 +178,35 @@ export const ExitConfirmationModal: React.FC<ExitConfirmationModalProps> = ({
               </button>
             </div>
 
-            {/* Content & Safe Auto-Backup Assurance */}
+            {/* Content & Google Drive Sync Assurance */}
             <div className="space-y-3">
               <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                 {isBn
-                  ? 'অ্যাপ বন্ধ করার পূর্বে আপনার চেম্বারের সমস্ত কেস রেকর্ড ও নথিপত্র নিরাপদে ব্যাকআপ সংরক্ষিত হবে।'
-                  : 'All chamber case data, notes, and records will be automatically backed up safely before closing.'}
+                  ? 'অ্যাপ বন্ধ করার পূর্বে আপনার চেম্বারের সমস্ত কেস রেকর্ড ও নথিপত্র নিরাপদে সংরক্ষিত রয়েছে।'
+                  : 'All chamber case data, notes, and records are safely saved before closing.'}
               </p>
 
               <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-[11px] text-slate-600 dark:text-slate-300">
-                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span className="truncate">
-                  {isBn ? 'স্বয়ংক্রিয় ব্যাকআপ গন্তব্য: ' : 'Auto-backup target: '}
-                  <strong className="text-slate-900 dark:text-slate-100">{backupStoragePath}</strong>
-                </span>
+                {driveSyncStatus.autoSyncEnabled && driveSyncStatus.isConnected ? (
+                  <>
+                    <Cloud className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span className="truncate">
+                      {isBn ? 'গুগল ড্রাইভ অটো-সিঙ্ক: ' : 'Google Drive Auto-Sync: '}
+                      <strong className="text-emerald-700 dark:text-emerald-400">
+                        {isBn ? 'সক্রিয় (সর্বশেষ সিঙ্ক সম্পন্ন)' : 'Active & Up to Date'}
+                      </strong>
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span className="truncate">
+                      {isBn
+                        ? 'মোবাইল ও কম্পিউটারের মধ্যে অটো-সিঙ্কের জন্য সেটিংস থেকে গুগল ড্রাইভ যুক্ত করুন।'
+                        : 'Connect Google Drive in Settings for automatic Mobile <-> Computer sync.'}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
 

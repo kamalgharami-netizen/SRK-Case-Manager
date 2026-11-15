@@ -11,22 +11,20 @@ import {
   CheckCircle2,
   AlertCircle,
   X,
-  Upload,
-  Sparkles,
   LogIn,
-  KeyRound,
   Mail,
   Phone,
-  ShieldCheck,
   Eye,
   EyeOff,
   Database,
   Lock,
-  Folder,
-  HardDrive
+  Cloud,
+  CloudDownload
 } from 'lucide-react';
 import { wbDistricts } from '../data/wbDistricts';
-import { CompanyLogo, BADGE_OPTIONS, COLOR_OPTIONS } from './CompanyLogo';
+import { CompanyLogo, COLOR_OPTIONS } from './CompanyLogo';
+import { GoogleSignInButton } from './GoogleSignInButton';
+import { DRIVE_SYNC_FILE_NAME } from '../utils/googleDriveSync';
 import { Toast } from './Toast';
 
 interface LaunchScreenProps {
@@ -43,13 +41,14 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
     loginUser,
     retrieveExistingData,
     showToast,
-    language,
-    backupStoragePath,
-    triggerAutoDataMerge
+    driveUser,
+    driveSyncStatus,
+    connectGoogleDrive,
+    syncWithGoogleDrive,
+    enableDriveAutoSync
   } = useApp();
 
   const logoFileRef = useRef<HTMLInputElement>(null);
-  const restoreFileRef = useRef<HTMLInputElement>(null);
 
   // Check if first-time launch - strictly false if any registered company exists
   const isFirstLaunch = companies.length === 0;
@@ -93,56 +92,12 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
   const [logoBadge, setLogoBadge] = useState<any>('scales');
   const [logoColor, setLogoColor] = useState('#2563EB');
 
-  // Compulsory Data Storage Path for initial registration
-  const [regStoragePath, setRegStoragePath] = useState<string>(backupStoragePath || 'C:/Case_Backups');
-  const regFolderInputRef = useRef<HTMLInputElement>(null);
-
-  const handleBrowseRegFolder = async () => {
-    let succeeded = false;
-    if (typeof window !== 'undefined' && 'showDirectoryPicker' in window) {
-      try {
-        // @ts-ignore
-        const dirHandle = await (window as any).showDirectoryPicker({ mode: 'readwrite' });
-        if (dirHandle && dirHandle.name) {
-          const isWindows = typeof navigator !== 'undefined' && /win/i.test(navigator.userAgent);
-          const sanitized = dirHandle.name.replace(/[^a-zA-Z0-9_\-\s]/g, '_');
-          const cleanPath = isWindows ? `C:/${sanitized}` : `/Documents/${sanitized}`;
-          setRegStoragePath(cleanPath);
-          showToast(`Directory selected: ${dirHandle.name}`, 'success');
-          succeeded = true;
-          return;
-        }
-      } catch (err: any) {
-        if (err.name === 'AbortError') return;
-        console.info('showDirectoryPicker restricted in iframe, opening folder picker input:', err);
-      }
-    }
-    if (!succeeded && regFolderInputRef.current) {
-      regFolderInputRef.current.value = '';
-      regFolderInputRef.current.click();
-    }
-  };
-
-  const handleRegFolderInputSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    const first = files[0];
-    const relPath = first.webkitRelativePath || first.name;
-    const folderName = relPath.includes('/') ? relPath.split('/')[0] : 'Selected_Folder';
-    const isWindows = typeof navigator !== 'undefined' && /win/i.test(navigator.userAgent);
-    const chosen = isWindows
-      ? `C:/Users/Advocate/Documents/${folderName}`
-      : `/Internal_Storage/Documents/${folderName}`;
-    setRegStoragePath(chosen);
-    showToast(`Directory selected: ${folderName}`, 'success');
-  };
-
-  // REINSTALL RETRIEVAL STATE
+  // REINSTALL / CLOUD SYNC RETRIEVAL STATE
   const [retrieveMobile, setRetrieveMobile] = useState('');
   const [retrievePasscode, setRetrievePasscode] = useState('');
   const [showRetrievePasscode, setShowRetrievePasscode] = useState(false);
-  const [uploadedBackupPayload, setUploadedBackupPayload] = useState<any>(null);
-  const [backupFileName, setBackupFileName] = useState<string>('');
+  const [isDriveConnecting, setIsDriveConnecting] = useState(false);
+  const [confirmDrivePull, setConfirmDrivePull] = useState(false);
 
   const districtList = Object.keys(wbDistricts);
 
@@ -215,8 +170,7 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
         email: adminEmail.trim(),
         logoUrl,
         logoBadge,
-        logoColor,
-        backupStoragePath: regStoragePath.trim() || 'C:/Case_Backups'
+        logoColor
       },
       {
         name: adminName.trim(),
@@ -231,7 +185,36 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
     }
   };
 
-  // Handle Reinstall Retrieval
+  // Handle Google Drive Cloud Connect + Sync Restore
+  const handleConnectDriveForRetrieve = async () => {
+    setIsDriveConnecting(true);
+    try {
+      const res = await connectGoogleDrive();
+      if (res?.hasRemoteFile) {
+        setConfirmDrivePull(true);
+      } else if (res) {
+        showToast(`Connected as ${res.user.email}, but no "${DRIVE_SYNC_FILE_NAME}" sync file was found yet.`, 'info');
+      }
+    } finally {
+      setIsDriveConnecting(false);
+    }
+  };
+
+  const handleConfirmDrivePullAndSync = async () => {
+    setConfirmDrivePull(false);
+    setIsDriveConnecting(true);
+    try {
+      const pullRes = await syncWithGoogleDrive({ mode: 'pull-only' });
+      if (pullRes.synced) {
+        await enableDriveAutoSync();
+        if (onClose) onClose();
+      }
+    } finally {
+      setIsDriveConnecting(false);
+    }
+  };
+
+  // Handle Passcode Retrieval from synced/cached device storage
   const handleRetrieveSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const cleanPasscode = retrievePasscode.replace(/\D/g, '').slice(0, 4);
@@ -242,30 +225,12 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
 
     const ok = retrieveExistingData(
       retrieveMobile.trim(),
-      cleanPasscode,
-      uploadedBackupPayload
+      cleanPasscode
     );
 
     if (ok && onClose) {
       onClose();
     }
-  };
-
-  const handleBackupFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = evt => {
-      try {
-        const parsed = JSON.parse(evt.target?.result as string);
-        setUploadedBackupPayload(parsed);
-        setBackupFileName(file.name);
-        showToast(`Loaded backup file "${file.name}". Enter your 4-digit passcode to retrieve.`, 'info');
-      } catch {
-        showToast('Invalid backup JSON file', 'error');
-      }
-    };
-    reader.readAsText(file);
   };
 
   const handleLogoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -744,87 +709,6 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
               </div>
             </div>
 
-            {/* Section 3: Designated Data Backup Storage Path with Browse Option */}
-            <div className="border-b border-slate-200 dark:border-slate-800 pt-2 pb-1">
-              <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
-                3. Mandatory Data Backup Storage Path
-              </span>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900 space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-indigo-950 dark:text-indigo-200 uppercase flex items-center gap-1.5">
-                  <FolderOpen className="w-4 h-4 text-indigo-600" />
-                  <span>Backup Destination Path *</span>
-                </label>
-                <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-800">
-                  Auto-Exit Backup Enabled
-                </span>
-              </div>
-
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Folder className="w-4 h-4 text-indigo-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    required
-                    value={regStoragePath}
-                    onChange={e => setRegStoragePath(e.target.value)}
-                    placeholder="e.g. C:/Case_Backups or D:/Legal_Chamber_Vault"
-                    className="w-full pl-9 pr-3 py-2 text-xs font-mono font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={handleBrowseRegFolder}
-                  className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer shrink-0"
-                  title="Browse folder via OS dialog"
-                >
-                  <FolderOpen className="w-4 h-4" />
-                  <span>Browse...</span>
-                </button>
-              </div>
-
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                <span className="text-[10px] text-slate-500 font-bold self-center mr-1">Quick Presets:</span>
-                {[
-                  'C:/Case_Backups',
-                  'D:/Legal_Chamber_Vault',
-                  'C:/Users/Advocate/Documents/Chamber_Data',
-                  '/storage/emulated/0/Documents/Case_Backups'
-                ].map(p => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => setRegStoragePath(p)}
-                    className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer border ${
-                      regStoragePath === p
-                        ? 'bg-indigo-600 text-white border-indigo-600 font-bold'
-                        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-indigo-400'
-                    }`}
-                  >
-                    {p.split('/').pop() || p}
-                  </button>
-                ))}
-              </div>
-
-              <p className="text-[11px] text-slate-600 dark:text-slate-400">
-                On every closing of the app, all chamber data will be automatically backed up into this selected path with date and time mentioned.
-              </p>
-            </div>
-
-            {/* Hidden native directory picker for registration */}
-            <input
-              ref={regFolderInputRef}
-              type="file"
-              // @ts-ignore
-              webkitdirectory="true"
-              directory=""
-              multiple
-              className="hidden"
-              onChange={handleRegFolderInputSelected}
-            />
-
             <div className="pt-2">
               <button
                 type="submit"
@@ -837,17 +721,79 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
           </form>
         )}
 
-        {/* VIEW 2: Reinstall Recovery (Retrieve Existing Data with Passcode) */}
+        {/* VIEW 2: Cloud Sync & Data Retrieval (Google Drive + 4-Digit Passcode) */}
         {view === 'retrieve' && (
           <form onSubmit={handleRetrieveSubmit} className="space-y-5 py-2">
             <div>
               <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <Database className="w-5 h-5 text-indigo-600" />
-                <span>Retrieve Existing Data (পূর্বের তথ্য পুনরুদ্ধার)</span>
+                <Cloud className="w-5 h-5 text-blue-600" />
+                <span>Sync from Google Drive or Passcode (গুগল ড্রাইভ পুনরুদ্ধার)</span>
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                If you have reinstalled the app or changed devices, retrieve your entire chamber database instantly without filling in registration forms. Only your 4-digit pass code is required.
+                Sign in with your Google Account to automatically sync your chamber data between Mobile and Computer, or enter your 4-digit passcode for cached device records.
               </p>
+            </div>
+
+            {/* Google Drive Two-Way Sync Card */}
+            <div className="p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 space-y-3">
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div>
+                  <div className="text-xs font-extrabold text-blue-950 dark:text-blue-200 flex items-center gap-1.5">
+                    <Cloud className="w-4 h-4 text-blue-600" />
+                    <span>Sync Workspace via Google Drive</span>
+                  </div>
+                  <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                    {driveUser && driveSyncStatus.isConnected
+                      ? `Connected as ${driveUser.email || driveUser.displayName}`
+                      : `Reads your synced "${DRIVE_SYNC_FILE_NAME}" file from Google Drive`}
+                  </div>
+                </div>
+              </div>
+
+              {!driveUser || !driveSyncStatus.isConnected ? (
+                <div className="pt-1">
+                  <GoogleSignInButton
+                    onClick={handleConnectDriveForRetrieve}
+                    isLoading={isDriveConnecting}
+                  />
+                </div>
+              ) : confirmDrivePull ? (
+                <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-800 space-y-2.5">
+                  <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                    Found synced workspace in Google Drive. Download and enable automatic Mobile &lt;-&gt; Computer sync on this device?
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleConfirmDrivePullAndSync}
+                      disabled={isDriveConnecting}
+                      className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <CloudDownload className="w-3.5 h-3.5" />
+                      <span>Confirm &amp; Sync Workspace</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDrivePull(false)}
+                      className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDrivePull(true)}
+                    disabled={isDriveConnecting}
+                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  >
+                    <CloudDownload className="w-4 h-4" />
+                    <span>Pull Latest Data from Google Drive</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="p-4 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900 space-y-3">
@@ -872,7 +818,7 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1 flex items-center justify-between">
                   <span>Enter 4-Digit Pass Code *</span>
-                  <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-mono">ONLY PASSCODE REQUIRED</span>
+                  <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-mono">LOCAL UNLOCK</span>
                 </label>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-indigo-500 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -896,58 +842,6 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
               </div>
             </div>
 
-            {/* Auto-merge Older APK / Version Data */}
-            <div className="p-3.5 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex items-center justify-between gap-3">
-              <div>
-                <div className="text-xs font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
-                  <Database className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>Updated to New APK Version?</span>
-                </div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                  Scan &amp; auto-merge all existing cases from older APK install
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  triggerAutoDataMerge();
-                  if (onClose && companies.length > 0) onClose();
-                }}
-                className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shrink-0 cursor-pointer shadow-xs transition-colors"
-              >
-                Merge Older Data
-              </button>
-            </div>
-
-            {/* Optional backup JSON file selection */}
-            <div className="p-4 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 text-center space-y-2">
-              <div className="text-xs text-slate-600 dark:text-slate-400 font-medium">
-                {backupFileName ? (
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Backup File Loaded: {backupFileName}</span>
-                  </span>
-                ) : (
-                  <span>Device storage cleared? You can also select your auto-backup JSON file:</span>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => restoreFileRef.current?.click()}
-                className="px-4 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
-              >
-                <Upload className="w-3.5 h-3.5" />
-                <span>{backupFileName ? 'Choose Different File' : 'Select Backup JSON File'}</span>
-              </button>
-              <input
-                ref={restoreFileRef}
-                type="file"
-                accept=".json"
-                className="hidden"
-                onChange={handleBackupFileUpload}
-              />
-            </div>
-
             <div className="pt-2">
               <button
                 type="submit"
@@ -955,7 +849,7 @@ export const LaunchScreen: React.FC<LaunchScreenProps> = ({ onClose }) => {
                 className="w-full py-3 px-4 text-sm font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <RotateCcw className="w-4 h-4" />
-                <span>Retrieve All Data &amp; Enter App</span>
+                <span>Unlock Cached Data with Pass Code</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>

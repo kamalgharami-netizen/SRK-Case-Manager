@@ -22,11 +22,10 @@ import { CaseDetailModal } from './components/CaseDetailModal';
 import { BackupModal } from './components/BackupModal';
 import { ViewingOptionsModal } from './components/ViewingOptionsModal';
 import { ChainDeedModal } from './components/ChainDeedModal';
-import { BackupPathModal } from './components/BackupPathModal';
 import { ExitConfirmationModal } from './components/ExitConfirmationModal';
 import { PrintModal } from './components/PrintModal';
 import { Toast } from './components/Toast';
-import { CaseType, CaseItem, getBackupStatus } from './types';
+import { CaseType, CaseItem } from './types';
 import {
   Plus,
   FileText,
@@ -62,9 +61,8 @@ const MainAppContent: React.FC = () => {
     setIsChamberSetupOpen,
     language,
     showToast,
-    isBackupPathConfigured,
-    setIsSelectBackupPathModalOpen,
-    performBackup,
+    driveSyncStatus,
+    syncWithGoogleDrive,
     isExitConfirmOpen,
     setIsExitConfirmOpen,
     confirmAppExit
@@ -146,11 +144,12 @@ const MainAppContent: React.FC = () => {
 
 
 
-  // Desktop Window Close Interceptor: Ask confirmation and perform auto-backup on exit
+  // Desktop Window Close Interceptor: Trigger silent Google Drive sync if active and confirm exit
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Execute auto-backup on closing
-      performBackup({ type: 'auto-close' });
+      if (driveSyncStatus.autoSyncEnabled && !driveSyncStatus.needsAuth) {
+        syncWithGoogleDrive({ mode: 'two-way', silent: true });
+      }
 
       // In Electron or inside an iframe (like AI Studio preview), never block with preventDefault / returnValue
       const isElectron =
@@ -163,14 +162,14 @@ const MainAppContent: React.FC = () => {
 
       if (!isElectron && !isIframe) {
         e.preventDefault();
-        e.returnValue = 'Are you sure you want to close the app? All data will be automatically backed up.';
+        e.returnValue = 'Are you sure you want to close the app?';
         return e.returnValue;
       }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [performBackup]);
+  }, [driveSyncStatus.autoSyncEnabled, driveSyncStatus.needsAuth, syncWithGoogleDrive]);
 
   // Listen for Electron close signal from OS title bar 'X' or Alt+F4 to show confirmation popup
   useEffect(() => {
@@ -356,8 +355,6 @@ const MainAppContent: React.FC = () => {
     pushHistoryState({ modal: 'settings', tab });
   };
 
-  // Backup alert is handled strictly once per day in Dashboard.tsx (not all the time)
-
   const handleOpenNewCase = (type: CaseType) => {
     setEditingCase(null);
     setEntryMode(type);
@@ -496,10 +493,7 @@ const MainAppContent: React.FC = () => {
       {/* On-Screen Print & PDF Device Selectable Preview Modal */}
       <PrintModal />
 
-      {/* Backup Path Configuration & Manual Confirmation Modal */}
-      <BackupPathModal />
-
-      {/* Desktop and Mobile Exit Confirmation Modal with Auto-Backup */}
+      {/* Desktop and Mobile Exit Confirmation Modal */}
       <ExitConfirmationModal
         isOpen={isExitConfirmOpen || isMobileExitConfirmOpen}
         onClose={() => {

@@ -332,8 +332,6 @@ export interface Company {
   activityLog: ActivityLogItem[];
   chainSampleTemplate?: string;
   sampleDrafts?: SampleDraftItem[];
-  lastBackupDate?: number;
-  backupStoragePath?: string;
   whatsappSettings?: {
     enabled?: boolean;
     senderPhone?: string;
@@ -343,56 +341,16 @@ export interface Company {
   };
 }
 
-export interface BackupLogEntry {
-  id: string;
-  timestamp: number;
-  formattedDate: string;
-  fileName: string;
-  storagePath: string;
-  casesCount: number;
-  sizeKb: number;
-  type: 'auto-close' | 'manual' | 'scheduled';
-}
-
-export interface BackupStatusInfo {
-  lastBackupDate: number | null;
-  daysSinceBackup: number;
-  isOverdue: boolean;
-  statusText: string;
-}
-
-export function getBackupStatus(company?: Company | null): BackupStatusInfo {
-  if (!company) {
-    return { lastBackupDate: null, daysSinceBackup: 0, isOverdue: false, statusText: 'No chamber loaded' };
-  }
-  let ts = company.lastBackupDate;
-  if (!ts && typeof window !== 'undefined') {
-    const stored = localStorage.getItem(`srk_last_backup_${company.id}`);
-    if (stored) {
-      ts = parseInt(stored, 10);
-    }
-  }
-
-  if (!ts) {
-    const createdAgoDays = Math.floor((Date.now() - (company.createdAt || Date.now())) / (1000 * 60 * 60 * 24));
-    const effectiveDays = Math.max(createdAgoDays, 8);
-    return {
-      lastBackupDate: null,
-      daysSinceBackup: effectiveDays,
-      isOverdue: true,
-      statusText: 'Never backed up'
-    };
-  }
-
-  const daysSinceBackup = Math.floor((Date.now() - ts) / (1000 * 60 * 60 * 24));
-  const isOverdue = daysSinceBackup >= 7;
-
-  return {
-    lastBackupDate: ts,
-    daysSinceBackup,
-    isOverdue,
-    statusText: daysSinceBackup === 0 ? 'Backed up today' : `${daysSinceBackup} days ago`
-  };
+export interface GoogleDriveSyncStatus {
+  isConnected: boolean;
+  needsAuth: boolean;
+  isSyncing: boolean;
+  autoSyncEnabled: boolean;
+  lastSyncedAt: number | null;
+  lastSyncedByDevice: string | null;
+  driveFileId: string | null;
+  driveFileModifiedTime: string | null;
+  error: string | null;
 }
 
 export interface AppData {

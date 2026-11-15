@@ -33,7 +33,7 @@ import {
   Plus,
   Scroll,
   FileSpreadsheet,
-  HardDrive,
+  Cloud,
   Wallet,
   MessageCircle
 } from 'lucide-react';
@@ -94,9 +94,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     openViewModal,
     openChamberSetup,
     appVersion,
-    forceAppUpdateAndReplace,
-    triggerManualBackupRequest,
-    backupStoragePath
+    forceAppUpdateAndReplace
   } = useApp();
   const [casesOpen, setCasesOpen] = useState(true);
   const [toolsOpen, setToolsOpen] = useState(true);
@@ -566,7 +564,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               type="button"
               onClick={() => {
-                triggerManualBackupRequest();
+                onOpenSettings('backup');
                 if (typeof window !== 'undefined' && window.innerWidth < 1024) {
                   onClose();
                 }
@@ -576,11 +574,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   ? 'text-blue-100/90 hover:text-white hover:bg-white/10'
                   : 'text-slate-700 hover:text-blue-700 hover:bg-slate-100/90'
               }`}
-              title="Manual Data Backup"
+              title="Google Drive Two-Way Sync (Mobile <-> Computer)"
             >
               <div className="flex items-center gap-2.5">
-                <HardDrive className="w-4 h-4 text-sky-300" />
-                <span>{language === 'bn' ? 'ডাটা ব্যাকআপ' : 'Backup'}</span>
+                <Cloud className="w-4 h-4 text-sky-300" />
+                <span>{language === 'bn' ? 'গুগল ড্রাইভ সিঙ্ক' : 'Google Drive Sync'}</span>
               </div>
             </button>
           </div>

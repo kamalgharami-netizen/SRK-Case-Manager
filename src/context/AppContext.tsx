@@ -1,10 +1,24 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Company, User, CaseItem, Party, CauseItem, VaultFile, DiaryEntry, MessageItem, SampleDraftItem, BackupLogEntry, FinancialEntry, PartyLedgerEntry, OfficeAccount, AccountTransaction } from '../types';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
+import { Company, User, CaseItem, Party, CauseItem, VaultFile, DiaryEntry, MessageItem, SampleDraftItem, GoogleDriveSyncStatus, FinancialEntry, PartyLedgerEntry, OfficeAccount, AccountTransaction } from '../types';
 import { AppLanguage, translations, Translations } from '../data/translations';
 import { INITIAL_SAMPLE_DRAFTS } from '../data/sampleDraftTemplates';
 import { APP_VERSION, APP_BUILD_DATE, APP_RELEASE_NAME } from '../config/version';
 import { autoMergeAllPreviousData, mergeCompanyLists, extractCompaniesFromPayload } from '../utils/dataMergeMigration';
 import { INITIAL_DEFAULT_COMPANY } from '../data/initialCompany';
+import {
+  GoogleDriveUser,
+  DriveSyncPayload,
+  initGoogleDriveAuth,
+  signInWithGoogleDrive,
+  signOutGoogleDrive,
+  getDriveAccessToken,
+  findDriveSyncFile,
+  downloadDriveSyncPayload,
+  uploadDriveSyncPayload,
+  deleteDriveSyncFile,
+  getDeviceId,
+  getDeviceLabel
+} from '../utils/googleDriveSync';
 
 const STORAGE_KEY = 'srk_case_manager_v5';
 
@@ -137,7 +151,6 @@ interface AppContextType {
       logoUrl?: string;
       logoBadge?: 'scales' | 'pillar' | 'gavel' | 'shield' | 'book' | 'ashoka';
       logoColor?: string;
-      backupStoragePath?: string;
     },
     admin: {
       name: string;
@@ -154,28 +167,21 @@ interface AppContextType {
   retrieveExistingData: (identifier: string, passcode: string, fileData?: any) => boolean;
   logoutUser: () => void;
   switchCompany: () => void;
-  restoreCompany: (company: Company) => boolean;
-  exportCompanyJson: () => void;
   mergeExternalData: (payload: any) => { success: boolean; addedCases: number; addedParties: number };
   triggerAutoDataMerge: () => { success: boolean; addedCases: number; addedParties: number };
 
-  // Data Backup & Storage Path
-  backupStoragePath: string;
-  isBackupPathConfigured: boolean;
-  setBackupStoragePath: (path: string) => void;
-  backupHistory: BackupLogEntry[];
-  deleteBackupLogEntry: (id: string) => void;
-  clearAllBackupLog: () => void;
-  performBackup: (options?: {
-    type?: 'auto-close' | 'manual' | 'scheduled';
-    customPath?: string;
-    downloadFile?: boolean;
-  }) => Promise<BackupLogEntry | null>;
-  isSelectBackupPathModalOpen: boolean;
-  setIsSelectBackupPathModalOpen: (open: boolean) => void;
-  isManualBackupConfirmOpen: boolean;
-  setIsManualBackupConfirmOpen: (open: boolean) => void;
-  triggerManualBackupRequest: () => void;
+  // Google Drive Real-Time Two-Way Sync (Mobile <-> Computer)
+  driveUser: GoogleDriveUser | null;
+  driveSyncStatus: GoogleDriveSyncStatus;
+  connectGoogleDrive: () => Promise<{ user: GoogleDriveUser; hasRemoteFile: boolean; remoteModifiedTime?: string | null } | null>;
+  disconnectGoogleDrive: () => Promise<void>;
+  enableDriveAutoSync: () => Promise<boolean>;
+  disableDriveAutoSync: () => void;
+  syncWithGoogleDrive: (options?: {
+    mode?: 'two-way' | 'pull-only' | 'push-overwrite';
+    silent?: boolean;
+  }) => Promise<{ synced: boolean; action?: 'pushed' | 'pulled' | 'merged' | 'up-to-date'; remoteDevice?: string }>;
+  deleteGoogleDriveSyncFile: () => Promise<boolean>;
 
   // App Exit Protection
   isExitConfirmOpen: boolean;
@@ -367,30 +373,60 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isChamberSetupOpen, setIsChamberSetupOpen] = useState(false);
-
-  // Backup & Storage Path State - Single path automatically detected for Mobile vs Windows
-  const [backupStoragePath, setBackupStoragePathState] = useState<string>(() => {
-    try {
-      const stored = localStorage.getItem('srk_backup_storage_path');
-      if (stored && stored.trim()) return stored;
-    } catch {}
-    const isMobile = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
-    return isMobile ? '/storage/emulated/0/Documents/Case_Backups' : 'C:/Case_Backups';
-  });
-
-  const [isBackupPathConfigured, setIsBackupPathConfigured] = useState<boolean>(true);
-
-  const [backupHistory, setBackupHistory] = useState<BackupLogEntry[]>(() => {
-    try {
-      const stored = localStorage.getItem('srk_backup_history');
-      if (stored) return JSON.parse(stored);
-    } catch {}
-    return [];
-  });
-
-  const [isSelectBackupPathModalOpen, setIsSelectBackupPathModalOpen] = useState(false);
-  const [isManualBackupConfirmOpen, setIsManualBackupConfirmOpen] = useState(false);
   const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false);
+
+  // Google Drive Two-Way Sync State (Mobile <-> Computer)
+  const [driveUser, setDriveUser] = useState<GoogleDriveUser | null>(null);
+  const [driveSyncStatus, setDriveSyncStatus] = useState<GoogleDriveSyncStatus>(() => {
+    let savedAuto = false;
+    let savedLastAt: number | null = null;
+    let savedLastDevice: string | null = null;
+    try {
+      savedAuto = localStorage.getItem('srk_gdrive_autosync_enabled') === 'true';
+      const rawAt = localStorage.getItem('srk_gdrive_last_synced_at');
+      if (rawAt) savedLastAt = parseInt(rawAt, 10) || null;
+      savedLastDevice = localStorage.getItem('srk_gdrive_last_synced_device');
+    } catch {}
+    return {
+      isConnected: false,
+      needsAuth: true,
+      isSyncing: false,
+      autoSyncEnabled: savedAuto,
+      lastSyncedAt: savedLastAt,
+      lastSyncedByDevice: savedLastDevice,
+      driveFileId: null,
+      driveFileModifiedTime: null,
+      error: null
+    };
+  });
+
+  // Refs to keep background sync race-free and loop-free
+  const companiesRef = useRef<Company[]>(companies);
+  const activeCompanyIdRef = useRef<string | null>(activeCompanyId);
+  const isApplyingRemoteSyncRef = useRef<boolean>(false);
+  const isFirstRenderRef = useRef<boolean>(true);
+  const lastLocalEditAtRef = useRef<number>(0);
+  const lastSyncedRemoteAtRef = useRef<number>(
+    (() => {
+      try {
+        const raw = localStorage.getItem('srk_gdrive_last_synced_at');
+        return raw ? parseInt(raw, 10) || 0 : 0;
+      } catch {
+        return 0;
+      }
+    })()
+  );
+  const syncInFlightRef = useRef<boolean>(false);
+  const lastPollCheckAtRef = useRef<number>(0);
+  const driveFileIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    companiesRef.current = companies;
+  }, [companies]);
+
+  useEffect(() => {
+    activeCompanyIdRef.current = activeCompanyId;
+  }, [activeCompanyId]);
 
   // Print & PDF Preview Modal State (on-screen popup without redirects)
   const [printModalData, setPrintModalData] = useState<{
@@ -650,16 +686,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       createdAt: Date.now()
     };
 
-    const targetBackupPath = (details as any).backupStoragePath || backupStoragePath || 'C:/Case_Backups';
-    if ((details as any).backupStoragePath) {
-      setBackupStoragePathState(targetBackupPath);
-      setIsBackupPathConfigured(true);
-      try {
-        localStorage.setItem('srk_backup_storage_path', targetBackupPath);
-        localStorage.setItem('srk_backup_path_configured', 'true');
-      } catch {}
-    }
-
     const newCompany: Company = {
       id: newCompanyId,
       name: details.name,
@@ -676,7 +702,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       logoBadge: details.logoBadge || 'scales',
       logoColor: details.logoColor || '#2563EB',
       createdAt: Date.now(),
-      backupStoragePath: targetBackupPath,
       users: [adminUser],
       cases: [],
       parties: [],
@@ -704,210 +729,446 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch {}
     setIsChamberSetupOpen(false);
 
-    // Initial persistent vault snapshot for reinstall recovery
-    try {
-      const initialSnapshot = {
-        appName: 'SRK Case Manager',
-        appVersion: APP_VERSION,
-        backupType: 'initial-setup',
-        timestamp: Date.now(),
-        storagePath: targetBackupPath,
-        company: newCompany,
-        allCompanies: [newCompany],
-        passcodeVerify: cleanPasscode
-      };
-      localStorage.setItem('srk_persistent_vault_latest', JSON.stringify(initialSnapshot));
-    } catch {}
-
     showToast(`Workspace "${details.name}" created successfully. Registered with Passcode.`);
     return true;
   };
 
-  const setBackupStoragePath = (path: string) => {
-    const clean = path.trim() || 'C:/Case_Backups';
-    setBackupStoragePathState(clean);
-    setIsBackupPathConfigured(true);
-    try {
-      localStorage.setItem('srk_backup_storage_path', clean);
-      localStorage.setItem('srk_backup_path_configured', 'true');
-    } catch {}
-    if (activeCompanyId) {
-      updateCompanyDetails({ backupStoragePath: clean });
-    }
-    showToast(`Backup storage path set to: ${clean}`, 'success');
-  };
-
-  const triggerManualBackupRequest = () => {
-    if (!isBackupPathConfigured) {
-      setIsSelectBackupPathModalOpen(true);
-    } else {
-      setIsManualBackupConfirmOpen(true);
-    }
-  };
-
-  const performBackup = async (options?: {
-    type?: 'auto-close' | 'manual' | 'scheduled';
-    customPath?: string;
-    downloadFile?: boolean;
-  }): Promise<BackupLogEntry | null> => {
-    if (!activeCompany) return null;
-    const type = options?.type || 'manual';
-    const targetPath = options?.customPath || backupStoragePath || 'C:/Case_Backups';
-    const now = new Date();
-    const timestamp = now.getTime();
-    const formattedDate = now.toLocaleString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true
-    });
-
-    const isAutoBackup = type === 'auto-close' || type === 'scheduled';
-    const safeName = (activeCompany.name || 'Chamber').replace(/[^a-zA-Z0-9]/g, '_');
-    const dStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    const tStr = `${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;
-
-    // Auto backup modifies existing file / data with new; Manual backup creates a new timestamped file
-    const fileName = isAutoBackup
-      ? `Backup_${safeName}_AutoBackup.json`
-      : `Backup_${safeName}_${dStr}_${tStr}.json`;
-
-    const updatedCompany: Company = {
-      ...activeCompany,
-      lastBackupDate: timestamp,
-      backupStoragePath: targetPath
-    };
-
-    const payload = {
-      appName: 'SRK Case Manager',
-      appVersion: APP_VERSION,
-      backupType: type,
-      backupDateTime: formattedDate,
-      timestamp,
-      storagePath: targetPath,
-      totalCases: activeCompany.cases?.length || 0,
-      totalParties: activeCompany.parties?.length || 0,
-      company: updatedCompany,
-      allCompanies: companies.map(c => (c.id === updatedCompany.id ? updatedCompany : c)),
-      passcodeVerify: activeUser?.passcode || activeUser?.password || '1234'
-    };
-
-    const jsonStr = JSON.stringify(payload, null, 2);
-    const sizeKb = Math.round((jsonStr.length / 1024) * 10) / 10;
-
-    setCompanies(prev =>
-      prev.map(c => (c.id === activeCompany.id ? updatedCompany : c))
+  // Initialize Google Drive Firebase Auth Listener
+  useEffect(() => {
+    const unsubscribe = initGoogleDriveAuth(
+      (user) => {
+        setDriveUser(user);
+        setDriveSyncStatus(prev => ({
+          ...prev,
+          isConnected: true,
+          needsAuth: false,
+          error: null
+        }));
+      },
+      (userPresentWithoutToken) => {
+        setDriveUser(userPresentWithoutToken || null);
+        setDriveSyncStatus(prev => ({
+          ...prev,
+          isConnected: false,
+          needsAuth: true
+        }));
+      }
     );
+    return () => unsubscribe();
+  }, []);
 
-    let updatedHistory: BackupLogEntry[];
-    let logEntry: BackupLogEntry;
-
-    if (isAutoBackup) {
-      // Once auto backup then the existing data would be modified with new
-      const existingAutoIndex = backupHistory.findIndex(b => b.type === 'auto-close' || b.type === 'scheduled');
-      if (existingAutoIndex !== -1) {
-        logEntry = {
-          ...backupHistory[existingAutoIndex],
-          timestamp,
-          formattedDate,
-          fileName,
-          storagePath: targetPath,
-          casesCount: activeCompany.cases?.length || 0,
-          sizeKb,
-          type
-        };
-        updatedHistory = [...backupHistory];
-        updatedHistory[existingAutoIndex] = logEntry;
-      } else {
-        logEntry = {
-          id: 'bk_auto_' + safeName,
-          timestamp,
-          formattedDate,
-          fileName,
-          storagePath: targetPath,
-          casesCount: activeCompany.cases?.length || 0,
-          sizeKb,
-          type
-        };
-        updatedHistory = [logEntry, ...backupHistory].slice(0, 50);
+  const syncWithGoogleDrive = useCallback(async (options?: {
+    mode?: 'two-way' | 'pull-only' | 'push-overwrite';
+    silent?: boolean;
+  }): Promise<{ synced: boolean; action?: 'pushed' | 'pulled' | 'merged' | 'up-to-date'; remoteDevice?: string }> => {
+    const token = getDriveAccessToken();
+    if (!token) {
+      setDriveSyncStatus(prev => ({ ...prev, isConnected: false, needsAuth: true }));
+      if (!options?.silent) {
+        showToast('Please sign in with Google to sync with Google Drive', 'warning');
       }
-    } else {
-      // Manual backup: new file and new log record created
-      logEntry = {
-        id: 'bk_' + timestamp + '_' + Math.random().toString(36).substr(2, 4),
-        timestamp,
-        formattedDate,
-        fileName,
-        storagePath: targetPath,
-        casesCount: activeCompany.cases?.length || 0,
-        sizeKb,
-        type: 'manual'
+      return { synced: false };
+    }
+
+    if (syncInFlightRef.current) {
+      return { synced: false };
+    }
+
+    syncInFlightRef.current = true;
+    const mode = options?.mode || 'two-way';
+
+    setDriveSyncStatus(prev => ({ ...prev, isSyncing: true, error: null }));
+
+    try {
+      const remoteFile = await findDriveSyncFile(token);
+      if (remoteFile) {
+        driveFileIdRef.current = remoteFile.id;
+      }
+
+      const myDeviceId = getDeviceId();
+      const myDeviceLabel = getDeviceLabel();
+
+      let remotePayload: DriveSyncPayload | null = null;
+      if (remoteFile) {
+        try {
+          remotePayload = await downloadDriveSyncPayload(token, remoteFile.id);
+        } catch (dlErr) {
+          console.warn('Could not read existing Drive sync file payload:', dlErr);
+        }
+      }
+
+      const hasNewerRemote =
+        Boolean(remotePayload) &&
+        Array.isArray(remotePayload?.companies) &&
+        remotePayload!.companies.length > 0 &&
+        remotePayload!.lastUpdatedAt > lastSyncedRemoteAtRef.current &&
+        remotePayload!.lastUpdatedByDeviceId !== myDeviceId;
+
+      const hasLocalEditsSinceLastSync =
+        lastLocalEditAtRef.current > lastSyncedRemoteAtRef.current;
+
+      // Case 1: Explicit pull-only OR remote is newer with no conflicting local edits
+      if (
+        remotePayload &&
+        Array.isArray(remotePayload.companies) &&
+        (mode === 'pull-only' || (mode === 'two-way' && hasNewerRemote && !hasLocalEditsSinceLastSync))
+      ) {
+        isApplyingRemoteSyncRef.current = true;
+        const incomingCompanies = remotePayload.companies.filter(c => c && !isDemoOrLegacyCompany(c));
+        const targetCompanies = incomingCompanies.length > 0 ? incomingCompanies : remotePayload.companies;
+
+        setCompanies(targetCompanies);
+        companiesRef.current = targetCompanies;
+
+        if (targetCompanies.length > 0) {
+          const validActive = targetCompanies.some(c => c.id === activeCompanyIdRef.current);
+          if (!validActive) {
+            const nextCompId =
+              remotePayload.activeCompanyId && targetCompanies.some(c => c.id === remotePayload.activeCompanyId)
+                ? remotePayload.activeCompanyId
+                : targetCompanies[0].id;
+            setActiveCompanyId(nextCompId);
+            activeCompanyIdRef.current = nextCompId;
+            const nextComp = targetCompanies.find(c => c.id === nextCompId) || targetCompanies[0];
+            if (nextComp?.users?.[0]?.id) {
+              setActiveUserId(nextComp.users[0].id);
+            }
+          }
+          try {
+            localStorage.setItem('srk_first_time_setup_done', 'true');
+          } catch {}
+        }
+
+        lastSyncedRemoteAtRef.current = remotePayload.lastUpdatedAt || Date.now();
+        try {
+          localStorage.setItem('srk_gdrive_last_synced_at', String(lastSyncedRemoteAtRef.current));
+          localStorage.setItem('srk_gdrive_last_synced_device', remotePayload.lastUpdatedByDeviceLabel || 'Other Device');
+        } catch {}
+
+        setDriveSyncStatus(prev => ({
+          ...prev,
+          isConnected: true,
+          needsAuth: false,
+          isSyncing: false,
+          driveFileId: remoteFile?.id || prev.driveFileId,
+          driveFileModifiedTime: remoteFile?.modifiedTime || prev.driveFileModifiedTime,
+          lastSyncedAt: lastSyncedRemoteAtRef.current,
+          lastSyncedByDevice: remotePayload?.lastUpdatedByDeviceLabel || 'Other Device',
+          error: null
+        }));
+
+        if (hasNewerRemote || mode === 'pull-only') {
+          showToast(
+            `Updated from ${remotePayload.lastUpdatedByDeviceLabel || 'other device'} via Google Drive`,
+            'success'
+          );
+        }
+
+        setTimeout(() => {
+          isApplyingRemoteSyncRef.current = false;
+        }, 400);
+
+        return {
+          synced: true,
+          action: 'pulled',
+          remoteDevice: remotePayload.lastUpdatedByDeviceLabel
+        };
+      }
+
+      // Case 2: Both local and remote changed since last sync -> merge safely & push back
+      let companiesToPush = companiesRef.current;
+      let mergedWithRemote = false;
+
+      if (mode === 'two-way' && remotePayload && hasNewerRemote && hasLocalEditsSinceLastSync) {
+        const mergedRes = mergeCompanyLists(companiesRef.current, remotePayload.companies);
+        companiesToPush = mergedRes.merged;
+        mergedWithRemote = true;
+
+        isApplyingRemoteSyncRef.current = true;
+        setCompanies(companiesToPush);
+        companiesRef.current = companiesToPush;
+        setTimeout(() => {
+          isApplyingRemoteSyncRef.current = false;
+        }, 400);
+      }
+
+      // If no push is needed (remote matches our last synced time and local didn't edit), skip upload
+      const shouldPush =
+        mode === 'push-overwrite' ||
+        !remoteFile ||
+        hasLocalEditsSinceLastSync ||
+        mergedWithRemote;
+
+      if (!shouldPush) {
+        if (remotePayload && remotePayload.lastUpdatedAt > lastSyncedRemoteAtRef.current) {
+          lastSyncedRemoteAtRef.current = remotePayload.lastUpdatedAt;
+        }
+        setDriveSyncStatus(prev => ({
+          ...prev,
+          isConnected: true,
+          needsAuth: false,
+          isSyncing: false,
+          driveFileId: remoteFile?.id || prev.driveFileId,
+          driveFileModifiedTime: remoteFile?.modifiedTime || prev.driveFileModifiedTime,
+          lastSyncedAt: lastSyncedRemoteAtRef.current || prev.lastSyncedAt,
+          lastSyncedByDevice: remotePayload?.lastUpdatedByDeviceLabel || prev.lastSyncedByDevice,
+          error: null
+        }));
+        return { synced: true, action: 'up-to-date' };
+      }
+
+      // Case 3: Upload latest chamber state to Google Drive
+      const now = Date.now();
+      const payloadToPush: DriveSyncPayload = {
+        appName: 'SRK Case Manager',
+        schemaVersion: 1,
+        lastUpdatedAt: now,
+        lastUpdatedByDeviceId: myDeviceId,
+        lastUpdatedByDeviceLabel: myDeviceLabel,
+        activeCompanyId: activeCompanyIdRef.current,
+        companies: companiesToPush
       };
-      updatedHistory = [logEntry, ...backupHistory].slice(0, 50);
-    }
 
-    setBackupHistory(updatedHistory);
+      const uploadedMeta = await uploadDriveSyncPayload(token, payloadToPush, remoteFile?.id || driveFileIdRef.current);
+      driveFileIdRef.current = uploadedMeta.id;
+      lastSyncedRemoteAtRef.current = now;
+      lastLocalEditAtRef.current = now;
 
-    try {
-      localStorage.setItem('srk_backup_history', JSON.stringify(updatedHistory));
-      localStorage.setItem('srk_persistent_vault_latest', jsonStr);
-      localStorage.setItem('srk_auto_backup_latest', jsonStr);
-      localStorage.setItem(`srk_last_backup_${activeCompany.id}`, String(timestamp));
-    } catch (e) {
-      console.warn('Storage save warning during backup:', e);
-    }
-
-    if (options?.downloadFile) {
       try {
-        const blob = new Blob([jsonStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        a.click();
-        URL.revokeObjectURL(url);
-      } catch (e) {
-        console.warn('Download trigger warning:', e);
+        localStorage.setItem('srk_gdrive_last_synced_at', String(now));
+        localStorage.setItem('srk_gdrive_last_synced_device', myDeviceLabel);
+      } catch {}
+
+      setDriveSyncStatus(prev => ({
+        ...prev,
+        isConnected: true,
+        needsAuth: false,
+        isSyncing: false,
+        driveFileId: uploadedMeta.id,
+        driveFileModifiedTime: uploadedMeta.modifiedTime,
+        lastSyncedAt: now,
+        lastSyncedByDevice: myDeviceLabel,
+        error: null
+      }));
+
+      if (!options?.silent) {
+        showToast(
+          mergedWithRemote
+            ? 'Merged Mobile & Computer updates and synced to Google Drive!'
+            : 'Chamber data synced to Google Drive!',
+          'success'
+        );
       }
+
+      return { synced: true, action: mergedWithRemote ? 'merged' : 'pushed', remoteDevice: myDeviceLabel };
+    } catch (err: any) {
+      const msg = err?.message || 'Google Drive sync error';
+      console.warn('Google Drive sync error:', msg);
+      const isAuthErr = msg.includes('AUTH_EXPIRED') || msg.includes('401');
+      setDriveSyncStatus(prev => ({
+        ...prev,
+        isSyncing: false,
+        isConnected: isAuthErr ? false : prev.isConnected,
+        needsAuth: isAuthErr ? true : prev.needsAuth,
+        error: isAuthErr ? 'Google session expired. Please sign in again to continue syncing.' : msg
+      }));
+      if (!options?.silent) {
+        showToast(isAuthErr ? 'Google authorization expired. Please sign in again.' : 'Sync failed: ' + msg, 'error');
+      }
+      return { synced: false };
+    } finally {
+      syncInFlightRef.current = false;
     }
+  }, [showToast]);
 
-    if (type === 'manual') {
-      showToast(`Manual backup saved: ${fileName}`, 'success');
-    }
-
-    return logEntry;
-  };
-
-  const deleteBackupLogEntry = (id: string) => {
-    const updated = backupHistory.filter(b => b.id !== id);
-    setBackupHistory(updated);
+  const connectGoogleDrive = async () => {
     try {
-      localStorage.setItem('srk_backup_history', JSON.stringify(updated));
-    } catch (e) {
-      console.warn('Storage save warning during backup deletion:', e);
+      setDriveSyncStatus(prev => ({ ...prev, isSyncing: true, error: null }));
+      const { user, accessToken } = await signInWithGoogleDrive();
+      setDriveUser(user);
+
+      const remoteFile = await findDriveSyncFile(accessToken);
+      if (remoteFile) {
+        driveFileIdRef.current = remoteFile.id;
+      }
+
+      setDriveSyncStatus(prev => ({
+        ...prev,
+        isConnected: true,
+        needsAuth: false,
+        isSyncing: false,
+        driveFileId: remoteFile?.id || null,
+        driveFileModifiedTime: remoteFile?.modifiedTime || null,
+        error: null
+      }));
+
+      showToast(`Connected to Google Drive (${user.email || user.displayName || 'Account'})`, 'success');
+      return {
+        user,
+        hasRemoteFile: Boolean(remoteFile),
+        remoteModifiedTime: remoteFile?.modifiedTime || null
+      };
+    } catch (err: any) {
+      console.error('Google sign-in failed:', err);
+      const msg = err?.code === 'auth/popup-closed-by-user'
+        ? 'Google sign-in popup was closed.'
+        : err?.message || 'Failed to connect Google Drive';
+      setDriveSyncStatus(prev => ({
+        ...prev,
+        isSyncing: false,
+        isConnected: false,
+        needsAuth: true,
+        error: msg
+      }));
+      showToast(msg, 'error');
+      return null;
     }
-    showToast('Backup record deleted successfully');
   };
 
-  const clearAllBackupLog = () => {
-    setBackupHistory([]);
+  const disconnectGoogleDrive = async () => {
     try {
-      localStorage.removeItem('srk_backup_history');
-    } catch (e) {
-      console.warn('Storage clear warning for backup history:', e);
-    }
-    showToast('All stored backup records deleted');
+      await signOutGoogleDrive();
+    } catch {}
+    setDriveUser(null);
+    driveFileIdRef.current = null;
+    try {
+      localStorage.setItem('srk_gdrive_autosync_enabled', 'false');
+    } catch {}
+    setDriveSyncStatus(prev => ({
+      ...prev,
+      isConnected: false,
+      needsAuth: true,
+      autoSyncEnabled: false,
+      driveFileId: null,
+      driveFileModifiedTime: null,
+      error: null
+    }));
+    showToast('Disconnected from Google Drive', 'info');
   };
+
+  const enableDriveAutoSync = async (): Promise<boolean> => {
+    if (!getDriveAccessToken()) {
+      showToast('Please sign in with Google first.', 'warning');
+      return false;
+    }
+    try {
+      localStorage.setItem('srk_gdrive_autosync_enabled', 'true');
+    } catch {}
+    setDriveSyncStatus(prev => ({ ...prev, autoSyncEnabled: true }));
+    const result = await syncWithGoogleDrive({ mode: 'two-way', silent: false });
+    return result.synced;
+  };
+
+  const disableDriveAutoSync = () => {
+    try {
+      localStorage.setItem('srk_gdrive_autosync_enabled', 'false');
+    } catch {}
+    setDriveSyncStatus(prev => ({ ...prev, autoSyncEnabled: false }));
+    showToast('Automatic Google Drive syncing paused', 'info');
+  };
+
+  const deleteGoogleDriveSyncFile = async (): Promise<boolean> => {
+    const token = getDriveAccessToken();
+    if (!token) {
+      showToast('Please sign in with Google first.', 'warning');
+      return false;
+    }
+    setDriveSyncStatus(prev => ({ ...prev, isSyncing: true, error: null }));
+    try {
+      const targetId = driveFileIdRef.current || (await findDriveSyncFile(token))?.id;
+      if (targetId) {
+        await deleteDriveSyncFile(token, targetId);
+      }
+      driveFileIdRef.current = null;
+      lastSyncedRemoteAtRef.current = 0;
+      try {
+        localStorage.removeItem('srk_gdrive_last_synced_at');
+        localStorage.removeItem('srk_gdrive_last_synced_device');
+        localStorage.setItem('srk_gdrive_autosync_enabled', 'false');
+      } catch {}
+      setDriveSyncStatus(prev => ({
+        ...prev,
+        isSyncing: false,
+        autoSyncEnabled: false,
+        driveFileId: null,
+        driveFileModifiedTime: null,
+        lastSyncedAt: null,
+        lastSyncedByDevice: null
+      }));
+      showToast('Google Drive sync file removed cleanly', 'info');
+      return true;
+    } catch (err: any) {
+      setDriveSyncStatus(prev => ({
+        ...prev,
+        isSyncing: false,
+        error: err?.message || 'Failed to delete Drive file'
+      }));
+      showToast('Failed to delete Drive sync file', 'error');
+      return false;
+    }
+  };
+
+  // Track local edits & debounced Auto-Push (Mobile -> Drive / Computer -> Drive)
+  useEffect(() => {
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false;
+      return;
+    }
+    if (isApplyingRemoteSyncRef.current) {
+      return;
+    }
+
+    lastLocalEditAtRef.current = Date.now();
+
+    if (!driveSyncStatus.autoSyncEnabled || driveSyncStatus.needsAuth || !getDriveAccessToken()) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      syncWithGoogleDrive({ mode: 'two-way', silent: true });
+    }, 2500);
+
+    return () => window.clearTimeout(timer);
+  }, [companies, activeCompanyId, driveSyncStatus.autoSyncEnabled, driveSyncStatus.needsAuth, syncWithGoogleDrive]);
+
+  // Automatic Background Pull & Window Focus Sync (Drive -> Computer / Drive -> Mobile)
+  useEffect(() => {
+    if (!driveSyncStatus.autoSyncEnabled || driveSyncStatus.needsAuth || !getDriveAccessToken()) {
+      return;
+    }
+
+    const checkForUpdates = () => {
+      const now = Date.now();
+      if (now - lastPollCheckAtRef.current < 4000) return;
+      lastPollCheckAtRef.current = now;
+      syncWithGoogleDrive({ mode: 'two-way', silent: true });
+    };
+
+    const intervalId = window.setInterval(checkForUpdates, 15000);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        checkForUpdates();
+      }
+    };
+
+    window.addEventListener('focus', checkForUpdates);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', checkForUpdates);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [driveSyncStatus.autoSyncEnabled, driveSyncStatus.needsAuth, syncWithGoogleDrive]);
 
   const requestAppExit = () => {
     setIsExitConfirmOpen(true);
   };
 
   const confirmAppExit = () => {
-    performBackup({ type: 'auto-close' });
+    if (driveSyncStatus.autoSyncEnabled && !driveSyncStatus.needsAuth && getDriveAccessToken()) {
+      syncWithGoogleDrive({ mode: 'two-way', silent: true });
+    }
 
     // Safely close desktop Windows / Electron / PWA app window
     try {
@@ -1182,11 +1443,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (activeCompanyId && activeUser) {
       logActivity(`${prevName} logged out of chamber workspace`);
     }
-    // Auto backup on logout/closing
-    performBackup({ type: 'auto-close' });
+    if (driveSyncStatus.autoSyncEnabled && !driveSyncStatus.needsAuth && getDriveAccessToken()) {
+      syncWithGoogleDrive({ mode: 'two-way', silent: true });
+    }
     setActiveUserId(null);
     setIsChamberSetupOpen(false);
-    showToast(`Logged out (${prevName}). All data auto-backed up.`, 'info');
+    showToast(`Logged out (${prevName}).`, 'info');
   };
 
   const switchCompany = () => {
@@ -1200,38 +1462,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setActiveCompanyId(nextCompany.id);
     setActiveUserId(nextCompany.users[0]?.id || null);
     showToast(`Switched to "${nextCompany.name}"`);
-  };
-
-  const restoreCompany = (restored: Company): boolean => {
-    try {
-      if (!restored.name || !restored.users) {
-        showToast('Invalid backup file structure', 'error');
-        return false;
-      }
-      const newId = 'c_restored_' + Date.now();
-      const updated: Company = {
-        ...restored,
-        id: newId,
-        name: restored.name + ' (Restored)',
-        users: restored.users.map(u => ({ ...u, id: 'u_res_' + Math.random().toString(36).substr(2, 6) }))
-      };
-      setCompanies(prev => [...prev, updated]);
-      setActiveCompanyId(newId);
-      setActiveUserId(updated.users[0]?.id || null);
-      try {
-        localStorage.setItem('srk_first_time_setup_done', 'true');
-      } catch {}
-      setIsChamberSetupOpen(false);
-      showToast(`Restored "${updated.name}" successfully`);
-      return true;
-    } catch {
-      showToast('Failed to parse backup', 'error');
-      return false;
-    }
-  };
-
-  const exportCompanyJson = () => {
-    performBackup({ type: 'manual', downloadFile: true });
   };
 
   // Case Actions
@@ -1847,20 +2077,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         retrieveExistingData,
         logoutUser,
         switchCompany,
-        restoreCompany,
-        exportCompanyJson,
-        backupStoragePath,
-        isBackupPathConfigured,
-        setBackupStoragePath,
-        backupHistory,
-        deleteBackupLogEntry,
-        clearAllBackupLog,
-        performBackup,
-        isSelectBackupPathModalOpen,
-        setIsSelectBackupPathModalOpen,
-        isManualBackupConfirmOpen,
-        setIsManualBackupConfirmOpen,
-        triggerManualBackupRequest,
+        driveUser,
+        driveSyncStatus,
+        connectGoogleDrive,
+        disconnectGoogleDrive,
+        enableDriveAutoSync,
+        disableDriveAutoSync,
+        syncWithGoogleDrive,
+        deleteGoogleDriveSyncFile,
         isExitConfirmOpen,
         setIsExitConfirmOpen,
         requestAppExit,
