@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { DiaryEntry } from '../types';
 import {
@@ -6,8 +6,7 @@ import {
   Plus,
   Trash2,
   Calendar,
-  Clock,
-  FileCheck
+  Clock
 } from 'lucide-react';
 
 export const CaseDiary: React.FC = () => {
@@ -17,6 +16,14 @@ export const CaseDiary: React.FC = () => {
   const [selectedCaseId, setSelectedCaseId] = useState<string>(
     cases[0]?.id || ''
   );
+
+  useEffect(() => {
+    if (cases.length === 0) {
+      if (selectedCaseId) setSelectedCaseId('');
+    } else if (!cases.some(c => c.id === selectedCaseId)) {
+      setSelectedCaseId(cases[0].id);
+    }
+  }, [cases, selectedCaseId]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [entryDate, setEntryDate] = useState(
@@ -29,7 +36,7 @@ export const CaseDiary: React.FC = () => {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const currentCase = cases.find(c => c.id === selectedCaseId);
-  const diaryEntries = (activeCompany?.diaryData?.[selectedCaseId] || []).sort(
+  const diaryEntries = [...(activeCompany?.diaryData?.[selectedCaseId] || [])].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 

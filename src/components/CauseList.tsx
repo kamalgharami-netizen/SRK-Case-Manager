@@ -215,8 +215,13 @@ export const CauseList: React.FC = () => {
       khatian: s0?.khatian
     });
 
-    safeOpenWhatsApp(clientPhone, message);
-    showToast(`Opening WhatsApp hearing alert for ${item.party}...`, 'info');
+    safeOpenWhatsApp(clientPhone, message, {
+      partyId: matchedParty?.id,
+      partyName: item.party,
+      autoSendIfConnected: Boolean(clientPhone),
+      title: 'Hearing Notice — In-App WhatsApp'
+    });
+    showToast(`Preparing in-app WhatsApp hearing alert for ${item.party}...`, 'info');
   };
 
   return (

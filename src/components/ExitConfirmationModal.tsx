@@ -78,8 +78,6 @@ export const ExitConfirmationModal: React.FC<ExitConfirmationModalProps> = ({
         return;
       }
       window.close();
-      window.open('', '_self', '');
-      window.close();
     } catch (e) {
       console.warn('Window close error:', e);
     }

@@ -94,27 +94,26 @@ export function directIframePrint(fullHtmlDocument: string, title: string = 'Doc
 }
 
 /**
- * Universal safe WhatsApp link opener without popup blocker issues
+ * In-app WhatsApp dispatch trigger (NEVER redirects to wa.me, desktop app, or external browser tabs)
  */
-export function safeOpenWhatsApp(phone: string, message: string): void {
-  let cleanPhone = phone.replace(/[^0-9]/g, '');
-  if (cleanPhone.length === 10) {
-    cleanPhone = `91${cleanPhone}`;
+export function safeOpenWhatsApp(
+  phone: string,
+  message: string,
+  meta?: { partyId?: string; partyName?: string; autoSendIfConnected?: boolean; title?: string }
+): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('srk-send-whatsapp', {
+        detail: {
+          phone: phone || '',
+          message: message || '',
+          partyId: meta?.partyId,
+          partyName: meta?.partyName,
+          autoSendIfConnected: meta?.autoSendIfConnected ?? false,
+          title: meta?.title
+        }
+      })
+    );
   }
-  const encoded = encodeURIComponent(message);
-  const waUrl = cleanPhone
-    ? `https://wa.me/${cleanPhone}?text=${encoded}`
-    : `https://wa.me/?text=${encoded}`;
-
-  const link = document.createElement('a');
-  link.href = waUrl;
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
-  document.body.appendChild(link);
-  link.click();
-  setTimeout(() => {
-    if (document.body.contains(link)) {
-      document.body.removeChild(link);
-    }
-  }, 100);
 }
+

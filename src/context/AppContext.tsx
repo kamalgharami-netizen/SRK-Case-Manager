@@ -22,6 +22,41 @@ import {
 
 const STORAGE_KEY = 'srk_case_manager_v5';
 
+let idSequence = 0;
+function nextUniqueId(prefix: string): string {
+  idSequence = (idSequence + 1) % 1000000;
+  return `${prefix}_${Date.now()}_${idSequence}_${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function dedupeById<T extends { id?: string }>(items: T[] = [], fallbackPrefix: string): T[] {
+  const seen = new Set<string>();
+  return items
+    .filter((item): item is T => Boolean(item && typeof item === 'object'))
+    .map((item, idx) => {
+      let id = item.id && String(item.id).trim() ? String(item.id) : `${fallbackPrefix}_${idx}`;
+      if (seen.has(id)) {
+        id = nextUniqueId(fallbackPrefix);
+      }
+      seen.add(id);
+      return id === item.id ? item : { ...item, id };
+    });
+}
+
+function normalizeCompanyUniqueKeys(c: Company): Company {
+  return {
+    ...c,
+    parties: dedupeById(c.parties || [], 'p'),
+    cases: dedupeById(c.cases || [], 'case'),
+    users: dedupeById(c.users || [], 'u'),
+    causeList: dedupeById(c.causeList || [], 'cl'),
+    financialEntries: c.financialEntries ? dedupeById(c.financialEntries, 'fin') : undefined,
+    partyLedgerEntries: c.partyLedgerEntries ? dedupeById(c.partyLedgerEntries, 'pl') : undefined,
+    officeAccounts: c.officeAccounts ? dedupeById(c.officeAccounts, 'oa') : undefined,
+    accountTransactions: c.accountTransactions ? dedupeById(c.accountTransactions, 'at') : undefined,
+    messages: dedupeById(c.messages || [], 'msg')
+  };
+}
+
 // Protect existing local data if every known primary storage entry is unreadable.
 let STORAGE_LOAD_FAILED = false;
 let INITIAL_STORAGE_STATE: any | null | undefined;
@@ -276,13 +311,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const mergeResult = autoMergeAllPreviousData(loaded);
       if (mergeResult.mergedCompanies.length > 0) {
         STORAGE_LOAD_FAILED = false;
-        const valid = mergeResult.mergedCompanies.filter((c: Company) => !isDemoOrLegacyCompany(c));
+        const valid = mergeResult.mergedCompanies
+          .filter((c: Company) => !isDemoOrLegacyCompany(c))
+          .map(normalizeCompanyUniqueKeys);
         if (valid.length > 0) return valid;
       }
-      return [INITIAL_DEFAULT_COMPANY];
+      return [normalizeCompanyUniqueKeys(INITIAL_DEFAULT_COMPANY)];
     } catch (e) {
       console.error('Failed to load & merge companies from localStorage', e);
-      return [INITIAL_DEFAULT_COMPANY];
+      return [normalizeCompanyUniqueKeys(INITIAL_DEFAULT_COMPANY)];
     }
   });
 
@@ -814,8 +851,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         (mode === 'pull-only' || (mode === 'two-way' && hasNewerRemote && !hasLocalEditsSinceLastSync))
       ) {
         isApplyingRemoteSyncRef.current = true;
-        const incomingCompanies = remotePayload.companies.filter(c => c && !isDemoOrLegacyCompany(c));
-        const targetCompanies = incomingCompanies.length > 0 ? incomingCompanies : remotePayload.companies;
+        const incomingCompanies = remotePayload.companies
+          .filter(c => c && !isDemoOrLegacyCompany(c))
+          .map(normalizeCompanyUniqueKeys);
+        const targetCompanies = incomingCompanies.length > 0
+          ? incomingCompanies
+          : remotePayload.companies.map(normalizeCompanyUniqueKeys);
 
         setCompanies(targetCompanies);
         companiesRef.current = targetCompanies;
@@ -1209,8 +1250,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return;
       }
       window.close();
-      window.open('', '_self', '');
-      window.close();
     } catch (e) {
       console.warn('App close trigger notice:', e);
     }
@@ -1466,7 +1505,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Case Actions
   const addCase = (caseData: Omit<CaseItem, 'id' | 'createdAt' | 'createdBy'>): CaseItem => {
-    const id = 'case_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+    const id = nextUniqueId('case');
     const newCase: CaseItem = {
       ...caseData,
       id,
@@ -1552,16 +1591,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const addParty = (partyData: Omit<Party, 'id' | 'createdAt' | 'createdBy'>) => {
     const newParty: Party = {
       ...partyData,
-      id: 'p_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+      id: nextUniqueId('p'),
       createdAt: Date.now(),
       createdBy: activeUser?.id || 'admin'
     };
     setCompanies(prev =>
       prev.map(c => {
         if (c.id !== activeCompanyId) return c;
+        const existing = c.parties || [];
+        const safeId = existing.some(p => p.id === newParty.id) ? nextUniqueId('p') : newParty.id;
         return {
           ...c,
-          parties: [newParty, ...(c.parties || [])]
+          parties: [{ ...newParty, id: safeId }, ...existing]
         };
       })
     );
@@ -1916,9 +1957,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const sendMessage = (partyId: string, phone: string, body: string, channel: 'WhatsApp' | 'SMS' = 'WhatsApp') => {
     const party = activeCompany?.parties.find(p => p.id === partyId);
     const newMsg: MessageItem = {
-      id: 'msg_' + Date.now(),
+      id: nextUniqueId('msg'),
       partyId,
-      partyName: party?.name || 'Client',
+      partyName: party?.name || (partyId === 'custom' || partyId === 'whatsapp_direct' ? phone : 'Client'),
       phone,
       body,
       timestamp: Date.now(),

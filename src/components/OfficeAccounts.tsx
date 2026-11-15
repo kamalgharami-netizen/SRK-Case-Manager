@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowDownLeft, ArrowUpRight, Download, Plus, Search, Trash2, Wallet } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Download, MessageCircle, Plus, Search, Trash2, Wallet } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { FinancialEntry } from '../types';
+import { buildOfficeAccountTransactionText, dispatchWhatsApp } from '../utils/whatsappHelper';
 
 const today = () => {
   const d = new Date();
@@ -28,6 +29,7 @@ export const OfficeAccounts: React.FC = () => {
   const [paymentMode, setPaymentMode] = useState<FinancialEntry['paymentMode']>('Cash');
   const [reference, setReference] = useState('');
   const [notes, setNotes] = useState('');
+  const [sendWhatsAppAfterSave, setSendWhatsAppAfterSave] = useState(false);
 
   const totals = useMemo(() => entries.reduce((acc, item) => {
     if (item.kind === 'income') acc.income += Number(item.amount) || 0;
@@ -56,6 +58,7 @@ export const OfficeAccounts: React.FC = () => {
     setNotes('');
     setDate(today());
     setKind('income');
+    setSendWhatsAppAfterSave(false);
   };
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -66,13 +69,46 @@ export const OfficeAccounts: React.FC = () => {
       return;
     }
     const party = activeCompany?.parties?.find(p => p.id === partyId);
-    addFinancialEntry({
-      kind, date, amount: parsedAmount, category: category.trim(),
-      partyId: party?.id, partyName: party?.name,
-      paymentMode, reference: reference.trim(), notes: notes.trim()
-    });
+    const payload = {
+      kind,
+      date,
+      amount: parsedAmount,
+      category: category.trim(),
+      partyId: party?.id,
+      partyName: party?.name,
+      paymentMode,
+      reference: reference.trim(),
+      notes: notes.trim()
+    };
+    addFinancialEntry(payload);
+    if (sendWhatsAppAfterSave) {
+      dispatchWhatsApp(
+        party?.phone || '',
+        buildOfficeAccountTransactionText(activeCompany, payload),
+        {
+          partyId: party?.id,
+          partyName: party?.name,
+          autoSendIfConnected: Boolean(party?.phone),
+          title: bn ? 'অফিস লেনদেন — WhatsApp মেসেজ' : 'Office Transaction — WhatsApp Alert'
+        }
+      );
+    }
     resetForm();
     setFormOpen(false);
+  };
+
+  const sendEntryWhatsApp = (item: FinancialEntry) => {
+    const matchedParty = activeCompany?.parties?.find(p => p.id === item.partyId);
+    dispatchWhatsApp(
+      matchedParty?.phone || '',
+      buildOfficeAccountTransactionText(activeCompany, item),
+      {
+        partyId: matchedParty?.id,
+        partyName: matchedParty?.name || item.partyName,
+        autoSendIfConnected: Boolean(matchedParty?.phone),
+        title: bn ? 'অফিস লেনদেন — WhatsApp মেসেজ' : 'Office Transaction — WhatsApp Alert'
+      }
+    );
   };
 
   const exportCsv = () => {
@@ -150,9 +186,21 @@ export const OfficeAccounts: React.FC = () => {
             <div><label className={label}>{bn ? 'রেফারেন্স নম্বর' : 'Reference Number'}</label><input className={input} value={reference} onChange={e => setReference(e.target.value)} placeholder={bn ? 'ঐচ্ছিক' : 'Optional'} /></div>
             <div><label className={label}>{bn ? 'বিবরণ' : 'Notes'}</label><input className={input} value={notes} onChange={e => setNotes(e.target.value)} placeholder={bn ? 'ঐচ্ছিক' : 'Optional'} /></div>
           </div>
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={resetForm} className="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-xs font-bold">{bn ? 'রিসেট' : 'Reset'}</button>
-            <button type="submit" className="rounded-xl bg-blue-600 hover:bg-blue-700 px-5 py-2.5 text-xs font-bold text-white">{bn ? 'সংরক্ষণ করুন' : 'Save Record'}</button>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <label className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={sendWhatsAppAfterSave}
+                onChange={e => setSendWhatsAppAfterSave(e.target.checked)}
+                className="w-4 h-4 rounded border-emerald-400 text-emerald-600 focus:ring-emerald-500"
+              />
+              <MessageCircle className="w-4 h-4" />
+              {bn ? 'সেভ করে সাথে সাথে ইন-অ্যাপ WhatsApp মেসেজ পাঠান' : 'Send in-app WhatsApp transaction message after saving'}
+            </label>
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={resetForm} className="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-xs font-bold">{bn ? 'রিসেট' : 'Reset'}</button>
+              <button type="submit" className="rounded-xl bg-blue-600 hover:bg-blue-700 px-5 py-2.5 text-xs font-bold text-white">{bn ? 'সংরক্ষণ করুন' : 'Save Record'}</button>
+            </div>
           </div>
         </form>
       )}
@@ -167,8 +215,8 @@ export const OfficeAccounts: React.FC = () => {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] text-left text-xs">
-            <thead><tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500"><th className="py-3 px-2">{bn ? 'তারিখ' : 'Date'}</th><th className="py-3 px-2">{bn ? 'ধরন' : 'Type'}</th><th className="py-3 px-2">{bn ? 'খাত' : 'Category'}</th><th className="py-3 px-2">{bn ? 'মক্কেল / পক্ষ' : 'Party'}</th><th className="py-3 px-2">{bn ? 'মাধ্যম' : 'Mode'}</th><th className="py-3 px-2 text-right">{bn ? 'পরিমাণ' : 'Amount'}</th><th className="py-3 px-2 text-center">{bn ? 'মুছুন' : 'Delete'}</th></tr></thead>
+          <table className="w-full min-w-[780px] text-left text-xs">
+            <thead><tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500"><th className="py-3 px-2">{bn ? 'তারিখ' : 'Date'}</th><th className="py-3 px-2">{bn ? 'ধরন' : 'Type'}</th><th className="py-3 px-2">{bn ? 'খাত' : 'Category'}</th><th className="py-3 px-2">{bn ? 'মক্কেল / পক্ষ' : 'Party'}</th><th className="py-3 px-2">{bn ? 'মাধ্যম' : 'Mode'}</th><th className="py-3 px-2 text-right">{bn ? 'পরিমাণ' : 'Amount'}</th><th className="py-3 px-2 text-center">{bn ? 'কার্যক্রম' : 'Actions'}</th></tr></thead>
             <tbody>
               {filtered.map(item => (
                 <tr key={item.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
@@ -177,7 +225,26 @@ export const OfficeAccounts: React.FC = () => {
                   <td className="py-3 px-2 font-semibold text-slate-800 dark:text-slate-100">{item.category}<div className="text-[10px] text-slate-400 font-normal">{item.reference || item.notes || ''}</div></td>
                   <td className="py-3 px-2">{item.partyName || '—'}</td><td className="py-3 px-2">{item.paymentMode}</td>
                   <td className={`py-3 px-2 text-right font-extrabold tabular-nums ${item.kind === 'income' ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>{item.kind === 'income' ? '+' : '−'}{money(item.amount)}</td>
-                  <td className="py-3 px-2 text-center"><button onClick={() => { if (window.confirm(bn ? 'এই হিসাবটি মুছে ফেলবেন?' : 'Delete this account entry?')) deleteFinancialEntry(item.id); }} className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30" title={bn ? 'মুছুন' : 'Delete'}><Trash2 className="w-4 h-4" /></button></td>
+                  <td className="py-3 px-2 text-center whitespace-nowrap">
+                    <div className="inline-flex items-center justify-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => sendEntryWhatsApp(item)}
+                        className="p-2 rounded-lg text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 cursor-pointer"
+                        title={bn ? 'ইন-অ্যাপ WhatsApp মেসেজ পাঠান' : 'Send In-App WhatsApp Receipt'}
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { if (window.confirm(bn ? 'এই হিসাবটি মুছে ফেলবেন?' : 'Delete this account entry?')) deleteFinancialEntry(item.id); }}
+                        className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer"
+                        title={bn ? 'মুছুন' : 'Delete'}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
               {filtered.length === 0 && <tr><td colSpan={7} className="py-10 text-center text-slate-400">{bn ? 'কোনো হিসাব পাওয়া যায়নি' : 'No account entries found'}</td></tr>}

@@ -50,6 +50,7 @@ import { THEME_OPTIONS } from '../data/themes';
 import { VaultFile, Role } from '../types';
 import { safeOpenWhatsApp } from '../utils/printDoc';
 import { buildHearingNoticeText, buildDeliveryNoticeText } from '../utils/whatsappHelper';
+import { WhatsAppSessionSetup } from './WhatsAppSessionSetup';
 import { GoogleSignInButton } from './GoogleSignInButton';
 import { DRIVE_SYNC_FILE_NAME, getDeviceLabel } from '../utils/googleDriveSync';
 
@@ -1530,10 +1531,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   </div>
                   <div>
                     <div className="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider">
-                      Chamber WhatsApp Notice Setup (হোয়াটসঅ্যাপ বার্তা কনফিগারেশন)
+                      In-App WhatsApp Login &amp; Dispatch Setup (হোয়াটসঅ্যাপ লগইন ও কনফিগারেশন)
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      Configure automated litigant notice templates, language, and chamber WhatsApp dispatch preferences.
+                      Link your WhatsApp account inside the app to send transaction receipts, client ledger alerts &amp; case notices directly without redirecting to WhatsApp Desktop or Browser.
                     </p>
                   </div>
                 </div>
@@ -1544,6 +1545,9 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   </span>
                 </div>
               </div>
+
+              {/* Direct In-App WhatsApp Linked Device Login (QR Code or Pairing Code) */}
+              <WhatsAppSessionSetup />
 
               {/* Status and Master Toggle */}
               <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/40 space-y-2">
@@ -1696,7 +1700,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   <span>Test Notice Dispatch (হোয়াটসঅ্যাপ টেস্ট মেসেজ পাঠান)</span>
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Enter your mobile number to test how the notice opens in WhatsApp Web or Mobile.
+                  Enter a mobile number to send a test WhatsApp message directly from your linked account inside this app (no external browser/desktop redirect).
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
@@ -1734,8 +1738,11 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                           nextDate: new Date().toLocaleDateString('en-IN')
                         }
                       );
-                      safeOpenWhatsApp(testRecipientPhone, testMsg);
-                      showToast('Opening WhatsApp dispatch window...', 'info');
+                      safeOpenWhatsApp(testRecipientPhone, testMsg, {
+                        autoSendIfConnected: true,
+                        partyName: 'Test Recipient',
+                        title: 'Test In-App WhatsApp Dispatch'
+                      });
                     }}
                     className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer transition-colors shrink-0"
                   >

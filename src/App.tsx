@@ -24,6 +24,7 @@ import { ViewingOptionsModal } from './components/ViewingOptionsModal';
 import { ChainDeedModal } from './components/ChainDeedModal';
 import { ExitConfirmationModal } from './components/ExitConfirmationModal';
 import { PrintModal } from './components/PrintModal';
+import { WhatsAppDispatchModal } from './components/WhatsAppDispatchModal';
 import { Toast } from './components/Toast';
 import { CaseType, CaseItem } from './types';
 import {
@@ -492,6 +493,9 @@ const MainAppContent: React.FC = () => {
 
       {/* On-Screen Print & PDF Device Selectable Preview Modal */}
       <PrintModal />
+
+      {/* Global In-App WhatsApp Composer & Login Modal (No external redirects) */}
+      <WhatsAppDispatchModal />
 
       {/* Desktop and Mobile Exit Confirmation Modal */}
       <ExitConfirmationModal

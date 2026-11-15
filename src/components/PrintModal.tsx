@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   Printer,
@@ -11,8 +11,6 @@ import {
   ZoomOut,
   Download,
   RotateCw,
-  Archive,
-  ExternalLink,
   Loader2,
   CheckCircle2
 } from 'lucide-react';
@@ -26,6 +24,94 @@ export interface PrintModalOptions {
   paperSize?: 'a4' | 'legal';
 }
 
+function buildIsolatedPrintableHtml(
+  rawHtml: string,
+  title: string,
+  paperSize: 'a4' | 'legal',
+  orientation: 'portrait' | 'landscape'
+): string {
+  const pageDimension = paperSize === 'legal' ? '8.5in 14in' : 'A4';
+  const pageOverrideCss = `
+    @page {
+      size: ${pageDimension} ${orientation};
+      margin: 12mm;
+    }
+    html, body {
+      background-color: #ffffff;
+      color: #0f172a;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    @media print {
+      html, body {
+        margin: 0 !important;
+        background: #ffffff !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  `;
+
+  const trimmed = (rawHtml || '').trim();
+  const hasHtmlTag = /<html[\s>]/i.test(trimmed);
+
+  if (!hasHtmlTag) {
+    return `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>${title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        font-family: 'Georgia', 'Times New Roman', 'Noto Sans Bengali', serif;
+        padding: 14mm 16mm;
+        margin: 0;
+        color: #0f172a;
+        background: #ffffff;
+        line-height: 1.6;
+        font-size: 13px;
+      }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border: 1px solid #cbd5e1; padding: 6px 8px; text-align: left; }
+      th { background: #f1f5f9; }
+      ${pageOverrideCss}
+    </style>
+  </head>
+  <body>
+    ${trimmed}
+  </body>
+</html>`;
+  }
+
+  let doc = trimmed;
+  if (!/padding/i.test(doc) && !/margin:\s*1/i.test(doc)) {
+    const bodyPaddingCss = `body { padding: 12mm 14mm; }`;
+    if (/<\/head>/i.test(doc)) {
+      doc = doc.replace(/<\/head>/i, `<style>${bodyPaddingCss}\n${pageOverrideCss}</style></head>`);
+    } else {
+      doc = `<style>${bodyPaddingCss}\n${pageOverrideCss}</style>` + doc;
+    }
+  } else {
+    if (/<\/head>/i.test(doc)) {
+      doc = doc.replace(/<\/head>/i, `<style>${pageOverrideCss}</style></head>`);
+    } else {
+      doc = `<style>${pageOverrideCss}</style>` + doc;
+    }
+  }
+  return doc;
+}
+
+function extractBodyInnerHtml(rawHtml: string): string {
+  const match = rawHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  if (match && match[1]) {
+    const styles = (rawHtml.match(/<style[^>]*>[\s\S]*?<\/style>/gi) || []).join('\n');
+    return `${styles}\n${match[1]}`;
+  }
+  return rawHtml;
+}
+
 export const PrintModal: React.FC = () => {
   const { printModalData, closePrintPreview, showToast, language, addVaultFile } = useApp();
   const [zoom, setZoom] = useState<number>(100);
@@ -36,47 +122,93 @@ export const PrintModal: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [generatedPdfBlobUrl, setGeneratedPdfBlobUrl] = useState<string | null>(null);
   const [generatedPdfFileName, setGeneratedPdfFileName] = useState<string>('');
-  const previewContainerRef = useRef<HTMLDivElement>(null);
+  const [iframeHeight, setIframeHeight] = useState<number>(1123);
 
+  const previewIframeRef = useRef<HTMLIFrameElement>(null);
   const isBn = language === 'bn';
 
   useEffect(() => {
     if (printModalData) {
       setOrientation(printModalData.orientation || 'portrait');
       setPaperSize(printModalData.paperSize || 'a4');
-      setZoom(typeof window !== 'undefined' && window.innerWidth < 640 ? 70 : 100);
-      setGeneratedPdfBlobUrl(null);
+      setZoom(typeof window !== 'undefined' && window.innerWidth < 640 ? 55 : 100);
+      setGeneratedPdfBlobUrl(prev => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
       setGeneratedPdfFileName('');
+      setIframeHeight(printModalData.orientation === 'landscape' ? 794 : 1123);
     }
   }, [printModalData]);
 
+  // Revoke any generated blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (generatedPdfBlobUrl) {
+        URL.revokeObjectURL(generatedPdfBlobUrl);
+      }
+    };
+  }, [generatedPdfBlobUrl]);
+
+  const docTitle = printModalData?.title || 'Document';
+  const cleanTitle = docTitle.replace(/[^a-zA-Z0-9_\-\u0980-\u09FF]/g, '_').replace(/_+/g, '_') || 'Document';
+
+  const isolatedPrintableHtml = useMemo(() => {
+    if (!printModalData?.html) return '';
+    return buildIsolatedPrintableHtml(printModalData.html, docTitle, paperSize, orientation);
+  }, [printModalData?.html, docTitle, paperSize, orientation]);
+
+  const syncIframeHeight = useCallback(() => {
+    const iframe = previewIframeRef.current;
+    if (!iframe) return;
+    try {
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!doc || !doc.body) return;
+      const minH = orientation === 'landscape' ? 794 : paperSize === 'legal' ? 1344 : 1123;
+      const contentH = Math.max(
+        doc.body.scrollHeight || 0,
+        doc.documentElement?.scrollHeight || 0
+      );
+      setIframeHeight(Math.max(minH, contentH + 32));
+    } catch {
+      // Ignore cross-origin guard if ever triggered
+    }
+  }, [orientation, paperSize]);
+
   if (!printModalData || !printModalData.isOpen) return null;
 
-  const docTitle = printModalData.title || 'Document';
-  const cleanTitle = docTitle.replace(/[^a-zA-Z0-9_\-]/g, '_');
-
   /**
-   * Generates a high-resolution, multi-page jsPDF document from the preview container
+   * Generates a crisp, properly paginated multi-page jsPDF document
+   * directly from the isolated iframe's document body (immune to Tailwind v4 oklch CSS).
    */
-  const generatePdfInstance = async (): Promise<{ pdf: jsPDF; blob: Blob; file: File; fileName: string }> => {
-    if (!previewContainerRef.current) {
-      throw new Error('Preview container not found');
+  const generatePdfInstance = async (): Promise<{
+    pdf: jsPDF;
+    blob: Blob;
+    file: File;
+    fileName: string;
+  }> => {
+    const iframe = previewIframeRef.current;
+    const iframeDoc = iframe?.contentDocument || iframe?.contentWindow?.document;
+    const targetBody = iframeDoc?.body;
+
+    if (!iframeDoc || !targetBody) {
+      throw new Error('Print preview document is still loading. Please retry.');
     }
 
-    const element = previewContainerRef.current;
-    const originalTransform = element.style.transform;
-    element.style.transform = 'none'; // reset scale for crisp capture
+    const captureWidth = Math.max(targetBody.scrollWidth, iframeDoc.documentElement?.scrollWidth || 794);
+    const captureHeight = Math.max(targetBody.scrollHeight, iframeDoc.documentElement?.scrollHeight || 1123);
 
-    const canvas = await html2canvas(element, {
-      scale: 2, // high quality
+    const canvas = await html2canvas(targetBody, {
+      scale: 2,
       useCORS: true,
       logging: false,
-      backgroundColor: '#ffffff'
+      backgroundColor: '#ffffff',
+      width: captureWidth,
+      height: captureHeight,
+      windowWidth: captureWidth,
+      windowHeight: captureHeight
     });
 
-    element.style.transform = originalTransform;
-
-    const imgData = canvas.toDataURL('image/jpeg', 0.95);
     const isLandscape = orientation === 'landscape';
     const pdf = new jsPDF({
       orientation: isLandscape ? 'l' : 'p',
@@ -84,29 +216,53 @@ export const PrintModal: React.FC = () => {
       format: paperSize === 'legal' ? 'legal' : 'a4'
     });
 
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const pdfPageWidth = pdf.internal.pageSize.getWidth();
+    const pdfPageHeight = pdf.internal.pageSize.getHeight();
+    const marginMm = 8;
+    const contentWidthMm = pdfPageWidth - marginMm * 2;
+    const contentHeightMm = pdfPageHeight - marginMm * 2;
 
-    const imgWidth = canvas.width;
-    const imgHeight = canvas.height;
-    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-    const renderWidth = imgWidth * ratio;
-    const renderHeight = imgHeight * ratio;
+    // Slice canvas page-by-page at crisp legible resolution without shrinking long documents
+    const pxPerMm = canvas.width / contentWidthMm;
+    const sliceHeightPx = Math.floor(contentHeightMm * pxPerMm);
 
-    // Handle single or multi-page slicing
-    if (renderHeight <= pdfHeight) {
-      pdf.addImage(imgData, 'JPEG', (pdfWidth - renderWidth) / 2, 8, renderWidth, renderHeight);
-    } else {
-      let heightLeft = renderHeight;
-      let position = 0;
-      while (heightLeft > 0) {
-        pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, renderHeight);
-        heightLeft -= pdfHeight;
-        position -= pdfHeight;
-        if (heightLeft > 0) {
-          pdf.addPage();
-        }
+    let yOffsetPx = 0;
+    let pageIndex = 0;
+
+    while (yOffsetPx < canvas.height) {
+      const remainingPx = canvas.height - yOffsetPx;
+      const currentSlicePx = Math.min(sliceHeightPx, remainingPx);
+
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = canvas.width;
+      pageCanvas.height = currentSlicePx;
+      const ctx = pageCanvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+        ctx.drawImage(
+          canvas,
+          0,
+          yOffsetPx,
+          canvas.width,
+          currentSlicePx,
+          0,
+          0,
+          canvas.width,
+          currentSlicePx
+        );
       }
+
+      const sliceImgData = pageCanvas.toDataURL('image/jpeg', 0.94);
+      const sliceHeightMm = currentSlicePx / pxPerMm;
+
+      if (pageIndex > 0) {
+        pdf.addPage();
+      }
+      pdf.addImage(sliceImgData, 'JPEG', marginMm, marginMm, contentWidthMm, sliceHeightMm);
+
+      yOffsetPx += currentSlicePx;
+      pageIndex += 1;
     }
 
     const fileName = `${cleanTitle}.pdf`;
@@ -117,95 +273,7 @@ export const PrintModal: React.FC = () => {
   };
 
   /**
-   * ACTION 1: Direct Mobile Share to Wireless Printer, Drive, Files, WhatsApp
-   * Utilizes navigator.share with genuine PDF File object
-   */
-  const handleShareToPrintOrApps = async () => {
-    setIsProcessing(true);
-    setProcessingAction('share');
-    showToast(isBn ? 'শেয়ার ও প্রিন্টিং অপশন তৈরি হচ্ছে...' : 'Preparing share & print options...', 'info');
-
-    try {
-      const { blob, file, fileName } = await generatePdfInstance();
-      const blobUrl = URL.createObjectURL(blob);
-      setGeneratedPdfBlobUrl(blobUrl);
-      setGeneratedPdfFileName(fileName);
-
-      // Check for Web Share API Level 2 (file sharing)
-      const shareData = {
-        files: [file],
-        title: docTitle,
-        text: `${docTitle} · SRK Case Manager`
-      };
-
-      if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare(shareData)) {
-        await navigator.share(shareData);
-        showToast(isBn ? 'শেয়ার সম্পন্ন হয়েছে' : 'Shared successfully', 'success');
-      } else if (typeof navigator !== 'undefined' && navigator.share) {
-        // Fallback to text/title share and initiate download
-        await navigator.share({
-          title: docTitle,
-          text: `${docTitle} - SRK Case Manager Legal Record`
-        });
-        triggerDownloadBlob(blob, fileName);
-      } else {
-        // Desktop or unsupported share: trigger direct download
-        triggerDownloadBlob(blob, fileName);
-        showToast(isBn ? 'পিডিএফ ডিভাইসে সেভ করা হয়েছে' : 'PDF saved to device', 'success');
-      }
-    } catch (err: any) {
-      if (err.name !== 'AbortError') {
-        console.warn('Share error, attempting direct save:', err);
-        handleSavePdfToDevice();
-      }
-    } finally {
-      setIsProcessing(false);
-      setProcessingAction('');
-    }
-  };
-
-  /**
-   * ACTION 2: Save PDF directly to Saveable Place on Device (Downloads / Storage & Vault)
-   */
-  const handleSavePdfToDevice = async () => {
-    setIsProcessing(true);
-    setProcessingAction('save');
-    showToast(isBn ? 'পিডিএফ ফাইলে সেভ করা হচ্ছে...' : 'Saving PDF to device storage...', 'info');
-
-    try {
-      const { blob, fileName } = await generatePdfInstance();
-      const blobUrl = URL.createObjectURL(blob);
-      setGeneratedPdfBlobUrl(blobUrl);
-      setGeneratedPdfFileName(fileName);
-
-      // 1. Trigger native device file download
-      triggerDownloadBlob(blob, fileName);
-
-      // 2. Automatically register into Chamber Document Vault so it is never lost
-      try {
-        addVaultFile({
-          name: fileName,
-          size: `${Math.max(1, Math.round(blob.size / 1024))} KB`,
-          type: 'pdf',
-          date: new Date().toISOString().split('T')[0],
-          category: 'Certified Copy / Land Record Prints'
-        });
-      } catch (vaultErr) {
-        console.warn('Vault auto-save warning:', vaultErr);
-      }
-
-      showToast(isBn ? 'পিডিএফ সফলভাবে ডিভাইসে সেভ করা হয়েছে এবং চেম্বার ভল্টে সংরক্ষিত হয়েছে!' : 'PDF saved to device storage and added to Chamber Vault!', 'success');
-    } catch (err) {
-      console.error('PDF save error:', err);
-      showToast(isBn ? 'পিডিএফ সেভ করতে ব্যর্থ হয়েছে' : 'Failed to save PDF', 'error');
-    } finally {
-      setIsProcessing(false);
-      setProcessingAction('');
-    }
-  };
-
-  /**
-   * Helper: Triggers client-side download of a Blob
+   * Triggers client-side file download of a Blob without leaving the app
    */
   const triggerDownloadBlob = (blob: Blob, fileName: string) => {
     const url = URL.createObjectURL(blob);
@@ -223,110 +291,143 @@ export const PrintModal: React.FC = () => {
   };
 
   /**
-   * ACTION 3: Print to Device / System Printer
-   * On mobile devices, delegates to native share sheet (which includes Android Print Service)
-   * On desktop/browsers, uses an isolated hidden iframe
+   * ACTION 1: Share PDF to Wireless Printer Apps, Drive, WhatsApp, or Files
    */
-  const handlePrintToDevice = async () => {
-    const isMobile = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
+  const handleShareToPrintOrApps = async () => {
+    setIsProcessing(true);
+    setProcessingAction('share');
+    showToast(isBn ? 'শেয়ার ও প্রিন্টিং ফাইল তৈরি হচ্ছে...' : 'Preparing document to share or print...', 'info');
 
-    if (isMobile && typeof navigator !== 'undefined' && 'share' in navigator) {
-      // Mobile WebView: invoke system share with Android Print Service option
-      await handleShareToPrintOrApps();
-      return;
-    }
-
-    // Standard Desktop / Tablet hidden iframe printing
     try {
-      let iframe = document.getElementById('srk-print-target-iframe') as HTMLIFrameElement;
-      if (!iframe) {
-        iframe = document.createElement('iframe');
-        iframe.id = 'srk-print-target-iframe';
-        iframe.style.position = 'fixed';
-        iframe.style.right = '0';
-        iframe.style.bottom = '0';
-        iframe.style.width = '100vw';
-        iframe.style.height = '100vh';
-        iframe.style.border = 'none';
-        iframe.style.opacity = '0';
-        iframe.style.pointerEvents = 'none';
-        iframe.style.zIndex = '-9999';
-        document.body.appendChild(iframe);
-      }
+      const { blob, file, fileName } = await generatePdfInstance();
+      const blobUrl = URL.createObjectURL(blob);
+      setGeneratedPdfBlobUrl(prev => {
+        if (prev) URL.revokeObjectURL(prev);
+        return blobUrl;
+      });
+      setGeneratedPdfFileName(fileName);
 
-      const doc = iframe.contentWindow?.document || iframe.contentDocument;
-      if (!doc) {
-        window.print();
-        return;
-      }
+      const shareData = {
+        files: [file],
+        title: docTitle,
+        text: `${docTitle} · SRK Case Manager`
+      };
 
-      const pageRule = `
-        @page {
-          size: ${paperSize === 'legal' ? '8.5in 14in' : 'A4'} ${orientation};
-          margin: 10mm;
-        }
-        @media print {
-          body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .no-print { display: none !important; }
-        }
-      `;
-
-      let fullContent = printModalData.html;
-      if (!fullContent.includes('<html')) {
-        fullContent = `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="utf-8">
-              <title>${docTitle}</title>
-              <style>${pageRule}</style>
-            </head>
-            <body>
-              ${printModalData.html}
-            </body>
-          </html>
-        `;
+      if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+        showToast(isBn ? 'শেয়ার সম্পন্ন হয়েছে' : 'Shared successfully', 'success');
+      } else if (typeof navigator !== 'undefined' && navigator.share) {
+        await navigator.share({
+          title: docTitle,
+          text: `${docTitle} - SRK Case Manager Legal Record`
+        });
+        triggerDownloadBlob(blob, fileName);
       } else {
-        if (fullContent.includes('</head>')) {
-          fullContent = fullContent.replace('</head>', `<style>${pageRule}</style></head>`);
-        } else {
-          fullContent = `<style>${pageRule}</style>` + fullContent;
-        }
+        triggerDownloadBlob(blob, fileName);
+        showToast(isBn ? 'পিডিএফ ডিভাইসে সেভ করা হয়েছে' : 'PDF saved to device', 'success');
       }
-
-      doc.open();
-      doc.write(fullContent);
-      doc.close();
-
-      setTimeout(() => {
-        try {
-          iframe.contentWindow?.focus();
-          iframe.contentWindow?.print();
-          showToast(isBn ? 'সিস্টেম প্রিন্টারে পাঠানো হয়েছে' : 'Sent to system printer', 'success');
-        } catch {
-          window.print();
-        }
-      }, 350);
-    } catch {
-      handleSavePdfToDevice();
+    } catch (err: any) {
+      if (err?.name !== 'AbortError') {
+        console.warn('Share error, falling back to PDF save:', err);
+        await handleSavePdfToDevice();
+      }
+    } finally {
+      setIsProcessing(false);
+      setProcessingAction('');
     }
   };
 
   /**
-   * ACTION 4: Download Word document
+   * ACTION 2: Save PDF directly to Device Storage & Chamber Document Vault
+   */
+  const handleSavePdfToDevice = async () => {
+    setIsProcessing(true);
+    setProcessingAction('save');
+    showToast(isBn ? 'পিডিএফ তৈরি হচ্ছে...' : 'Generating PDF file...', 'info');
+
+    try {
+      const { blob, fileName } = await generatePdfInstance();
+      const blobUrl = URL.createObjectURL(blob);
+      setGeneratedPdfBlobUrl(prev => {
+        if (prev) URL.revokeObjectURL(prev);
+        return blobUrl;
+      });
+      setGeneratedPdfFileName(fileName);
+
+      triggerDownloadBlob(blob, fileName);
+
+      try {
+        addVaultFile({
+          name: fileName,
+          size: `${Math.max(1, Math.round(blob.size / 1024))} KB`,
+          type: 'pdf',
+          date: new Date().toISOString().split('T')[0],
+          category: 'Certified Copy / Land Record Prints'
+        });
+      } catch (vaultErr) {
+        console.warn('Vault auto-save warning:', vaultErr);
+      }
+
+      showToast(
+        isBn
+          ? 'পিডিএফ সফলভাবে ডিভাইসে ডাউনলোড হয়েছে এবং চেম্বার ভল্টে সংরক্ষিত হয়েছে!'
+          : 'PDF downloaded to device and saved to Chamber Vault!',
+        'success'
+      );
+    } catch (err) {
+      console.error('PDF save error:', err);
+      showToast(isBn ? 'পিডিএফ তৈরি করতে সমস্যা হয়েছে। প্রিন্ট বাটন চেষ্টা করুন।' : 'Could not build PDF. Try the Print button.', 'error');
+    } finally {
+      setIsProcessing(false);
+      setProcessingAction('');
+    }
+  };
+
+  /**
+   * ACTION 3: Direct Print directly from the live isolated preview iframe
+   */
+  const handlePrintToDevice = async () => {
+    const isMobile =
+      typeof navigator !== 'undefined' &&
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
+
+    if (isMobile && typeof navigator !== 'undefined' && 'share' in navigator) {
+      await handleShareToPrintOrApps();
+      return;
+    }
+
+    try {
+      const iframe = previewIframeRef.current;
+      const win = iframe?.contentWindow;
+      if (win) {
+        win.focus();
+        win.print();
+        showToast(isBn ? 'প্রিন্ট ডায়ালগ খোলা হয়েছে' : 'Print dialog opened', 'success');
+        return;
+      }
+    } catch (err) {
+      console.warn('Iframe print failed, falling back to Save PDF:', err);
+    }
+
+    await handleSavePdfToDevice();
+  };
+
+  /**
+   * ACTION 4: Download Word (.doc) document cleanly
    */
   const handleDownloadWordDoc = () => {
+    const bodyHtml = extractBodyInnerHtml(printModalData.html);
     const htmlWrapper = `
       <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
         <head>
           <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
           <title>${docTitle}</title>
           <style>
-            body { font-family: 'Times New Roman', serif; padding: 30px; font-size: 11pt; }
+            body { font-family: 'Times New Roman', serif; padding: 24px; font-size: 11pt; color: #0f172a; }
           </style>
         </head>
         <body>
-          ${printModalData.html}
+          ${bodyHtml}
         </body>
       </html>
     `;
@@ -336,12 +437,18 @@ export const PrintModal: React.FC = () => {
   };
 
   /**
-   * ACTION 5: Copy text to clipboard
+   * ACTION 5: Copy plain text to clipboard
    */
   const handleCopyText = () => {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = printModalData.html;
-    const text = tempDiv.innerText || tempDiv.textContent || '';
+    const doc = previewIframeRef.current?.contentDocument;
+    let text = '';
+    if (doc?.body) {
+      text = doc.body.innerText || doc.body.textContent || '';
+    } else {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = extractBodyInnerHtml(printModalData.html);
+      text = tempDiv.innerText || tempDiv.textContent || '';
+    }
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       showToast(isBn ? 'টেক্সট ক্লিপবোর্ডে কপি করা হয়েছে' : 'Text copied to clipboard', 'success');
@@ -349,18 +456,12 @@ export const PrintModal: React.FC = () => {
     });
   };
 
-  const previewHtml = React.useMemo(() => {
-    if (!printModalData?.html) return '';
-    let raw = printModalData.html;
-    // Scope body styles in <style> tags to .srk-print-preview-container so preview renders cleanly
-    return raw.replace(/(<style[^>]*>[\s\S]*?)(body\s*\{)([\s\S]*?<\/style>)/gi, (match, p1, p2, p3) => {
-      return p1 + '.srk-print-preview-container {' + p3;
-    });
-  }, [printModalData?.html]);
+  const paperWidthMm = orientation === 'landscape' ? '297mm' : '210mm';
+  const paperMinHeightMm = orientation === 'landscape' ? '210mm' : paperSize === 'legal' ? '355.6mm' : '297mm';
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-1 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
-      <div className="w-full max-w-4xl h-[94vh] sm:h-[90vh] bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden my-auto">
+      <div className="w-full max-w-5xl h-[94vh] sm:h-[92vh] bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden my-auto">
         {/* Top Header */}
         <div className="p-3 sm:p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -411,7 +512,7 @@ export const PrintModal: React.FC = () => {
               disabled={isProcessing}
               onClick={handleSavePdfToDevice}
               className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50"
-              title="Save PDF directly to device storage & chamber vault"
+              title={isBn ? 'পিডিএফ ডিভাইস ও চেম্বার ভল্টে সেভ করুন' : 'Save PDF directly to device storage & chamber vault'}
             >
               {isProcessing && processingAction === 'save' ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -426,7 +527,7 @@ export const PrintModal: React.FC = () => {
               disabled={isProcessing}
               onClick={handleShareToPrintOrApps}
               className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50"
-              title="Share to Wireless Printer Apps, Drive, WhatsApp, or Save to Files"
+              title={isBn ? 'ওয়্যারলেস প্রিন্টার বা অ্যাপসে শেয়ার করুন' : 'Share to Wireless Printer Apps, Drive, WhatsApp, or Save to Files'}
             >
               {isProcessing && processingAction === 'share' ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -445,7 +546,7 @@ export const PrintModal: React.FC = () => {
               </span>
               <select
                 value={paperSize}
-                onChange={e => setPaperSize(e.target.value as any)}
+                onChange={e => setPaperSize(e.target.value as 'a4' | 'legal')}
                 className="px-2 py-1 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 cursor-pointer"
               >
                 <option value="a4">A4</option>
@@ -456,8 +557,8 @@ export const PrintModal: React.FC = () => {
             <button
               type="button"
               onClick={() => setOrientation(prev => (prev === 'portrait' ? 'landscape' : 'portrait'))}
-              className="px-2 py-1 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 text-slate-800 dark:text-slate-200 flex items-center gap-1 cursor-pointer"
-              title="Toggle Layout"
+              className="px-2 py-1 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 flex items-center gap-1 cursor-pointer"
+              title={isBn ? 'পৃষ্ঠার দিক পরিবর্তন করুন' : 'Toggle Layout'}
             >
               <RotateCw className="w-3 h-3" />
               <span className="capitalize">{orientation}</span>
@@ -488,7 +589,7 @@ export const PrintModal: React.FC = () => {
 
         {/* Ready Notification Banner with Direct Download Link */}
         {generatedPdfBlobUrl && (
-          <div className="px-3 py-2 bg-emerald-50 dark:bg-emerald-950/60 border-b border-emerald-200 dark:border-emerald-800 flex items-center justify-between gap-2 text-xs">
+          <div className="px-3 py-2 bg-emerald-50 dark:bg-emerald-950/60 border-b border-emerald-200 dark:border-emerald-800 flex items-center justify-between gap-2 text-xs shrink-0">
             <div className="flex items-center gap-1.5 text-emerald-800 dark:text-emerald-200 min-w-0">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span className="font-semibold truncate">
@@ -507,32 +608,32 @@ export const PrintModal: React.FC = () => {
           </div>
         )}
 
-        {/* Document Preview Box */}
-        <div className="flex-1 overflow-auto bg-slate-100 dark:bg-slate-950/80 p-2 sm:p-5 flex justify-center">
+        {/* Isolated Print Document Preview Box (Iframe prevents CSS leaks & avoids html2canvas oklch crash) */}
+        <div className="flex-1 overflow-auto bg-slate-200 dark:bg-slate-950/80 p-2 sm:p-5 flex justify-center items-start">
           <div
             style={{
               transform: `scale(${zoom / 100})`,
               transformOrigin: 'top center',
-              transition: 'transform 0.15s ease'
+              transition: 'transform 0.15s ease',
+              width: paperWidthMm,
+              flexShrink: 0
             }}
-            className="w-full transition-all flex justify-center"
           >
-            <div
-              ref={previewContainerRef}
+            <iframe
+              ref={previewIframeRef}
+              srcDoc={isolatedPrintableHtml}
+              onLoad={syncIframeHeight}
+              title={docTitle}
               style={{
-                width: orientation === 'landscape' ? '297mm' : '210mm',
-                minHeight: orientation === 'landscape' ? '210mm' : '297mm',
-                maxWidth: '100%',
+                width: paperWidthMm,
+                minHeight: paperMinHeightMm,
+                height: `${iframeHeight}px`,
                 backgroundColor: '#ffffff',
-                color: '#0f172a',
-                padding: '14mm 16mm',
-                boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
+                border: 'none',
+                boxShadow: '0 8px 30px rgba(0,0,0,0.18)',
                 borderRadius: '4px',
-                margin: '0 auto',
-                boxSizing: 'border-box'
+                display: 'block'
               }}
-              className="text-slate-900 font-serif leading-relaxed srk-print-preview-container"
-              dangerouslySetInnerHTML={{ __html: previewHtml }}
             />
           </div>
         </div>
@@ -568,7 +669,6 @@ export const PrintModal: React.FC = () => {
               {isBn ? 'বাতিল' : 'Close'}
             </button>
 
-            {/* Share to Wireless Printer / Print Apps / Android Share Sheet */}
             <button
               type="button"
               disabled={isProcessing}
@@ -584,7 +684,6 @@ export const PrintModal: React.FC = () => {
               <span>{isBn ? 'শেয়ার (Share)' : 'Share'}</span>
             </button>
 
-            {/* Save PDF directly to device & Chamber Vault */}
             <button
               type="button"
               disabled={isProcessing}
@@ -600,7 +699,6 @@ export const PrintModal: React.FC = () => {
               <span>{isBn ? 'সেভ PDF' : 'Save PDF'}</span>
             </button>
 
-            {/* Primary Action: Direct Print to Connected System / Hardware Printer */}
             <button
               type="button"
               disabled={isProcessing}

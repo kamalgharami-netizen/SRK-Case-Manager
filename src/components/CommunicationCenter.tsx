@@ -53,16 +53,20 @@ export const CommunicationCenter: React.FC = () => {
       return;
     }
 
-    sendMessage(
-      selectedPartyId || 'custom',
-      phone,
-      messageBody.trim(),
-      channel
-    );
-
-    // Launch WhatsApp directly
     if (channel === 'WhatsApp') {
-      safeOpenWhatsApp(phone, messageBody.trim());
+      safeOpenWhatsApp(phone, messageBody.trim(), {
+        partyId: selectedPartyId || 'custom',
+        partyName: selectedParty?.name || phone,
+        autoSendIfConnected: true,
+        title: 'Client Notice — WhatsApp Dispatch'
+      });
+    } else {
+      sendMessage(
+        selectedPartyId || 'custom',
+        phone,
+        messageBody.trim(),
+        channel
+      );
     }
 
     setMessageBody('');
@@ -105,8 +109,8 @@ export const CommunicationCenter: React.FC = () => {
               }}
               className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold"
             >
-              {parties.map(p => (
-                <option key={p.id} value={p.id}>
+              {parties.map((p, idx) => (
+                <option key={`${p.id}_${idx}`} value={p.id}>
                   {p.name} ({p.type}) {p.phone ? `· ${p.phone}` : ''}
                 </option>
               ))}

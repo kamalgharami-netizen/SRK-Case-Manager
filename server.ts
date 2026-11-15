@@ -4,6 +4,12 @@ import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import {
+  getPublicStatus,
+  startWhatsAppLogin,
+  sendWhatsAppText,
+  logoutWhatsAppSession
+} from './server/whatsappManager';
 
 dotenv.config();
 
@@ -722,6 +728,49 @@ Date: ${new Date().toISOString().slice(0, 10)}`;
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: Date.now() });
+});
+
+// In-App WhatsApp Linked Device Session Routes (Zero external browser/desktop redirects)
+app.get('/api/whatsapp/status', (req, res) => {
+  try {
+    const sessionId = typeof req.query.sessionId === 'string' ? req.query.sessionId : 'default';
+    return res.status(200).json(getPublicStatus(sessionId));
+  } catch (err: any) {
+    return res.status(500).json({ error: err?.message || 'Failed to read WhatsApp session status' });
+  }
+});
+
+app.post('/api/whatsapp/login', async (req, res) => {
+  try {
+    const { sessionId, mode, phoneNumber } = req.body || {};
+    const status = await startWhatsAppLogin({ sessionId, mode, phoneNumber });
+    return res.status(200).json(status);
+  } catch (err: any) {
+    return res.status(400).json({ error: err?.message || 'Failed to initiate WhatsApp login' });
+  }
+});
+
+app.post('/api/whatsapp/send', async (req, res) => {
+  try {
+    const { sessionId, phone, message } = req.body || {};
+    const result = await sendWhatsAppText({ sessionId, phone, message });
+    return res.status(200).json(result);
+  } catch (err: any) {
+    if (err?.code === 'WHATSAPP_NOT_CONNECTED') {
+      return res.status(409).json({ error: 'WHATSAPP_NOT_CONNECTED', message: err.message });
+    }
+    return res.status(400).json({ error: err?.message || 'Failed to send WhatsApp message' });
+  }
+});
+
+app.post('/api/whatsapp/logout', async (req, res) => {
+  try {
+    const { sessionId } = req.body || {};
+    const status = await logoutWhatsAppSession(sessionId);
+    return res.status(200).json(status);
+  } catch (err: any) {
+    return res.status(500).json({ error: err?.message || 'Failed to logout WhatsApp session' });
+  }
 });
 
 async function startServer() {
