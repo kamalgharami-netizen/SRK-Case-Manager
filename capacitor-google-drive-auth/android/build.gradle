@@ -12,6 +12,6 @@ android {
 
 dependencies {
     implementation project(':capacitor-android')
-    // 22.0.0 includes the current AuthorizationRequest Picker resource parameters.
-    implementation 'com.google.android.gms:play-services-auth:22.0.0'
+    // 21.6.0 includes the Drive Picker folder-selection parameter while avoiding the API 24 minimum introduced by newer transitive Google Play services.
+    implementation 'com.google.android.gms:play-services-auth:21.6.0'
 }
